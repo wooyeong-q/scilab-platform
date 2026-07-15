@@ -15,6 +15,11 @@ export type Program = {
   viewCount?: number;
   launchCount?: number;
   likeCount?: number;
+  worksheetUrl?: string;
+  pptUrl?: string;
+  videoUrl?: string;
+  sourceUrl?: string;
+  guideUrl?: string;
 };
 
 export const programs: Program[] = [
