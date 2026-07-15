@@ -77,13 +77,9 @@ export async function ensureDatabase() {
     )
   `;
 
-  for (const program of seedPrograms) {
-    await sql`
-      INSERT INTO programs (id,title,summary,description,category,grade,tags,icon,url,author,featured,duration,format)
-      VALUES (${program.id},${program.title},${program.summary},${program.description},${program.category},${program.grade},${JSON.stringify(program.tags)}::jsonb,${program.icon},${program.url},${program.author},${Boolean(program.featured)},${program.duration || '수업에 따라'},${program.format || '웹 프로그램'})
-      ON CONFLICT (id) DO NOTHING
-    `;
-  }
+  // 초기 프로그램은 이미 현재 운영 DB에 등록되어 있다.
+  // 여기서 매번 다시 삽입하면 관리자가 삭제한 프로그램이 서버 재시작 후 부활하므로
+  // 데이터베이스 초기화 과정에서는 더 이상 기본 프로그램을 재등록하지 않는다.
   initialized = true;
 }
 
