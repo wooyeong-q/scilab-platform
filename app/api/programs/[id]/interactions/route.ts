@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 import { ensureDatabase, sql } from '@/lib/db';
 
-const allowedActions = new Set(['view','launch','like']);
+const allowedActions = new Set(['view','launch','like','unlike']);
 
 export async function POST(request: Request, { params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
@@ -13,6 +13,7 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
   if (action === 'view') await sql!`UPDATE programs SET view_count=view_count+1 WHERE id=${id}`;
   if (action === 'launch') await sql!`UPDATE programs SET launch_count=launch_count+1 WHERE id=${id}`;
   if (action === 'like') await sql!`UPDATE programs SET like_count=like_count+1 WHERE id=${id}`;
+  if (action === 'unlike') await sql!`UPDATE programs SET like_count=GREATEST(like_count-1,0) WHERE id=${id}`;
 
   const rows = await sql!`SELECT view_count, launch_count, like_count FROM programs WHERE id=${id} LIMIT 1`;
   if (!rows[0]) return NextResponse.json({ error: '프로그램을 찾을 수 없습니다.' }, { status: 404 });
