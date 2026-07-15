@@ -21,7 +21,9 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ id
       grade=${String(body.grade || '')}, tags=${JSON.stringify(tags)}::jsonb,
       icon=${String(body.icon || '🧪')}, featured=${Boolean(body.featured)},
       duration=${String(body.duration || '수업에 따라')}, format=${String(body.format || '웹 프로그램')},
-      updated_at=NOW()
+      worksheet_url=${String(body.worksheetUrl || '')}, ppt_url=${String(body.pptUrl || '')},
+      video_url=${String(body.videoUrl || '')}, source_url=${String(body.sourceUrl || '')},
+      guide_url=${String(body.guideUrl || '')}, updated_at=NOW()
     WHERE id=${id}
   `;
   return NextResponse.json({ ok: true });
