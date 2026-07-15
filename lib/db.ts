@@ -17,6 +17,8 @@ function rowToProgram(row: Record<string, unknown>): Program {
     icon: String(row.icon || '🧪'), url: String(row.url), author: String(row.author), featured: Boolean(row.featured),
     duration: String(row.duration || '수업에 따라'), format: String(row.format || '웹 프로그램'),
     viewCount: Number(row.view_count || 0), launchCount: Number(row.launch_count || 0), likeCount: Number(row.like_count || 0),
+    worksheetUrl: String(row.worksheet_url || ''), pptUrl: String(row.ppt_url || ''), videoUrl: String(row.video_url || ''),
+    sourceUrl: String(row.source_url || ''), guideUrl: String(row.guide_url || ''),
   };
 }
 
@@ -31,12 +33,19 @@ export async function ensureDatabase() {
       featured BOOLEAN NOT NULL DEFAULT FALSE, duration TEXT NOT NULL DEFAULT '수업에 따라',
       format TEXT NOT NULL DEFAULT '웹 프로그램', is_published BOOLEAN NOT NULL DEFAULT TRUE,
       view_count INTEGER NOT NULL DEFAULT 0, launch_count INTEGER NOT NULL DEFAULT 0, like_count INTEGER NOT NULL DEFAULT 0,
+      worksheet_url TEXT NOT NULL DEFAULT '', ppt_url TEXT NOT NULL DEFAULT '', video_url TEXT NOT NULL DEFAULT '',
+      source_url TEXT NOT NULL DEFAULT '', guide_url TEXT NOT NULL DEFAULT '',
       created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(), updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
     )
   `;
   await sql`ALTER TABLE programs ADD COLUMN IF NOT EXISTS view_count INTEGER NOT NULL DEFAULT 0`;
   await sql`ALTER TABLE programs ADD COLUMN IF NOT EXISTS launch_count INTEGER NOT NULL DEFAULT 0`;
   await sql`ALTER TABLE programs ADD COLUMN IF NOT EXISTS like_count INTEGER NOT NULL DEFAULT 0`;
+  await sql`ALTER TABLE programs ADD COLUMN IF NOT EXISTS worksheet_url TEXT NOT NULL DEFAULT ''`;
+  await sql`ALTER TABLE programs ADD COLUMN IF NOT EXISTS ppt_url TEXT NOT NULL DEFAULT ''`;
+  await sql`ALTER TABLE programs ADD COLUMN IF NOT EXISTS video_url TEXT NOT NULL DEFAULT ''`;
+  await sql`ALTER TABLE programs ADD COLUMN IF NOT EXISTS source_url TEXT NOT NULL DEFAULT ''`;
+  await sql`ALTER TABLE programs ADD COLUMN IF NOT EXISTS guide_url TEXT NOT NULL DEFAULT ''`;
   await sql`
     CREATE TABLE IF NOT EXISTS submissions (
       id TEXT PRIMARY KEY, title TEXT NOT NULL, author TEXT NOT NULL, url TEXT NOT NULL,
