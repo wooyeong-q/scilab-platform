@@ -1,9 +1,11 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import { useRouter } from 'next/navigation';
 import { ArrowUpRight, Eye, Heart, Play } from 'lucide-react';
 
-export function ProgramInteractions({ id, url, initialViews=0, initialLaunches=0, initialLikes=0 }:{ id:string; url:string; initialViews?:number; initialLaunches?:number; initialLikes?:number }){
+export function ProgramInteractions({ id, url: _url, initialViews=0, initialLaunches=0, initialLikes=0 }:{ id:string; url:string; initialViews?:number; initialLaunches?:number; initialLikes?:number }){
+  const router=useRouter();
   const [stats,setStats]=useState({viewCount:initialViews,launchCount:initialLaunches,likeCount:initialLikes});
   const [liked,setLiked]=useState(false);
   const [busy,setBusy]=useState(false);
@@ -45,9 +47,9 @@ export function ProgramInteractions({ id, url, initialViews=0, initialLaunches=0
     }
   }
 
-  async function launch(){
-    window.open(url,'_blank','noopener,noreferrer');
-    await send('launch').catch(()=>undefined);
+  function launch(){
+    void send('launch').catch(()=>undefined);
+    router.push(`/run/${id}`);
   }
 
   return <div className="interactionPanel">
