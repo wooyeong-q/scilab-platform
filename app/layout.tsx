@@ -1,6 +1,7 @@
 import type { Metadata } from 'next';
 import './globals.css';
 import './enhancements.css';
+import './modal-responsive.css';
 
 export const metadata: Metadata = {
   title: 'SciLab | 과학 학습 프로그램 플랫폼',
