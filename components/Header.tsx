@@ -1,5 +1,5 @@
 import Link from 'next/link';
-import { FlaskConical, Settings } from 'lucide-react';
+import { FlaskConical, PlusCircle, Settings } from 'lucide-react';
 
 export function Header() {
   return (
@@ -11,6 +11,7 @@ export function Header() {
         </Link>
         <nav className="navLinks">
           <Link href="/">프로그램</Link>
+          <Link href="/submit"><PlusCircle size={16} /> 프로그램 제안</Link>
           <Link href="/admin" className="navButton"><Settings size={16} /> 관리</Link>
         </nav>
       </div>
