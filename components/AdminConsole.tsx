@@ -24,14 +24,36 @@ export function AdminConsole() {
   useEffect(()=>{load();},[]);
   async function login(e:React.FormEvent){e.preventDefault();setError('');const r=await fetch('/api/admin/login',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({password})});const d=await r.json();if(!r.ok){setError(d.error);return;}setPassword('');load();}
   async function logout(){await fetch('/api/admin/logout',{method:'POST'});setAuthenticated(false);}
-  async function review(id:string,action:'approve'|'reject'){await fetch(`/api/admin/submissions/${id}`,{method:'PATCH',headers:{'Content-Type':'application/json'},body:JSON.stringify({action})});load();}
-  async function removeProgram(id:string){if(!confirm('이 프로그램을 삭제할까요?'))return;await fetch(`/api/admin/programs/${id}`,{method:'DELETE'});load();}
-  async function save(e:React.FormEvent){e.preventDefault();if(!editing)return;await fetch(`/api/admin/programs/${editing.id}`,{method:'PATCH',headers:{'Content-Type':'application/json'},body:JSON.stringify(editing)});setEditing(null);load();}
+  async function review(id:string,action:'approve'|'reject'){
+    setError('');
+    const response=await fetch(`/api/admin/submissions/${id}`,{method:'PATCH',headers:{'Content-Type':'application/json'},body:JSON.stringify({action})});
+    const data=await response.json().catch(()=>({}));
+    if(!response.ok){setError(data.error||'처리하지 못했습니다.');return;}
+    await load();
+  }
+  async function removeProgram(id:string){
+    if(!confirm('이 프로그램을 삭제할까요?'))return;
+    setError('');
+    const response=await fetch(`/api/admin/programs/${id}`,{method:'DELETE'});
+    const data=await response.json().catch(()=>({}));
+    if(!response.ok){setError(data.error||'삭제하지 못했습니다.');return;}
+    setPrograms((current)=>current.filter((program)=>program.id!==id));
+    await load();
+  }
+  async function save(e:React.FormEvent){
+    e.preventDefault();if(!editing)return;
+    setError('');
+    const response=await fetch(`/api/admin/programs/${editing.id}`,{method:'PATCH',headers:{'Content-Type':'application/json'},body:JSON.stringify(editing)});
+    const data=await response.json().catch(()=>({}));
+    if(!response.ok){setError(data.error||'저장하지 못했습니다.');return;}
+    setEditing(null);await load();
+  }
 
   if(authenticated===null)return <div className="adminNotice">관리자 상태를 확인하는 중입니다.</div>;
   if(!authenticated)return <form className="editModal" onSubmit={login}><div className="modalHeader"><div><span>ADMIN LOGIN</span><h2>관리자 로그인</h2></div></div><label>비밀번호<input type="password" value={password} onChange={(e)=>setPassword(e.target.value)} autoFocus required/></label>{error&&<p style={{color:'#dc2626'}}>{error}</p>}<button className="saveButton" type="submit">로그인</button></form>;
 
   return <>
+    {error&&<div className="adminNotice" style={{color:'#dc2626'}}>{error}</div>}
     <div style={{display:'flex',justifyContent:'flex-end',marginBottom:16}}><button className="saveButton" onClick={logout}><LogOut size={16}/> 로그아웃</button></div>
     <h2>등록 제안</h2>
     <section className="adminList">{submissions.length===0?<div className="adminNotice">대기 중인 제안이 없습니다.</div>:submissions.map((item)=><article className="adminCard" key={item.id}><div className="adminIcon">🧪</div><div className="adminInfo"><span>{item.status} · {item.category} · {item.grade}</span><h2>{item.title}</h2><p>{item.author} · {item.summary}</p></div><div className="adminActions">{item.status==='pending'&&<><button onClick={()=>review(item.id,'approve')}><Check size={16}/> 승인</button><button className="danger" onClick={()=>review(item.id,'reject')}><X size={16}/> 반려</button></>}</div></article>)}</section>
