@@ -3,14 +3,14 @@ import { ensureDatabase, sql } from '@/lib/db';
 
 export async function POST(request: Request) {
   try {
-    const body = await request.json();
+    const body: Record<string, unknown> = await request.json();
     const title = String(body.title || '').trim();
     const author = String(body.author || '').trim();
     const url = String(body.url || '').trim();
     const category = String(body.category || '').trim();
     const grade = String(body.grade || '').trim();
     const summary = String(body.summary || '').trim();
-    const tags = Array.isArray(body.tags) ? body.tags.map(String).map((x) => x.trim()).filter(Boolean) : [];
+    const tags: string[] = Array.isArray(body.tags) ? body.tags.map((value: unknown) => String(value).trim()).filter(Boolean) : [];
     if (!title || !author || !url || !category || !grade || !summary) {
       return NextResponse.json({ error: '필수 항목을 모두 입력해 주세요.' }, { status: 400 });
     }
