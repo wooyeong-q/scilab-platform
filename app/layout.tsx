@@ -1,6 +1,7 @@
 import type { Metadata } from 'next';
 import './globals.css';
 import './enhancements.css';
+import './responsive.css';
 import './modal-responsive.css';
 
 export const metadata: Metadata = {
