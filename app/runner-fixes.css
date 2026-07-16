@@ -26,10 +26,18 @@
   line-height:1.15;
 }
 
+.runnerActions{
+  flex-wrap:nowrap;
+  flex:0 0 auto;
+  min-width:max-content;
+}
+
 .runnerActions button,
 .runnerActions a{
   min-height:40px;
   padding:8px 10px;
+  white-space:nowrap;
+  line-height:1;
 }
 
 .runnerShell{
@@ -49,6 +57,43 @@
   display:none;
 }
 
+/* Keep browser restriction messages away from the experiment controls. */
+.runnerRotateMessage{
+  top:58px;
+  bottom:auto;
+  width:min(430px,calc(100% - 24px));
+  padding:8px 11px;
+  font-size:11px;
+  pointer-events:none;
+}
+
+/* KakaoTalk and iPhone landscape viewports are often wider than 700 CSS px. */
+@media(max-width:1100px){
+  .runnerTitleBlock{
+    flex:1 1 auto;
+    min-width:0;
+    overflow:hidden;
+  }
+
+  .runnerHeader h1{
+    white-space:nowrap;
+    overflow:hidden;
+    text-overflow:ellipsis;
+  }
+
+  .runnerActionLabel{
+    display:none!important;
+  }
+
+  .runnerActions button,
+  .runnerActions a{
+    width:40px;
+    height:40px;
+    min-height:40px;
+    padding:0;
+  }
+}
+
 @media(max-width:700px){
   .runnerPage{
     padding:0;
@@ -59,11 +104,42 @@
     height:52px;
     min-height:52px;
   }
+
+  .runnerRotateMessage{
+    top:56px;
+  }
 }
 
-@media(orientation:landscape) and (max-height:600px){
+@media(orientation:landscape) and (max-height:700px){
+  .runnerPage{
+    padding:0;
+    gap:0;
+  }
+
   .runnerHeader{
     height:42px;
     min-height:42px;
+    padding:3px 7px;
+  }
+
+  .runnerHeader h1{
+    font-size:15px;
+  }
+
+  .runnerActions{
+    gap:5px;
+  }
+
+  .runnerActions button,
+  .runnerActions a{
+    width:35px;
+    height:35px;
+    min-height:35px;
+    border-radius:10px;
+  }
+
+  .runnerRotateMessage{
+    top:46px;
+    width:min(390px,calc(100% - 18px));
   }
 }
