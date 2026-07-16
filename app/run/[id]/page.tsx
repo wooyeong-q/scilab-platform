@@ -8,5 +8,5 @@ export default async function RunPage({params}:{params:Promise<{id:string}>}){
   const {id}=await params;
   const program=await getProgram(id);
   if(!program)notFound();
-  return <ResponsiveProgramRunner title={program.title} url={program.url}/>;
+  return <ResponsiveProgramRunner title={program.title} url={program.url} programId={id}/>;
 }
