@@ -71,7 +71,7 @@ export function ResponsiveProgramRunner({title,url,programId}:{title:string;url:
     router.push(`/programs/${programId}`);
   }
 
-  return <main className="runnerPage">
+  return <main id="main-content" className="runnerPage">
     <header className="runnerHeader">
       <div className="runnerTitleBlock"><span>PROGRAM</span><h1>{title}</h1></div>
       <div className="runnerActions">
@@ -86,8 +86,8 @@ export function ResponsiveProgramRunner({title,url,programId}:{title:string;url:
     {rotateMessage&&<div className="runnerRotateMessage" role="status">{rotateMessage}</div>}
     <div className="runnerShell" ref={shellRef}>
       <button type="button" className="runnerFloatingClose" onClick={closeRunner} aria-label="프로그램 닫기" title="프로그램 닫기"><X size={21}/></button>
-      {!loaded&&<div className="runnerLoading">프로그램을 불러오는 중입니다.</div>}
-      <iframe src={url} title={title} onLoad={()=>setLoaded(true)} allow="fullscreen; clipboard-read; clipboard-write" />
+      {!loaded&&<div className="runnerLoading" role="status">프로그램을 불러오는 중입니다.</div>}
+      <iframe src={url} title={title} onLoad={()=>setLoaded(true)} allow="fullscreen; clipboard-read; clipboard-write" allowFullScreen />
     </div>
     <p className="runnerHelp">화면이 비어 있거나 조작이 제한되면 <strong>원본 열기</strong>를 눌러 주세요.</p>
   </main>;

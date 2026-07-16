@@ -1,250 +1,324 @@
-.runnerPage{
-  width:100%;
-  height:100dvh;
-  min-height:100dvh;
-  overflow:hidden;
-  background:#0b1020;
-  color:#eef2ff;
-  padding:12px;
-  display:flex;
-  flex-direction:column;
-  gap:10px;
-}
-.runnerHeader{
-  display:flex;
-  align-items:center;
-  justify-content:space-between;
-  gap:14px;
-  max-width:1500px;
-  width:100%;
-  margin:0 auto;
-  flex:0 0 auto;
-}
-.runnerTitleBlock{min-width:0}
-.runnerHeader span{
-  font-size:11px;
-  letter-spacing:.14em;
-  color:#a5b4fc;
-  font-weight:900;
-}
-.runnerHeader h1{
-  font-size:clamp(20px,3vw,30px);
-  margin:4px 0 0;
-}
-.runnerActions{
-  display:flex;
-  gap:8px;
-  flex-wrap:wrap;
-}
-.runnerActions button,.runnerActions a{
-  border:1px solid rgba(255,255,255,.15);
-  background:#151c33;
-  color:#fff;
-  border-radius:12px;
-  min-height:44px;
-  padding:10px 12px;
-  font-weight:800;
-  display:flex;
-  align-items:center;
-  justify-content:center;
-  gap:7px;
-  cursor:pointer;
-  text-decoration:none;
-}
-.runnerActions .runnerCloseAction{
-  background:#7f1d1d;
-  border-color:#ef4444;
-}
-.runnerShell{
-  position:relative;
-  width:100%;
-  max-width:1500px;
-  min-height:0;
-  flex:1 1 auto;
-  margin:0 auto;
-  border:1px solid rgba(255,255,255,.14);
-  border-radius:18px;
-  overflow:hidden;
-  background:#020617;
-  box-shadow:0 24px 70px rgba(0,0,0,.35);
-}
-.runnerShell:fullscreen{
-  width:100vw;
-  height:100vh;
-  max-width:none;
-  border:0;
-  border-radius:0;
-}
-.runnerShell iframe{
-  position:absolute;
-  inset:0;
-  z-index:1;
-  width:100%;
-  height:100%;
-  border:0;
-  background:#fff;
-}
-.runnerLoading{
-  position:absolute;
-  inset:0;
-  display:grid;
-  place-items:center;
-  color:#cbd5e1;
-  z-index:0;
-}
-.runnerFloatingClose{
-  position:absolute;
-  top:max(10px,env(safe-area-inset-top));
-  right:max(10px,env(safe-area-inset-right));
-  z-index:40;
-  width:44px;
-  height:44px;
-  padding:0;
-  display:grid;
-  place-items:center;
-  border:2px solid rgba(255,255,255,.9);
-  border-radius:999px;
-  background:rgba(15,23,42,.9);
-  color:#fff;
-  box-shadow:0 6px 22px rgba(0,0,0,.4);
-  cursor:pointer;
-  -webkit-tap-highlight-color:transparent;
-}
-.runnerFloatingClose:hover,.runnerFloatingClose:focus-visible{
-  background:#b91c1c;
-  outline:3px solid rgba(255,255,255,.45);
-  outline-offset:2px;
-}
-.rotateNotice{
-  max-width:1500px;
-  width:100%;
-  margin:0 auto;
-  padding:9px 12px;
-  min-height:46px;
-  border-radius:12px;
-  background:#172554;
-  border:1px solid #3730a3;
-  color:#eef2ff;
-  display:flex;
-  align-items:center;
-  gap:10px;
-  text-align:left;
-  cursor:pointer;
-  flex:0 0 auto;
-}
-.rotateNotice div{display:grid;gap:1px}
-.rotateNotice strong{font-size:13px}
-.rotateNotice span{font-size:11px;color:#c7d2fe}
-.runnerRotateMessage{
-  position:fixed;
-  left:50%;
-  bottom:max(18px,env(safe-area-inset-bottom));
-  z-index:100;
-  width:min(520px,calc(100% - 28px));
-  transform:translateX(-50%);
-  border:1px solid rgba(255,255,255,.22);
-  border-radius:13px;
-  background:rgba(15,23,42,.96);
-  color:#fff;
-  padding:11px 13px;
-  text-align:center;
-  font-size:12px;
-  line-height:1.45;
-  box-shadow:0 16px 44px rgba(0,0,0,.45);
-}
-.runnerHelp{
-  max-width:1500px;
-  width:100%;
-  margin:0 auto;
-  color:#94a3b8;
-  font-size:12px;
-  text-align:center;
-  flex:0 0 auto;
+.runnerPage {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  height: 100dvh;
+  min-height: 100dvh;
+  gap: 6px;
+  overflow: hidden;
+  padding:
+    max(6px, env(safe-area-inset-top))
+    max(8px, env(safe-area-inset-right))
+    max(6px, env(safe-area-inset-bottom))
+    max(8px, env(safe-area-inset-left));
+  background:
+    radial-gradient(circle at 70% -10%, rgba(81, 86, 232, 0.2), transparent 35rem),
+    #09111f;
+  color: #eef2ff;
 }
 
-@media(max-width:700px){
-  .runnerPage{
-    padding:0;
-    gap:0;
+.runnerHeader {
+  display: flex;
+  flex: 0 0 auto;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  height: 52px;
+  min-height: 52px;
+  gap: 14px;
+}
+
+.runnerTitleBlock {
+  flex: 1 1 auto;
+  min-width: 0;
+  overflow: hidden;
+}
+
+.runnerHeader .runnerTitleBlock > span {
+  display: none;
+}
+
+.runnerHeader h1 {
+  margin: 0;
+  overflow: hidden;
+  font-size: 18px;
+  line-height: 1.2;
+  letter-spacing: -0.025em;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.runnerActions {
+  display: flex;
+  flex: 0 0 auto;
+  flex-wrap: nowrap;
+  min-width: max-content;
+  gap: 7px;
+}
+
+.runnerActions button,
+.runnerActions a {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 44px;
+  gap: 7px;
+  padding: 10px 12px;
+  border: 1px solid rgba(255, 255, 255, 0.16);
+  border-radius: 12px;
+  background: #172238;
+  color: #fff;
+  font-weight: 800;
+  line-height: 1;
+  white-space: nowrap;
+}
+
+.runnerActions button:hover,
+.runnerActions a:hover {
+  border-color: rgba(255, 255, 255, 0.35);
+  background: #22314e;
+}
+
+.runnerActions .runnerCloseAction {
+  border-color: rgba(248, 113, 113, 0.7);
+  background: #7f1d2d;
+}
+
+.runnerShell {
+  position: relative;
+  flex: 1 1 auto;
+  width: 100%;
+  min-height: 0;
+  overflow: hidden;
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  border-radius: 14px;
+  background: #020617;
+  box-shadow: 0 24px 70px rgba(0, 0, 0, 0.36);
+}
+
+.runnerShell:fullscreen {
+  width: 100vw;
+  height: 100vh;
+  max-width: none;
+  border: 0;
+  border-radius: 0;
+}
+
+.runnerShell iframe {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  width: 100%;
+  height: 100%;
+  border: 0;
+  background: #fff;
+}
+
+.runnerLoading {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  display: grid;
+  place-items: center;
+  color: #cbd5e1;
+}
+
+.runnerFloatingClose {
+  position: absolute;
+  top: max(10px, env(safe-area-inset-top));
+  right: max(10px, env(safe-area-inset-right));
+  z-index: 40;
+  display: none;
+  place-items: center;
+  width: 44px;
+  height: 44px;
+  padding: 0;
+  border: 2px solid rgba(255, 255, 255, 0.9);
+  border-radius: 999px;
+  background: rgba(15, 23, 42, 0.9);
+  box-shadow: 0 6px 22px rgba(0, 0, 0, 0.4);
+  color: #fff;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.runnerShell:fullscreen .runnerFloatingClose {
+  display: grid;
+}
+
+.runnerFloatingClose:hover,
+.runnerFloatingClose:focus-visible {
+  background: #b91c2c;
+}
+
+.rotateNotice {
+  display: flex;
+  flex: 0 0 auto;
+  align-items: center;
+  width: 100%;
+  min-height: 48px;
+  gap: 10px;
+  padding: 9px 12px;
+  border: 1px solid #3f46a8;
+  border-radius: 12px;
+  background: #172554;
+  color: #eef2ff;
+  text-align: left;
+}
+
+.rotateNotice div {
+  display: grid;
+  gap: 1px;
+}
+
+.rotateNotice strong {
+  font-size: 13px;
+}
+
+.rotateNotice span {
+  color: #c7d2fe;
+  font-size: 11px;
+}
+
+.runnerRotateMessage {
+  position: fixed;
+  top: 62px;
+  left: 50%;
+  z-index: 100;
+  width: min(430px, calc(100% - 24px));
+  padding: 9px 12px;
+  border: 1px solid rgba(255, 255, 255, 0.22);
+  border-radius: 13px;
+  background: rgba(15, 23, 42, 0.96);
+  box-shadow: 0 16px 44px rgba(0, 0, 0, 0.45);
+  color: #fff;
+  font-size: 12px;
+  line-height: 1.45;
+  text-align: center;
+  transform: translateX(-50%);
+  pointer-events: none;
+}
+
+.runnerHelp {
+  display: none;
+}
+
+@media (max-width: 1100px) {
+  .runnerActionLabel {
+    display: none !important;
   }
-  .runnerHeader{
-    height:56px;
-    min-height:56px;
-    padding:7px 9px;
-    background:#0b1020;
-    border-bottom:1px solid rgba(255,255,255,.12);
-    flex-direction:row;
-    align-items:center;
-    gap:8px;
-  }
-  .runnerTitleBlock{flex:1 1 auto;overflow:hidden}
-  .runnerHeader .runnerTitleBlock>span{display:none}
-  .runnerHeader h1{
-    margin:0;
-    font-size:15px;
-    line-height:1.2;
-    white-space:nowrap;
-    overflow:hidden;
-    text-overflow:ellipsis;
-  }
-  .runnerActions{
-    width:auto;
-    flex:0 0 auto;
-    display:flex;
-    flex-wrap:nowrap;
-    gap:5px;
-  }
-  .runnerActions button,.runnerActions a{
-    width:41px;
-    height:41px;
-    min-height:41px;
-    padding:0;
-    border-radius:11px;
-  }
-  .runnerActionLabel{display:none!important}
-  .runnerActions .runnerCloseAction{background:#7f1d1d}
-  .rotateNotice{
-    margin:0;
-    min-height:43px;
-    padding:7px 11px;
-    border-radius:0;
-    border-left:0;
-    border-right:0;
-  }
-  .rotateNotice strong{font-size:12px}
-  .rotateNotice span{font-size:10px}
-  .runnerShell{
-    width:100%;
-    max-width:none;
-    border:0;
-    border-radius:0;
-    box-shadow:none;
-  }
-  .runnerHelp{display:none}
-  .runnerFloatingClose{display:none}
-  .runnerShell:fullscreen .runnerFloatingClose{
-    display:grid;
-    width:38px;
-    height:38px;
-    top:max(7px,env(safe-area-inset-top));
-    right:max(7px,env(safe-area-inset-right));
-    border-width:1px;
-    background:rgba(15,23,42,.82);
+
+  .runnerActions button,
+  .runnerActions a {
+    width: 44px;
+    height: 44px;
+    padding: 0;
   }
 }
 
-@media(orientation:landscape) and (max-height:600px){
-  .runnerHeader{
-    height:46px;
-    min-height:46px;
-    padding:4px 7px;
+@media (max-width: 700px) {
+  .runnerPage {
+    gap: 0;
+    padding: 0;
   }
-  .rotateNotice{display:none}
-  .runnerHeader h1{font-size:14px}
-  .runnerActions button,.runnerActions a{
-    width:37px;
-    height:37px;
-    min-height:37px;
+
+  .runnerHeader {
+    height: calc(54px + env(safe-area-inset-top));
+    min-height: calc(54px + env(safe-area-inset-top));
+    padding:
+      max(7px, env(safe-area-inset-top))
+      max(9px, env(safe-area-inset-right))
+      7px
+      max(9px, env(safe-area-inset-left));
+    border-bottom: 1px solid rgba(255, 255, 255, 0.12);
+    background: #09111f;
   }
-  .runnerShell:fullscreen .runnerFloatingClose{width:36px;height:36px}
+
+  .runnerHeader h1 {
+    font-size: 15px;
+  }
+
+  .runnerActions {
+    gap: 5px;
+  }
+
+  .runnerShell {
+    width: 100%;
+    border: 0;
+    border-radius: 0;
+    box-shadow: none;
+  }
+
+  .rotateNotice {
+    min-height: 48px;
+    margin: 0;
+    padding:
+      7px
+      max(11px, env(safe-area-inset-right))
+      7px
+      max(11px, env(safe-area-inset-left));
+    border-right: 0;
+    border-left: 0;
+    border-radius: 0;
+  }
+
+  .rotateNotice strong {
+    font-size: 12px;
+  }
+
+  .rotateNotice span {
+    font-size: 11px;
+  }
+
+  .runnerRotateMessage {
+    top: calc(58px + env(safe-area-inset-top));
+  }
+}
+
+@media (orientation: landscape) and (max-height: 700px) {
+  .runnerPage {
+    gap: 0;
+    padding: 0;
+  }
+
+  .runnerHeader {
+    height: calc(46px + env(safe-area-inset-top));
+    min-height: calc(46px + env(safe-area-inset-top));
+    padding:
+      max(2px, env(safe-area-inset-top))
+      max(7px, env(safe-area-inset-right))
+      2px
+      max(7px, env(safe-area-inset-left));
+  }
+
+  .runnerHeader h1 {
+    font-size: 14px;
+  }
+
+  .runnerActions button,
+  .runnerActions a {
+    width: 44px;
+    height: 44px;
+    min-height: 44px;
+    border-radius: 10px;
+  }
+
+  .rotateNotice {
+    display: none;
+  }
+
+  .runnerShell {
+    border: 0;
+    border-radius: 0;
+  }
+
+  .runnerRotateMessage {
+    top: calc(50px + env(safe-area-inset-top));
+    width: min(390px, calc(100% - 18px));
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .runnerPage * {
+    transition: none !important;
+  }
 }

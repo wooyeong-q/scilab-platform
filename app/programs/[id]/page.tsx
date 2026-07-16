@@ -19,12 +19,12 @@ export default async function ProgramPage({params}:{params:Promise<{id:string}>}
     {label:'교사용 안내자료',url:program.guideUrl,icon:<BookOpen size={20}/>},
   ].filter((item)=>item.url);
 
-  return <><Header/><main className="container detailPage">
+  return <><Header/><main id="main-content" className="container detailPage">
     <Link href="/" className="backLink"><ArrowLeft size={17}/> 프로그램 목록</Link>
     <section className="detailHero"><div className="detailIcon">{program.icon}</div><div className="detailCopy"><span>{program.category}</span><h1>{program.title}</h1><p>{program.description}</p></div></section>
     <ProgramInteractions id={program.id} url={program.url} initialViews={program.viewCount} initialLaunches={program.launchCount} initialLikes={program.likeCount}/>
     <section className="detailGrid"><article><School/><span>대상</span><strong>{program.grade}</strong></article><article><Clock3/><span>예상 시간</span><strong>{program.duration}</strong></article><article><MonitorPlay/><span>활동 형태</span><strong>{program.format}</strong></article></section>
     <section className="detailSection"><h2>핵심어</h2><div className="detailTags">{program.tags.map((tag)=><span key={tag}>{tag}</span>)}</div></section>
-    <section className="detailSection"><h2>수업 자료</h2>{resources.length===0?<p style={{color:'#667085'}}>아직 연결된 활동지나 수업 자료가 없습니다.</p>:<div style={{display:'grid',gridTemplateColumns:'repeat(auto-fit,minmax(190px,1fr))',gap:12}}>{resources.map((item)=><a key={item.label} href={item.url} target="_blank" rel="noreferrer" style={{display:'flex',alignItems:'center',gap:10,padding:16,border:'1px solid #e7e9f0',borderRadius:14,fontWeight:800}}>{item.icon}{item.label}</a>)}</div>}</section>
+    <section className="detailSection"><h2>수업 자료</h2>{resources.length===0?<p className="mutedText">아직 연결된 활동지나 수업 자료가 없습니다.</p>:<div className="resourceGrid">{resources.map((item)=><a className="resourceCard" key={item.label} href={item.url} target="_blank" rel="noreferrer">{item.icon}<span>{item.label}</span></a>)}</div>}</section>
   </main></>;
 }
