@@ -5,6 +5,8 @@ const connectionString = process.env.DATABASE_URL;
 const sql = connectionString ? neon(connectionString) : null;
 let initialized = false;
 
+const EARTHQUAKE_VOLCANO_APP_URL = 'https://script.google.com/macros/s/AKfycbyJAglKqDB04gZ20gPhuc3SrqkGtm22jqyItmb_sfXuCspNlN718qgF9aUvPcm8H4so/exec';
+
 export type Submission = {
   id:string; title:string; author:string; url:string; category:string; grade:string; summary:string; tags:string[];
   duration:string; standard:string; thumbnailUrl:string; worksheetUrl:string; pptUrl:string; videoUrl:string; sourceUrl:string; guideUrl:string;
@@ -59,6 +61,7 @@ export async function ensureDatabase(){
     sql`ALTER TABLE submissions ADD COLUMN IF NOT EXISTS source_url TEXT NOT NULL DEFAULT ''`,
     sql`ALTER TABLE submissions ADD COLUMN IF NOT EXISTS guide_url TEXT NOT NULL DEFAULT ''`
   ]) await statement;
+  await sql`UPDATE programs SET url=${EARTHQUAKE_VOLCANO_APP_URL}, updated_at=NOW() WHERE id='gas-learning-app' AND url<>${EARTHQUAKE_VOLCANO_APP_URL}`;
   initialized=true;
 }
 
