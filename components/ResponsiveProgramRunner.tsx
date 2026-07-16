@@ -4,22 +4,62 @@ import { useEffect, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { ExternalLink, Maximize2, RotateCcw, X } from 'lucide-react';
 
+type LockableScreen = Screen & {
+  orientation?: {
+    lock?: (orientation: string) => Promise<void>;
+  };
+};
+
 export function ResponsiveProgramRunner({title,url,programId}:{title:string;url:string;programId:string}){
   const shellRef=useRef<HTMLDivElement>(null);
   const router=useRouter();
   const [portrait,setPortrait]=useState(false);
   const [loaded,setLoaded]=useState(false);
+  const [rotateMessage,setRotateMessage]=useState('');
 
   useEffect(()=>{
     const update=()=>setPortrait(window.innerWidth<720&&window.innerHeight>window.innerWidth);
-    update();window.addEventListener('resize',update);
-    return()=>window.removeEventListener('resize',update);
+    update();
+    window.addEventListener('resize',update);
+    window.addEventListener('orientationchange',update);
+    return()=>{
+      window.removeEventListener('resize',update);
+      window.removeEventListener('orientationchange',update);
+    };
   },[]);
 
   async function fullscreen(){
     const element=shellRef.current;
     if(!element)return;
-    try{if(document.fullscreenElement)await document.exitFullscreen();else await element.requestFullscreen();}catch{}
+    try{
+      if(document.fullscreenElement)await document.exitFullscreen();
+      else await element.requestFullscreen();
+    }catch{
+      setRotateMessage('이 브라우저에서는 전체 화면 실행이 제한되어 있어요.');
+    }
+  }
+
+  async function requestLandscape(){
+    const element=shellRef.current;
+    let locked=false;
+
+    try{
+      if(element?.requestFullscreen&&!document.fullscreenElement){
+        await element.requestFullscreen();
+      }
+      const orientation=(window.screen as LockableScreen).orientation;
+      if(orientation?.lock){
+        await orientation.lock('landscape');
+        locked=true;
+      }
+    }catch{
+      locked=false;
+    }
+
+    if(!locked){
+      setRotateMessage('자동 회전이 제한되어 있어요. 화면 회전 잠금을 끄고 휴대폰을 옆으로 돌려 주세요.');
+      window.setTimeout(()=>setRotateMessage(''),4200);
+    }
   }
 
   async function closeRunner(){
@@ -29,16 +69,19 @@ export function ResponsiveProgramRunner({title,url,programId}:{title:string;url:
 
   return <main className="runnerPage">
     <header className="runnerHeader">
-      <div><span>MOBILE RUN MODE</span><h1>{title}</h1></div>
+      <div className="runnerTitleBlock"><span>PROGRAM</span><h1>{title}</h1></div>
       <div className="runnerActions">
-        <button type="button" onClick={fullscreen}><Maximize2 size={17}/> 전체 화면</button>
-        <a href={url} target="_blank" rel="noreferrer"><ExternalLink size={17}/> 원본 열기</a>
-        <button type="button" className="runnerCloseAction" onClick={closeRunner}><X size={18}/> 닫기</button>
+        <button type="button" onClick={fullscreen} aria-label="전체 화면" title="전체 화면"><Maximize2 size={18}/><span className="runnerActionLabel">전체 화면</span></button>
+        <a href={url} target="_blank" rel="noreferrer" aria-label="원본 열기" title="원본 열기"><ExternalLink size={18}/><span className="runnerActionLabel">원본 열기</span></a>
+        <button type="button" className="runnerCloseAction" onClick={closeRunner} aria-label="닫기" title="닫기"><X size={19}/><span className="runnerActionLabel">닫기</span></button>
       </div>
     </header>
-    {portrait&&<div className="rotateNotice"><RotateCcw size={20}/><div><strong>가로 모드를 권장해요.</strong><span>실험 공간이 넓어져 조작하기 편합니다.</span></div></div>}
+    {portrait&&<button type="button" className="rotateNotice" onClick={requestLandscape}>
+      <RotateCcw size={18}/><div><strong>가로로 보기</strong><span>눌러서 전체화면·가로모드를 시도합니다.</span></div>
+    </button>}
+    {rotateMessage&&<div className="runnerRotateMessage" role="status">{rotateMessage}</div>}
     <div className="runnerShell" ref={shellRef}>
-      <button type="button" className="runnerFloatingClose" onClick={closeRunner} aria-label="프로그램 닫기" title="프로그램 닫기"><X size={24}/></button>
+      <button type="button" className="runnerFloatingClose" onClick={closeRunner} aria-label="프로그램 닫기" title="프로그램 닫기"><X size={21}/></button>
       {!loaded&&<div className="runnerLoading">프로그램을 불러오는 중입니다.</div>}
       <iframe src={url} title={title} onLoad={()=>setLoaded(true)} allow="fullscreen; clipboard-read; clipboard-write" />
     </div>
