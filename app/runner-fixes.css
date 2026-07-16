@@ -1,0 +1,69 @@
+/* Program runner layout fixes */
+.runnerPage{
+  padding:6px 8px;
+  gap:6px;
+}
+
+.runnerHeader,
+.runnerShell,
+.rotateNotice,
+.runnerHelp{
+  max-width:none;
+}
+
+.runnerHeader{
+  height:50px;
+  min-height:50px;
+}
+
+.runnerHeader .runnerTitleBlock>span{
+  display:none;
+}
+
+.runnerHeader h1{
+  margin:0;
+  font-size:18px;
+  line-height:1.15;
+}
+
+.runnerActions button,
+.runnerActions a{
+  min-height:40px;
+  padding:8px 10px;
+}
+
+.runnerShell{
+  border-radius:14px;
+}
+
+/* The second close button is useful only while the iframe shell is fullscreen. */
+.runnerFloatingClose{
+  display:none;
+}
+
+.runnerShell:fullscreen .runnerFloatingClose{
+  display:grid;
+}
+
+.runnerHelp{
+  display:none;
+}
+
+@media(max-width:700px){
+  .runnerPage{
+    padding:0;
+    gap:0;
+  }
+
+  .runnerHeader{
+    height:52px;
+    min-height:52px;
+  }
+}
+
+@media(orientation:landscape) and (max-height:600px){
+  .runnerHeader{
+    height:42px;
+    min-height:42px;
+  }
+}
