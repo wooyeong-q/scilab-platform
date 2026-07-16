@@ -4,6 +4,7 @@ import './enhancements.css';
 import './responsive.css';
 import './modal-responsive.css';
 import './runner.css';
+import './runner-fixes.css';
 
 export const metadata: Metadata = {
   title: 'SciLab | 과학 학습 프로그램 플랫폼',
