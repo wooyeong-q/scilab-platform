@@ -485,13 +485,13 @@
       .axisLonBottom { bottom: 168px; }
     }
 
-    /* ===== 실제 모바일 반응형 모드 ===== */
+    /* ===== 모바일·태블릿 반응형 모드 ===== */
     .mobilePanelToggle,
     .mobileCoordToggle {
       display: none;
     }
 
-    @media (max-width: 720px) {
+    @media (max-width: 1280px) {
       html, body {
         width: 100%;
         height: 100%;
@@ -809,7 +809,7 @@
       .sessionResultActions .primaryWide { grid-column: auto; }
     }
 
-    @media (max-width: 720px) and (orientation: landscape) and (max-height: 520px) {
+    @media (max-width: 1280px) and (orientation: landscape) and (max-height: 520px) {
       #topPanel {
         max-height: 82dvh;
       }
@@ -1133,7 +1133,7 @@
     const coordPanelEl = document.getElementById('coordPanel');
     const mobilePanelToggle = document.getElementById('mobilePanelToggle');
     const mobileCoordToggle = document.getElementById('mobileCoordToggle');
-    const mobileMedia = window.matchMedia('(max-width: 720px)');
+    const mobileMedia = window.matchMedia('(max-width: 1280px)');
     const sessionGate = document.getElementById('sessionGate');
     const sessionEntry = document.getElementById('sessionEntry');
     const sessionResult = document.getElementById('sessionResult');
