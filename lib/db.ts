@@ -5,7 +5,7 @@ const connectionString = process.env.DATABASE_URL;
 const sql = connectionString ? neon(connectionString) : null;
 let initialized = false;
 
-const EARTHQUAKE_VOLCANO_APP_URL = 'https://script.google.com/macros/s/AKfycbyJAglKqDB04gZ20gPhuc3SrqkGtm22jqyItmb_sfXuCspNlN718qgF9aUvPcm8H4so/exec';
+const EARTHQUAKE_VOLCANO_APP_URL = 'https://scilab-platform.vercel.app/labs/earthquake-volcano/index.html';
 
 export type Submission = {
   id:string; title:string; author:string; url:string; category:string; grade:string; summary:string; tags:string[];
