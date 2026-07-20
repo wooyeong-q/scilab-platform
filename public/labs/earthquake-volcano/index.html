@@ -208,6 +208,12 @@
       gap: 8px;
       flex-wrap: wrap;
     }
+    .mobileToolsBtn { display: none; }
+    .mapToolsMenu {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
     .toolbarBtn {
       width: auto;
       margin: 0;
@@ -220,15 +226,11 @@
       box-shadow: 0 2px 8px rgba(15,23,42,.1);
     }
     .teacherResetTiny {
-      position: absolute;
-      right: 12px;
-      top: 12px;
-      z-index: 25;
       width: auto;
       margin: 0;
-      padding: 6px 10px;
-      font-size: 12px;
-      border-radius: 999px;
+      padding: 8px 10px;
+      font-size: 13px;
+      border-radius: 9px;
       background: rgba(255,255,255,.92);
       color: #991b1b;
       border: 1px solid #fca5a5;
@@ -518,6 +520,13 @@
         overflow-y: auto;
         overscroll-behavior: contain;
         scrollbar-width: none;
+        transform: translateY(var(--mission-drag-y, 0px));
+        transition: transform .18s ease, max-height .18s ease;
+      }
+
+      #topPanel.sheet-dragging,
+      #coordPanel.sheet-dragging {
+        transition: none !important;
       }
 
       #topPanel::-webkit-scrollbar {
@@ -560,9 +569,24 @@
       }
 
       .mobilePanelToggle {
+        gap: 6px;
+        min-height: 40px;
+        padding: 8px 10px;
         background: #e8f0ff;
         color: #1d4ed8;
         border: 1px solid #bfdbfe;
+        touch-action: none;
+      }
+
+      .sheetChevron {
+        display: inline-block;
+        font-size: 17px;
+        line-height: 1;
+        transition: transform .18s ease;
+      }
+
+      #topPanel.mobile-open .mobilePanelToggle .sheetChevron {
+        transform: rotate(180deg);
       }
 
       #topPanel .missionControls,
@@ -598,6 +622,10 @@
         grid-template-columns: 1fr 1fr !important;
       }
 
+      #refreshBtn {
+        display: none;
+      }
+
       #status {
         grid-column: 1 / -1 !important;
         font-size: 12px;
@@ -618,34 +646,67 @@
       #mapToolbar {
         top: 8px;
         left: 8px;
-        right: 92px;
-        display: grid;
-        grid-template-columns: repeat(2, minmax(0, 1fr));
-        gap: 6px;
+        right: auto;
+        display: block;
       }
 
-      .toolbarBtn {
+      .mobileToolsBtn {
+        display: inline-flex;
+        align-items: center;
+        gap: 7px;
         min-width: 0;
-        min-height: 42px;
-        padding: 6px 7px;
-        font-size: 12px;
-        line-height: 1.15;
-        white-space: normal;
+        min-height: 44px;
+        padding: 8px 12px;
+        border-radius: 13px;
+        font-size: 13px;
       }
 
-      .teacherResetTiny {
-        top: 8px;
-        right: 8px;
-        min-height: 42px;
-        padding: 6px 8px;
-        font-size: 11px;
+      .mobileToolsDots {
+        font-size: 21px;
+        line-height: .7;
+      }
+
+      .mapToolsMenu {
+        position: absolute;
+        top: calc(100% + 7px);
+        left: 0;
+        display: none;
+        width: min(240px, calc(100vw - 16px));
+        padding: 8px;
+        grid-template-columns: 1fr 1fr;
+        gap: 7px;
+        border: 1px solid #dbe3f1;
+        border-radius: 15px;
+        background: rgba(255,255,255,.97);
+        box-shadow: 0 12px 30px rgba(15,23,42,.2);
+        backdrop-filter: blur(12px);
+      }
+
+      #mapToolbar.tools-open .mapToolsMenu {
+        display: grid;
+      }
+
+      .mapToolsMenu .toolbarBtn,
+      .mapToolsMenu .teacherResetTiny {
+        width: 100%;
+        min-width: 0;
+        min-height: 44px;
+        padding: 8px;
+        font-size: 13px;
+        line-height: 1.2;
+        white-space: normal;
+        box-shadow: none;
+      }
+
+      .mapToolsMenu .teacherResetTiny {
+        grid-column: 1 / -1;
       }
 
       #coordPanel {
         left: 6px;
         right: 6px;
         bottom: max(6px, env(safe-area-inset-bottom));
-        transform: none;
+        transform: translateY(var(--sheet-drag-y, 0px));
         width: auto;
         grid-template-columns: 1fr;
         gap: 8px;
@@ -654,13 +715,13 @@
         overflow-y: auto;
         overscroll-behavior: contain;
         border-radius: 16px;
-        transition: max-height .18s ease, padding .18s ease;
+        transition: transform .18s ease, max-height .18s ease, padding .18s ease;
       }
 
       #coordPanel.mobile-collapsed {
-        max-height: 56px;
+        max-height: 64px;
         overflow: hidden;
-        padding: 6px 8px;
+        padding: 5px 8px 7px;
       }
 
       #coordPanel.mobile-collapsed > div,
@@ -672,9 +733,38 @@
         width: 100%;
         grid-column: 1 / -1;
         order: -1;
+        display: grid;
+        grid-template-columns: 1fr auto;
+        grid-template-rows: 7px auto;
+        gap: 4px 8px;
+        min-height: 52px;
+        padding: 5px 12px 9px;
         background: #0f172a;
         color: white;
         border: 0;
+        touch-action: none;
+      }
+
+      .sheetGrip {
+        grid-column: 1 / -1;
+        justify-self: center;
+        width: 42px;
+        height: 5px;
+        border-radius: 999px;
+        background: rgba(255,255,255,.5);
+      }
+
+      .mobileCoordLabel {
+        justify-self: center;
+        padding-left: 22px;
+      }
+
+      .mobileCoordToggle .sheetChevron {
+        align-self: center;
+      }
+
+      #coordPanel:not(.mobile-collapsed) .mobileCoordToggle .sheetChevron {
+        transform: rotate(180deg);
       }
 
       .manualInputPanel {
@@ -781,19 +871,6 @@
         font-size: 17px;
       }
 
-      #mapToolbar {
-        right: 84px;
-      }
-
-      .toolbarBtn {
-        font-size: 11px;
-      }
-
-      .teacherResetTiny {
-        width: 72px;
-        font-size: 10px;
-      }
-
       #coordPanel {
         left: 4px;
         right: 4px;
@@ -832,19 +909,14 @@
       }
 
       #coordPanel.mobile-collapsed {
-        max-height: 48px;
+        max-height: 60px;
       }
 
       .mobileCoordToggle {
-        min-height: 38px;
+        min-height: 48px;
       }
 
-      #mapToolbar {
-        grid-template-columns: repeat(4, minmax(0, 1fr));
-        right: 84px;
-      }
-
-      .toolbarBtn {
+      .mobileToolsBtn {
         min-height: 38px;
       }
     }
@@ -909,7 +981,9 @@
       <div class="titleBlock">
         <h1>지진·화산 좌표 사냥</h1>
         <p class="subtitle">자료를 고르면 점선이 나타납니다. 지도 클릭 또는 아래 위도·경도 입력으로 위치를 찾아 보세요.</p>
-        <button id="mobilePanelToggle" class="mobilePanelToggle" type="button" aria-expanded="false">미션 열기</button>
+        <button id="mobilePanelToggle" class="mobilePanelToggle" type="button" aria-expanded="false" aria-label="미션 열기">
+          <span>미션</span><span class="sheetChevron" aria-hidden="true">⌄</span>
+        </button>
       </div>
 
       <div class="missionControls">
@@ -936,18 +1010,23 @@
         <button id="refreshBtn" class="secondary">새로고침</button>
         <button id="showAllBtn" class="secondary" title="교사용 키 필요">전체 점 보기</button>
         <button id="sessionBtn" class="secondary">수업 코드</button>
-        <div id="status">저장된 점: 0개<br>3초마다 자동 업데이트</div>
+        <div id="status">점 0개 · 자동 업데이트</div>
       </div>
     </header>
 
     <main id="mapWrap">
       <div id="mapToolbar">
-        <button class="toolbarBtn" id="zoomInBtn">＋ 확대</button>
-        <button class="toolbarBtn" id="zoomOutBtn">－ 축소</button>
-        <button class="toolbarBtn" id="resetBtn">전체 지도</button>
-        <button class="toolbarBtn" id="plateBtn">판 경계 사진 보기</button>
+        <button id="mobileToolsBtn" class="toolbarBtn mobileToolsBtn" type="button" aria-expanded="false" aria-controls="mapToolsMenu">
+          <span class="mobileToolsDots" aria-hidden="true">•••</span><span>지도 도구</span>
+        </button>
+        <div id="mapToolsMenu" class="mapToolsMenu" role="group" aria-label="지도 도구">
+          <button class="toolbarBtn" id="zoomInBtn">＋ 확대</button>
+          <button class="toolbarBtn" id="zoomOutBtn">－ 축소</button>
+          <button class="toolbarBtn" id="resetBtn">전체 지도</button>
+          <button class="toolbarBtn" id="plateBtn">판 경계 보기</button>
+          <button class="teacherResetTiny" id="clearBtn" title="교사용: 저장된 점 모두 삭제">점 초기화</button>
+        </div>
       </div>
-      <button class="teacherResetTiny" id="clearBtn" title="교사용: 저장된 점 모두 삭제">점 초기화</button>
 
       <div id="axisOverlay"></div>
       <svg id="world" viewBox="0 0 1200 600" preserveAspectRatio="xMidYMid meet" aria-label="세계지도">
@@ -1047,7 +1126,11 @@
       </svg>
 
       <section id="coordPanel">
-        <button id="mobileCoordToggle" class="mobileCoordToggle" type="button" aria-expanded="false">좌표 입력 열기</button>
+        <button id="mobileCoordToggle" class="mobileCoordToggle" type="button" aria-expanded="false" aria-label="좌표 입력 열기">
+          <span class="sheetGrip" aria-hidden="true"></span>
+          <span class="mobileCoordLabel">좌표 입력</span>
+          <span class="sheetChevron" aria-hidden="true">⌃</span>
+        </button>
         <div>
           <div class="manualInputPanel">
             <div>
@@ -1070,13 +1153,13 @@
               <label for="manualName">이름 또는 지역</label>
               <input id="manualName" type="text" placeholder="예: 직접 입력 지점">
             </div>
-            <button id="manualCoordBtn" type="button">입력 좌표 표시</button>
+            <button id="manualCoordBtn" type="button">좌표 표시</button>
           </div>
           <div id="chosenLocation"></div>
         </div>
         <div class="coordBtns">
-          <button id="saveBtn" disabled>위치 저장</button>
-          <button id="cancelBtn" class="secondary">선택 취소</button>
+          <button id="saveBtn" disabled>저장</button>
+          <button id="cancelBtn" class="secondary">취소</button>
         </div>
       </section>
       <div id="pointPopup" class="pointPopup hidden" aria-label="저장된 점 정보">
@@ -1133,6 +1216,9 @@
     const coordPanelEl = document.getElementById('coordPanel');
     const mobilePanelToggle = document.getElementById('mobilePanelToggle');
     const mobileCoordToggle = document.getElementById('mobileCoordToggle');
+    const mapToolbarEl = document.getElementById('mapToolbar');
+    const mobileToolsBtn = document.getElementById('mobileToolsBtn');
+    const mapToolsMenu = document.getElementById('mapToolsMenu');
     const mobileMedia = window.matchMedia('(max-width: 1280px)');
     const sessionGate = document.getElementById('sessionGate');
     const sessionEntry = document.getElementById('sessionEntry');
@@ -1321,23 +1407,38 @@
       return mobileMedia.matches;
     }
 
+    function updateMissionToggle(open) {
+      mobilePanelToggle.setAttribute('aria-expanded', String(open));
+      mobilePanelToggle.setAttribute('aria-label', open ? '미션 닫기' : '미션 열기');
+    }
+
+    function updateCoordToggle(open) {
+      mobileCoordToggle.setAttribute('aria-expanded', String(open));
+      mobileCoordToggle.setAttribute('aria-label', open ? '좌표 입력 닫기' : '좌표 입력 열기');
+    }
+
+    function setMapToolsOpen(open) {
+      const next = isMobileLayout() && open;
+      mapToolbarEl.classList.toggle('tools-open', next);
+      mobileToolsBtn.setAttribute('aria-expanded', String(next));
+      mobileToolsBtn.setAttribute('aria-label', next ? '지도 도구 닫기' : '지도 도구 열기');
+    }
+
     function refreshMobileLayout() {
       if (!isMobileLayout()) {
         topPanelEl.classList.remove('mobile-open');
         coordPanelEl.classList.remove('mobile-collapsed');
-        mobilePanelToggle.setAttribute('aria-expanded', 'false');
-        mobilePanelToggle.textContent = '미션 열기';
-        mobileCoordToggle.setAttribute('aria-expanded', 'true');
-        mobileCoordToggle.textContent = '좌표 입력 닫기';
+        delete coordPanelEl.dataset.mobileReady;
+        updateMissionToggle(false);
+        updateCoordToggle(true);
       } else if (!coordPanelEl.dataset.mobileReady) {
         topPanelEl.classList.remove('mobile-open');
         coordPanelEl.classList.add('mobile-collapsed');
         coordPanelEl.dataset.mobileReady = '1';
-        mobilePanelToggle.setAttribute('aria-expanded', 'false');
-        mobilePanelToggle.textContent = '미션 열기';
-        mobileCoordToggle.setAttribute('aria-expanded', 'false');
-        mobileCoordToggle.textContent = '좌표 입력 열기';
+        updateMissionToggle(false);
+        updateCoordToggle(false);
       }
+      setMapToolsOpen(false);
       requestAnimationFrame(() => {
         applyView();
         positionPointPopup();
@@ -1346,9 +1447,10 @@
 
     function setMissionPanel(open) {
       if (!isMobileLayout()) return;
+      topPanelEl.style.removeProperty('--mission-drag-y');
       topPanelEl.classList.toggle('mobile-open', open);
-      mobilePanelToggle.setAttribute('aria-expanded', String(open));
-      mobilePanelToggle.textContent = open ? '미션 닫기' : '미션 열기';
+      updateMissionToggle(open);
+      setMapToolsOpen(false);
       if (open) setCoordPanel(false);
       setTimeout(() => {
         applyView();
@@ -1358,18 +1460,66 @@
 
     function setCoordPanel(open) {
       if (!isMobileLayout()) return;
+      coordPanelEl.style.removeProperty('--sheet-drag-y');
       coordPanelEl.classList.toggle('mobile-collapsed', !open);
-      mobileCoordToggle.setAttribute('aria-expanded', String(open));
-      mobileCoordToggle.textContent = open ? '좌표 입력 닫기' : '좌표 입력 열기';
+      updateCoordToggle(open);
+      setMapToolsOpen(false);
       if (open) {
         topPanelEl.classList.remove('mobile-open');
-        mobilePanelToggle.setAttribute('aria-expanded', 'false');
-        mobilePanelToggle.textContent = '미션 열기';
+        updateMissionToggle(false);
       }
       setTimeout(() => {
         applyView();
         positionPointPopup();
       }, 190);
+    }
+
+    function bindVerticalSwipeDismiss({ handle, target, cssProperty, direction, isOpen, onDismiss }) {
+      let pointerId = null;
+      let startY = 0;
+      let lastOffset = 0;
+      let moved = false;
+
+      function reset() {
+        target.classList.remove('sheet-dragging');
+        target.style.removeProperty(cssProperty);
+        pointerId = null;
+        lastOffset = 0;
+      }
+
+      handle.addEventListener('pointerdown', (event) => {
+        if (!isMobileLayout() || !isOpen()) return;
+        pointerId = event.pointerId;
+        startY = event.clientY;
+        lastOffset = 0;
+        moved = false;
+        try { handle.setPointerCapture(pointerId); } catch {}
+      });
+
+      handle.addEventListener('pointermove', (event) => {
+        if (event.pointerId !== pointerId) return;
+        const raw = event.clientY - startY;
+        lastOffset = direction === 'down' ? Math.max(0, raw) : Math.min(0, raw);
+        if (Math.abs(lastOffset) < 4) return;
+        moved = true;
+        target.classList.add('sheet-dragging');
+        target.style.setProperty(cssProperty, `${lastOffset}px`);
+        event.preventDefault();
+      });
+
+      function finish(event, allowDismiss) {
+        if (event.pointerId !== pointerId) return;
+        const shouldDismiss = allowDismiss && (direction === 'down' ? lastOffset > 54 : lastOffset < -54);
+        if (moved) {
+          handle.dataset.swiped = '1';
+          window.setTimeout(() => { delete handle.dataset.swiped; }, 280);
+        }
+        reset();
+        if (shouldDismiss) onDismiss();
+      }
+
+      handle.addEventListener('pointerup', (event) => finish(event, true));
+      handle.addEventListener('pointercancel', (event) => finish(event, false));
     }
 
     function normalizeLng(lng) {
@@ -1910,7 +2060,7 @@
 
       isSaving = true;
       saveBtn.disabled = true;
-      saveBtn.textContent = '저장 중...';
+      saveBtn.textContent = '저장 중';
 
       try {
         if (!activeSession) throw new Error('먼저 수업 코드로 참여해 주세요.');
@@ -1926,7 +2076,7 @@
         alert('저장 실패: ' + (error.message || error));
       } finally {
         isSaving = false;
-        saveBtn.textContent = '위치 저장';
+        saveBtn.textContent = '저장';
       }
     });
 
@@ -2085,7 +2235,7 @@
       if (activePoint && !latestPoints.some((p) => String(p.id) === String(activePoint.id))) {
         closePointPopup();
       }
-      statusEl.innerHTML = `저장된 점: ${latestPoints.length}개<br>마지막 업데이트: ${new Date().toLocaleTimeString('ko-KR')}`;
+      statusEl.textContent = `점 ${latestPoints.length}개 · ${new Date().toLocaleTimeString('ko-KR', { hour: 'numeric', minute: '2-digit' })}`;
     }
 
     async function loadPoints() {
@@ -2129,12 +2279,46 @@
       }
     });
 
+    mobileToolsBtn.addEventListener('click', () => {
+      setMapToolsOpen(!mapToolbarEl.classList.contains('tools-open'));
+    });
+
+    mapToolsMenu.addEventListener('click', (event) => {
+      if (isMobileLayout() && event.target.closest('button')) setMapToolsOpen(false);
+    });
+
+    document.addEventListener('pointerdown', (event) => {
+      if (isMobileLayout() && mapToolbarEl.classList.contains('tools-open') && !mapToolbarEl.contains(event.target)) {
+        setMapToolsOpen(false);
+      }
+    });
+
     mobilePanelToggle.addEventListener('click', () => {
+      if (mobilePanelToggle.dataset.swiped) return;
       setMissionPanel(!topPanelEl.classList.contains('mobile-open'));
     });
 
     mobileCoordToggle.addEventListener('click', () => {
+      if (mobileCoordToggle.dataset.swiped) return;
       setCoordPanel(coordPanelEl.classList.contains('mobile-collapsed'));
+    });
+
+    bindVerticalSwipeDismiss({
+      handle: mobilePanelToggle,
+      target: topPanelEl,
+      cssProperty: '--mission-drag-y',
+      direction: 'up',
+      isOpen: () => topPanelEl.classList.contains('mobile-open'),
+      onDismiss: () => setMissionPanel(false)
+    });
+
+    bindVerticalSwipeDismiss({
+      handle: mobileCoordToggle,
+      target: coordPanelEl,
+      cssProperty: '--sheet-drag-y',
+      direction: 'down',
+      isOpen: () => !coordPanelEl.classList.contains('mobile-collapsed'),
+      onDismiss: () => setCoordPanel(false)
     });
 
     targetSelectEl.addEventListener('change', () => {
