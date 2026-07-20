@@ -981,8 +981,8 @@
       <div class="titleBlock">
         <h1>지진·화산 좌표 사냥</h1>
         <p class="subtitle">자료를 고르면 점선이 나타납니다. 지도 클릭 또는 아래 위도·경도 입력으로 위치를 찾아 보세요.</p>
-        <button id="mobilePanelToggle" class="mobilePanelToggle" type="button" aria-expanded="false" aria-label="미션 열기">
-          <span>미션</span><span class="sheetChevron" aria-hidden="true">⌄</span>
+        <button id="mobilePanelToggle" class="mobilePanelToggle" type="button" aria-expanded="false" aria-label="모둠 선택 열기">
+          <span>모둠 선택</span><span class="sheetChevron" aria-hidden="true">⌄</span>
         </button>
       </div>
 
@@ -1409,7 +1409,7 @@
 
     function updateMissionToggle(open) {
       mobilePanelToggle.setAttribute('aria-expanded', String(open));
-      mobilePanelToggle.setAttribute('aria-label', open ? '미션 닫기' : '미션 열기');
+      mobilePanelToggle.setAttribute('aria-label', open ? '모둠 선택 닫기' : '모둠 선택 열기');
     }
 
     function updateCoordToggle(open) {
