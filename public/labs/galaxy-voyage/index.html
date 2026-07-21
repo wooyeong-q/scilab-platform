@@ -53,11 +53,11 @@
     .metaPill strong{font-size:12px;white-space:nowrap}
     .soundButton{width:41px;height:41px;border:1px solid var(--line);border-radius:12px;background:rgba(13,20,48,.66);color:var(--ink);display:grid;place-items:center;cursor:pointer}
     .viewport{position:absolute;inset:72px 0 92px;display:grid;place-items:center;overflow:hidden}
-    .destinationLabel{position:absolute;top:22px;left:50%;transform:translateX(-50%);width:min(520px,calc(100% - 32px));text-align:center;pointer-events:none;text-shadow:0 3px 18px rgba(0,0,0,.8)}
+    .destinationLabel{position:absolute;z-index:10;top:22px;left:50%;transform:translateX(-50%);width:min(520px,calc(100% - 32px));text-align:center;pointer-events:none;text-shadow:0 3px 18px rgba(0,0,0,.8)}
     .destinationLabel span{display:block;color:var(--cyan);font-size:10px;font-weight:950;letter-spacing:.2em}
     .destinationLabel h1{margin:5px 0 0;font-size:clamp(25px,4vw,44px);letter-spacing:-.045em;line-height:1.1}
     .destinationLabel p{margin:7px auto 0;max-width:460px;color:#bdc7e3;font-size:13px;line-height:1.45}
-    .reticle{position:absolute;left:50%;top:50%;width:min(44vw,420px);aspect-ratio:1;transform:translate(-50%,-50%);border:1px solid rgba(98,232,255,.12);border-radius:50%;pointer-events:none;transition:.4s}
+    .reticle{position:absolute;z-index:7;left:50%;top:50%;width:min(44vw,420px);aspect-ratio:1;transform:translate(-50%,-50%);border:1px solid rgba(98,232,255,.12);border-radius:50%;pointer-events:none;transition:.4s}
     .reticle::before,.reticle::after{content:"";position:absolute;left:50%;top:50%;background:rgba(98,232,255,.24);transform:translate(-50%,-50%)}
     .reticle::before{width:calc(100% + 58px);height:1px}
     .reticle::after{width:1px;height:calc(100% + 58px)}
@@ -65,13 +65,13 @@
     .reticle.scanning{border-color:rgba(98,232,255,.65);box-shadow:0 0 46px rgba(98,232,255,.18),inset 0 0 46px rgba(98,232,255,.08)}
     .reticle.scanning .reticleRing{border-color:var(--cyan);animation-duration:1.2s}
     @keyframes spin{to{transform:rotate(360deg)}}
-    .scanLine{position:absolute;left:50%;top:50%;width:min(44vw,420px);height:3px;transform:translate(-50%,-50%) scaleX(0);background:linear-gradient(90deg,transparent,var(--cyan),transparent);box-shadow:0 0 22px var(--cyan);opacity:0;pointer-events:none}
+    .scanLine{position:absolute;z-index:8;left:50%;top:50%;width:min(44vw,420px);height:3px;transform:translate(-50%,-50%) scaleX(0);background:linear-gradient(90deg,transparent,var(--cyan),transparent);box-shadow:0 0 22px var(--cyan);opacity:0;pointer-events:none}
     .scanLine.running{animation:scan 1.65s ease-in-out}
     @keyframes scan{0%{opacity:0;transform:translate(-50%,-220px) scaleX(.15)}20%{opacity:1}80%{opacity:1}100%{opacity:0;transform:translate(-50%,220px) scaleX(1)}}
-    .instrument{position:absolute;left:max(18px,var(--safe-left));bottom:18px;width:210px;padding:11px 13px;border-left:2px solid var(--cyan);background:linear-gradient(90deg,rgba(7,12,32,.78),transparent);display:grid;gap:5px;pointer-events:none}
+    .instrument{position:absolute;z-index:10;left:max(18px,var(--safe-left));bottom:18px;width:210px;padding:11px 13px;border-left:2px solid var(--cyan);background:linear-gradient(90deg,rgba(7,12,32,.78),transparent);display:grid;gap:5px;pointer-events:none}
     .instrumentRow{display:flex;align-items:center;justify-content:space-between;gap:10px;color:#aab7d7;font-size:10px}
     .instrumentRow strong{color:#ecf8ff;font-size:11px}
-    .simNotice{position:absolute;right:max(18px,var(--safe-right));bottom:18px;max-width:260px;color:#8997bb;font-size:10px;line-height:1.45;text-align:right;pointer-events:none}
+    .simNotice{position:absolute;z-index:10;right:max(18px,var(--safe-right));bottom:18px;max-width:260px;color:#8997bb;font-size:10px;line-height:1.45;text-align:right;pointer-events:none}
     .solarTargets{position:absolute;inset:0;pointer-events:none}
     .solarTarget{position:absolute;width:46px;height:46px;border:1px solid rgba(98,232,255,.65);border-radius:50%;background:rgba(6,14,36,.7);color:#fff;display:none;place-items:center;cursor:pointer;pointer-events:auto;box-shadow:0 0 22px rgba(98,232,255,.2);animation:pulse 1.8s ease-in-out infinite}
     .solarTargets.show .solarTarget{display:grid}
@@ -169,6 +169,7 @@
     .galaxyBeacon{position:absolute;left:50%;top:50%;width:66px;height:66px;margin:-33px 0 0 -33px;border:1px solid rgba(159,183,255,.34);border-radius:50%;background:rgba(6,11,30,.7);color:#fff;display:grid;place-items:center;cursor:pointer;pointer-events:auto;box-shadow:0 10px 30px rgba(0,0,0,.28);transition:border-color .2s,box-shadow .2s,opacity .2s;will-change:transform}
     .galaxyBeacon:hover,.galaxyBeacon:focus-visible,.galaxyBeacon.selected{border-color:var(--cyan);box-shadow:0 0 0 4px rgba(98,232,255,.09),0 0 30px rgba(98,232,255,.28)}
     .galaxyBeacon.visited::after{content:"✓";position:absolute;right:-2px;top:-2px;width:20px;height:20px;border-radius:50%;display:grid;place-items:center;background:var(--green);color:#052019;font-size:11px;font-weight:950;box-shadow:0 0 15px rgba(114,242,190,.42)}
+    .beaconPhoto{width:58px;height:58px;border-radius:50%;object-fit:cover;background:#050817;box-shadow:inset 0 0 0 1px rgba(255,255,255,.1),0 0 20px rgba(99,154,255,.2);filter:saturate(1.08) contrast(1.05)}
     .beaconName{position:absolute;top:72px;left:50%;transform:translateX(-50%);transform-origin:50% 0;width:max-content;max-width:150px;padding:5px 8px;border:1px solid rgba(159,183,255,.18);border-radius:8px;background:rgba(3,6,18,.86);color:#eaf1ff;font-size:10px;font-weight:900;white-space:nowrap;text-shadow:0 2px 8px #000}
     .beaconDistance{display:block;margin-top:2px;color:#8fa1ca;font-size:8px;font-weight:750}
     .miniGalaxy{position:relative;width:42px;height:42px;border-radius:50%;overflow:hidden;filter:saturate(1.15)}
@@ -184,17 +185,21 @@
     .navZoomButton:active{transform:scale(.96)}
     .sourceLink{display:inline-flex;align-items:center;gap:4px;margin-top:9px;color:var(--cyan);font-size:10px;font-weight:850;text-decoration:none}.sourceLink:hover{text-decoration:underline}
     .panelAction{width:100%;min-height:45px;border:1px solid rgba(98,232,255,.3);border-radius:12px;background:rgba(98,232,255,.08);color:#dffaff;font-weight:900;cursor:pointer}
+    .observedGalaxyPhoto{position:absolute;z-index:6;left:50%;top:51%;width:min(67vw,940px);height:min(65vh,650px);margin:0;transform:translate(-50%,-50%);display:grid;place-items:center;pointer-events:none;opacity:1;transition:opacity .32s}
+    .observedGalaxyPhoto[hidden]{display:none}.observedGalaxyPhoto img{display:block;max-width:100%;max-height:100%;object-fit:contain;border-radius:18px;filter:saturate(1.05) contrast(1.04);box-shadow:0 0 70px rgba(86,114,255,.2),0 28px 90px rgba(0,0,0,.48)}
+    .imageProvenance{position:absolute;left:50%;bottom:7px;transform:translateX(-50%);width:max-content;max-width:calc(100vw - 32px);padding:6px 9px;border:1px solid rgba(159,183,255,.2);border-radius:9px;background:rgba(2,5,16,.78);backdrop-filter:blur(10px);color:#c0cae4;font-size:9px;font-weight:750;text-align:center;white-space:nowrap}
+    .imageProvenance a{margin-left:7px;color:var(--cyan);text-decoration:none;pointer-events:auto}.imageProvenance a:hover{text-decoration:underline}
     .classifyCard{width:min(980px,calc(100% - 30px));max-height:calc(100dvh - 30px);overflow:auto;padding:26px;border:1px solid rgba(159,183,255,.25);border-radius:26px;background:linear-gradient(150deg,#101735,#060a1d 75%);box-shadow:0 35px 100px rgba(0,0,0,.55)}
     .classifyHeader{display:flex;align-items:flex-start;justify-content:space-between;gap:18px}.classifyHeader h2{margin:5px 0 6px;font-size:30px}.classifyHeader p{margin:0;color:#aeb9d7;font-size:13px;line-height:1.55}.modalClose{width:44px;height:44px;flex:0 0 44px;border:1px solid var(--line);border-radius:13px;background:rgba(255,255,255,.06);color:#fff;font-size:22px;cursor:pointer}
     .classifyProgress{display:flex;align-items:center;justify-content:space-between;margin:18px 0 10px;color:#aeb9d7;font-size:11px;font-weight:850}.progressTrack{height:7px;border-radius:999px;background:rgba(255,255,255,.08);overflow:hidden}.progressTrack i{display:block;width:0;height:100%;background:linear-gradient(90deg,var(--cyan),var(--violet));transition:.3s}
     .classificationBoard{display:grid;grid-template-columns:minmax(0,1.15fr) minmax(320px,.85fr);gap:18px;margin-top:17px}
     .sampleArea,.binArea{padding:16px;border:1px solid var(--line);border-radius:18px;background:rgba(5,9,25,.56)}.boardLabel{margin:0 0 12px;color:#8fa1c8;font-size:10px;font-weight:950;letter-spacing:.12em}
     .sampleGrid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
-    .sampleCard{position:relative;min-height:122px;padding:12px;border:1px solid rgba(159,183,255,.22);border-radius:15px;background:rgba(19,28,63,.72);color:#fff;display:grid;place-items:center;gap:8px;cursor:pointer;transition:.2s}.sampleCard:hover,.sampleCard.selected{border-color:var(--cyan);transform:translateY(-2px);box-shadow:0 10px 30px rgba(0,0,0,.25)}.sampleCard.assigned{opacity:.28;pointer-events:none;transform:scale(.96)}.sampleCard.wrong{animation:shake .3s ease}.sampleCard .miniGalaxy{width:64px;height:64px}.sampleCard strong{font-size:11px}.sampleCard small{color:#91a2c7;font-size:9px}
+    .sampleCard{position:relative;min-height:146px;padding:10px;border:1px solid rgba(159,183,255,.22);border-radius:15px;background:rgba(19,28,63,.72);color:#fff;display:grid;place-items:center;gap:7px;cursor:pointer;transition:.2s;overflow:hidden}.sampleCard:hover,.sampleCard.selected{border-color:var(--cyan);transform:translateY(-2px);box-shadow:0 10px 30px rgba(0,0,0,.25)}.sampleCard.assigned{opacity:.28;pointer-events:none;transform:scale(.96)}.sampleCard.wrong{animation:shake .3s ease}.sampleGalaxyPhoto{width:100%;height:88px;border-radius:10px;object-fit:cover;background:#050817}.sampleCard strong{font-size:11px}.sampleCard small{color:#91a2c7;font-size:9px}
     @keyframes shake{25%{transform:translateX(-5px)}50%{transform:translateX(5px)}75%{transform:translateX(-3px)}}
     .classBins{display:grid;gap:9px}.classBin{min-height:84px;padding:12px;border:1px dashed rgba(159,183,255,.3);border-radius:15px;background:rgba(10,16,40,.72);color:#fff;display:grid;grid-template-columns:44px 1fr auto;align-items:center;gap:10px;text-align:left;cursor:pointer}.classBin:hover,.classBin.active{border-color:var(--cyan);background:rgba(98,232,255,.08)}.classBin .miniGalaxy{width:38px;height:38px}.classBin strong{display:block;font-size:13px}.classBin small{display:block;margin-top:3px;color:#91a2c7;font-size:9px;line-height:1.35}.binCount{width:28px;height:28px;border-radius:9px;display:grid;place-items:center;background:rgba(255,255,255,.08);font-size:11px;font-weight:900}
     .classifyHelp{margin:12px 0 0;color:#91a2c7;font-size:10px;line-height:1.5}.classifyResult{display:none;margin-top:16px;padding:16px;border:1px solid rgba(114,242,190,.32);border-radius:16px;background:rgba(114,242,190,.07);color:#dcfff0;line-height:1.6}.classifyResult.show{display:block}.classifyResult strong{color:var(--green)}
-    @media(max-width:700px){.flightStatus{display:none}.galaxyBeacon{width:68px;height:68px;margin:-34px 0 0 -34px}.miniGalaxy{width:39px;height:39px}.beaconName{top:75px;font-size:9px}.navGuide{bottom:9px;width:calc(100% - 24px);justify-content:center;font-size:8px}.navGuide .desktopOnly{display:none}.mapScale{top:62px;right:10px}.navZoomControls{top:105px;right:10px;transform:none;gap:6px}.navZoomButton{min-width:84px;min-height:44px;padding:0 9px;font-size:10px}.classifyCard{width:100%;max-height:100dvh;height:100dvh;border:0;border-radius:0;padding:calc(17px + var(--safe-top)) 14px calc(18px + var(--safe-bottom))}.classifyHeader h2{font-size:23px}.classificationBoard{grid-template-columns:1fr;gap:11px}.sampleArea,.binArea{padding:12px}.sampleGrid{grid-template-columns:repeat(2,1fr);gap:8px}.sampleCard{min-height:104px;padding:9px}.sampleCard .miniGalaxy{width:53px;height:53px}.classBin{min-height:68px;padding:9px}.classifyHelp{display:none}}
+    @media(max-width:700px){.flightStatus{display:none}.galaxyBeacon{width:62px;height:62px;margin:-31px 0 0 -31px}.beaconPhoto{width:54px;height:54px}.miniGalaxy{width:39px;height:39px}.beaconName{top:68px;font-size:9px;opacity:0;transition:opacity .18s}.galaxyBeacon:hover .beaconName,.galaxyBeacon:focus-visible .beaconName,.galaxyBeacon.selected .beaconName{opacity:1}.navGuide{bottom:9px;width:calc(100% - 24px);justify-content:center;font-size:8px}.navGuide .desktopOnly{display:none}.mapScale{top:62px;right:10px}.navZoomControls{top:105px;right:10px;transform:none;gap:6px}.navZoomButton{min-width:84px;min-height:44px;padding:0 9px;font-size:10px}.observedGalaxyPhoto{top:46%;width:94vw;height:50vh}.observedGalaxyPhoto img{border-radius:12px}.imageProvenance{bottom:2px;font-size:8px;white-space:normal}.classifyCard{width:100%;max-height:100dvh;height:100dvh;border:0;border-radius:0;padding:calc(17px + var(--safe-top)) 14px calc(18px + var(--safe-bottom))}.classifyHeader h2{font-size:23px}.classificationBoard{grid-template-columns:1fr;gap:11px}.sampleArea,.binArea{padding:12px}.sampleGrid{grid-template-columns:repeat(2,1fr);gap:8px}.sampleCard{min-height:126px;padding:8px}.sampleGalaxyPhoto{height:72px}.classBin{min-height:68px;padding:9px}.classifyHelp{display:none}}
     @media(orientation:landscape) and (max-height:600px){.navGuide{bottom:7px}.classificationBoard{grid-template-columns:1.2fr .8fr}.classifyCard{padding:14px}.classifyHeader h2{font-size:22px}.sampleCard{min-height:88px}.sampleCard .miniGalaxy{width:47px;height:47px}.classBin{min-height:61px}}
   </style>
 </head>
@@ -212,7 +217,7 @@
       <nav class="flightStatus" aria-label="항해 상태"><span id="mapStatus" class="active">자유 항해</span><span id="observeStatus">은하 관측</span><span id="classStatus">분류 활동</span></nav>
       <div class="shipMeta">
         <div class="metaPill"><span>SHIP</span><strong>은하누리 01</strong></div>
-        <div class="metaPill"><span>VISITED</span><strong id="missionCount">0 / 7</strong></div>
+        <div class="metaPill"><span>VISITED</span><strong id="missionCount">0 / 13</strong></div>
         <button class="soundButton" id="motionButton" type="button" aria-label="움직임 효과 줄이기" aria-pressed="false" title="움직임 효과 줄이기">✦</button>
       </div>
     </header>
@@ -221,6 +226,7 @@
       <div class="destinationLabel"><span id="sectorLabel">FREE NAVIGATION</span><h1 id="destinationName">국부 은하군 항해 지도</h1><p id="destinationSubtitle">마우스나 손가락으로 우주를 움직이고 탐사할 은하를 선택하세요.</p></div>
       <div class="reticle" id="reticle"><div class="reticleRing"></div></div><div class="scanLine" id="scanLine"></div>
       <div class="galaxyBeacons" id="galaxyBeacons" aria-label="탐사할 은하 목록"></div>
+      <figure class="observedGalaxyPhoto" id="observedGalaxyPhoto" hidden><img id="observedGalaxyImage" alt=""><figcaption class="imageProvenance"><span id="imageCredit">NASA/ESA Hubble 관측 이미지</span><a id="imageSource" target="_blank" rel="noreferrer">NASA 원본 ↗</a></figcaption></figure>
       <div class="mapScale" id="mapScale">3D 좌표 X 0 · Y 0 · Z 0</div>
       <div class="navZoomControls" id="navZoomControls" aria-label="3D 전후 이동">
         <button class="navZoomButton" id="moveForwardButton" type="button" aria-label="카메라를 앞으로 이동해 은하를 확대하기">＋ 가까이</button>
@@ -264,10 +270,10 @@
       <p class="modalLead">정해진 순서가 없습니다. 항해 지도에서 실제 은하를 골라 방문하고, 관측한 모양을 근거로 분류 도감을 완성하세요.</p>
       <div class="learningGrid">
         <article class="learningCard"><b>01 · 3D 자유 항해</b><span>PC는 마우스·휠·WASD, 모바일은 드래그·핀치·전후 버튼으로 우주를 이동합니다.</span></article>
-        <article class="learningCard"><b>02 · 실제 은하</b><span>우리은하, 안드로메다, 대마젤란은하, M87 등 일곱 은하를 원하는 순서로 관측합니다.</span></article>
+        <article class="learningCard"><b>02 · 실제 은하</b><span>NASA/Hubble 관측 이미지로 우리은하, M31, M51, M87 등 13개 은하를 원하는 순서로 관측합니다.</span></article>
         <article class="learningCard"><b>03 · 분류 도감</b><span>관측 표본을 나선·타원·불규칙 은하로 직접 끌어 놓거나 선택해 분류합니다.</span></article>
       </div>
-      <p class="modalNotice">중요: 현재 기술로 은하 사이를 이렇게 이동할 수는 없습니다. 거리, 이동 시간, 겉보기 크기는 학습을 위해 크게 압축했으며 은하의 분류와 대략적인 거리는 NASA 자료를 반영했습니다.</p>
+      <p class="modalNotice">중요: 현재 기술로 은하 사이를 이렇게 이동할 수는 없습니다. 거리, 이동 시간, 겉보기 크기는 학습을 위해 크게 압축했습니다. 우리은하 전체는 내부에서 밖을 촬영할 수 없어 NASA의 과학적 복원 이미지를 사용합니다.</p>
       <div class="modalActions"><button class="modalButton primary" id="startButton" type="button">자유 항해 시작</button></div>
     </section>
   </div>
@@ -285,7 +291,7 @@
       <div class="classifyHeader"><div><p class="modalEyebrow">GALAXY CLASSIFICATION LAB</p><h2 id="classifyTitle">은하 분류 도감</h2><p>표본의 전체 모양을 관찰해 알맞은 분류함에 넣으세요. PC에서는 끌어 놓기, 모바일에서는 표본과 분류함을 차례로 누르면 됩니다.</p></div><button class="modalClose" id="closeClassifyButton" type="button" aria-label="분류 활동 닫기">×</button></div>
       <div class="classifyProgress"><span id="classifyProgressText">분류 완료 0 / 6</span><span id="classifyAttempts">비교 횟수 0</span></div><div class="progressTrack"><i id="classifyProgressBar"></i></div>
       <div class="classificationBoard">
-        <section class="sampleArea"><p class="boardLabel">미확인 관측 표본</p><div class="sampleGrid" id="sampleGrid"></div><p class="classifyHelp">표본은 실제 은하 사진이 아니라 형태 분류 연습을 위한 모식도입니다.</p></section>
+        <section class="sampleArea"><p class="boardLabel">미확인 관측 표본</p><div class="sampleGrid" id="sampleGrid"></div><p class="classifyHelp">NASA/Hubble의 실제 관측 이미지입니다. 이름은 숨겨진 채 전체 윤곽과 구조로 분류해 보세요.</p></section>
         <section class="binArea"><p class="boardLabel">은하 분류함</p><div class="classBins" id="classBins"></div></section>
       </div>
       <div class="classifyResult" id="classifyResult"></div>
@@ -365,24 +371,31 @@
     (()=>{
       'use strict';
 
+      const galaxyAsset=key=>`./assets/galaxies/${key}.webp`;
       const galaxies=[
-        {key:'milkyway',name:'우리은하',catalog:'HOME GALAXY',distance:'현재 위치',distanceValue:0,type:'spiral',position:[-26,151,720],scale:1.12,incline:.76,description:'태양계가 속한 원반 모양의 은하입니다. 정면과 옆면을 비교하면 우리은하의 구조를 더 잘 이해할 수 있습니다.',facts:['지름이 10만 광년보다 큰 원반을 가진 나선 은하입니다.','태양계는 은하 중심이 아니라 나선팔의 한 부분에 있습니다.','태양계가 우리은하 중심을 한 바퀴 도는 데 약 2억 4천만 년이 걸립니다.'],source:'https://science.nasa.gov/universe/galaxies/'},
-        {key:'lmc',name:'대마젤란은하',catalog:'LARGE MAGELLANIC CLOUD',distance:'약 16만 광년',distanceValue:160000,type:'irregular',position:[-330,315,980],scale:.86,description:'우리은하 가까이에 있는 위성 은하로, 전체적으로 일정한 나선형이나 타원형을 찾기 어렵습니다.',facts:['우리은하에서 약 16만 광년 떨어진 불규칙 은하입니다.','가스와 먼지가 풍부하고 별이 활발하게 만들어지는 영역이 있습니다.','나선팔이나 매끈한 타원 윤곽보다 불규칙하게 흩어진 구조가 두드러집니다.'],source:'https://science.nasa.gov/asset/hubble/supernova-remnant-n-63a-menagerie/'},
-        {key:'andromeda',name:'안드로메다은하 M31',catalog:'MESSIER 31',distance:'약 250만 광년',distanceValue:2500000,type:'spiral',position:[433,214,1380],scale:1.05,incline:.52,description:'우리은하에서 가장 가까운 거대 은하로, 기울어진 원반과 나선 구조를 관찰할 수 있습니다.',facts:['지구에서 약 250만 광년 떨어진 나선 은하입니다.','우리은하에 가장 가까운 거대 은하입니다.','비스듬히 보이는 원반 안에 중심부와 나선팔 구조가 있습니다.'],source:'https://science.nasa.gov/mission/hubble/science/explore-the-night-sky/hubble-messier-catalog/messier-31/'},
-        {key:'triangulum',name:'삼각형자리은하 M33',catalog:'MESSIER 33',distance:'약 300만 광년',distanceValue:3000000,type:'spiral',position:[622,-503,1750],scale:.82,incline:.84,description:'국부 은하군에서 세 번째로 큰 은하로, 정면에 가까운 방향에서 나선팔이 잘 드러납니다.',facts:['지구에서 약 300만 광년 떨어진 나선 은하입니다.','크기는 우리은하의 약 절반이며 국부 은하군에서 세 번째로 큽니다.','중심에서 바깥으로 휘어져 뻗는 나선팔을 관찰할 수 있습니다.'],source:'https://science.nasa.gov/mission/hubble/science/explore-the-night-sky/hubble-messier-catalog/messier-33/'},
-        {key:'m87',name:'거대 타원 은하 M87',catalog:'MESSIER 87',distance:'약 5,400만 광년',distanceValue:54000000,type:'elliptical',position:[-748,-732,2320],scale:1.08,incline:.68,description:'처녀자리 은하단의 거대한 타원 은하입니다. 뚜렷한 나선팔 없이 매끈한 타원 윤곽이 나타납니다.',facts:['지구에서 약 5,400만 광년 떨어진 거대 타원 은하입니다.','수조 개의 별과 약 1만 5천 개의 구상 성단을 포함합니다.','뚜렷한 원반과 나선팔 대신 둥글고 매끈한 빛의 분포가 나타납니다.'],source:'https://science.nasa.gov/mission/hubble/science/explore-the-night-sky/hubble-messier-catalog/messier-87/'},
-        {key:'m89',name:'타원 은하 M89',catalog:'MESSIER 89',distance:'약 5,500만 광년',distanceValue:55000000,type:'elliptical',position:[96,-1027,2580],scale:.88,incline:.9,description:'거의 구형으로 보이는 타원 은하입니다. 관측 방향에 따라 실제 모양과 겉모양이 다를 수 있음을 보여 줍니다.',facts:['지구에서 약 5,500만 광년 떨어진 타원 은하입니다.','약 1천억 개의 별을 포함하는 것으로 알려져 있습니다.','거의 구형으로 보이지만 관측 방향 때문에 그렇게 보일 가능성도 있습니다.'],source:'https://science.nasa.gov/missions/hubble/hubble-views-a-sphere-of-stars/'},
-        {key:'ddo82',name:'왜소 은하 DDO 82',catalog:'UGC 5692 · DDO 82',distance:'약 1,300만 광년',distanceValue:13000000,type:'irregular',position:[-684,-47,1880],scale:.74,description:'별들이 작고 흐트러진 구름처럼 보이는 왜소 불규칙 은하입니다.',facts:['지구에서 약 1,300만 광년 떨어진 왜소 불규칙 은하입니다.','일정한 전체 윤곽이 뚜렷하지 않고 한쪽으로 흐트러진 모습입니다.','왜소 은하는 수백만 개에서 수십억 개 정도의 별을 포함할 수 있습니다.'],source:'https://science.nasa.gov/missions/hubble/hubble-sees-a-vapor-of-stars/'}
+        {key:'milkyway',name:'우리은하',catalog:'HOME GALAXY',distance:'현재 위치',distanceValue:0,type:'spiral',position:[-26,151,720],scale:1.12,incline:.76,image:galaxyAsset('milkyway'),credit:'NASA/JPL-Caltech 과학 복원 이미지',description:'태양계가 속한 막대 나선 은하입니다. 우리는 은하 안에 있어 전체 모습은 관측 자료를 바탕으로 과학적으로 복원합니다.',facts:['지름이 10만 광년보다 큰 원반을 가진 막대 나선 은하입니다.','태양계는 은하 중심이 아니라 오리온팔 부근에 있습니다.','태양계가 우리은하 중심을 한 바퀴 도는 데 약 2억 4천만 년이 걸립니다.'],source:'https://science.nasa.gov/resource/the-milky-way-galaxy/'},
+        {key:'lmc',name:'대마젤란은하',catalog:'LARGE MAGELLANIC CLOUD',distance:'약 16만 광년',distanceValue:160000,type:'irregular',position:[-330,315,980],scale:.86,image:galaxyAsset('lmc'),credit:'NASA/ESA Hubble 관측 이미지',description:'우리은하 가까이에 있는 위성 은하로, 전체적으로 일정한 나선형이나 타원형을 찾기 어렵습니다.',facts:['우리은하에서 약 16만 광년 떨어진 불규칙 은하입니다.','가스와 먼지가 풍부하고 별이 활발하게 만들어지는 영역이 있습니다.','나선팔이나 매끈한 타원 윤곽보다 불규칙하게 흩어진 구조가 두드러집니다.'],source:'https://science.nasa.gov/asset/hubble/the-large-magellanic-cloud/'},
+        {key:'andromeda',name:'안드로메다은하 M31',catalog:'MESSIER 31',distance:'약 250만 광년',distanceValue:2500000,type:'spiral',position:[433,214,1380],scale:1.05,incline:.52,image:galaxyAsset('andromeda'),credit:'NASA/ESA Hubble 관측 모자이크',description:'우리은하에서 가장 가까운 거대 은하로, 기울어진 원반과 나선 구조를 관찰할 수 있습니다.',facts:['지구에서 약 250만 광년 떨어진 나선 은하입니다.','우리은하에 가장 가까운 거대 은하입니다.','비스듬히 보이는 원반 안에 중심부와 나선팔 구조가 있습니다.'],source:'https://science.nasa.gov/asset/hubble/andromeda-galaxy-m31-mosaic/'},
+        {key:'triangulum',name:'삼각형자리은하 M33',catalog:'MESSIER 33',distance:'약 300만 광년',distanceValue:3000000,type:'spiral',position:[622,-503,1750],scale:.82,incline:.84,image:galaxyAsset('triangulum'),credit:'NASA/ESA Hubble 관측 모자이크',description:'국부 은하군에서 세 번째로 큰 은하로, 정면에 가까운 방향에서 나선팔이 잘 드러납니다.',facts:['지구에서 약 300만 광년 떨어진 나선 은하입니다.','국부 은하군에서 우리은하와 M31 다음으로 큰 은하입니다.','중심에서 바깥으로 휘어져 뻗는 나선팔을 관찰할 수 있습니다.'],source:'https://science.nasa.gov/asset/hubble/triangulum-galaxy-messier-33-m33/'},
+        {key:'m51',name:'소용돌이은하 M51',catalog:'MESSIER 51',distance:'약 3,100만 광년',distanceValue:31000000,type:'spiral',position:[892,792,2100],scale:1.02,incline:.95,image:galaxyAsset('m51'),credit:'NASA/ESA Hubble 관측 이미지',description:'정면에 가까운 방향에서 보이는 대표적인 나선 은하로, 동반 은하와 상호 작용하고 있습니다.',facts:['지구에서 약 3,100만 광년 떨어져 있습니다.','밝은 중심에서 휘어져 나온 두 나선팔이 또렷합니다.','가까운 동반 은하 NGC 5195와의 중력 상호 작용이 별 형성에 영향을 줍니다.'],source:'https://science.nasa.gov/asset/hubble/hubble-acs-visible-image-of-m51/'},
+        {key:'sombrero',name:'솜브레로은하 M104',catalog:'MESSIER 104',distance:'약 2,800만 광년',distanceValue:28000000,type:'spiral',position:[914,-190,2300],scale:.96,incline:.28,image:galaxyAsset('sombrero'),credit:'NASA/ESA Hubble 관측 이미지',description:'거의 옆면으로 보이는 은하로, 밝은 중심 팽대부와 어두운 먼지 띠가 모자처럼 보입니다.',facts:['지구에서 약 2,800만 광년 떨어져 있습니다.','거의 옆면으로 보이는 원반을 어두운 먼지 띠가 가로지릅니다.','관측 방향 때문에 나선팔보다 중심 팽대부와 원반 윤곽이 두드러집니다.'],source:'https://science.nasa.gov/asset/hubble/sombrero-galaxy/'},
+        {key:'ngc1300',name:'막대 나선 은하 NGC 1300',catalog:'NGC 1300',distance:'약 6,900만 광년',distanceValue:69000000,type:'spiral',position:[-216,-365,3000],scale:1.03,incline:.9,image:galaxyAsset('ngc1300'),credit:'NASA/ESA Hubble 관측 이미지',description:'중심을 가로지르는 별의 막대 양끝에서 나선팔이 시작되는 막대 나선 은하입니다.',facts:['지구에서 약 6,900만 광년 떨어져 있습니다.','중심의 긴 막대 구조 양끝에서 나선팔이 휘어져 나옵니다.','우리은하도 중심부에 막대 구조가 있는 것으로 알려져 있습니다.'],source:'https://science.nasa.gov/asset/hubble/barred-spiral-galaxy-ngc-1300/'},
+        {key:'m87',name:'거대 타원 은하 M87',catalog:'MESSIER 87',distance:'약 5,400만 광년',distanceValue:54000000,type:'elliptical',position:[-748,-732,2320],scale:1.08,incline:.68,image:galaxyAsset('m87'),credit:'NASA/ESA Hubble 관측 이미지',description:'처녀자리 은하단의 거대한 타원 은하입니다. 뚜렷한 나선팔 없이 매끈한 타원 윤곽이 나타납니다.',facts:['지구에서 약 5,400만 광년 떨어진 거대 타원 은하입니다.','중심의 초대질량 블랙홀 부근에서 강력한 제트가 뻗어 나옵니다.','뚜렷한 원반과 나선팔 대신 둥글고 매끈한 빛의 분포가 나타납니다.'],source:'https://science.nasa.gov/mission/hubble/science/explore-the-night-sky/hubble-messier-catalog/messier-87/'},
+        {key:'m89',name:'타원 은하 M89',catalog:'MESSIER 89',distance:'약 5,500만 광년',distanceValue:55000000,type:'elliptical',position:[96,-1027,2580],scale:.88,incline:.9,image:galaxyAsset('m89'),credit:'NASA/ESA Hubble 관측 이미지',description:'거의 구형으로 보이는 타원 은하입니다. 관측 방향에 따라 실제 모양과 겉모양이 다를 수 있음을 보여 줍니다.',facts:['지구에서 약 5,500만 광년 떨어진 타원 은하입니다.','약 1천억 개의 별을 포함하는 것으로 알려져 있습니다.','거의 구형으로 보이지만 관측 방향 때문에 그렇게 보일 가능성도 있습니다.'],source:'https://science.nasa.gov/image-detail/m89/'},
+        {key:'ngc1132',name:'타원 은하 NGC 1132',catalog:'NGC 1132',distance:'약 3억 1,800만 광년',distanceValue:318000000,type:'elliptical',position:[1780,270,3000],scale:1.04,incline:.72,image:galaxyAsset('ngc1132'),credit:'NASA/ESA Hubble 관측 이미지',description:'작은 은하 무리가 합쳐진 결과일 가능성이 있는 거대한 타원 은하입니다.',facts:['지구에서 약 3억 1,800만 광년 떨어져 있습니다.','팔 구조 없이 중심에서 바깥으로 매끈하게 흐려집니다.','주변의 많은 왜소 은하와 뜨거운 X선 가스가 관측됩니다.'],source:'https://science.nasa.gov/asset/hubble/elliptical-galaxy-ngc-1132-hubble/'},
+        {key:'ddo82',name:'왜소 은하 DDO 82',catalog:'UGC 5692 · DDO 82',distance:'약 1,300만 광년',distanceValue:13000000,type:'irregular',position:[-684,-47,1880],scale:.74,image:galaxyAsset('ddo82'),credit:'NASA/ESA Hubble 관측 이미지',description:'별들이 작고 흐트러진 구름처럼 보이는 왜소 불규칙 은하입니다.',facts:['지구에서 약 1,300만 광년 떨어진 왜소 불규칙 은하입니다.','일정한 전체 윤곽이 뚜렷하지 않고 한쪽으로 흐트러진 모습입니다.','왜소 은하는 수백만 개에서 수십억 개 정도의 별을 포함할 수 있습니다.'],source:'https://science.nasa.gov/missions/hubble/hubble-sees-a-vapor-of-stars/'},
+        {key:'ngc1427a',name:'왜소 은하 NGC 1427A',catalog:'NGC 1427A',distance:'약 6,200만 광년',distanceValue:62000000,type:'irregular',position:[-1780,-210,2700],scale:.8,image:galaxyAsset('ngc1427a'),credit:'NASA/ESA Hubble 관측 이미지',description:'화로자리 은하단을 지나며 기체가 압축되고 별이 만들어지는 왜소 불규칙 은하입니다.',facts:['지구에서 약 6,200만 광년 떨어져 있습니다.','대칭적인 팔이나 매끈한 타원 윤곽을 찾기 어렵습니다.','화로자리 은하단의 기체와 상호 작용하며 화살촉 같은 비대칭 모양을 보입니다.'],source:'https://science.nasa.gov/asset/hubble/galaxy-ngc-1427a-plunges-toward-the-fornax-galaxy-cluster/'},
+        {key:'ngc4449',name:'왜소 은하 NGC 4449',catalog:'NGC 4449',distance:'약 1,300만 광년',distanceValue:13000000,type:'irregular',position:[-105,-1245,2100],scale:.9,image:galaxyAsset('ngc4449'),credit:'NASA/ESA Hubble 관측 이미지',description:'별 탄생 영역이 불꽃처럼 흩어진 왜소 불규칙 은하입니다.',facts:['지구에서 약 1,300만 광년 떨어져 있습니다.','붉게 빛나는 별 탄생 영역과 푸른 젊은 별 무리가 넓게 흩어져 있습니다.','규칙적인 나선팔보다 비대칭적인 별과 기체 분포가 두드러집니다.'],source:'https://science.nasa.gov/asset/hubble/stellar-fireworks-are-ablaze-in-galaxy-ngc-4449/'}
       ];
       const typeNames={spiral:'나선 은하',elliptical:'타원 은하',irregular:'불규칙 은하'};
       const criteria={spiral:'중심 둘레로 휘어진 팔 구조',elliptical:'팔 없이 매끈한 원·타원 윤곽',irregular:'일정한 전체 모양을 찾기 어려움'};
       const classSamples=[
-        {id:'A',type:'spiral',note:'휘어진 팔이 두드러짐'},
-        {id:'B',type:'elliptical',note:'매끈한 타원 윤곽'},
-        {id:'C',type:'irregular',note:'흩어진 별 무리'},
-        {id:'D',type:'spiral',note:'기울어진 원반과 팔'},
-        {id:'E',type:'irregular',note:'비대칭 덩어리 구조'},
-        {id:'F',type:'elliptical',note:'둥글고 고른 빛 분포'}
+        {id:'A',type:'spiral',image:galaxyAsset('m51'),note:'휘어진 팔이 두드러짐'},
+        {id:'B',type:'elliptical',image:galaxyAsset('m89'),note:'매끈한 타원 윤곽'},
+        {id:'C',type:'irregular',image:galaxyAsset('ngc1427a'),note:'흩어진 별 무리'},
+        {id:'D',type:'spiral',image:galaxyAsset('ngc1300'),note:'막대와 휘어진 팔'},
+        {id:'E',type:'irregular',image:galaxyAsset('ngc4449'),note:'비대칭 덩어리 구조'},
+        {id:'F',type:'elliptical',image:galaxyAsset('ngc1132'),note:'둥글고 고른 빛 분포'}
       ];
 
       const el=id=>document.getElementById(id);
@@ -393,7 +406,8 @@
         facts:el('facts'),choices:el('choiceGrid'),done:el('missionDone'),doneText:el('missionDoneText'),scan:el('scanButton'),warp:el('warpButton'),
         view:el('viewButton'),viewReadout:el('viewReadout'),zoomReadout:el('zoomReadout'),navReadout:el('navReadout'),systemMessage:el('systemMessage'),
         reticle:el('reticle'),scanLine:el('scanLine'),beacons:el('galaxyBeacons'),toast:el('toast'),panel:el('missionPanel'),handle:el('missionHandle'),
-        warpFlash:el('warpFlash'),navGuide:el('navGuide'),mapScale:el('mapScale'),zoomControls:el('navZoomControls'),mapStatus:el('mapStatus'),observeStatus:el('observeStatus'),classStatus:el('classStatus')
+        warpFlash:el('warpFlash'),navGuide:el('navGuide'),mapScale:el('mapScale'),zoomControls:el('navZoomControls'),mapStatus:el('mapStatus'),observeStatus:el('observeStatus'),classStatus:el('classStatus'),
+        observedPhoto:el('observedGalaxyPhoto'),observedImage:el('observedGalaxyImage'),imageCredit:el('imageCredit'),imageSource:el('imageSource')
       };
 
       let mode='map',selectedKey=null,observingKey=null,viewMode='face',scanning=false,warping=false,reduced=false;
@@ -421,10 +435,10 @@
 
       function buildNavigationStars(){
         const rand=seeded(2407),colors=['210,225,255','135,192,255','255,236,202','183,151,255'];
-        for(let i=0;i<720;i++){
+        for(let i=0;i<2000;i++){
           let x=(rand()-.5)*6200,y=(rand()-.5)*4200,z=(rand()-.35)*6200;
           if(Math.hypot(x,y,z)<220)z+=z<0?-320:320;
-          navigationStars.push({position:[x,y,z],size:.7+rand()*2.4,color:colors[Math.floor(rand()*colors.length)],sparkle:rand()>.84});
+          navigationStars.push({position:[x,y,z],size:.55+rand()*2.25,color:colors[Math.floor(rand()*colors.length)],sparkle:rand()>.91});
         }
       }
 
@@ -432,7 +446,7 @@
         const rect=canvas.getBoundingClientRect(),vrect=viewport.getBoundingClientRect();
         width=Math.max(1,rect.width);height=Math.max(1,rect.height);viewWidth=Math.max(1,vrect.width);viewHeight=Math.max(1,vrect.height);
         dpr=Math.min(2,window.devicePixelRatio||1);canvas.width=Math.round(width*dpr);canvas.height=Math.round(height*dpr);ctx.setTransform(dpr,0,0,dpr,0,0);
-        if(!stars.length){for(let i=0;i<300;i++)stars.push({x:(Math.random()-.5)*width*1.9,y:(Math.random()-.5)*height*1.9,z:Math.random()*.95+.05,p:Math.random()*Math.PI*2})}
+        if(!stars.length){for(let i=0;i<420;i++)stars.push({x:(Math.random()-.5)*width*1.9,y:(Math.random()-.5)*height*1.9,z:Math.random()*.95+.05,p:Math.random()*Math.PI*2})}
         updateBeacons();
       }
 
@@ -449,9 +463,10 @@
         ctx.restore();
       }
 
-      function projectWorld(position){
+      function cameraBasis(){return{cy:Math.cos(camera.yaw),sy:Math.sin(camera.yaw),cp:Math.cos(camera.pitch),sp:Math.sin(camera.pitch)}}
+      function projectWorld(position,basis=cameraBasis()){
         const dx=position[0]-camera.x,dy=position[1]-camera.y,dz=position[2]-camera.z;
-        const cy=Math.cos(camera.yaw),sy=Math.sin(camera.yaw),cp=Math.cos(camera.pitch),sp=Math.sin(camera.pitch);
+        const {cy,sy,cp,sp}=basis;
         const x1=cy*dx-sy*dz,z1=sy*dx+cy*dz,y1=cp*dy-sp*z1,z2=sp*dy+cp*z1;
         if(z2<=42)return{x:0,y:0,depth:z2,visible:false};
         const focal=Math.max(240,Math.min(viewWidth,viewHeight)*.92),x=viewWidth/2+x1/z2*focal,y=viewHeight/2-y1/z2*focal;
@@ -459,10 +474,10 @@
       }
 
       function drawNavigationStars(){
-        const ox=(width-viewWidth)/2,oy=(height-viewHeight)/2;
+        const ox=(width-viewWidth)/2,oy=(height-viewHeight)/2,basis=cameraBasis();
         ctx.save();ctx.globalCompositeOperation='lighter';
         for(const star of navigationStars){
-          const point=projectWorld(star.position);if(!point.visible)continue;
+          const point=projectWorld(star.position,basis);if(!point.visible)continue;
           const alpha=clamp(.9-point.depth/7600,.16,.82),size=clamp(star.size*780/point.depth,.5,3.3),x=point.x+ox,y=point.y+oy;
           ctx.strokeStyle=`rgba(${star.color},${alpha})`;ctx.fillStyle=ctx.strokeStyle;
           if(star.sparkle){const arm=Math.max(1.8,size*2.3);ctx.lineWidth=Math.max(.55,size*.42);ctx.beginPath();ctx.moveTo(x-arm,y);ctx.lineTo(x+arm,y);ctx.moveTo(x,y-arm);ctx.lineTo(x,y+arm);ctx.stroke();ctx.beginPath();ctx.arc(x,y,Math.max(.65,size*.52),0,Math.PI*2);ctx.fill()}
@@ -506,12 +521,12 @@
         const delta=Math.min(40,time-(lastFrame||time));lastFrame=time;ctx.clearRect(0,0,width,height);
         if(mode==='map'&&!warping){const move=delta*.19,turn=delta*.0015;if(keys.has('w'))moveCamera(move,false);if(keys.has('s'))moveCamera(-move,false);if(keys.has('a'))strafeCamera(-move,false);if(keys.has('d'))strafeCamera(move,false);if(keys.has('q'))moveVertical(move,false);if(keys.has('e'))moveVertical(-move,false);if(keys.has('arrowleft'))camera.yaw-=turn;if(keys.has('arrowright'))camera.yaw+=turn;if(keys.has('arrowup'))camera.pitch=clamp(camera.pitch+turn,-1.05,1.05);if(keys.has('arrowdown'))camera.pitch=clamp(camera.pitch-turn,-1.05,1.05)}
         look.x+=(targetLook.x-look.x)*.045;look.y+=(targetLook.y-look.y)*.045;warpPower*=.94;drawStars();
-        if(mode==='map'){drawNavigationStars();drawMapGlows();updateBeacons()}else if(observingKey){const galaxy=galaxyByKey(observingKey);if(galaxy.key==='milkyway'&&viewMode==='side')drawEdgeGalaxy();else drawParticleGalaxy(galaxy,time)}
+        if(mode==='map'){drawNavigationStars();drawMapGlows();updateBeacons()}else if(observingKey){const galaxy=galaxyByKey(observingKey);ui.observedPhoto.style.left=`calc(50% + ${look.x*18}px)`;ui.observedPhoto.style.top=`calc(${width<700?46:51}% + ${look.y*12}px)`;if(galaxy.key==='milkyway'&&viewMode==='side')drawEdgeGalaxy();else if(ui.observedPhoto.hidden)drawParticleGalaxy(galaxy,time)}
         requestAnimationFrame(drawScene);
       }
 
       function buildBeacons(){
-        ui.beacons.innerHTML='';galaxies.forEach(galaxy=>{const button=document.createElement('button');button.type='button';button.className='galaxyBeacon';button.dataset.key=galaxy.key;button.setAttribute('aria-label',`${galaxy.name}, ${galaxy.distance}`);button.innerHTML=`<i class="miniGalaxy ${galaxy.type}" aria-hidden="true"></i><span class="beaconName">${galaxy.name}<small class="beaconDistance">${galaxy.distance}</small></span>`;button.addEventListener('pointerdown',event=>event.stopPropagation());button.addEventListener('click',event=>{event.stopPropagation();selectGalaxy(galaxy.key)});ui.beacons.appendChild(button)})
+        ui.beacons.innerHTML='';galaxies.forEach(galaxy=>{const button=document.createElement('button');button.type='button';button.className='galaxyBeacon';button.dataset.key=galaxy.key;button.setAttribute('aria-label',`${galaxy.name}, ${galaxy.distance}`);button.innerHTML=`<img class="beaconPhoto" src="${galaxy.image}" alt="" loading="lazy" decoding="async"><span class="beaconName">${galaxy.name}<small class="beaconDistance">${galaxy.distance}</small></span>`;button.addEventListener('pointerdown',event=>event.stopPropagation());button.addEventListener('click',event=>{event.stopPropagation();selectGalaxy(galaxy.key)});ui.beacons.appendChild(button)})
       }
 
       function projectGalaxy(galaxy){
@@ -519,8 +534,8 @@
       }
 
       function updateBeacons(){
-        [...ui.beacons.children].forEach(button=>{const galaxy=galaxyByKey(button.dataset.key),point=projectGalaxy(galaxy),scale=clamp(900/Math.max(1,point.depth),.65,1.5),label=button.querySelector('.beaconName');button.style.transform=`translate(${point.x-viewWidth/2}px,${point.y-viewHeight/2}px) scale(${scale})`;if(label)label.style.transform=`translateX(-50%) scale(${1/scale})`;button.style.opacity=point.visible?'1':'0';button.style.pointerEvents=point.visible?'auto':'none';button.style.zIndex=String(Math.round(5000-point.depth));button.classList.toggle('selected',selectedKey===galaxy.key);button.classList.toggle('visited',visited.has(galaxy.key))});
-        ui.mapScale.textContent=`3D 좌표 X ${Math.round(camera.x)} · Y ${Math.round(camera.y)} · Z ${Math.round(camera.z)}`;
+        let visibleCount=0;const basis=cameraBasis();[...ui.beacons.children].forEach(button=>{const galaxy=galaxyByKey(button.dataset.key),point=projectWorld(galaxy.position,basis),scale=clamp(900/Math.max(1,point.depth),.65,1.5),label=button.querySelector('.beaconName');if(point.visible)visibleCount++;button.style.transform=`translate(${point.x-viewWidth/2}px,${point.y-viewHeight/2}px) scale(${scale})`;if(label)label.style.transform=`translateX(-50%) scale(${1/scale})`;button.style.opacity=point.visible?'1':'0';button.style.pointerEvents=point.visible?'auto':'none';button.style.zIndex=String(Math.round(5000-point.depth));button.classList.toggle('selected',selectedKey===galaxy.key);button.classList.toggle('visited',visited.has(galaxy.key))});
+        ui.mapScale.textContent=`시야 내 ${visibleCount} / 전체 ${galaxies.length} · X ${Math.round(camera.x)} Y ${Math.round(camera.y)} Z ${Math.round(camera.z)}`;
         if(mode==='map'){ui.zoomReadout.textContent=`Z ${Math.round(camera.z)}`;ui.navReadout.textContent=warping?'항해 중':'3D 자유 항해'}
       }
 
@@ -528,6 +543,12 @@
       function showToast(message,type='good'){clearTimeout(toastTimer);ui.toast.textContent=message;ui.toast.className=`toast show ${type}`;toastTimer=setTimeout(()=>ui.toast.className='toast',2800)}
       function setPanel(open){ui.panel.classList.toggle('collapsed',!open);ui.handle.setAttribute('aria-expanded',String(open))}
       function updateModeStatus(){ui.mapStatus.classList.toggle('active',mode==='map');ui.observeStatus.classList.toggle('active',mode==='observe');ui.classStatus.classList.toggle('active',el('classifyModal').classList.contains('show'))}
+      function renderObservedPhoto(){
+        const galaxy=observingKey?galaxyByKey(observingKey):null,show=mode==='observe'&&galaxy&&!(galaxy.key==='milkyway'&&viewMode==='side');
+        if(!show){ui.observedPhoto.hidden=true;return}
+        if(ui.observedImage.dataset.key!==galaxy.key){ui.observedImage.dataset.key=galaxy.key;ui.observedImage.alt=`${galaxy.name}의 ${galaxy.credit}`;ui.observedImage.src=galaxy.image}
+        ui.imageCredit.textContent=galaxy.credit;ui.imageSource.href=galaxy.source;ui.observedPhoto.hidden=false;
+      }
 
       function renderPanel(){
         ui.choices.innerHTML='';ui.done.classList.remove('show');
@@ -544,7 +565,7 @@
       }
 
       function render(){
-        updateModeStatus();viewport.classList.toggle('mapMode',mode==='map');ui.beacons.hidden=mode!=='map';ui.navGuide.hidden=mode!=='map';ui.mapScale.hidden=mode!=='map';ui.zoomControls.hidden=mode!=='map';ui.reticle.style.opacity=mode==='map'?'.18':'1';
+        updateModeStatus();viewport.classList.toggle('mapMode',mode==='map');ui.beacons.hidden=mode!=='map';ui.navGuide.hidden=mode!=='map';ui.mapScale.hidden=mode!=='map';ui.zoomControls.hidden=mode!=='map';ui.reticle.style.opacity=mode==='map'?'.18':'1';renderObservedPhoto();
         if(mode==='map'){
           const galaxy=selectedKey?galaxyByKey(selectedKey):null;ui.sector.textContent='3D FREE NAVIGATION';ui.name.textContent=galaxy?galaxy.name:'3차원 은하 항해 구역';ui.subtitle.textContent=galaxy?`${galaxy.distance} · 클릭한 목적지`:'별 사이를 이동하며 여러 방향에 있는 은하를 찾아보세요.';ui.view.textContent='⌾ 위치 초기화';ui.view.disabled=warping;ui.scan.textContent=classificationComplete?'▦ 결과 보기':visited.size>=3?'▦ 분류 활동':'▦ 분류 잠김';ui.scan.disabled=visited.size<3||warping;ui.warp.textContent=galaxy?`${galaxy.name}로 항해 ›`:'은하를 선택하세요';ui.warp.disabled=!galaxy||warping;ui.viewReadout.textContent=galaxy?galaxy.name:'선택 없음';ui.navReadout.textContent=warping?'항해 중':'3D 자유 항해';ui.zoomReadout.textContent=`Z ${Math.round(camera.z)}`;ui.systemMessage.textContent=visited.size>=3?'은하 분류 활동을 시작할 수 있습니다.':'은하 세 곳을 관측하면 분류 활동이 열립니다.';
         }else{
@@ -575,7 +596,7 @@
 
       function buildClassification(){
         const grid=el('sampleGrid'),bins=el('classBins');grid.innerHTML='';bins.innerHTML='';
-        classSamples.forEach(sample=>{const button=document.createElement('button');button.type='button';button.className='sampleCard';button.draggable=true;button.dataset.id=sample.id;button.innerHTML=`<i class="miniGalaxy ${sample.type}" aria-hidden="true"></i><strong>관측 표본 ${sample.id}</strong><small>전체 모양을 비교하세요</small>`;button.addEventListener('click',()=>selectSample(sample.id));button.addEventListener('dragstart',event=>{selectedSample=sample.id;event.dataTransfer.setData('text/plain',sample.id);renderClassification()});button.addEventListener('dragend',()=>document.querySelectorAll('.classBin').forEach(bin=>bin.classList.remove('active')));grid.appendChild(button)});
+        classSamples.forEach(sample=>{const button=document.createElement('button');button.type='button';button.className='sampleCard';button.draggable=true;button.dataset.id=sample.id;button.innerHTML=`<img class="sampleGalaxyPhoto" src="${sample.image}" alt="관측 표본 ${sample.id}" loading="lazy" decoding="async"><strong>관측 표본 ${sample.id}</strong><small>전체 모양을 비교하세요</small>`;button.addEventListener('click',()=>selectSample(sample.id));button.addEventListener('dragstart',event=>{selectedSample=sample.id;event.dataTransfer.setData('text/plain',sample.id);renderClassification()});button.addEventListener('dragend',()=>document.querySelectorAll('.classBin').forEach(bin=>bin.classList.remove('active')));grid.appendChild(button)});
         ['spiral','elliptical','irregular'].forEach(type=>{const button=document.createElement('button');button.type='button';button.className='classBin';button.dataset.type=type;button.innerHTML=`<i class="miniGalaxy ${type}" aria-hidden="true"></i><span><strong>${typeNames[type]}</strong><small>${criteria[type]}</small></span><i class="binCount" id="bin-${type}">0</i>`;button.addEventListener('click',()=>assignSample(type));button.addEventListener('dragover',event=>{event.preventDefault();button.classList.add('active')});button.addEventListener('dragleave',()=>button.classList.remove('active'));button.addEventListener('drop',event=>{event.preventDefault();selectedSample=event.dataTransfer.getData('text/plain');button.classList.remove('active');assignSample(type)});bins.appendChild(button)});
         renderClassification();
       }
@@ -629,6 +650,7 @@
       }
 
       ui.view.addEventListener('click',handleView);ui.scan.addEventListener('click',handleScan);ui.warp.addEventListener('click',handleWarp);
+      ui.observedImage.addEventListener('error',()=>{ui.observedPhoto.hidden=true;showToast('관측 이미지를 불러오지 못해 과학 모형으로 표시합니다.','bad')});
       el('startButton').addEventListener('click',()=>{el('introModal').classList.remove('show');render();setPanel(false);showToast('자유 항해를 시작합니다. 원하는 은하를 선택하세요.')});
       el('closeClassifyButton').addEventListener('click',closeClassification);el('closeReportButton').addEventListener('click',()=>el('reportModal').classList.remove('show'));el('restartButton').addEventListener('click',restart);
       el('motionButton').addEventListener('click',event=>{reduced=!reduced;event.currentTarget.setAttribute('aria-pressed',String(reduced));event.currentTarget.textContent=reduced?'·':'✦';showToast(reduced?'움직임 효과를 줄였습니다.':'움직임 효과를 다시 켰습니다.')});
