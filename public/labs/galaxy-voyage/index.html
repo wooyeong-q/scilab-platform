@@ -201,6 +201,9 @@
     .solarSystemMarker{position:absolute;z-index:3;left:67%;top:62%;width:25px;height:25px;border:1px solid var(--cyan);border-radius:50%;background:rgba(5,15,38,.82);color:#fff;pointer-events:auto;cursor:pointer;box-shadow:0 0 0 5px rgba(98,232,255,.08),0 0 22px rgba(98,232,255,.7);animation:pulse 1.8s ease-in-out infinite}
     .solarSystemMarker::after{content:"태양계";position:absolute;left:31px;top:50%;transform:translateY(-50%);padding:4px 6px;border-radius:7px;background:rgba(3,7,21,.86);color:#dffaff;font-size:9px;font-weight:900;white-space:nowrap}
     .solarSystemMarker[hidden]{display:none}
+    .milkyWaySideGuide{position:absolute;z-index:7;left:50%;top:51%;width:min(72vw,920px);height:min(48vh,480px);transform:translate(-50%,-50%);pointer-events:none}
+    .milkyWaySideGuide[hidden]{display:none}.edgeFeature{position:absolute;max-width:190px;padding:7px 9px;border:1px solid rgba(98,232,255,.35);border-radius:10px;background:rgba(3,8,24,.9);color:#e9f8ff;font-size:10px;font-weight:900;line-height:1.35;box-shadow:0 8px 24px rgba(0,0,0,.35)}.edgeFeature small{display:block;margin-top:3px;color:#a9badb;font-size:8px;font-weight:750}.edgeFeature::after{content:"";position:absolute;background:rgba(98,232,255,.55)}
+    .edgeBulge{left:50%;top:12%;transform:translateX(-50%);text-align:center}.edgeBulge::after{left:50%;top:100%;width:1px;height:64px}.edgeDisk{left:3%;top:47%}.edgeDisk::after{left:100%;top:50%;width:76px;height:1px}.edgeDust{right:3%;top:38%;text-align:right}.edgeDust::after{right:100%;top:55%;width:82px;height:1px}.edgeSolar{left:67%;top:62%;color:#fff4c8;border-color:rgba(255,211,106,.5)}.edgeSolar::before{content:"";position:absolute;left:-12px;top:50%;width:7px;height:7px;border-radius:50%;background:#ffd36a;box-shadow:0 0 12px #ffd36a}.edgeSolar::after{left:50%;bottom:100%;width:1px;height:40px;background:rgba(255,211,106,.62)}.edgeModelNote{position:absolute;left:50%;bottom:2%;transform:translateX(-50%);color:#8fa1c8;font-size:8px;font-weight:800;white-space:nowrap}
     .solarSystemOverlay{position:absolute;z-index:9;left:50%;top:51%;width:min(68vw,760px);height:min(65vh,620px);transform:translate(-50%,-50%);border:1px solid rgba(98,232,255,.28);border-radius:24px;background:radial-gradient(circle at 50% 50%,rgba(28,42,88,.7),rgba(4,8,24,.96) 67%);box-shadow:0 30px 90px rgba(0,0,0,.52),inset 0 0 80px rgba(79,98,218,.09);overflow:hidden}
     .solarSystemOverlay[hidden]{display:none}.solarHeader{position:absolute;z-index:5;left:18px;right:18px;top:15px;display:flex;align-items:flex-start;justify-content:space-between;gap:10px}.solarHeader span{display:block;color:var(--cyan);font-size:9px;font-weight:950;letter-spacing:.16em}.solarHeader strong{display:block;margin-top:4px;font-size:16px}.solarClose{width:38px;height:38px;border:1px solid var(--line);border-radius:12px;background:rgba(255,255,255,.06);color:#fff;font-size:20px;cursor:pointer}
     .solarDiagram{position:absolute;left:50%;top:49%;width:min(70%,440px);aspect-ratio:1;transform:translate(-50%,-50%)}.sunCore{position:absolute;z-index:3;left:50%;top:50%;width:34px;height:34px;transform:translate(-50%,-50%);border-radius:50%;background:radial-gradient(circle at 38% 35%,#fff,#ffe67e 22%,#ff9c32 62%,#d74716);box-shadow:0 0 18px #ffbf49,0 0 52px rgba(255,156,50,.7)}.sunCore::after{content:"태양";position:absolute;left:50%;top:39px;transform:translateX(-50%);color:#ffe6a0;font-size:9px;font-weight:900}
@@ -217,6 +220,7 @@
     .classBins{display:grid;gap:9px}.classBin{min-height:84px;padding:12px;border:1px dashed rgba(159,183,255,.3);border-radius:15px;background:rgba(10,16,40,.72);color:#fff;display:grid;grid-template-columns:44px 1fr auto;align-items:center;gap:10px;text-align:left;cursor:pointer}.classBin:hover,.classBin.active{border-color:var(--cyan);background:rgba(98,232,255,.08)}.classBin .miniGalaxy{width:38px;height:38px}.classBin strong{display:block;font-size:13px}.classBin small{display:block;margin-top:3px;color:#91a2c7;font-size:9px;line-height:1.35}.binCount{width:28px;height:28px;border-radius:9px;display:grid;place-items:center;background:rgba(255,255,255,.08);font-size:11px;font-weight:900}
     .classifyHelp{margin:12px 0 0;color:#91a2c7;font-size:10px;line-height:1.5}.classifyResult{display:none;margin-top:16px;padding:16px;border:1px solid rgba(114,242,190,.32);border-radius:16px;background:rgba(114,242,190,.07);color:#dcfff0;line-height:1.6}.classifyResult.show{display:block}.classifyResult strong{color:var(--green)}
     @media(max-width:700px){.flightStatus{display:none}.galaxyBeacon{width:74px;height:62px;margin:-31px 0 0 -37px}.beaconPhoto{width:70px;height:58px}.miniGalaxy{width:39px;height:39px}.beaconName{top:66px;font-size:9px;opacity:0;transition:opacity .18s}.galaxyBeacon:hover .beaconName,.galaxyBeacon:focus-visible .beaconName,.galaxyBeacon.selected .beaconName{opacity:1}.navGuide{bottom:9px;width:calc(100% - 24px);justify-content:center;font-size:8px}.navGuide .desktopOnly{display:none}.mapScale{top:62px;right:10px}.navZoomControls{top:105px;right:10px;transform:none;gap:6px}.navZoomButton{min-width:104px;min-height:44px;padding:0 9px;font-size:10px}.turnSpeedControl{width:104px}.observedGalaxyPhoto{top:46%;width:94vw;height:50vh}.observedGalaxyPhoto img{border-radius:12px}.imageProvenance{bottom:2px;font-size:8px;white-space:normal}.solarSystemMarker{left:64%;top:61%}.solarSystemOverlay{top:46%;width:94vw;height:51vh;border-radius:18px}.solarHeader{left:13px;right:13px;top:11px}.solarDiagram{top:48%;width:min(83%,340px)}.solarInfo{left:11px;right:11px;bottom:9px;gap:5px}.solarInfo p{padding:6px 7px;font-size:8px}.earthPlanet::after{left:auto;right:18px;font-size:8px}.classifyCard{width:100%;max-height:100dvh;height:100dvh;border:0;border-radius:0;padding:calc(17px + var(--safe-top)) 14px calc(18px + var(--safe-bottom))}.classifyHeader h2{font-size:23px}.classificationBoard{grid-template-columns:1fr;gap:11px}.sampleArea,.binArea{padding:12px}.sampleGrid{grid-template-columns:repeat(2,1fr);gap:8px}.sampleCard{min-height:126px;padding:8px}.sampleGalaxyPhoto{height:72px}.classBin{min-height:68px;padding:9px}.classifyHelp{display:none}}
+    @media(max-width:700px){.milkyWaySideGuide{top:46%;width:94vw;height:45vh}.edgeFeature{max-width:132px;padding:5px 7px;font-size:8px}.edgeFeature small{font-size:7px}.edgeBulge{top:4%}.edgeBulge::after{height:52px}.edgeDisk{left:1%;top:52%}.edgeDisk::after{width:28px}.edgeDust{right:1%;top:39%}.edgeDust::after{width:30px}.edgeSolar{left:57%;top:68%}.edgeSolar::after{height:26px}}
     @media(orientation:landscape) and (max-height:600px){.navGuide{bottom:7px}.classificationBoard{grid-template-columns:1.2fr .8fr}.classifyCard{padding:14px}.classifyHeader h2{font-size:22px}.sampleCard{min-height:88px}.sampleCard .miniGalaxy{width:47px;height:47px}.classBin{min-height:61px}}
   </style>
 </head>
@@ -244,6 +248,7 @@
       <div class="reticle" id="reticle"><div class="reticleRing"></div></div><div class="scanLine" id="scanLine"></div>
       <div class="galaxyBeacons" id="galaxyBeacons" aria-label="탐사할 은하 목록"></div>
       <figure class="observedGalaxyPhoto" id="observedGalaxyPhoto" hidden><img id="observedGalaxyImage" alt=""><button class="solarSystemMarker" id="solarSystemMarker" type="button" aria-label="우리은하 안의 태양계 위치 확대 관측" hidden></button><figcaption class="imageProvenance"><span id="imageCredit">NASA/ESA Hubble 관측 이미지</span><a id="imageSource" target="_blank" rel="noreferrer">NASA 원본 ↗</a></figcaption></figure>
+      <div class="milkyWaySideGuide" id="milkyWaySideGuide" aria-label="우리은하 옆모습의 주요 특징" hidden><span class="edgeFeature edgeBulge">중심 팽대부<small>별이 밀집해 가운데가 두껍습니다.</small></span><span class="edgeFeature edgeDisk">얇은 원반<small>별과 가스가 넓고 납작하게 펼쳐집니다.</small></span><span class="edgeFeature edgeDust">어두운 먼지 띠<small>성간 먼지가 뒤쪽 별빛을 가립니다.</small></span><span class="edgeFeature edgeSolar">태양계 위치<small>중심에서 떨어진 원반 안에 있습니다.</small></span><small class="edgeModelNote">관측 자료를 바탕으로 특징을 강조한 우리은하 옆면 모식도</small></div>
       <section class="solarSystemOverlay" id="solarSystemOverlay" aria-label="태양계와 지구 위치 관측" hidden>
         <div class="solarHeader"><div><span>SOLAR SYSTEM CLOSE-UP</span><strong>태양계에서 지구 찾기</strong></div><button class="solarClose" id="solarCloseButton" type="button" aria-label="태양계 관측 닫기">×</button></div>
         <div class="solarDiagram" aria-label="태양에서 세 번째 궤도에 지구가 있는 태양계 모식도">
@@ -434,10 +439,10 @@
         reticle:el('reticle'),scanLine:el('scanLine'),beacons:el('galaxyBeacons'),toast:el('toast'),panel:el('missionPanel'),handle:el('missionHandle'),
         warpFlash:el('warpFlash'),navGuide:el('navGuide'),mapScale:el('mapScale'),zoomControls:el('navZoomControls'),mapStatus:el('mapStatus'),observeStatus:el('observeStatus'),classStatus:el('classStatus'),
         observedPhoto:el('observedGalaxyPhoto'),observedImage:el('observedGalaxyImage'),imageCredit:el('imageCredit'),imageSource:el('imageSource'),
-        solarMarker:el('solarSystemMarker'),solarOverlay:el('solarSystemOverlay'),turnSpeed:el('turnSpeed'),turnSpeedReadout:el('turnSpeedReadout')
+        solarMarker:el('solarSystemMarker'),solarOverlay:el('solarSystemOverlay'),sideGuide:el('milkyWaySideGuide'),turnSpeed:el('turnSpeed'),turnSpeedReadout:el('turnSpeedReadout')
       };
 
-      const REVEAL_DISTANCE=950,APPROACH_DISTANCE=1950,DOCK_DISTANCE=360;
+      const REVEAL_DISTANCE=950,APPROACH_DISTANCE=1950,DOCK_DISTANCE=520;
       let mode='map',selectedKey=null,observingKey=null,viewMode='face',solarView=false,scanning=false,warping=false,reduced=false,started=false;
       let visited=new Set(),look={x:0,y:0},targetLook={x:0,y:0},warpPower=0,toastTimer=0;
       let width=0,height=0,viewWidth=0,viewHeight=0,dpr=1,lastFrame=0,galaxySets={};
@@ -533,9 +538,11 @@
       }
 
       function drawEdgeGalaxy(){
-        const cx=width/2+look.x*30,cy=height/2+look.y*20,r=Math.min(width*.42,height*.35);coreGlow(cx,cy,r*.75,'rgba(255,244,218,.78)','rgba(139,126,255,.28)',.2);
+        const cx=width/2+look.x*30,cy=height/2+look.y*20,r=Math.min(width*.43,height*.36);
+        coreGlow(cx,cy,r*1.35,'rgba(205,224,255,.65)','rgba(105,126,255,.28)',.075);coreGlow(cx,cy,r*.52,'rgba(255,247,221,.96)','rgba(255,174,92,.38)',.48);
         ctx.save();ctx.translate(cx,cy);ctx.globalCompositeOperation='lighter';const rand=seeded(91);
-        for(let i=0;i<500;i++){const x=(rand()-.5)*r*2.2,y=gaussian(rand)*(7+26*(1-Math.abs(x)/(r*1.1)));ctx.fillStyle=`rgba(${rand()>.6?'120,195,255':'231,225,255'},${.12+rand()*.55})`;ctx.fillRect(x,y,.7+rand()*1.4,.7+rand()*1.4)}
+        for(let i=0;i<900;i++){const x=(rand()-.5)*r*2.5,centerWeight=1-Math.min(1,Math.abs(x)/(r*1.25)),y=gaussian(rand)*(3+18*centerWeight);ctx.fillStyle=`rgba(${rand()>.63?'120,205,255':'244,231,205'},${.18+rand()*.68})`;const size=.65+rand()*1.65;ctx.fillRect(x,y,size,size)}
+        ctx.globalCompositeOperation='source-over';const dust=ctx.createLinearGradient(-r*1.25,0,r*1.25,0);dust.addColorStop(0,'rgba(8,5,17,0)');dust.addColorStop(.2,'rgba(9,5,16,.62)');dust.addColorStop(.5,'rgba(3,2,8,.88)');dust.addColorStop(.8,'rgba(9,5,16,.62)');dust.addColorStop(1,'rgba(8,5,17,0)');ctx.fillStyle=dust;ctx.fillRect(-r*1.25,-2.8,r*2.5,5.6);
         ctx.restore();
       }
 
@@ -578,7 +585,7 @@
       function updateModeStatus(){ui.mapStatus.classList.toggle('active',mode==='map');ui.observeStatus.classList.toggle('active',mode==='observe');ui.classStatus.classList.toggle('active',el('classifyModal').classList.contains('show'))}
       function renderObservedPhoto(){
         const galaxy=observingKey?galaxyByKey(observingKey):null,showSolar=mode==='observe'&&galaxy?.key==='milkyway'&&solarView,show=mode==='observe'&&galaxy&&!showSolar&&!(galaxy.key==='milkyway'&&viewMode==='side');
-        ui.solarOverlay.hidden=!showSolar;ui.solarMarker.hidden=!(show&&galaxy?.key==='milkyway'&&viewMode==='face');
+        const showSide=mode==='observe'&&galaxy?.key==='milkyway'&&viewMode==='side'&&!solarView;ui.solarOverlay.hidden=!showSolar;ui.sideGuide.hidden=!showSide;ui.solarMarker.hidden=!(show&&galaxy?.key==='milkyway'&&viewMode==='face');
         if(!show){ui.observedPhoto.hidden=true;return}
         if(ui.observedImage.dataset.key!==galaxy.key){ui.observedImage.dataset.key=galaxy.key;ui.observedImage.alt=`${galaxy.name}의 ${galaxy.credit}`;ui.observedImage.src=galaxy.image}
         ui.imageCredit.textContent=galaxy.credit;ui.imageSource.href=galaxy.source;ui.observedPhoto.hidden=false;
@@ -602,7 +609,7 @@
       function render(){
         updateModeStatus();viewport.classList.toggle('mapMode',mode==='map');ui.scan.classList.toggle('statusOnly',mode==='observe');ui.beacons.hidden=mode!=='map';ui.navGuide.hidden=mode!=='map';ui.mapScale.hidden=mode!=='map';ui.zoomControls.hidden=mode!=='map';ui.reticle.style.opacity=mode==='map'?'.18':'1';renderObservedPhoto();
         if(mode==='map'){
-          const galaxy=selectedKey?galaxyByKey(selectedKey):null,known=galaxy&&discovered.has(galaxy.key),canTravel=galaxy&&isGalaxyRevealed(galaxy),displayName=galaxy?displayGalaxyName(galaxy):'';ui.sector.textContent='DEEP SPACE DISCOVERY';ui.name.textContent=galaxy?displayName:'은하 신호 탐색 구역';ui.subtitle.textContent=galaxy?(known?`${galaxy.distance} · 가까워질수록 크게 보입니다`:'별빛처럼 보이는 미확인 신호'):`발견한 은하 ${discovered.size} / ${galaxies.length} · 별빛 신호를 찾아 접근하세요.`;ui.view.textContent='⌾ 위치 초기화';ui.view.disabled=warping;ui.scan.textContent=classificationComplete?'▦ 결과 보기':visited.size>=3?'▦ 분류 활동':'▦ 분류 잠김';ui.scan.disabled=visited.size<3||warping;ui.warp.textContent=!galaxy?'신호를 선택하세요':canTravel?`${displayName} 바로 관측 ›`:'☆ 더 가까이 가세요';ui.warp.disabled=!galaxy||!canTravel||warping;ui.viewReadout.textContent=galaxy?displayName:'탐색 중';ui.navReadout.textContent=warping?'항해 중':'은하 신호 탐색';ui.zoomReadout.textContent=`Z ${Math.round(camera.z)}`;ui.systemMessage.textContent=visited.size>=3?'은하 분류 활동을 시작할 수 있습니다.':`발견 ${discovered.size}/${galaxies.length} · 관측 ${visited.size}/3 후 분류 활동 해금`;
+          const galaxy=selectedKey?galaxyByKey(selectedKey):null,known=galaxy&&discovered.has(galaxy.key),displayName=galaxy?displayGalaxyName(galaxy):'';ui.sector.textContent='DEEP SPACE DISCOVERY';ui.name.textContent=galaxy?displayName:'은하 신호 탐색 구역';ui.subtitle.textContent=galaxy?(known?`${galaxy.distance} · 가까워질수록 크게 보입니다`:'별빛처럼 보이는 미확인 신호'):`발견한 은하 ${discovered.size} / ${galaxies.length} · 별빛 신호를 찾아 접근하세요.`;ui.view.textContent='⌾ 위치 초기화';ui.view.disabled=warping;ui.scan.textContent=classificationComplete?'▦ 결과 보기':visited.size>=3?'▦ 분류 활동':'▦ 분류 잠김';ui.scan.disabled=visited.size<3||warping;ui.warp.textContent='현재 방향으로 전진 ›';ui.warp.disabled=warping;ui.viewReadout.textContent=galaxy?displayName:'탐색 중';ui.navReadout.textContent=warping?'항해 중':'은하 신호 탐색';ui.zoomReadout.textContent=`Z ${Math.round(camera.z)}`;ui.systemMessage.textContent=visited.size>=3?'은하 분류 활동을 시작할 수 있습니다.':`발견 ${discovered.size}/${galaxies.length} · 관측 ${visited.size}/3 후 분류 활동 해금`;
         }else{
           const galaxy=galaxyByKey(observingKey);ui.sector.textContent=solarView?'SOLAR SYSTEM · EARTH':galaxy.catalog;ui.name.textContent=solarView?'태양계와 지구 위치':galaxy.name;ui.subtitle.textContent=solarView?'우리은하 → 오리온팔 → 태양계 → 지구':`지구로부터 ${galaxy.distance} · 교육용 근접 관측`;ui.view.textContent=solarView?'← 우리은하':galaxy.key==='milkyway'?'◉ 관측 방향':'⌖ 항해 지도';ui.view.disabled=warping;ui.scan.textContent=scanning?'⌁ 자동 분석 중':visited.has(galaxy.key)?'✓ 자동 기록 완료':'⌁ 자동 기록 준비';ui.scan.disabled=true;ui.warp.textContent='항해 지도로 돌아가기 ›';ui.warp.disabled=warping;ui.viewReadout.textContent=solarView?'지구 · 3번째 행성':galaxy.key==='milkyway'?(viewMode==='side'?'옆면':'정면'):typeNames[galaxy.type];ui.navReadout.textContent=solarView?'태양계 확대':scanning?'자동 분석 중':visited.has(galaxy.key)?'기록 완료':'근접 관측';ui.zoomReadout.textContent=solarView?'1 AU':`× ${(2.1+(galaxy.scale||1)).toFixed(1)}`;ui.systemMessage.textContent=solarView?'지구는 태양에서 세 번째 행성입니다.':visited.has(galaxy.key)?'관측 자료가 현재 항해일지에 자동 반영되었습니다.':'관측 자료를 자동으로 분석하고 있습니다.';
         }
@@ -611,7 +618,7 @@
 
       function selectGalaxy(key){if(mode!=='map'||warping)return;selectedKey=key;render();setPanel(true);const galaxy=galaxyByKey(key);showToast(discovered.has(key)?`${galaxy.name}을 목적지로 선택했습니다.`:'미확인 은하 신호입니다. 더 가까이 이동해 정체를 밝혀 보세요.')}
       function resetMap(){autoDockPending=false;camera={x:0,y:0,z:0,yaw:0,pitch:0};selectedKey=null;render();showToast('3D 항해의 처음 위치와 방향으로 돌아왔습니다.')}
-      function toggleMilkyWayView(){if(mode!=='observe'||observingKey!=='milkyway')return;solarView=false;viewMode=viewMode==='face'?'side':'face';render();showToast(viewMode==='side'?'옆면에서는 중심부가 두껍고 원반이 납작하게 보입니다.':'정면에서는 중심에서 뻗은 나선팔과 태양계 위치를 관찰할 수 있습니다.')}
+      function toggleMilkyWayView(){if(mode!=='observe'||observingKey!=='milkyway')return;solarView=false;viewMode=viewMode==='face'?'side':'face';render();showToast(viewMode==='side'?'중심 팽대부·얇은 원반·어두운 먼지 띠와 태양계 위치를 비교해 보세요.':'정면에서는 중심에서 뻗은 나선팔과 태양계 위치를 관찰할 수 있습니다.')}
       function openSolarSystem(){if(mode!=='observe'||observingKey!=='milkyway'||viewMode!=='face')return;solarView=true;render();setPanel(false);showToast('태양계를 확대했습니다. 세 번째 궤도의 푸른 지구를 찾아보세요.')}
       function closeSolarSystem(){if(!solarView)return;solarView=false;render();showToast('우리은하 전체 관측으로 돌아왔습니다.')}
 
@@ -624,7 +631,7 @@
         setTimeout(()=>{mode='observe';observingKey=galaxy.key;viewMode='face';solarView=false;warping=false;targetLook={x:0,y:0};render();runScan(true);showToast(`${galaxy.name} 근접 관측 구역입니다. 관측 기록을 자동으로 시작합니다.`);setTimeout(()=>setPanel(true),300)},fromProximity?(reduced?150:430):(reduced?260:940));
       }
 
-      function returnToMap(){if(warping)return;warping=true;solarView=false;warpPower=reduced?.15:.68;ui.warpFlash.classList.remove('run');void ui.warpFlash.offsetWidth;ui.warpFlash.classList.add('run');setPanel(false);render();setTimeout(()=>{mode='map';observingKey=null;warping=false;render();showToast('은하 신호 탐색 지도로 돌아왔습니다.');setTimeout(()=>setPanel(false),260)},reduced?220:720)}
+      function returnToMap(){if(warping)return;warping=true;solarView=false;autoDockPending=false;warpPower=reduced?.15:.68;ui.warpFlash.classList.remove('run');void ui.warpFlash.offsetWidth;ui.warpFlash.classList.add('run');setPanel(false);render();setTimeout(()=>{mode='map';observingKey=null;selectedKey=null;warping=false;render();showToast('자유 항해로 돌아왔습니다. 새 은하 신호를 선택해 탐험하세요.');setTimeout(()=>setPanel(false),260)},reduced?220:720)}
 
       function runScan(automatic=false){
         if(mode!=='observe'||!observingKey||scanning||visited.has(observingKey))return;const galaxy=galaxyByKey(observingKey);scanning=true;ui.reticle.classList.add('scanning');ui.scanLine.classList.remove('running');void ui.scanLine.offsetWidth;ui.scanLine.classList.add('running');render();
@@ -633,7 +640,7 @@
 
       function handleView(){if(mode==='map')resetMap();else if(solarView)closeSolarSystem();else if(observingKey==='milkyway')toggleMilkyWayView();else returnToMap()}
       function handleScan(){if(mode==='map')openClassification()}
-      function handleWarp(){if(mode==='map')travelToSelected();else returnToMap()}
+      function handleWarp(){if(mode==='map'){moveCamera(180);showToast('현재 바라보는 방향으로 전진합니다.')}else returnToMap()}
 
       function buildClassification(){
         const grid=el('sampleGrid'),bins=el('classBins');grid.innerHTML='';bins.innerHTML='';
