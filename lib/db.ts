@@ -64,7 +64,7 @@ export async function ensureDatabase(){
   ]) await statement;
   if(process.env.VERCEL_ENV!=='preview'){
     await sql`INSERT INTO programs (id,title,summary,description,category,grade,tags,icon,url,author,featured,duration,format,standard,source_url)
-      VALUES ('galaxy-voyage','은하 항해일지','우주선을 직접 조종해 실제 은하들을 자유롭게 방문하고 관측 표본을 분류합니다.','마우스·키보드 또는 손가락으로 항해 지도를 움직여 우리은하, 안드로메다은하, 대마젤란은하, M87 등 실제 은하를 원하는 순서로 방문합니다. 은하의 전체 모양을 스캔한 뒤 여러 표본을 나선 은하·타원 은하·불규칙 은하로 분류하는 탐사형 학습 프로그램입니다.','별과 우주','중학교 2학년','["은하","자유 항해","우리은하","은하 분류"]'::jsonb,'🚀',${GALAXY_VOYAGE_APP_URL},'SciLab',TRUE,'20~25분','웹 시뮬레이션','은하의 모양과 특징을 관찰하고 나선 은하, 타원 은하, 불규칙 은하로 구분할 수 있다.','https://github.com/wooyeong-q/scilab-platform/tree/main/public/labs/galaxy-voyage')
+      VALUES ('galaxy-voyage','은하 항해일지','먼 별빛 신호를 추적해 실제 은하를 발견하고 태양계와 지구 위치까지 관찰합니다.','마우스·키보드 또는 손가락으로 3차원 우주를 움직여 먼 별빛 신호에 접근합니다. 가까워지면 NASA/Hubble 실제 은하 이미지와 이름이 해금되며, 우리은하에서는 태양계와 지구의 위치를 확대 관찰할 수 있습니다. 은하의 전체 모양을 스캔한 뒤 여러 표본을 나선 은하·타원 은하·불규칙 은하로 분류하는 탐사형 학습 프로그램입니다.','별과 우주','중학교 2학년','["은하","3D 탐사","태양계","지구 위치","은하 분류"]'::jsonb,'🚀',${GALAXY_VOYAGE_APP_URL},'SciLab',TRUE,'20~25분','웹 시뮬레이션','은하의 모양과 특징을 관찰하고 나선 은하, 타원 은하, 불규칙 은하로 구분할 수 있다.','https://github.com/wooyeong-q/scilab-platform/tree/main/public/labs/galaxy-voyage')
       ON CONFLICT(id) DO NOTHING`;
   }
   await sql`UPDATE programs SET url=${EARTHQUAKE_VOLCANO_APP_URL}, updated_at=NOW() WHERE id='gas-learning-app' AND url<>${EARTHQUAKE_VOLCANO_APP_URL}`;
