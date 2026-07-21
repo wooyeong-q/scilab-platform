@@ -6,6 +6,7 @@ const sql = connectionString ? neon(connectionString) : null;
 let initialized = false;
 
 const EARTHQUAKE_VOLCANO_APP_URL = 'https://scilab-platform.vercel.app/labs/earthquake-volcano/index.html';
+const GALAXY_VOYAGE_APP_URL = 'https://scilab-platform.vercel.app/labs/galaxy-voyage/index.html';
 
 export type Submission = {
   id:string; title:string; author:string; url:string; category:string; grade:string; summary:string; tags:string[];
@@ -61,6 +62,9 @@ export async function ensureDatabase(){
     sql`ALTER TABLE submissions ADD COLUMN IF NOT EXISTS source_url TEXT NOT NULL DEFAULT ''`,
     sql`ALTER TABLE submissions ADD COLUMN IF NOT EXISTS guide_url TEXT NOT NULL DEFAULT ''`
   ]) await statement;
+  await sql`INSERT INTO programs (id,title,summary,description,category,grade,tags,icon,url,author,featured,duration,format,standard,source_url)
+    VALUES ('galaxy-voyage','은하 항해일지','우주선을 타고 우리은하와 여러 외부 은하를 탐사하며 모양에 따라 은하를 분류합니다.','우리은하를 정면과 옆면에서 관찰해 태양계의 위치를 찾고, 나선 은하·타원 은하·불규칙 은하의 특징을 비교한 뒤 미확인 은하를 스스로 판별하는 탐사형 학습 프로그램입니다.','별과 우주','중학교 2학년','["은하","우리은하","태양계","은하 분류"]'::jsonb,'🚀',${GALAXY_VOYAGE_APP_URL},'SciLab',TRUE,'15~20분','웹 시뮬레이션','은하의 모양과 특징을 관찰하고 종류를 구분할 수 있다.','https://github.com/wooyeong-q/scilab-platform/tree/main/public/labs/galaxy-voyage')
+    ON CONFLICT(id) DO NOTHING`;
   await sql`UPDATE programs SET url=${EARTHQUAKE_VOLCANO_APP_URL}, updated_at=NOW() WHERE id='gas-learning-app' AND url<>${EARTHQUAKE_VOLCANO_APP_URL}`;
   initialized=true;
 }
