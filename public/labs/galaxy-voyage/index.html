@@ -114,6 +114,7 @@
     .deckButton.primary{min-width:150px;background:linear-gradient(135deg,#4b62e6,#854fda);border-color:rgba(183,124,255,.7);box-shadow:0 12px 34px rgba(85,73,207,.3)}
     .deckButton.scan{background:linear-gradient(135deg,#0d7f9a,#3a59c8);border-color:rgba(98,232,255,.66)}
     .deckButton:disabled{opacity:.42;cursor:not-allowed;box-shadow:none}
+    .deckButton.scan.statusOnly:disabled{opacity:1;cursor:default;border-color:rgba(98,232,255,.42);background:rgba(13,90,123,.72);box-shadow:0 0 22px rgba(98,232,255,.1)}
     .viewButton[aria-pressed="true"]{border-color:var(--cyan);color:#d9fbff}
     .deckRight{display:flex;justify-content:flex-end;color:#7f8daf;font-size:10px;text-align:right}
     .modalBackdrop{position:fixed;inset:0;z-index:100;display:none;place-items:center;padding:18px;background:rgba(1,3,12,.7);backdrop-filter:blur(18px)}
@@ -599,7 +600,7 @@
       }
 
       function render(){
-        updateModeStatus();viewport.classList.toggle('mapMode',mode==='map');ui.beacons.hidden=mode!=='map';ui.navGuide.hidden=mode!=='map';ui.mapScale.hidden=mode!=='map';ui.zoomControls.hidden=mode!=='map';ui.reticle.style.opacity=mode==='map'?'.18':'1';renderObservedPhoto();
+        updateModeStatus();viewport.classList.toggle('mapMode',mode==='map');ui.scan.classList.toggle('statusOnly',mode==='observe');ui.beacons.hidden=mode!=='map';ui.navGuide.hidden=mode!=='map';ui.mapScale.hidden=mode!=='map';ui.zoomControls.hidden=mode!=='map';ui.reticle.style.opacity=mode==='map'?'.18':'1';renderObservedPhoto();
         if(mode==='map'){
           const galaxy=selectedKey?galaxyByKey(selectedKey):null,known=galaxy&&discovered.has(galaxy.key),canTravel=galaxy&&isGalaxyRevealed(galaxy),displayName=galaxy?displayGalaxyName(galaxy):'';ui.sector.textContent='DEEP SPACE DISCOVERY';ui.name.textContent=galaxy?displayName:'은하 신호 탐색 구역';ui.subtitle.textContent=galaxy?(known?`${galaxy.distance} · 가까워질수록 크게 보입니다`:'별빛처럼 보이는 미확인 신호'):`발견한 은하 ${discovered.size} / ${galaxies.length} · 별빛 신호를 찾아 접근하세요.`;ui.view.textContent='⌾ 위치 초기화';ui.view.disabled=warping;ui.scan.textContent=classificationComplete?'▦ 결과 보기':visited.size>=3?'▦ 분류 활동':'▦ 분류 잠김';ui.scan.disabled=visited.size<3||warping;ui.warp.textContent=!galaxy?'신호를 선택하세요':canTravel?`${displayName} 바로 관측 ›`:'☆ 더 가까이 가세요';ui.warp.disabled=!galaxy||!canTravel||warping;ui.viewReadout.textContent=galaxy?displayName:'탐색 중';ui.navReadout.textContent=warping?'항해 중':'은하 신호 탐색';ui.zoomReadout.textContent=`Z ${Math.round(camera.z)}`;ui.systemMessage.textContent=visited.size>=3?'은하 분류 활동을 시작할 수 있습니다.':`발견 ${discovered.size}/${galaxies.length} · 관측 ${visited.size}/3 후 분류 활동 해금`;
         }else{
