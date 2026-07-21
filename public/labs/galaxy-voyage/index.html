@@ -1,0 +1,315 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+  <meta name="theme-color" content="#050817">
+  <title>은하 항해일지 · 사이랩</title>
+  <style>
+    :root{
+      --ink:#f7f9ff;
+      --muted:#aeb9d7;
+      --line:rgba(159,183,255,.22);
+      --panel:rgba(8,13,34,.82);
+      --panel-strong:rgba(7,11,29,.96);
+      --cyan:#62e8ff;
+      --blue:#7287ff;
+      --violet:#b77cff;
+      --green:#72f2be;
+      --amber:#ffd36a;
+      --danger:#ff7d91;
+      --safe-top:env(safe-area-inset-top,0px);
+      --safe-right:env(safe-area-inset-right,0px);
+      --safe-bottom:env(safe-area-inset-bottom,0px);
+      --safe-left:env(safe-area-inset-left,0px);
+    }
+    *{box-sizing:border-box}
+    html,body{width:100%;height:100%;margin:0;overflow:hidden;background:#030510;color:var(--ink);font-family:Inter,Pretendard,"Noto Sans KR",system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif}
+    button{font:inherit}
+    button:focus-visible{outline:3px solid rgba(98,232,255,.72);outline-offset:3px}
+    .app{position:relative;width:100%;height:100dvh;min-height:100dvh;overflow:hidden;background:radial-gradient(circle at 50% 35%,#11183f 0,#050817 42%,#02030b 100%);isolation:isolate}
+    #space{position:absolute;inset:0;width:100%;height:100%;z-index:-4;touch-action:none}
+    .spaceGlow{position:absolute;inset:0;z-index:-3;pointer-events:none;background:radial-gradient(circle at 50% 42%,transparent 0 24%,rgba(3,5,16,.08) 50%,rgba(1,2,8,.74) 100%)}
+    .noise{position:absolute;inset:0;z-index:-2;opacity:.12;pointer-events:none;background-image:url("data:image/svg+xml,%3Csvg viewBox='0 0 180 180' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.8' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='.35'/%3E%3C/svg%3E")}
+    .cockpitFrame{position:absolute;inset:0;z-index:-1;pointer-events:none;border:1px solid rgba(153,181,255,.13);box-shadow:inset 0 0 85px rgba(0,0,0,.5)}
+    .cockpitFrame::before,.cockpitFrame::after{content:"";position:absolute;top:84px;bottom:88px;width:72px;opacity:.38}
+    .cockpitFrame::before{left:0;background:linear-gradient(90deg,rgba(4,7,20,.96),transparent);clip-path:polygon(0 0,100% 8%,55% 50%,100% 92%,0 100%)}
+    .cockpitFrame::after{right:0;background:linear-gradient(-90deg,rgba(4,7,20,.96),transparent);clip-path:polygon(100% 0,0 8%,45% 50%,0 92%,100% 100%)}
+    .shipBar{position:relative;z-index:20;height:72px;padding:calc(9px + var(--safe-top)) max(14px,var(--safe-right)) 8px max(14px,var(--safe-left));display:grid;grid-template-columns:minmax(210px,1fr) auto minmax(210px,1fr);align-items:center;gap:18px;border-bottom:1px solid var(--line);background:linear-gradient(180deg,rgba(5,8,24,.94),rgba(5,8,24,.62));backdrop-filter:blur(18px)}
+    .brand{display:flex;align-items:center;gap:11px;min-width:0}
+    .brandMark{width:42px;height:42px;flex:0 0 42px;border-radius:14px;display:grid;place-items:center;border:1px solid rgba(98,232,255,.4);background:linear-gradient(145deg,rgba(98,232,255,.24),rgba(114,135,255,.18));box-shadow:0 0 30px rgba(98,232,255,.15)}
+    .brandMark svg{width:25px;height:25px}
+    .brandText{min-width:0}
+    .brandText small{display:block;color:var(--cyan);font-size:10px;font-weight:900;letter-spacing:.16em}
+    .brandText strong{display:block;margin-top:3px;font-size:17px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+    .route{display:flex;align-items:center;justify-content:center;gap:7px}
+    .routeDot{position:relative;width:31px;height:8px;border:0;border-radius:999px;background:rgba(170,187,232,.16);padding:0;cursor:default;overflow:hidden}
+    .routeDot::after{content:"";position:absolute;inset:0;transform:scaleX(0);transform-origin:left;background:linear-gradient(90deg,var(--cyan),var(--violet));transition:.35s}
+    .routeDot.done::after,.routeDot.active::after{transform:scaleX(1)}
+    .routeDot.active{box-shadow:0 0 14px rgba(98,232,255,.45)}
+    .shipMeta{display:flex;align-items:center;justify-content:flex-end;gap:8px;min-width:0}
+    .metaPill{min-height:39px;padding:8px 11px;border:1px solid var(--line);border-radius:12px;background:rgba(13,20,48,.66);display:grid;gap:1px;text-align:right}
+    .metaPill span{color:#8391b6;font-size:9px;font-weight:900;letter-spacing:.12em}
+    .metaPill strong{font-size:12px;white-space:nowrap}
+    .soundButton{width:41px;height:41px;border:1px solid var(--line);border-radius:12px;background:rgba(13,20,48,.66);color:var(--ink);display:grid;place-items:center;cursor:pointer}
+    .viewport{position:absolute;inset:72px 0 92px;display:grid;place-items:center;overflow:hidden}
+    .destinationLabel{position:absolute;top:22px;left:50%;transform:translateX(-50%);width:min(520px,calc(100% - 32px));text-align:center;pointer-events:none;text-shadow:0 3px 18px rgba(0,0,0,.8)}
+    .destinationLabel span{display:block;color:var(--cyan);font-size:10px;font-weight:950;letter-spacing:.2em}
+    .destinationLabel h1{margin:5px 0 0;font-size:clamp(25px,4vw,44px);letter-spacing:-.045em;line-height:1.1}
+    .destinationLabel p{margin:7px auto 0;max-width:460px;color:#bdc7e3;font-size:13px;line-height:1.45}
+    .reticle{position:absolute;left:50%;top:50%;width:min(44vw,420px);aspect-ratio:1;transform:translate(-50%,-50%);border:1px solid rgba(98,232,255,.12);border-radius:50%;pointer-events:none;transition:.4s}
+    .reticle::before,.reticle::after{content:"";position:absolute;left:50%;top:50%;background:rgba(98,232,255,.24);transform:translate(-50%,-50%)}
+    .reticle::before{width:calc(100% + 58px);height:1px}
+    .reticle::after{width:1px;height:calc(100% + 58px)}
+    .reticleRing{position:absolute;inset:15%;border:1px dashed rgba(98,232,255,.18);border-radius:50%;animation:spin 24s linear infinite}
+    .reticle.scanning{border-color:rgba(98,232,255,.65);box-shadow:0 0 46px rgba(98,232,255,.18),inset 0 0 46px rgba(98,232,255,.08)}
+    .reticle.scanning .reticleRing{border-color:var(--cyan);animation-duration:1.2s}
+    @keyframes spin{to{transform:rotate(360deg)}}
+    .scanLine{position:absolute;left:50%;top:50%;width:min(44vw,420px);height:3px;transform:translate(-50%,-50%) scaleX(0);background:linear-gradient(90deg,transparent,var(--cyan),transparent);box-shadow:0 0 22px var(--cyan);opacity:0;pointer-events:none}
+    .scanLine.running{animation:scan 1.65s ease-in-out}
+    @keyframes scan{0%{opacity:0;transform:translate(-50%,-220px) scaleX(.15)}20%{opacity:1}80%{opacity:1}100%{opacity:0;transform:translate(-50%,220px) scaleX(1)}}
+    .instrument{position:absolute;left:max(18px,var(--safe-left));bottom:18px;width:210px;padding:11px 13px;border-left:2px solid var(--cyan);background:linear-gradient(90deg,rgba(7,12,32,.78),transparent);display:grid;gap:5px;pointer-events:none}
+    .instrumentRow{display:flex;align-items:center;justify-content:space-between;gap:10px;color:#aab7d7;font-size:10px}
+    .instrumentRow strong{color:#ecf8ff;font-size:11px}
+    .simNotice{position:absolute;right:max(18px,var(--safe-right));bottom:18px;max-width:260px;color:#8997bb;font-size:10px;line-height:1.45;text-align:right;pointer-events:none}
+    .solarTargets{position:absolute;inset:0;pointer-events:none}
+    .solarTarget{position:absolute;width:46px;height:46px;border:1px solid rgba(98,232,255,.65);border-radius:50%;background:rgba(6,14,36,.7);color:#fff;display:none;place-items:center;cursor:pointer;pointer-events:auto;box-shadow:0 0 22px rgba(98,232,255,.2);animation:pulse 1.8s ease-in-out infinite}
+    .solarTargets.show .solarTarget{display:grid}
+    .solarTarget span{position:absolute;top:49px;left:50%;transform:translateX(-50%);white-space:nowrap;padding:4px 7px;border-radius:7px;background:rgba(4,7,20,.88);font-size:10px;font-weight:850;color:#dbe6ff}
+    .solarTarget[data-choice="center"]{left:calc(50% - 23px);top:calc(50% - 23px)}
+    .solarTarget[data-choice="arm"]{left:calc(50% + min(15vw,150px));top:calc(50% + min(5vw,50px))}
+    .solarTarget[data-choice="outside"]{left:calc(50% + min(25vw,250px));top:calc(50% - min(16vw,160px))}
+    @keyframes pulse{50%{transform:scale(1.09);box-shadow:0 0 34px rgba(98,232,255,.42)}}
+    .toast{position:absolute;z-index:45;left:50%;top:92px;transform:translate(-50%,-14px);width:min(520px,calc(100% - 26px));padding:12px 14px;border:1px solid rgba(159,183,255,.3);border-radius:13px;background:rgba(7,11,29,.95);box-shadow:0 18px 50px rgba(0,0,0,.42);font-size:13px;font-weight:750;text-align:center;opacity:0;pointer-events:none;transition:.25s}
+    .toast.show{opacity:1;transform:translate(-50%,0)}
+    .toast.good{border-color:rgba(114,242,190,.5);color:#d9ffef}
+    .toast.bad{border-color:rgba(255,125,145,.5);color:#ffe3e8}
+    .missionPanel{position:absolute;z-index:30;left:max(18px,var(--safe-left));top:94px;width:min(370px,calc(100% - 36px));max-height:calc(100dvh - 200px);display:flex;flex-direction:column;border:1px solid var(--line);border-radius:22px;background:linear-gradient(155deg,rgba(13,21,52,.93),rgba(5,9,26,.9));box-shadow:0 28px 80px rgba(0,0,0,.34);backdrop-filter:blur(18px);overflow:hidden}
+    .missionHandle{display:flex;align-items:center;gap:10px;width:100%;min-height:48px;padding:10px 15px;border:0;border-bottom:1px solid var(--line);background:rgba(13,20,48,.72);color:var(--ink);text-align:left;cursor:pointer}
+    .handleBar{display:none;width:42px;height:5px;border-radius:999px;background:rgba(186,201,238,.38)}
+    .missionHandle span{color:var(--cyan);font-size:10px;font-weight:950;letter-spacing:.14em}
+    .missionHandle strong{margin-left:auto;font-size:12px}
+    .missionBody{padding:17px;overflow:auto;overscroll-behavior:contain}
+    .missionStep{margin:0 0 7px;color:var(--cyan);font-size:10px;font-weight:950;letter-spacing:.15em}
+    .missionTitle{margin:0;font-size:21px;letter-spacing:-.035em}
+    .missionDescription{margin:9px 0 14px;color:#b5c0dd;font-size:13px;line-height:1.58}
+    .taskBox{padding:13px;border:1px solid rgba(159,183,255,.17);border-radius:15px;background:rgba(5,10,30,.56)}
+    .taskBox strong{display:block;font-size:13px}
+    .taskBox p{margin:6px 0 0;color:#aeb9d7;font-size:12px;line-height:1.5}
+    .facts{display:grid;gap:7px;margin-top:12px}
+    .fact{display:flex;align-items:flex-start;gap:9px;padding:9px 10px;border-radius:12px;background:rgba(114,135,255,.09);color:#d8e2fb;font-size:12px;line-height:1.4}
+    .fact::before{content:"";width:7px;height:7px;margin-top:5px;flex:0 0 7px;border-radius:50%;background:var(--green);box-shadow:0 0 10px rgba(114,242,190,.65)}
+    .choiceGrid{display:grid;grid-template-columns:1fr;gap:8px;margin-top:12px}
+    .choiceButton{min-height:46px;padding:10px 12px;border:1px solid rgba(159,183,255,.23);border-radius:12px;background:rgba(19,28,61,.74);color:#eef3ff;font-weight:850;font-size:13px;text-align:left;cursor:pointer;transition:.18s}
+    .choiceButton:hover{border-color:var(--cyan);transform:translateY(-1px)}
+    .choiceButton.correct{border-color:var(--green);background:rgba(35,128,99,.25)}
+    .missionDone{display:none;align-items:center;gap:9px;margin-top:13px;padding:10px 11px;border-radius:12px;background:rgba(35,128,99,.18);color:#d6fff0;font-size:12px;font-weight:850}
+    .missionDone.show{display:flex}
+    .controlDeck{position:absolute;z-index:25;left:0;right:0;bottom:0;min-height:92px;padding:12px max(18px,var(--safe-right)) calc(12px + var(--safe-bottom)) max(18px,var(--safe-left));display:grid;grid-template-columns:1fr auto 1fr;align-items:center;gap:12px;border-top:1px solid var(--line);background:linear-gradient(180deg,rgba(5,8,24,.66),rgba(5,8,24,.97));backdrop-filter:blur(20px)}
+    .deckInfo{display:flex;align-items:center;gap:10px;color:#a8b4d3;font-size:11px}
+    .deckInfo i{width:8px;height:8px;border-radius:50%;background:var(--green);box-shadow:0 0 12px var(--green)}
+    .deckActions{display:flex;align-items:center;justify-content:center;gap:9px}
+    .deckButton{min-height:50px;padding:0 17px;border:1px solid rgba(159,183,255,.25);border-radius:15px;background:rgba(17,26,57,.86);color:#f4f7ff;font-weight:900;font-size:13px;display:flex;align-items:center;justify-content:center;gap:8px;cursor:pointer;transition:.18s;white-space:nowrap}
+    .deckButton:hover:not(:disabled){transform:translateY(-2px);border-color:rgba(98,232,255,.65)}
+    .deckButton.primary{min-width:150px;background:linear-gradient(135deg,#4b62e6,#854fda);border-color:rgba(183,124,255,.7);box-shadow:0 12px 34px rgba(85,73,207,.3)}
+    .deckButton.scan{background:linear-gradient(135deg,#0d7f9a,#3a59c8);border-color:rgba(98,232,255,.66)}
+    .deckButton:disabled{opacity:.42;cursor:not-allowed;box-shadow:none}
+    .viewButton[aria-pressed="true"]{border-color:var(--cyan);color:#d9fbff}
+    .deckRight{display:flex;justify-content:flex-end;color:#7f8daf;font-size:10px;text-align:right}
+    .modalBackdrop{position:fixed;inset:0;z-index:100;display:none;place-items:center;padding:18px;background:rgba(1,3,12,.7);backdrop-filter:blur(18px)}
+    .modalBackdrop.show{display:grid}
+    .modalCard{width:min(650px,100%);max-height:calc(100dvh - 36px);overflow:auto;padding:26px;border:1px solid rgba(159,183,255,.28);border-radius:26px;background:linear-gradient(150deg,rgba(17,26,61,.98),rgba(5,9,27,.98));box-shadow:0 36px 100px rgba(0,0,0,.55)}
+    .modalEyebrow{margin:0;color:var(--cyan);font-size:11px;font-weight:950;letter-spacing:.16em}
+    .modalCard h2{margin:9px 0 10px;font-size:clamp(27px,5vw,42px);line-height:1.08;letter-spacing:-.05em}
+    .modalLead{margin:0;color:#bec8e3;font-size:14px;line-height:1.7}
+    .learningGrid{display:grid;grid-template-columns:repeat(3,1fr);gap:9px;margin:20px 0}
+    .learningCard{min-height:105px;padding:13px;border:1px solid rgba(159,183,255,.16);border-radius:15px;background:rgba(114,135,255,.08)}
+    .learningCard b{display:block;color:var(--cyan);font-size:11px}
+    .learningCard span{display:block;margin-top:7px;color:#d9e1f6;font-size:12px;line-height:1.45}
+    .modalNotice{margin:14px 0;padding:11px 12px;border-radius:12px;background:rgba(255,211,106,.09);color:#ffe7a5;font-size:11px;line-height:1.5}
+    .modalActions{display:flex;justify-content:flex-end;gap:9px;margin-top:18px}
+    .modalButton{min-height:50px;padding:0 18px;border:1px solid var(--line);border-radius:14px;background:rgba(18,27,59,.8);color:#fff;font-weight:900;cursor:pointer}
+    .modalButton.primary{background:linear-gradient(135deg,#4c64ed,#8a4ed4);border-color:#8292ff}
+    .reportHeader{display:flex;align-items:flex-start;justify-content:space-between;gap:18px}
+    .scoreOrb{width:92px;height:92px;flex:0 0 92px;border-radius:50%;display:grid;place-items:center;border:1px solid rgba(98,232,255,.45);background:radial-gradient(circle,rgba(98,232,255,.18),rgba(75,98,230,.14));box-shadow:0 0 36px rgba(98,232,255,.14);text-align:center}
+    .scoreOrb strong{display:block;font-size:27px}
+    .scoreOrb span{display:block;color:#9cadd1;font-size:9px;font-weight:900;letter-spacing:.12em}
+    .reportRoute{display:grid;gap:8px;margin:18px 0}
+    .reportRow{display:grid;grid-template-columns:30px 1fr auto;align-items:center;gap:10px;padding:10px 12px;border-radius:12px;background:rgba(114,135,255,.08);font-size:12px}
+    .reportRow i{width:25px;height:25px;border-radius:8px;display:grid;place-items:center;background:rgba(114,242,190,.14);color:var(--green);font-style:normal;font-weight:950}
+    .reportRow span{color:#aeb9d7}
+    .reportConclusion{padding:14px;border-left:3px solid var(--cyan);background:rgba(98,232,255,.06);color:#dbe8ff;font-size:13px;line-height:1.6}
+    .warpFlash{position:absolute;inset:0;z-index:70;pointer-events:none;opacity:0;background:radial-gradient(circle at 50% 50%,rgba(255,255,255,.92),rgba(98,232,255,.4) 15%,rgba(75,98,230,.14) 35%,transparent 68%)}
+    .warpFlash.run{animation:flash 1s ease}
+    @keyframes flash{0%{opacity:0}42%{opacity:.8}60%{opacity:.28}100%{opacity:0}}
+    @media(max-width:980px){
+      .shipBar{grid-template-columns:1fr auto}.route{display:none}.missionPanel{width:min(340px,calc(100% - 36px))}.metaPill:first-child{display:none}
+    }
+    @media(max-width:700px){
+      .shipBar{height:58px;padding-top:calc(6px + var(--safe-top));grid-template-columns:1fr auto;gap:8px}.brandMark{width:38px;height:38px;flex-basis:38px;border-radius:12px}.brandText small{font-size:8px}.brandText strong{font-size:14px}.shipMeta{gap:5px}.metaPill{min-height:38px;padding:6px 8px}.metaPill span{font-size:8px}.metaPill strong{font-size:10px}.soundButton{width:38px;height:38px}
+      .viewport{inset:58px 0 82px}.destinationLabel{top:13px}.destinationLabel span{font-size:9px}.destinationLabel h1{font-size:23px}.destinationLabel p{display:none}.reticle,.scanLine{width:min(76vw,360px)}
+      .instrument{left:10px;bottom:12px;width:155px;padding:8px 9px}.instrumentRow{font-size:9px}.instrumentRow strong{font-size:9px}.simNotice{right:10px;bottom:11px;max-width:155px;font-size:8px}
+      .cockpitFrame::before,.cockpitFrame::after{top:58px;bottom:82px;width:34px}
+      .solarTarget{width:43px;height:43px}.solarTarget[data-choice="arm"]{left:calc(50% + min(18vw,82px));top:calc(50% + min(8vw,38px))}.solarTarget[data-choice="outside"]{left:calc(50% + min(32vw,145px));top:calc(50% - min(22vw,100px))}.solarTarget span{font-size:9px;top:45px}
+      .missionPanel{position:fixed;left:0;right:0;top:auto;bottom:calc(82px + var(--safe-bottom));width:100%;max-height:min(55dvh,480px);border-radius:22px 22px 0 0;border-left:0;border-right:0;border-bottom:0;padding-bottom:0;transform:translateY(0);transition:transform .24s ease;touch-action:none}.missionPanel.collapsed{transform:translateY(calc(100% - 68px))}.missionPanel.dragging{transition:none}.missionHandle{min-height:54px;display:grid;grid-template-columns:1fr auto;gap:4px;padding:9px 16px 8px;text-align:center;touch-action:none}.handleBar{display:block;position:absolute;top:7px;left:50%;transform:translateX(-50%)}.missionHandle span{margin-top:6px}.missionHandle strong{margin:0}.missionBody{padding:14px 16px 17px}.missionTitle{font-size:19px}.missionDescription{font-size:13px}.choiceButton{min-height:48px;font-size:13px}
+      .controlDeck{min-height:82px;padding:9px 10px calc(9px + var(--safe-bottom));grid-template-columns:1fr;gap:0}.deckInfo,.deckRight{display:none}.deckActions{display:grid;grid-template-columns:52px minmax(110px,1fr) minmax(115px,1.25fr);gap:7px}.deckButton{min-height:52px;padding:0 10px;border-radius:14px;font-size:12px}.deckButton.primary{min-width:0}.viewButton span{display:none}
+      .toast{top:68px;font-size:12px}.learningGrid{grid-template-columns:1fr}.learningCard{min-height:auto}.modalCard{padding:21px 18px;border-radius:22px}.modalActions{display:grid;grid-template-columns:1fr}.modalButton{width:100%}.reportHeader{display:block}.scoreOrb{margin:15px 0 0}
+    }
+    @media(orientation:landscape) and (max-height:600px){
+      .shipBar{height:48px;padding-top:calc(4px + var(--safe-top));padding-bottom:4px}.brandMark{width:34px;height:34px;flex-basis:34px}.brandText small{display:none}.viewport{inset:48px 0 66px}.destinationLabel{top:7px}.destinationLabel h1{font-size:19px}.instrument{bottom:7px}.simNotice{bottom:7px}.controlDeck{min-height:66px;padding-top:6px;padding-bottom:calc(6px + var(--safe-bottom))}.deckButton{min-height:44px}.cockpitFrame::before,.cockpitFrame::after{top:48px;bottom:66px}
+      .missionPanel{left:max(10px,var(--safe-left));right:auto;top:58px;bottom:auto;width:min(310px,40vw);max-height:calc(100dvh - 132px);padding:0;border:1px solid var(--line);border-radius:17px;transform:none!important;touch-action:auto}.missionHandle{min-height:42px;display:flex;padding:7px 11px;text-align:left}.missionHandle span{margin:0}.missionHandle strong{margin-left:auto}.handleBar{display:none}.missionBody{padding:11px}.missionTitle{font-size:17px}.missionDescription{margin:6px 0 9px;font-size:11px}.taskBox{padding:9px}.facts{margin-top:8px}.fact{padding:6px 8px;font-size:10px}.choiceGrid{grid-template-columns:repeat(3,1fr);gap:5px}.choiceButton{min-height:38px;padding:7px;font-size:10px}.missionDone{margin-top:7px;padding:7px;font-size:10px}
+      .deckActions{display:flex}.viewButton span{display:inline}.modalCard{max-height:calc(100dvh - 20px);padding:17px}.learningGrid{grid-template-columns:repeat(3,1fr);margin:12px 0}.learningCard{min-height:82px}.modalActions{display:flex}.modalButton{width:auto;min-height:43px}
+    }
+    @media(prefers-reduced-motion:reduce){*{scroll-behavior:auto!important;animation-duration:.01ms!important;animation-iteration-count:1!important;transition-duration:.01ms!important}.reticleRing{animation:none}}
+  </style>
+</head>
+<body>
+  <main class="app" id="app">
+    <canvas id="space" aria-label="우주와 은하 관측 화면"></canvas>
+    <div class="spaceGlow"></div><div class="noise"></div><div class="cockpitFrame"></div>
+    <header class="shipBar">
+      <div class="brand">
+        <div class="brandMark" aria-hidden="true">
+          <svg viewBox="0 0 24 24" fill="none"><path d="M12 2c3.4 2.4 5.5 5.6 5.5 9.2 0 4.2-2.6 7.7-5.5 10.8-2.9-3.1-5.5-6.6-5.5-10.8C6.5 7.6 8.6 4.4 12 2Z" stroke="currentColor" stroke-width="1.6"/><circle cx="12" cy="10" r="2.3" stroke="currentColor" stroke-width="1.5"/><path d="m7.3 15-3 3.4 4.8-.7M16.7 15l3 3.4-4.8-.7" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
+        </div>
+        <div class="brandText"><small>SCILAB EXPLORER 01</small><strong>은하 항해일지</strong></div>
+      </div>
+      <nav class="route" id="route" aria-label="탐사 진행 단계"></nav>
+      <div class="shipMeta">
+        <div class="metaPill"><span>SHIP</span><strong>은하누리 01</strong></div>
+        <div class="metaPill"><span>MISSION</span><strong id="missionCount">0 / 5</strong></div>
+        <button class="soundButton" id="motionButton" type="button" aria-label="움직임 효과 줄이기" aria-pressed="false" title="움직임 효과 줄이기">✦</button>
+      </div>
+    </header>
+
+    <section class="viewport" id="viewport">
+      <div class="destinationLabel"><span id="sectorLabel">DEPARTURE SECTOR</span><h1 id="destinationName">지구 궤도 정거장</h1><p id="destinationSubtitle">은하 탐사를 위한 항법 장치를 준비하고 있습니다.</p></div>
+      <div class="reticle" id="reticle"><div class="reticleRing"></div></div><div class="scanLine" id="scanLine"></div>
+      <div class="solarTargets" id="solarTargets" aria-label="태양계 위치 선택">
+        <button class="solarTarget" data-choice="center" type="button" aria-label="은하 중심부 선택">A<span>중심부</span></button>
+        <button class="solarTarget" data-choice="arm" type="button" aria-label="나선팔의 중심에서 떨어진 위치 선택">B<span>나선팔</span></button>
+        <button class="solarTarget" data-choice="outside" type="button" aria-label="은하 바깥 선택">C<span>은하 바깥</span></button>
+      </div>
+      <div class="instrument" aria-hidden="true">
+        <div class="instrumentRow"><span>관측 배율</span><strong id="zoomReadout">× 1.0</strong></div>
+        <div class="instrumentRow"><span>항법 상태</span><strong id="navReadout">대기</strong></div>
+        <div class="instrumentRow"><span>관측 모드</span><strong id="viewReadout">정면</strong></div>
+      </div>
+      <p class="simNotice">교육용 관측 시뮬레이터 · 천체의 크기와 이동 시간은 학습을 위해 단축해 표현했습니다.</p>
+    </section>
+
+    <aside class="missionPanel" id="missionPanel" aria-label="현재 탐사 미션">
+      <button class="missionHandle" id="missionHandle" type="button" aria-expanded="true"><i class="handleBar"></i><span>OBSERVATION MISSION</span><strong id="handleTitle">출항 준비</strong></button>
+      <div class="missionBody">
+        <p class="missionStep" id="missionStep">MISSION 00</p><h2 class="missionTitle" id="missionTitle">은하 탐사선에 탑승하세요</h2><p class="missionDescription" id="missionDescription">우리은하와 여러 외부 은하를 관찰하고, 모양을 근거로 은하의 종류를 판별합니다.</p>
+        <div class="taskBox"><strong id="taskTitle">탐사 목표</strong><p id="taskText">출항 후 각 목적지에서 관측 스캔을 완료하세요.</p></div>
+        <div class="facts" id="facts"></div><div class="choiceGrid" id="choiceGrid"></div>
+        <div class="missionDone" id="missionDone"><span>✓</span><span id="missionDoneText">관측 결과가 현재 항해일지에 반영되었습니다.</span></div>
+      </div>
+    </aside>
+
+    <div class="toast" id="toast" role="status" aria-live="polite"></div>
+    <footer class="controlDeck">
+      <div class="deckInfo"><i></i><span id="systemMessage">모든 항법 장치 정상</span></div>
+      <div class="deckActions">
+        <button class="deckButton viewButton" id="viewButton" type="button" aria-pressed="false" title="은하를 다른 방향에서 관찰">◉ <span>관측 방향</span></button>
+        <button class="deckButton scan" id="scanButton" type="button">⌁ 스캔</button>
+        <button class="deckButton primary" id="warpButton" type="button">출항하기 ›</button>
+      </div>
+      <div class="deckRight">손가락으로 관측 화면을 움직여<br>우주선 시점을 바꿀 수 있습니다.</div>
+    </footer>
+    <div class="warpFlash" id="warpFlash"></div>
+  </main>
+
+  <div class="modalBackdrop show" id="introModal" role="dialog" aria-modal="true" aria-labelledby="introTitle">
+    <section class="modalCard">
+      <p class="modalEyebrow">SCILAB SPACE MISSION</p><h2 id="introTitle">우주선을 타고<br>은하를 탐사해 볼까요?</h2>
+      <p class="modalLead">우리은하의 모습과 태양계의 위치를 확인한 뒤, 여러 외부 은하를 스캔해 모양에 따라 분류해 보세요.</p>
+      <div class="learningGrid">
+        <article class="learningCard"><b>01 · 우리은하</b><span>정면과 옆면의 모습을 비교하고 태양계의 위치를 찾습니다.</span></article>
+        <article class="learningCard"><b>02 · 외부 은하</b><span>나선·타원·불규칙 은하의 전체적인 모양을 관찰합니다.</span></article>
+        <article class="learningCard"><b>03 · 증거 판별</b><span>미확인 은하의 모양을 근거로 종류를 스스로 결정합니다.</span></article>
+      </div>
+      <p class="modalNotice">실제 은하 사이의 거리는 매우 멉니다. 이 프로그램은 학습을 위해 공간 이동과 천체의 크기를 단축하여 표현합니다.</p>
+      <div class="modalActions"><button class="modalButton primary" id="startButton" type="button">탐사 시작</button></div>
+    </section>
+  </div>
+
+  <div class="modalBackdrop" id="reportModal" role="dialog" aria-modal="true" aria-labelledby="reportTitle">
+    <section class="modalCard">
+      <div class="reportHeader"><div><p class="modalEyebrow">MISSION COMPLETE</p><h2 id="reportTitle">은하 탐사 보고서</h2><p class="modalLead" id="reportLead">관측 자료를 정리했습니다.</p></div><div class="scoreOrb"><div><strong id="reportScore">5/5</strong><span>MISSION</span></div></div></div>
+      <div class="reportRoute" id="reportRoute"></div><div class="reportConclusion" id="reportConclusion"></div>
+      <div class="modalActions"><button class="modalButton" id="closeReportButton" type="button">탐사 화면 보기</button><button class="modalButton primary" id="restartButton" type="button">다시 탐사하기</button></div>
+    </section>
+  </div>
+
+  <script>
+    (()=>{
+      'use strict';
+      const destinations=[
+        {key:'earth',sector:'DEPARTURE SECTOR',name:'지구 궤도 정거장',subtitle:'은하 탐사를 위한 항법 장치를 준비하고 있습니다.',title:'은하 탐사선에 탑승하세요',description:'우리은하와 여러 외부 은하를 관찰하고, 모양을 근거로 은하의 종류를 판별합니다.',task:'출항하기를 눌러 첫 번째 목적지인 우리은하 관측 구역으로 이동하세요.',type:'earth'},
+        {key:'milkyway',sector:'HOME GALAXY · 01',name:'우리은하 관측 구역',subtitle:'태양계가 포함된 은하를 정면과 옆면에서 관찰합니다.',title:'우리은하에서 태양계를 찾아라',description:'우리은하는 수많은 별이 모인 거대한 천체입니다. 관측 방향을 바꾸며 전체 모습을 비교하세요.',task:'우리은하를 스캔한 뒤 태양계가 있을 위치를 선택하세요.',type:'milkyway'},
+        {key:'spiral',sector:'EXTERNAL GALAXY · 02',name:'나선 은하 관측 구역',subtitle:'중심에서 휘어져 뻗어 나가는 구조를 관찰합니다.',title:'나선 구조의 증거를 수집하라',description:'은하의 중심 주변에서 팔 모양의 구조가 휘어져 뻗어 나가는지 살펴보세요.',task:'스캔을 실행해 나선 은하의 특징을 관측 기록에 저장하세요.',type:'spiral'},
+        {key:'elliptical',sector:'EXTERNAL GALAXY · 03',name:'타원 은하 관측 구역',subtitle:'전체적으로 둥글거나 타원형인 모습을 관찰합니다.',title:'매끈한 타원 모양을 확인하라',description:'뚜렷한 나선팔 없이 전체적으로 둥글거나 길쭉한 모양인지 살펴보세요.',task:'스캔을 실행해 타원 은하의 특징을 관측 기록에 저장하세요.',type:'elliptical'},
+        {key:'irregular',sector:'EXTERNAL GALAXY · 04',name:'불규칙 은하 관측 구역',subtitle:'일정한 전체 모양을 찾기 어려운 은하를 관찰합니다.',title:'불규칙한 형태의 증거를 찾아라',description:'나선이나 타원처럼 일정하게 정리된 전체 모양이 나타나는지 비교하세요.',task:'스캔을 실행해 불규칙 은하의 특징을 관측 기록에 저장하세요.',type:'irregular'},
+        {key:'unknown',sector:'UNKNOWN SIGNAL · 05',name:'미확인 은하 X-27',subtitle:'스캔 자료만으로 은하의 종류를 판별해야 합니다.',title:'미확인 은하를 분류하라',description:'지금까지 모은 관측 기준을 사용해 이 은하의 종류와 판단 근거를 결정하세요.',task:'먼저 스캔한 뒤, 관찰되는 전체 모양에 가장 알맞은 은하 종류를 선택하세요.',type:'unknown'}
+      ];
+      const knownFacts={
+        milkyway:['정면에서는 중심에서 뻗은 나선팔 구조를 볼 수 있습니다.','옆면에서는 중심부가 두껍고 원반 부분이 납작하게 보입니다.','태양계는 은하 중심이 아니라 중심에서 떨어진 나선팔의 한 부분에 있습니다.'],
+        spiral:['중심부 주위로 휘어진 팔 모양의 구조가 나타납니다.','전체 모습을 보았을 때 나선 형태를 구별할 수 있습니다.'],
+        elliptical:['전체적인 윤곽이 둥글거나 길쭉한 타원형입니다.','나선 은하처럼 뚜렷한 팔 구조가 보이지 않습니다.'],
+        irregular:['전체적으로 일정하게 정리된 모양을 찾기 어렵습니다.','나선형이나 타원형 어느 한 가지 모습으로 구분하기 어렵습니다.']
+      };
+      const unknownTypes=['spiral','elliptical','irregular'];
+      const unknownType=unknownTypes[Math.floor(Math.random()*unknownTypes.length)];
+      const typeNames={spiral:'나선 은하',elliptical:'타원 은하',irregular:'불규칙 은하'};
+      const evidence={spiral:'중심에서 휘어져 뻗는 팔 구조가 보입니다.',elliptical:'뚜렷한 팔 없이 전체가 둥글거나 타원형입니다.',irregular:'일정한 전체 모양을 구분하기 어렵습니다.'};
+      const el=id=>document.getElementById(id);
+      const canvas=el('space'),ctx=canvas.getContext('2d'),app=el('app'),viewport=el('viewport'),route=el('route');
+      const ui={sector:el('sectorLabel'),name:el('destinationName'),subtitle:el('destinationSubtitle'),missionCount:el('missionCount'),handleTitle:el('handleTitle'),step:el('missionStep'),title:el('missionTitle'),description:el('missionDescription'),task:el('taskText'),facts:el('facts'),choices:el('choiceGrid'),done:el('missionDone'),doneText:el('missionDoneText'),scan:el('scanButton'),warp:el('warpButton'),view:el('viewButton'),viewReadout:el('viewReadout'),zoomReadout:el('zoomReadout'),navReadout:el('navReadout'),systemMessage:el('systemMessage'),reticle:el('reticle'),scanLine:el('scanLine'),targets:el('solarTargets'),toast:el('toast'),panel:el('missionPanel'),handle:el('missionHandle'),warpFlash:el('warpFlash')};
+      let current=0,viewMode='face',scanning=false,warping=false,reduced=false,solarFound=false,scanDone=new Set(),completed=new Set(),attempts=0,look={x:0,y:0},targetLook={x:0,y:0},warpPower=0,toastTimer=0;
+      const stars=[];let width=0,height=0,dpr=1,galaxySets={};
+
+      function seeded(seed){let value=seed>>>0;return()=>{value=(value*1664525+1013904223)>>>0;return value/4294967296}}
+      function gaussian(rand){return Math.sqrt(-2*Math.log(Math.max(.0001,rand())))*Math.cos(2*Math.PI*rand())}
+      function buildParticles(){
+        const spiral=[];let r=seeded(31);for(let i=0;i<950;i++){const arm=i%3;const radius=Math.pow(r(),.72);const angle=arm*Math.PI*2/3+radius*5.9+gaussian(r)*.15;spiral.push({x:Math.cos(angle)*radius,y:Math.sin(angle)*radius*.72,s:.4+r()*1.7,a:.18+r()*.68,c:r()>.72?1:0})}
+        const ellipse=[];r=seeded(71);for(let i=0;i<900;i++){const x=gaussian(r)*.34,y=gaussian(r)*.18;if(Math.abs(x)<1.05&&Math.abs(y)<.62)ellipse.push({x,y,s:.4+r()*1.8,a:.16+r()*.65,c:r()>.82?1:0})}
+        const irregular=[];r=seeded(121);const centers=[[-.35,-.12],[.13,.17],[.42,-.2],[-.05,-.35]];for(let i=0;i<760;i++){const c=centers[Math.floor(r()*centers.length)];irregular.push({x:c[0]+gaussian(r)*(.1+r()*.07),y:c[1]+gaussian(r)*(.08+r()*.08),s:.5+r()*2,a:.16+r()*.72,c:r()>.58?1:0})}
+        galaxySets={spiral,elliptical:ellipse,irregular};
+      }
+      buildParticles();
+      function resize(){const rect=canvas.getBoundingClientRect();width=Math.max(1,rect.width);height=Math.max(1,rect.height);dpr=Math.min(2,window.devicePixelRatio||1);canvas.width=Math.round(width*dpr);canvas.height=Math.round(height*dpr);ctx.setTransform(dpr,0,0,dpr,0,0);if(!stars.length){for(let i=0;i<260;i++)stars.push({x:(Math.random()-.5)*width*1.8,y:(Math.random()-.5)*height*1.8,z:Math.random()*.95+.05,p:Math.random()*Math.PI*2})}}
+      function drawStars(time){const cx=width/2+look.x*28,cy=height/2+look.y*18;ctx.save();ctx.translate(cx,cy);for(const star of stars){star.z-=warpPower*(reduced?.005:.017);if(star.z<.03){star.z=1;star.x=(Math.random()-.5)*width*1.8;star.y=(Math.random()-.5)*height*1.8}const sx=star.x/star.z,sy=star.y/star.z;if(Math.abs(sx)>width||Math.abs(sy)>height)continue;const alpha=Math.min(1,(1-star.z)*.9+.14);const size=Math.max(.5,(1-star.z)*2.1);ctx.strokeStyle=`rgba(${star.p>3?'165,195,255':'240,245,255'},${alpha})`;ctx.lineWidth=size;if(warpPower>.12){ctx.beginPath();ctx.moveTo(sx,sy);ctx.lineTo(sx*(1+warpPower*.13),sy*(1+warpPower*.13));ctx.stroke()}else{ctx.fillStyle=ctx.strokeStyle;ctx.fillRect(sx,sy,size,size)}}ctx.restore()}
+      function coreGlow(cx,cy,r,colorA,colorB,scaleY=1){ctx.save();ctx.translate(cx,cy);ctx.scale(1,scaleY);const g=ctx.createRadialGradient(0,0,0,0,0,r);g.addColorStop(0,colorA);g.addColorStop(.18,colorB);g.addColorStop(1,'rgba(20,35,95,0)');ctx.globalCompositeOperation='lighter';ctx.fillStyle=g;ctx.beginPath();ctx.arc(0,0,r,0,Math.PI*2);ctx.fill();ctx.restore()}
+      function drawParticleGalaxy(type,time,scale=1){const list=galaxySets[type],cx=width/2+look.x*34,cy=height/2+look.y*22;const radius=Math.min(width,height)*(type==='irregular'?.36:.39)*scale;const rot=(time*.000018)*(type==='spiral'?1:.25);ctx.save();ctx.translate(cx,cy);ctx.rotate(rot);ctx.globalCompositeOperation='lighter';for(const p of list){const x=p.x*radius,y=p.y*radius;const base=type==='elliptical'?'235,201,155':p.c?'110,204,255':'171,145,255';ctx.fillStyle=`rgba(${base},${p.a})`;ctx.beginPath();ctx.arc(x,y,p.s*(width<700?.72:1),0,Math.PI*2);ctx.fill()}ctx.restore();const colors=type==='elliptical'?['rgba(255,245,219,.85)','rgba(255,188,118,.32)']:['rgba(244,248,255,.88)','rgba(131,127,255,.35)'];coreGlow(cx,cy,radius*.3,colors[0],colors[1],type==='elliptical'?.62:.72)}
+      function drawEdgeGalaxy(time){const cx=width/2+look.x*30,cy=height/2+look.y*20,r=Math.min(width*.42,height*.35);coreGlow(cx,cy,r*.75,'rgba(255,244,218,.78)','rgba(139,126,255,.28)',.2);ctx.save();ctx.translate(cx,cy);ctx.globalCompositeOperation='lighter';const rand=seeded(91);for(let i=0;i<500;i++){const x=(rand()-.5)*r*2.2;const y=gaussian(rand)*(7+26*(1-Math.abs(x)/(r*1.1)));ctx.fillStyle=`rgba(${rand()>.6?'120,195,255':'231,225,255'},${.12+rand()*.55})`;ctx.fillRect(x,y,.7+rand()*1.4,.7+rand()*1.4)}ctx.restore()}
+      function drawEarth(time){const cx=width/2+look.x*25,cy=height/2+look.y*16,r=Math.min(width,height)*(width<700?.18:.2);ctx.save();ctx.translate(cx,cy);const g=ctx.createRadialGradient(-r*.3,-r*.35,r*.08,0,0,r);g.addColorStop(0,'#bff5ff');g.addColorStop(.28,'#3e9eea');g.addColorStop(.72,'#174d91');g.addColorStop(1,'#06142e');ctx.fillStyle=g;ctx.shadowColor='rgba(98,211,255,.7)';ctx.shadowBlur=32;ctx.beginPath();ctx.arc(0,0,r,0,Math.PI*2);ctx.fill();ctx.shadowBlur=0;ctx.globalAlpha=.82;ctx.fillStyle='#63c69f';for(const p of [[-.35,-.18,.34,.2],[.17,-.25,.28,.17],[-.06,.26,.22,.12],[.32,.18,.19,.13]]){ctx.beginPath();ctx.ellipse(p[0]*r,p[1]*r,p[2]*r,p[3]*r,time*.00002,0,Math.PI*2);ctx.fill()}ctx.restore();coreGlow(cx,cy,r*1.7,'rgba(83,199,255,.08)','rgba(83,199,255,.04)')}
+      function drawScene(time){ctx.clearRect(0,0,width,height);look.x+=(targetLook.x-look.x)*.045;look.y+=(targetLook.y-look.y)*.045;warpPower*=.94;drawStars(time);const d=destinations[current];if(d.type==='earth')drawEarth(time);else if(d.type==='milkyway'){if(viewMode==='side')drawEdgeGalaxy(time);else drawParticleGalaxy('spiral',time,1.12)}else if(d.type==='unknown')drawParticleGalaxy(unknownType,time,1);else drawParticleGalaxy(d.type,time,1);requestAnimationFrame(drawScene)}
+
+      function buildRoute(){route.innerHTML='';for(let i=1;i<destinations.length;i++){const dot=document.createElement('span');dot.className='routeDot';dot.setAttribute('aria-label',`${i}단계`);route.appendChild(dot)}updateRoute()}
+      function updateRoute(){[...route.children].forEach((dot,index)=>{const step=index+1;dot.classList.toggle('done',completed.has(step));dot.classList.toggle('active',current===step)})}
+      function renderFacts(items=[]){ui.facts.innerHTML='';items.forEach(text=>{const item=document.createElement('div');item.className='fact';item.textContent=text;ui.facts.appendChild(item)})}
+      function renderChoices(){ui.choices.innerHTML='';if(current!==5||!scanDone.has(5))return;['spiral','elliptical','irregular'].forEach(type=>{const button=document.createElement('button');button.type='button';button.className='choiceButton';button.dataset.type=type;button.textContent=typeNames[type];button.addEventListener('click',()=>classifyUnknown(type,button));ui.choices.appendChild(button)})}
+      function renderMission(){const d=destinations[current];ui.sector.textContent=d.sector;ui.name.textContent=d.name;ui.subtitle.textContent=d.subtitle;ui.handleTitle.textContent=current===0?'출항 준비':`${current}구역 · ${completed.has(current)?'완료':'탐사 중'}`;ui.step.textContent=current===0?'MISSION 00':`MISSION ${String(current).padStart(2,'0')}`;ui.title.textContent=d.title;ui.description.textContent=d.description;ui.task.textContent=d.task;ui.done.classList.toggle('show',completed.has(current));ui.doneText.textContent=current===5?'미확인 은하 판별을 완료했습니다.':'관측 결과가 현재 항해일지에 반영되었습니다.';ui.view.disabled=!(current===1&&!warping);ui.view.setAttribute('aria-pressed',String(viewMode==='side'));ui.scan.disabled=current===0||scanning||warping||completed.has(current);ui.scan.textContent=scanning?'⌁ 분석 중':'⌁ 스캔';ui.warp.disabled=warping||(current>0&&!completed.has(current));ui.warp.textContent=current===0?'출항하기 ›':current===5?'탐사 보고서 ›':'다음 구역으로 ›';ui.targets.classList.toggle('show',current===1&&scanDone.has(1)&&!solarFound&&viewMode==='face');renderFacts(scanDone.has(current)&&current>0&&current<5?knownFacts[d.key]:[]);renderChoices();ui.missionCount.textContent=`${completed.size} / 5`;ui.viewReadout.textContent=viewMode==='side'?'옆면':'정면';ui.zoomReadout.textContent=current===0?'× 1.0':`× ${(1.4+current*.35).toFixed(1)}`;ui.navReadout.textContent=warping?'워프 중':scanning?'스캔 중':completed.has(current)?'기록 완료':'관측 대기';ui.systemMessage.textContent=warping?'목적지 좌표로 이동 중':completed.has(current)?'관측 자료 기록 완료':'모든 항법 장치 정상';updateRoute()}
+      function showToast(message,type='good'){clearTimeout(toastTimer);ui.toast.textContent=message;ui.toast.className=`toast show ${type}`;toastTimer=setTimeout(()=>ui.toast.className='toast',2600)}
+      function setPanel(open){ui.panel.classList.toggle('collapsed',!open);ui.handle.setAttribute('aria-expanded',String(open))}
+      function completeMission(index){if(completed.has(index))return;completed.add(index);renderMission();setPanel(true)}
+      function runScan(){if(current===0||scanning||completed.has(current))return;scanning=true;ui.reticle.classList.add('scanning');ui.scanLine.classList.remove('running');void ui.scanLine.offsetWidth;ui.scanLine.classList.add('running');renderMission();setTimeout(()=>{scanning=false;ui.reticle.classList.remove('scanning');scanDone.add(current);if(current===1){showToast(viewMode==='side'?'옆면 관측 완료! 정면으로 바꿔 태양계 위치를 찾아보세요.':'스캔 완료! 표시된 세 위치 중 태양계가 있을 곳을 선택하세요.');}else if(current===5){showToast('형태 분석 완료! 이 은하의 종류를 선택하세요.');}else{completeMission(current);showToast(`${typeNames[destinations[current].type]}의 특징을 관측 기록에 저장했습니다.`)}renderMission();setPanel(true)},1650)}
+      function chooseSolar(choice){if(current!==1||!scanDone.has(1)||solarFound)return;if(choice==='arm'){solarFound=true;completeMission(1);ui.targets.classList.remove('show');showToast('정확해요! 태양계는 우리은하 중심에서 떨어진 나선팔의 한 부분에 있습니다.')}else{attempts++;showToast(choice==='center'?'태양계는 은하 중심부에 있지 않습니다. 중심에서 떨어진 위치를 다시 찾아보세요.':'태양계는 우리은하 바깥이 아니라 은하 원반 안에 있습니다.','bad')}}
+      function classifyUnknown(type,button){if(current!==5||completed.has(5))return;attempts++;if(type===unknownType){button.classList.add('correct');completeMission(5);renderFacts([evidence[unknownType],`따라서 이 은하는 ${typeNames[unknownType]}로 분류할 수 있습니다.`]);showToast(`판별 성공! 미확인 은하는 ${typeNames[unknownType]}입니다.`)}else{showToast(`${typeNames[type]}의 기준과 관측된 전체 모양이 맞는지 다시 비교해 보세요.`,'bad')}}
+      function toggleView(){if(current!==1)return;viewMode=viewMode==='face'?'side':'face';ui.view.setAttribute('aria-pressed',String(viewMode==='side'));showToast(viewMode==='side'?'우리은하의 옆면을 관찰합니다. 중심부는 두껍고 원반은 납작합니다.':'우리은하의 정면을 관찰합니다. 나선팔 구조를 찾아보세요.');renderMission()}
+      function warpNext(){if(warping)return;if(current===5){openReport();return}if(current>0&&!completed.has(current))return;const next=current+1;warping=true;warpPower=reduced?.18:1;ui.warpFlash.classList.remove('run');void ui.warpFlash.offsetWidth;ui.warpFlash.classList.add('run');renderMission();setPanel(false);setTimeout(()=>{current=next;viewMode='face';ui.targets.classList.remove('show');warping=false;renderMission();showToast(`${destinations[current].name}에 도착했습니다. 관측 스캔을 시작하세요.`);setTimeout(()=>setPanel(true),320)},reduced?250:920)}
+      function openReport(){const rows=[['우리은하','태양계 위치 확인'],['나선 은하','나선팔 구조 관측'],['타원 은하','둥글거나 타원형 관측'],['불규칙 은하','일정하지 않은 형태 관측'],['미확인 은하',`${typeNames[unknownType]} 판별`]];el('reportRoute').innerHTML=rows.map((row,i)=>`<div class="reportRow"><i>${i+1}</i><strong>${row[0]}</strong><span>${row[1]}</span></div>`).join('');el('reportScore').textContent=`${completed.size}/5`;el('reportLead').textContent=attempts<=2?'관측 근거를 정확하게 사용해 모든 탐사 미션을 완료했습니다.':'여러 번 비교하며 모든 은하 탐사 미션을 완료했습니다.';el('reportConclusion').innerHTML=`<strong>탐사 결론</strong><br>은하는 전체적인 모양에 따라 나선 은하, 타원 은하, 불규칙 은하 등으로 구분할 수 있습니다. 우리은하는 나선팔을 가진 은하이며 태양계는 은하 중심에서 떨어진 나선팔의 한 부분에 있습니다.`;el('reportModal').classList.add('show')}
+      function restart(){current=0;viewMode='face';scanning=false;warping=false;solarFound=false;scanDone=new Set();completed=new Set();attempts=0;el('reportModal').classList.remove('show');renderMission();setPanel(true);showToast('새 탐사 항로를 준비했습니다.')}
+      function bindPanelSwipe(){let pid=null,startY=0,offset=0,moved=false,suppressClick=false;ui.handle.addEventListener('pointerdown',e=>{if(window.matchMedia('(max-width:700px) and (orientation:portrait)').matches){pid=e.pointerId;startY=e.clientY;offset=0;moved=false;try{ui.handle.setPointerCapture(pid)}catch{}}});ui.handle.addEventListener('pointermove',e=>{if(e.pointerId!==pid)return;offset=e.clientY-startY;if(Math.abs(offset)<3)return;moved=true;ui.panel.classList.add('dragging');ui.panel.style.transform=`translateY(${Math.max(-80,offset)}px)`;e.preventDefault()});function end(e){if(e.pointerId!==pid)return;ui.panel.classList.remove('dragging');ui.panel.style.removeProperty('transform');if(offset>52)setPanel(false);else if(offset<-52)setPanel(true);else setPanel(ui.panel.classList.contains('collapsed'));if(moved){suppressClick=true;setTimeout(()=>{suppressClick=false},280)}pid=null;offset=0;moved=false}ui.handle.addEventListener('pointerup',end);ui.handle.addEventListener('pointercancel',end);ui.handle.addEventListener('click',()=>{if(suppressClick)return;setPanel(ui.panel.classList.contains('collapsed'))})}
+
+      viewport.addEventListener('pointermove',e=>{const r=viewport.getBoundingClientRect();targetLook.x=((e.clientX-r.left)/r.width-.5)*2;targetLook.y=((e.clientY-r.top)/r.height-.5)*2});viewport.addEventListener('pointerleave',()=>{targetLook.x=0;targetLook.y=0});
+      ui.scan.addEventListener('click',runScan);ui.warp.addEventListener('click',warpNext);ui.view.addEventListener('click',toggleView);document.querySelectorAll('.solarTarget').forEach(button=>button.addEventListener('click',()=>chooseSolar(button.dataset.choice)));
+      el('startButton').addEventListener('click',()=>{el('introModal').classList.remove('show');warpNext()});el('closeReportButton').addEventListener('click',()=>el('reportModal').classList.remove('show'));el('restartButton').addEventListener('click',restart);
+      el('motionButton').addEventListener('click',e=>{reduced=!reduced;e.currentTarget.setAttribute('aria-pressed',String(reduced));e.currentTarget.textContent=reduced?'·':'✦';showToast(reduced?'움직임 효과를 줄였습니다.':'움직임 효과를 다시 켰습니다.')});
+      window.addEventListener('resize',resize,{passive:true});window.addEventListener('orientationchange',()=>setTimeout(resize,120),{passive:true});bindPanelSwipe();buildRoute();resize();renderMission();requestAnimationFrame(drawScene);
+    })();
+  </script>
+</body>
+</html>
