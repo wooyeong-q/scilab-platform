@@ -16,6 +16,7 @@ export function ResponsiveProgramRunner({title,url,programId}:{title:string;url:
   const [portrait,setPortrait]=useState(false);
   const [loaded,setLoaded]=useState(false);
   const [rotateMessage,setRotateMessage]=useState('');
+  const landscapeRecommended=programId!=='galaxy-voyage';
 
   useEffect(()=>{
     const update=()=>setPortrait(window.innerWidth<720&&window.innerHeight>window.innerWidth);
@@ -80,7 +81,7 @@ export function ResponsiveProgramRunner({title,url,programId}:{title:string;url:
         <button type="button" className="runnerCloseAction" onClick={closeRunner} aria-label="닫기" title="닫기"><X size={19}/><span className="runnerActionLabel">닫기</span></button>
       </div>
     </header>
-    {portrait&&<button type="button" className="rotateNotice" onClick={requestLandscape}>
+    {portrait&&landscapeRecommended&&<button type="button" className="rotateNotice" onClick={requestLandscape}>
       <RotateCcw size={18}/><div><strong>가로로 보기</strong><span>눌러서 전체화면·가로모드를 시도합니다.</span></div>
     </button>}
     {rotateMessage&&<div className="runnerRotateMessage" role="status">{rotateMessage}</div>}
