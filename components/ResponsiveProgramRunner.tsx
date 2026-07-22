@@ -12,10 +12,12 @@ type LockableScreen = Screen & {
 
 export function ResponsiveProgramRunner({title,url,programId}:{title:string;url:string;programId:string}){
   const shellRef=useRef<HTMLDivElement>(null);
+  const autoLandscapeTried=useRef(false);
   const router=useRouter();
   const [portrait,setPortrait]=useState(false);
   const [loaded,setLoaded]=useState(false);
   const [rotateMessage,setRotateMessage]=useState('');
+  const landscapeRecommended=true;
 
   useEffect(()=>{
     const update=()=>setPortrait(window.innerWidth<720&&window.innerHeight>window.innerWidth);
@@ -66,6 +68,29 @@ export function ResponsiveProgramRunner({title,url,programId}:{title:string;url:
     }
   }
 
+  useEffect(()=>{
+    if(programId!=='galaxy-voyage'||!loaded||!portrait||autoLandscapeTried.current)return;
+    autoLandscapeTried.current=true;
+    let messageTimer:number|undefined;
+
+    void (async()=>{
+      let locked=false;
+      try{
+        const element=shellRef.current;
+        if(element?.requestFullscreen&&!document.fullscreenElement)await element.requestFullscreen();
+        const orientation=(window.screen as LockableScreen).orientation;
+        if(orientation?.lock){await orientation.lock('landscape');locked=true;}
+      }catch{locked=false;}
+
+      if(!locked){
+        setRotateMessage('자동 가로 전환이 제한되어 있어요. 위의 가로모드 버튼을 누르거나 휴대폰을 옆으로 돌려 주세요.');
+        messageTimer=window.setTimeout(()=>setRotateMessage(''),3600);
+      }
+    })();
+
+    return()=>{if(messageTimer)window.clearTimeout(messageTimer);};
+  },[loaded,portrait,programId]);
+
   async function closeRunner(){
     try{if(document.fullscreenElement)await document.exitFullscreen();}catch{}
     router.push(`/programs/${programId}`);
@@ -80,7 +105,7 @@ export function ResponsiveProgramRunner({title,url,programId}:{title:string;url:
         <button type="button" className="runnerCloseAction" onClick={closeRunner} aria-label="닫기" title="닫기"><X size={19}/><span className="runnerActionLabel">닫기</span></button>
       </div>
     </header>
-    {portrait&&<button type="button" className="rotateNotice" onClick={requestLandscape}>
+    {portrait&&landscapeRecommended&&<button type="button" className="rotateNotice" onClick={requestLandscape}>
       <RotateCcw size={18}/><div><strong>가로로 보기</strong><span>눌러서 전체화면·가로모드를 시도합니다.</span></div>
     </button>}
     {rotateMessage&&<div className="runnerRotateMessage" role="status">{rotateMessage}</div>}
