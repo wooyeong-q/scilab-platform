@@ -12,11 +12,12 @@ type LockableScreen = Screen & {
 
 export function ResponsiveProgramRunner({title,url,programId}:{title:string;url:string;programId:string}){
   const shellRef=useRef<HTMLDivElement>(null);
+  const autoLandscapeTried=useRef(false);
   const router=useRouter();
   const [portrait,setPortrait]=useState(false);
   const [loaded,setLoaded]=useState(false);
   const [rotateMessage,setRotateMessage]=useState('');
-  const landscapeRecommended=programId!=='galaxy-voyage';
+  const landscapeRecommended=true;
 
   useEffect(()=>{
     const update=()=>setPortrait(window.innerWidth<720&&window.innerHeight>window.innerWidth);
@@ -66,6 +67,29 @@ export function ResponsiveProgramRunner({title,url,programId}:{title:string;url:
       showTemporaryMessage('자동 회전이 제한되어 있어요. 화면 회전 잠금을 끄고 휴대폰을 옆으로 돌려 주세요.',3200);
     }
   }
+
+  useEffect(()=>{
+    if(programId!=='galaxy-voyage'||!loaded||!portrait||autoLandscapeTried.current)return;
+    autoLandscapeTried.current=true;
+    let messageTimer:number|undefined;
+
+    void (async()=>{
+      let locked=false;
+      try{
+        const element=shellRef.current;
+        if(element?.requestFullscreen&&!document.fullscreenElement)await element.requestFullscreen();
+        const orientation=(window.screen as LockableScreen).orientation;
+        if(orientation?.lock){await orientation.lock('landscape');locked=true;}
+      }catch{locked=false;}
+
+      if(!locked){
+        setRotateMessage('자동 가로 전환이 제한되어 있어요. 위의 가로모드 버튼을 누르거나 휴대폰을 옆으로 돌려 주세요.');
+        messageTimer=window.setTimeout(()=>setRotateMessage(''),3600);
+      }
+    })();
+
+    return()=>{if(messageTimer)window.clearTimeout(messageTimer);};
+  },[loaded,portrait,programId]);
 
   async function closeRunner(){
     try{if(document.fullscreenElement)await document.exitFullscreen();}catch{}
