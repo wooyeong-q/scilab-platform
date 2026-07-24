@@ -489,7 +489,7 @@
       let width=0,height=0,viewWidth=0,viewHeight=0,dpr=1,lastFrame=0,galaxySets={};
       let camera={x:0,y:0,z:0,yaw:0,pitch:0},pinchDistance=0,keys=new Set(),turnSpeed=1.1,discoveryRenderPending=false,autoDockPending=false;
       const navPointers=new Map(),touchInput={moveX:0,moveY:0,lookX:0,lookY:0};
-      let selectedSample=null,assigned=new Map(),classAttempts=0,classificationComplete=false,visitorEncounters=0,visitorCooldown=false;
+      let selectedSample=null,assigned=new Map(),classAttempts=0,classificationComplete=false,visitorEncounters=0,visitorCooldown=false,visitorHoldUntil=0,visitorHoldPosition=null;
       let discovered=new Set(['milkyway']);
       const stars=[],navigationStars=[];
 
@@ -645,7 +645,7 @@
       }
 
       function updateSpaceVisitor(time){
-        if(mode!=='map')return;const phase=time*.00015,position=[Math.sin(phase)*1320,Math.sin(phase*.73+1.15)*510,1520+Math.cos(phase*.81)*660],point=projectWorld(position),scale=clamp(920/Math.max(1,point.depth),.48,1.12);
+        if(mode!=='map')return;const phase=time*.000065,movingPosition=[Math.sin(phase)*1320,Math.sin(phase*.73+1.15)*510,1520+Math.cos(phase*.81)*660],position=time<visitorHoldUntil&&visitorHoldPosition?visitorHoldPosition:movingPosition;if(time>=visitorHoldUntil)visitorHoldPosition=movingPosition;const point=projectWorld(position),scale=clamp(920/Math.max(1,point.depth),.48,1.12);
         ui.visitor.style.transform=`translate(${point.x-viewWidth/2}px,${point.y-viewHeight/2}px) scale(${scale}) rotate(${Math.sin(phase*.9)*5}deg)`;ui.visitor.style.opacity=point.visible?'1':'0';ui.visitor.style.pointerEvents=point.visible?'auto':'none';
       }
 
@@ -755,7 +755,7 @@
         closeClassification();const rows=[...visited].map((key,index)=>{const galaxy=galaxyByKey(key);return `<div class="reportRow"><i>${index+1}</i><strong>${galaxy.name}</strong><span>${typeNames[galaxy.type]}</span></div>`});el('reportRoute').innerHTML=rows.join('')||'<div class="reportRow"><strong>관측 기록 없음</strong></div>';el('reportScore').textContent=`${assigned.size}/${classSamples.length}`;const accuracy=Math.round(classSamples.length/Math.max(classSamples.length,classAttempts)*100);el('reportLead').textContent=`${visited.size}개 실제 은하를 관측하고 6개 표본을 분류했습니다. 분류 정확도 지표 ${accuracy}%`;el('reportConclusion').innerHTML='<strong>탐사 결론</strong><br>나선 은하는 중심 둘레로 휘어진 팔과 원반이 나타납니다. 타원 은하는 뚜렷한 팔 없이 둥글거나 타원형으로 매끈하게 보입니다. 불규칙 은하는 일정한 전체 모양을 찾기 어렵습니다. 관측 방향에 따라 같은 은하도 다르게 보일 수 있으므로 전체 윤곽과 구조를 함께 살펴야 합니다.';el('reportModal').classList.add('show');
       }
 
-      function restart(){mode='map';selectedKey=null;observingKey=null;viewMode='face';solarView=false;scanning=false;warping=false;autoDockPending=false;started=true;visited=new Set();discovered=new Set(['milkyway']);camera={x:0,y:0,z:0,yaw:0,pitch:0};assigned=new Map();selectedSample=null;classAttempts=0;classificationComplete=false;visitorEncounters=0;visitorCooldown=false;el('sampleGrid').innerHTML='';el('classBins').innerHTML='';el('reportModal').classList.remove('show');render();setPanel(false);showToast('새 탐사 항해를 시작합니다. 고정 이정표를 기준으로 먼 별빛 신호를 추적하세요.')}
+      function restart(){mode='map';selectedKey=null;observingKey=null;viewMode='face';solarView=false;scanning=false;warping=false;autoDockPending=false;started=true;visited=new Set();discovered=new Set(['milkyway']);camera={x:0,y:0,z:0,yaw:0,pitch:0};assigned=new Map();selectedSample=null;classAttempts=0;classificationComplete=false;visitorEncounters=0;visitorCooldown=false;visitorHoldUntil=0;visitorHoldPosition=null;el('sampleGrid').innerHTML='';el('classBins').innerHTML='';el('reportModal').classList.remove('show');render();setPanel(false);showToast('새 탐사 항해를 시작합니다. 고정 이정표를 기준으로 먼 별빛 신호를 추적하세요.')}
 
       function bindNavigation(){
         const distance=()=>{const points=[...navPointers.values()];return points.length<2?0:Math.hypot(points[0].x-points[1].x,points[0].y-points[1].y)};
@@ -807,7 +807,7 @@
       function updateTurnSpeed(){turnSpeed=Number(ui.turnSpeed.value);const label=turnSpeed<.8?'느림':turnSpeed>1.4?'빠름':'보통';ui.turnSpeedReadout.textContent=label;ui.mobileTurnSpeedReadout.textContent=label}
       ui.turnSpeed.addEventListener('input',updateTurnSpeed);ui.turnSpeed.addEventListener('change',()=>showToast(`시점 회전 속도: ${ui.turnSpeedReadout.textContent}`));updateTurnSpeed();
       ui.touchSpeed.addEventListener('click',event=>{event.stopPropagation();const speeds=[.45,1.1,1.75],next=speeds[(speeds.findIndex(value=>Math.abs(value-turnSpeed)<.1)+1)%speeds.length];ui.turnSpeed.value=String(next);updateTurnSpeed();showToast(`조이스틱 시점 속도: ${ui.mobileTurnSpeedReadout.textContent}`)});
-      ui.visitor.addEventListener('pointerdown',event=>event.stopPropagation());ui.visitor.addEventListener('click',event=>{event.stopPropagation();if(visitorCooldown||mode!=='map')return;visitorCooldown=true;visitorEncounters++;ui.visitor.classList.remove('encountered');void ui.visitor.offsetWidth;ui.visitor.classList.add('encountered');showToast(visitorEncounters===1?'🛸 미확인 탐사선과 조우했습니다! 외계 생명체는 확인되지 않은 게임 요소입니다.':`🛸 미확인 탐사선 조우 ${visitorEncounters}회 · 항로를 계속 관찰해 보세요.`);setTimeout(()=>visitorCooldown=false,650)});
+      function holdSpaceVisitor(){visitorHoldUntil=performance.now()+1200}ui.visitor.addEventListener('pointerenter',holdSpaceVisitor);ui.visitor.addEventListener('pointerdown',event=>{holdSpaceVisitor();event.stopPropagation()});ui.visitor.addEventListener('click',event=>{event.stopPropagation();if(visitorCooldown||mode!=='map')return;visitorCooldown=true;visitorEncounters++;ui.visitor.classList.remove('encountered');void ui.visitor.offsetWidth;ui.visitor.classList.add('encountered');showToast(visitorEncounters===1?'🛸 미확인 탐사선과 조우했습니다! 외계 생명체는 확인되지 않은 게임 요소입니다.':`🛸 미확인 탐사선 조우 ${visitorEncounters}회 · 항로를 계속 관찰해 보세요.`);setTimeout(()=>visitorCooldown=false,650)});
       ui.observedImage.addEventListener('error',()=>{ui.observedPhoto.hidden=true;showToast('관측 이미지를 불러오지 못해 과학 모형으로 표시합니다.','bad')});
       el('startButton').addEventListener('click',()=>{void requestMobileLandscape();started=true;el('introModal').classList.remove('show');render();setPanel(false);showToast('왼쪽 조이스틱으로 이동하고 오른쪽 조이스틱으로 시점을 돌려 보세요.')});
       el('closeClassifyButton').addEventListener('click',closeClassification);el('closeReportButton').addEventListener('click',()=>el('reportModal').classList.remove('show'));el('restartButton').addEventListener('click',restart);
