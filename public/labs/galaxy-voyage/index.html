@@ -220,7 +220,6 @@
     .radarRing{position:absolute;z-index:1;left:50%;top:50%;border:1px solid rgba(98,232,255,.15);border-radius:50%;transform:translate(-50%,-50%)}.radarRingOuter{width:72%;height:72%}.radarRingInner{width:38%;height:38%}
     .radarCrosshair::before,.radarCrosshair::after{content:"";position:absolute;z-index:1;left:50%;top:50%;background:rgba(98,232,255,.1);transform:translate(-50%,-50%)}.radarCrosshair::before{width:82%;height:1px}.radarCrosshair::after{width:1px;height:82%}
     .radarShip{position:absolute;z-index:4;left:50%;top:50%;width:0;height:0;border-left:5px solid transparent;border-right:5px solid transparent;border-bottom:13px solid #f2fdff;filter:drop-shadow(0 0 6px #62e8ff);transform:translate(-50%,-58%)}
-    .radarHint{position:absolute;z-index:5;left:50%;top:12%;width:11px;height:11px;margin:-5px 0 0 -5px;border:2px solid #ff7dc8;border-radius:3px;background:#fff;box-shadow:0 0 14px #ff7dc8;transform:rotate(45deg);animation:hintPulse .8s ease-in-out infinite}.radarHint[hidden]{display:none!important}@keyframes hintPulse{50%{transform:rotate(45deg) scale(1.45);opacity:.62}}
     .radarDot{position:absolute;z-index:3;left:50%;top:50%;width:8px;height:8px;margin:-4px 0 0 -4px;border:1px solid rgba(255,255,255,.65);border-radius:50%;background:rgb(var(--radar-color));box-shadow:0 0 10px rgba(var(--radar-color),.95);transition:left .12s linear,top .12s linear,transform .2s}
     .radarDot[data-type="nebula"]{--radar-color:76,235,215}.radarDot[data-type="asteroid"]{--radar-color:255,183,92}.radarDot[data-type="dust"]{--radar-color:183,124,255}.radarDot[data-type="comet"]{--radar-color:255,226,120}
     .radarDot.visited{transform:scale(1.25);background:#72f2be;box-shadow:0 0 13px rgba(114,242,190,.95)}.radarDot.visited::after{content:"✓";position:absolute;left:50%;top:50%;color:#061820;font-size:7px;font-style:normal;font-weight:950;transform:translate(-50%,-54%)}
@@ -301,7 +300,7 @@
       <button class="spaceVisitor" id="spaceVisitor" type="button" aria-label="날아가는 미확인 탐사선과 조우하기"><span class="ufoDome"></span><span class="alienEyes"></span><span class="ufoHull"></span><span class="visitorLabel">미확인 탐사선</span></button>
       <aside class="navRadar" id="navRadar" aria-label="이정표 항법 레이더">
         <div class="radarHeader"><span>항법 레이더</span><strong id="radarProgress">0 / 4</strong></div>
-        <div class="radarScreen" id="radarScreen"><i class="radarRing radarRingOuter"></i><i class="radarRing radarRingInner"></i><i class="radarCrosshair"></i><i class="radarShip" aria-hidden="true"></i><i class="radarHint" id="radarHint" aria-label="UFO가 전송한 미발견 은하 방향" hidden></i><div class="radarDots" id="radarDots"></div></div>
+        <div class="radarScreen" id="radarScreen"><i class="radarRing radarRingOuter"></i><i class="radarRing radarRingInner"></i><i class="radarCrosshair"></i><i class="radarShip" aria-hidden="true"></i><div class="radarDots" id="radarDots"></div></div>
         <small id="radarNearest">가장 가까운 이정표 확인 중</small>
       </aside>
       <figure class="observedGalaxyPhoto" id="observedGalaxyPhoto" hidden><img id="observedGalaxyImage" alt=""><button class="solarSystemMarker" id="solarSystemMarker" type="button" aria-label="우리은하 안의 태양계 위치 확대 관측" hidden></button><figcaption class="imageProvenance"><span id="imageCredit">NASA/ESA Hubble 관측 이미지</span><a id="imageSource" target="_blank" rel="noreferrer">NASA 원본 ↗</a></figcaption></figure>
@@ -400,7 +399,7 @@
           <p class="ufoPrompt" id="ufoPrompt">전체 윤곽과 팔 구조를 관찰해 외계 탐사선의 자료를 해독하세요.</p>
           <div class="ufoChoices" id="ufoChoices"></div>
           <div class="ufoFeedback" id="ufoFeedback" role="status" aria-live="polite"></div>
-          <button class="ufoContinue" id="ufoContinue" type="button">항해 계속하기 · 방향 데이터 받기</button>
+          <button class="ufoContinue" id="ufoContinue" type="button">사진 속 은하 앞으로 이동하기</button>
         </section>
       </div>
     </section>
@@ -526,14 +525,14 @@
         facts:el('facts'),choices:el('choiceGrid'),done:el('missionDone'),doneText:el('missionDoneText'),scan:el('scanButton'),warp:el('warpButton'),
         view:el('viewButton'),viewReadout:el('viewReadout'),zoomReadout:el('zoomReadout'),navReadout:el('navReadout'),systemMessage:el('systemMessage'),
         reticle:el('reticle'),scanLine:el('scanLine'),beacons:el('galaxyBeacons'),landmarks:el('spaceLandmarks'),visitor:el('spaceVisitor'),toast:el('toast'),panel:el('missionPanel'),handle:el('missionHandle'),
-        warpFlash:el('warpFlash'),navGuide:el('navGuide'),mapScale:el('mapScale'),radar:el('navRadar'),radarDots:el('radarDots'),radarHint:el('radarHint'),radarProgress:el('radarProgress'),radarNearest:el('radarNearest'),zoomControls:el('navZoomControls'),mapStatus:el('mapStatus'),observeStatus:el('observeStatus'),classStatus:el('classStatus'),
+        warpFlash:el('warpFlash'),navGuide:el('navGuide'),mapScale:el('mapScale'),radar:el('navRadar'),radarDots:el('radarDots'),radarProgress:el('radarProgress'),radarNearest:el('radarNearest'),zoomControls:el('navZoomControls'),mapStatus:el('mapStatus'),observeStatus:el('observeStatus'),classStatus:el('classStatus'),
         observedPhoto:el('observedGalaxyPhoto'),observedImage:el('observedGalaxyImage'),imageCredit:el('imageCredit'),imageSource:el('imageSource'),
         solarMarker:el('solarSystemMarker'),solarOverlay:el('solarSystemOverlay'),sideGuide:el('milkyWaySideGuide'),turnSpeed:el('turnSpeed'),turnSpeedReadout:el('turnSpeedReadout'),
         joysticks:el('mobileJoysticks'),moveJoystick:el('moveJoystick'),moveKnob:el('moveJoystickKnob'),lookJoystick:el('lookJoystick'),lookKnob:el('lookJoystickKnob'),touchSpeed:el('touchSpeedButton'),mobileTurnSpeedReadout:el('mobileTurnSpeedReadout'),
         ufoModal:el('ufoCommModal'),ufoProgress:el('ufoCommProgress'),ufoFigure:el('ufoSignalFigure'),ufoImage:el('ufoSignalImage'),ufoTitle:el('ufoCommTitle'),ufoPrompt:el('ufoPrompt'),ufoChoices:el('ufoChoices'),ufoFeedback:el('ufoFeedback'),ufoContinue:el('ufoContinue')
       };
 
-      const REVEAL_DISTANCE=950,APPROACH_DISTANCE=1950,DOCK_DISTANCE=520,LANDMARK_VISIT_DISTANCE=480,UFO_CONTACT_DISTANCE=460,UFO_TAP_DISTANCE=900,UFO_COMM_COOLDOWN=45000,UFO_HINT_DURATION=8000;
+      const REVEAL_DISTANCE=950,APPROACH_DISTANCE=1950,DOCK_DISTANCE=520,LANDMARK_VISIT_DISTANCE=480,UFO_CONTACT_DISTANCE=460,UFO_TAP_DISTANCE=900,UFO_COMM_COOLDOWN=45000,UFO_WARP_DISTANCE=780;
       const coarsePointer=window.matchMedia('(hover:none) and (pointer:coarse)').matches;
       let mode='map',selectedKey=null,observingKey=null,viewMode='face',solarView=false,scanning=false,warping=false,reduced=false,started=false;
       let visited=new Set(),look={x:0,y:0},targetLook={x:0,y:0},warpPower=0,toastTimer=0;
@@ -541,7 +540,7 @@
       let camera={x:0,y:0,z:0,yaw:0,pitch:0},pinchDistance=0,keys=new Set(),turnSpeed=1.1,discoveryRenderPending=false,autoDockPending=false;
       const navPointers=new Map(),touchInput={moveX:0,moveY:0,lookX:0,lookY:0};
       let selectedSample=null,assigned=new Map(),classAttempts=0,classificationComplete=false,visitorEncounters=0,visitorHoldUntil=0,visitorHoldPosition=null,visitorWorldPosition=[0,0,1500],visitedLandmarks=new Set();
-      let ufoSignalIndex=0,ufoCommunicationOpen=false,ufoSignalResolved=false,nextUfoContactAt=0,pendingHintKey=null,hintedGalaxyKey=null,hintUntil=0;
+      let ufoSignalIndex=0,ufoCommunicationOpen=false,ufoSignalResolved=false,nextUfoContactAt=0;
       let discovered=new Set(['milkyway']);
       const stars=[],navigationStars=[];
 
@@ -709,30 +708,25 @@
       function updateRadar(){
         if(mode!=='map')return;checkLandmarkVisits();let nearest=null,nearestRange=Infinity;
         [...ui.radarDots.children].forEach(dot=>{const landmark=spaceLandmarks.find(item=>item.key===dot.dataset.key),dx=landmark.position[0]-camera.x,dz=landmark.position[2]-camera.z,range=landmarkDistance(landmark),bearing=Math.atan2(dx,dz),relative=Math.atan2(Math.sin(bearing-camera.yaw),Math.cos(bearing-camera.yaw)),radius=clamp(range/3200,.2,1)*42,x=50+Math.sin(relative)*radius,y=50-Math.cos(relative)*radius;dot.style.left=`${x}%`;dot.style.top=`${y}%`;dot.classList.toggle('visited',visitedLandmarks.has(landmark.key));dot.setAttribute('aria-label',`${landmark.name}, 거리 ${Math.round(range)}${visitedLandmarks.has(landmark.key)?', 방문 완료':''}`);if(range<nearestRange){nearest=landmark;nearestRange=range}});
-        ui.radarProgress.textContent=`${visitedLandmarks.size} / ${spaceLandmarks.length}`;const hintSeconds=updateGalaxyHint();ui.radarNearest.textContent=hintSeconds?`미발견 은하 방향 · ${hintSeconds}초`:nearest?`${nearest.shortName} · ${Math.round(nearestRange)}`:'이정표 신호 없음';
-      }
-
-      function updateGalaxyHint(){
-        if(!hintedGalaxyKey||performance.now()>=hintUntil){hintedGalaxyKey=null;hintUntil=0;ui.radarHint.hidden=true;return 0}
-        const galaxy=galaxyByKey(hintedGalaxyKey);if(!galaxy){ui.radarHint.hidden=true;return 0}const dx=galaxy.position[0]-camera.x,dz=galaxy.position[2]-camera.z,range=galaxyDistance(galaxy),bearing=Math.atan2(dx,dz),relative=Math.atan2(Math.sin(bearing-camera.yaw),Math.cos(bearing-camera.yaw)),radius=clamp(range/3200,.24,1)*43,x=50+Math.sin(relative)*radius,y=50-Math.cos(relative)*radius;ui.radarHint.style.left=`${x}%`;ui.radarHint.style.top=`${y}%`;ui.radarHint.hidden=false;ui.radarHint.setAttribute('aria-label',`UFO가 전송한 미발견 은하 방향, 남은 시간 ${Math.ceil((hintUntil-performance.now())/1000)}초`);return Math.max(1,Math.ceil((hintUntil-performance.now())/1000));
-      }
-
-      function findHintGalaxy(){
-        const hidden=galaxies.filter(galaxy=>galaxy.key!=='milkyway'&&!discovered.has(galaxy.key));if(hidden.length)return hidden.sort((a,b)=>galaxyDistance(a)-galaxyDistance(b))[0];const unvisited=galaxies.filter(galaxy=>!visited.has(galaxy.key));return unvisited.sort((a,b)=>galaxyDistance(a)-galaxyDistance(b))[0]||null;
+        ui.radarProgress.textContent=`${visitedLandmarks.size} / ${spaceLandmarks.length}`;ui.radarNearest.textContent=nearest?`${nearest.shortName} · ${Math.round(nearestRange)}`:'이정표 신호 없음';
       }
 
       function openUfoCommunication(){
-        if(ufoCommunicationOpen||mode!=='map'||ufoSignalIndex>=ufoSignals.length||performance.now()<nextUfoContactAt)return;const signal=ufoSignals[ufoSignalIndex],galaxy=galaxyByKey(signal.key);ufoCommunicationOpen=true;ufoSignalResolved=false;pendingHintKey=null;visitorHoldPosition=[...visitorWorldPosition];visitorHoldUntil=Infinity;keys.clear();resetTouchJoysticks();setPanel(false);ui.ufoProgress.textContent=`외계 탐사선 교신 ${ufoSignalIndex+1} / ${ufoSignals.length}`;ui.ufoImage.src=galaxy.image;ui.ufoImage.alt='이름을 가린 실제 은하 관측 이미지';ui.ufoFigure.classList.remove('received');ui.ufoTitle.textContent='이 은하는 어떤 종류일까요?';ui.ufoPrompt.textContent='전체 윤곽과 팔 구조를 관찰해 외계 탐사선의 자료를 해독하세요.';ui.ufoFeedback.className='ufoFeedback';ui.ufoFeedback.textContent='';ui.ufoContinue.classList.remove('show');ui.ufoChoices.innerHTML='';['spiral','elliptical','irregular'].forEach(type=>{const button=document.createElement('button');button.type='button';button.className='ufoChoice';button.dataset.type=type;button.textContent=typeNames[type];button.addEventListener('click',()=>answerUfoSignal(type,button));ui.ufoChoices.appendChild(button)});ui.ufoModal.classList.add('show');ui.visitor.classList.remove('encountered');void ui.visitor.offsetWidth;ui.visitor.classList.add('encountered');setTimeout(()=>ui.ufoChoices.querySelector('button')?.focus(),0);
+        if(ufoCommunicationOpen||mode!=='map'||ufoSignalIndex>=ufoSignals.length||performance.now()<nextUfoContactAt)return;const signal=ufoSignals[ufoSignalIndex],galaxy=galaxyByKey(signal.key);ufoCommunicationOpen=true;ufoSignalResolved=false;visitorHoldPosition=[...visitorWorldPosition];visitorHoldUntil=Infinity;keys.clear();resetTouchJoysticks();setPanel(false);ui.ufoProgress.textContent=`외계 탐사선 교신 ${ufoSignalIndex+1} / ${ufoSignals.length}`;ui.ufoImage.src=galaxy.image;ui.ufoImage.alt='이름을 가린 실제 은하 관측 이미지';ui.ufoFigure.classList.remove('received');ui.ufoTitle.textContent='이 은하는 어떤 종류일까요?';ui.ufoPrompt.textContent='전체 윤곽과 팔 구조를 관찰해 외계 탐사선의 자료를 해독하세요.';ui.ufoFeedback.className='ufoFeedback';ui.ufoFeedback.textContent='';ui.ufoContinue.classList.remove('show');ui.ufoChoices.innerHTML='';['spiral','elliptical','irregular'].forEach(type=>{const button=document.createElement('button');button.type='button';button.className='ufoChoice';button.dataset.type=type;button.textContent=typeNames[type];button.addEventListener('click',()=>answerUfoSignal(type,button));ui.ufoChoices.appendChild(button)});ui.ufoModal.classList.add('show');ui.visitor.classList.remove('encountered');void ui.visitor.offsetWidth;ui.visitor.classList.add('encountered');setTimeout(()=>ui.ufoChoices.querySelector('button')?.focus(),0);
       }
 
       function answerUfoSignal(type,button){
         if(!ufoCommunicationOpen||ufoSignalResolved)return;const signal=ufoSignals[ufoSignalIndex],galaxy=galaxyByKey(signal.key);
         if(type!==signal.type){button.classList.add('wrong');button.disabled=true;ui.ufoFeedback.className='ufoFeedback show bad';ui.ufoFeedback.textContent=`조금 달라요. ${criteria[signal.type]}이 보이는지 다시 살펴보세요.`;return}
-        ufoSignalResolved=true;button.classList.add('correct');[...ui.ufoChoices.children].forEach(choice=>choice.disabled=true);ui.ufoFigure.classList.add('received');ui.ufoTitle.textContent=`정답 · ${galaxy.name}`;pendingHintKey=findHintGalaxy()?.key||null;ui.ufoFeedback.className='ufoFeedback show good';ui.ufoFeedback.textContent=`${signal.evidence} ${pendingHintKey?'미발견 은하의 방향 데이터가 준비되었습니다.':'모든 은하의 탐색 기록을 확인했습니다.'}`;ui.ufoContinue.classList.add('show');ui.ufoContinue.focus();
+        ufoSignalResolved=true;button.classList.add('correct');[...ui.ufoChoices.children].forEach(choice=>choice.disabled=true);ui.ufoFigure.classList.add('received');ui.ufoTitle.textContent=`정답 · ${galaxy.name}`;ui.ufoFeedback.className='ufoFeedback show good';ui.ufoFeedback.textContent=`${signal.evidence} 사진 속 은하 앞으로 이동할 수 있습니다.`;ui.ufoContinue.classList.add('show');ui.ufoContinue.focus();
       }
 
       function closeUfoCommunication(){
-        if(!ufoCommunicationOpen)return;const completed=ufoSignalResolved;ui.ufoModal.classList.remove('show');ufoCommunicationOpen=false;visitorHoldUntil=performance.now()+1200;if(completed){ufoSignalIndex++;visitorEncounters=ufoSignalIndex;nextUfoContactAt=performance.now()+UFO_COMM_COOLDOWN;if(pendingHintKey){hintedGalaxyKey=pendingHintKey;hintUntil=performance.now()+UFO_HINT_DURATION}showToast(ufoSignalIndex===ufoSignals.length?'UFO 교신 기록 3/3 완성 · 마지막 방향 데이터를 확인하세요.':'UFO 교신 성공 · 레이더에 미발견 은하 방향이 잠시 표시됩니다.')}else{nextUfoContactAt=performance.now()+15000;showToast('교신을 종료했습니다. 잠시 후 다시 만날 수 있습니다.')}ufoSignalResolved=false;pendingHintKey=null;if(!selectedKey)renderPanel();updateRadar();
+        if(!ufoCommunicationOpen)return;const completed=ufoSignalResolved,targetKey=completed?ufoSignals[ufoSignalIndex].key:null;ui.ufoModal.classList.remove('show');ufoCommunicationOpen=false;visitorHoldUntil=performance.now()+1200;if(completed){ufoSignalIndex++;visitorEncounters=ufoSignalIndex;nextUfoContactAt=performance.now()+UFO_COMM_COOLDOWN}else{nextUfoContactAt=performance.now()+15000;showToast('교신을 종료했습니다. 잠시 후 다시 만날 수 있습니다.')}ufoSignalResolved=false;if(!selectedKey)renderPanel();if(targetKey)warpToUfoGalaxy(targetKey);else updateRadar();
+      }
+
+      function warpToUfoGalaxy(key){
+        const galaxy=galaxyByKey(key);if(!galaxy)return;warping=true;warpPower=reduced?.2:1;keys.clear();resetTouchJoysticks();setPanel(false);ui.warpFlash.classList.remove('run');void ui.warpFlash.offsetWidth;ui.warpFlash.classList.add('run');render();setTimeout(()=>{let dx=galaxy.position[0]-camera.x,dy=galaxy.position[1]-camera.y,dz=galaxy.position[2]-camera.z,distance=Math.hypot(dx,dy,dz);if(distance<1){dx=0;dy=0;dz=1;distance=1}camera.x=galaxy.position[0]-dx/distance*UFO_WARP_DISTANCE;camera.y=galaxy.position[1]-dy/distance*UFO_WARP_DISTANCE;camera.z=galaxy.position[2]-dz/distance*UFO_WARP_DISTANCE;limitCamera();const lookX=galaxy.position[0]-camera.x,lookY=galaxy.position[1]-camera.y,lookZ=galaxy.position[2]-camera.z;camera.yaw=Math.atan2(lookX,lookZ);camera.pitch=Math.atan2(lookY,Math.hypot(lookX,lookZ));selectedKey=galaxy.key;discovered.add(galaxy.key);warping=false;render();setPanel(false);showToast(`${galaxy.name} 앞에 도착했습니다. 조금 더 가까이 가면 관측이 시작됩니다.`)},reduced?220:650);
       }
 
       function updateSpaceVisitor(time){
@@ -846,7 +840,7 @@
         closeClassification();const rows=[...visited].map((key,index)=>{const galaxy=galaxyByKey(key);return `<div class="reportRow"><i>${index+1}</i><strong>${galaxy.name}</strong><span>${typeNames[galaxy.type]}</span></div>`});el('reportRoute').innerHTML=rows.join('')||'<div class="reportRow"><strong>관측 기록 없음</strong></div>';el('reportScore').textContent=`${assigned.size}/${classSamples.length}`;const accuracy=Math.round(classSamples.length/Math.max(classSamples.length,classAttempts)*100);el('reportLead').textContent=`${visited.size}개 실제 은하를 관측하고 6개 표본을 분류했습니다. 분류 정확도 지표 ${accuracy}%`;el('reportConclusion').innerHTML='<strong>탐사 결론</strong><br>나선 은하는 중심 둘레로 휘어진 팔과 원반이 나타납니다. 타원 은하는 뚜렷한 팔 없이 둥글거나 타원형으로 매끈하게 보입니다. 불규칙 은하는 일정한 전체 모양을 찾기 어렵습니다. 관측 방향에 따라 같은 은하도 다르게 보일 수 있으므로 전체 윤곽과 구조를 함께 살펴야 합니다.';el('reportModal').classList.add('show');
       }
 
-      function restart(){mode='map';selectedKey=null;observingKey=null;viewMode='face';solarView=false;scanning=false;warping=false;autoDockPending=false;started=true;visited=new Set();visitedLandmarks=new Set();discovered=new Set(['milkyway']);camera={x:0,y:0,z:0,yaw:0,pitch:0};assigned=new Map();selectedSample=null;classAttempts=0;classificationComplete=false;visitorEncounters=0;visitorHoldUntil=0;visitorHoldPosition=null;ufoSignalIndex=0;ufoCommunicationOpen=false;ufoSignalResolved=false;nextUfoContactAt=performance.now()+8000;pendingHintKey=null;hintedGalaxyKey=null;hintUntil=0;ui.radarHint.hidden=true;ui.ufoModal.classList.remove('show');el('sampleGrid').innerHTML='';el('classBins').innerHTML='';el('reportModal').classList.remove('show');render();updateRadar();setPanel(false);showToast('새 탐사 항해를 시작합니다. 고정 이정표를 기준으로 먼 별빛 신호를 추적하세요.')}
+      function restart(){mode='map';selectedKey=null;observingKey=null;viewMode='face';solarView=false;scanning=false;warping=false;autoDockPending=false;started=true;visited=new Set();visitedLandmarks=new Set();discovered=new Set(['milkyway']);camera={x:0,y:0,z:0,yaw:0,pitch:0};assigned=new Map();selectedSample=null;classAttempts=0;classificationComplete=false;visitorEncounters=0;visitorHoldUntil=0;visitorHoldPosition=null;ufoSignalIndex=0;ufoCommunicationOpen=false;ufoSignalResolved=false;nextUfoContactAt=performance.now()+8000;ui.ufoModal.classList.remove('show');el('sampleGrid').innerHTML='';el('classBins').innerHTML='';el('reportModal').classList.remove('show');render();updateRadar();setPanel(false);showToast('새 탐사 항해를 시작합니다. 고정 이정표를 기준으로 먼 별빛 신호를 추적하세요.')}
 
       function bindNavigation(){
         const distance=()=>{const points=[...navPointers.values()];return points.length<2?0:Math.hypot(points[0].x-points[1].x,points[0].y-points[1].y)};
