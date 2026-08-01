@@ -169,6 +169,30 @@
     .flightStatus span.active{color:var(--cyan);border-color:rgba(98,232,255,.45);box-shadow:0 0 18px rgba(98,232,255,.12)}
     .viewport.mapMode{cursor:grab;touch-action:none}.viewport.mapMode.dragging{cursor:grabbing}
     .galaxyBeacons{position:absolute;inset:0;z-index:8;pointer-events:none;overflow:hidden}
+    .spaceLandmarks{position:absolute;inset:0;z-index:7;pointer-events:none;overflow:hidden}
+    .spaceLandmark{position:absolute;left:50%;top:50%;width:1px;height:1px;will-change:transform,opacity;transition:opacity .2s}
+    .landmarkPin{position:absolute;left:0;top:0;width:18px;height:18px;transform:translate(-50%,-50%) rotate(45deg);border:1px solid currentColor;border-radius:5px;background:rgba(5,12,33,.78);box-shadow:0 0 18px currentColor}
+    .landmarkPin::after{content:"";position:absolute;inset:5px;border-radius:50%;background:currentColor;box-shadow:0 0 10px currentColor}
+    .landmarkLabel{position:absolute;left:14px;top:-13px;width:max-content;max-width:170px;padding:6px 8px;border:1px solid rgba(159,183,255,.22);border-radius:9px;background:rgba(3,7,22,.86);backdrop-filter:blur(9px);color:#edf5ff;font-size:9px;font-weight:900;line-height:1.3;text-shadow:0 2px 8px #000}
+    .landmarkLabel small{display:block;margin-top:2px;color:#9cadcf;font-size:7px;font-weight:800}
+    .spaceLandmark[data-type="nebula"]{color:#4cebd7}.spaceLandmark[data-type="asteroid"]{color:#ffb75c}.spaceLandmark[data-type="dust"]{color:#b77cff}.spaceLandmark[data-type="comet"]{color:#ffe278}
+    .spaceLandmark.visited .landmarkPin{background:currentColor;box-shadow:0 0 25px currentColor}.spaceLandmark.visited .landmarkPin::after{content:"✓";inset:-2px;display:grid;place-items:center;background:transparent;color:#06101f;font-size:12px;font-style:normal;font-weight:950;box-shadow:none;transform:rotate(-45deg)}
+    .spaceLandmark.visited .landmarkLabel::after{content:" · 방문 완료";color:#72f2be}
+    .spaceLandmarks[hidden],.spaceVisitor[hidden]{display:none!important}
+    .spaceVisitor{position:absolute;z-index:14;left:50%;top:50%;width:82px;height:55px;margin:-27px 0 0 -41px;padding:0;border:0;background:transparent;color:#dffcff;cursor:pointer;filter:drop-shadow(0 0 10px rgba(98,232,255,.5));will-change:transform,opacity;touch-action:none}
+    .ufoDome{position:absolute;left:26px;top:7px;width:30px;height:20px;border:2px solid #9df5ff;border-bottom:0;border-radius:24px 24px 5px 5px;background:radial-gradient(circle at 38% 36%,#eaffff 0 7%,#75dce9 13%,rgba(52,113,150,.82) 62%,rgba(7,22,48,.96));box-shadow:inset 0 0 10px rgba(211,255,255,.42)}
+    .alienEyes{position:absolute;left:34px;top:14px;width:14px;height:5px;background:radial-gradient(ellipse at 20% 50%,#0b1b2a 0 35%,transparent 42%),radial-gradient(ellipse at 80% 50%,#0b1b2a 0 35%,transparent 42%)}
+    .ufoHull{position:absolute;left:9px;top:24px;width:64px;height:20px;border:2px solid #8deeff;border-radius:55% 55% 48% 48%;background:linear-gradient(#e5fdff,#5aaec7 42%,#173b68 48%,#081630);box-shadow:inset 0 -5px 7px rgba(4,13,37,.72),0 7px 12px rgba(0,0,0,.34)}
+    .ufoHull::after{content:"";position:absolute;left:11px;right:11px;bottom:-5px;height:6px;border-radius:50%;background:radial-gradient(circle,#fff 0 18%,#63e8ff 28%,transparent 62%) 0 0/13px 6px repeat-x;filter:drop-shadow(0 0 4px #63e8ff)}
+    .visitorLabel{position:absolute;left:50%;top:51px;transform:translateX(-50%);width:max-content;padding:4px 7px;border:1px solid rgba(98,232,255,.28);border-radius:8px;background:rgba(2,7,22,.88);font-size:8px;font-weight:900;white-space:nowrap}
+    .spaceVisitor:hover,.spaceVisitor:focus-visible{outline:0;filter:drop-shadow(0 0 18px rgba(98,232,255,.9))}.spaceVisitor.encountered{animation:ufoEncounter .55s ease}
+    @keyframes ufoEncounter{35%{filter:drop-shadow(0 0 28px #72f2be) brightness(1.4)}65%{filter:drop-shadow(0 0 20px #b77cff) brightness(1.25)}}
+    .ufoCommModal{z-index:130;background:radial-gradient(circle at 50% 42%,rgba(20,68,88,.34),rgba(1,3,12,.86));backdrop-filter:blur(13px)}
+    .ufoCommCard{position:relative;width:min(760px,100%);max-height:calc(100dvh - 30px);overflow:auto;padding:22px;border:1px solid rgba(98,232,255,.38);border-radius:25px;background:linear-gradient(145deg,rgba(8,25,49,.98),rgba(7,10,29,.98) 64%,rgba(35,16,55,.98));box-shadow:0 30px 100px rgba(0,0,0,.62),0 0 45px rgba(98,232,255,.12)}
+    .ufoCommHeader{display:flex;align-items:flex-start;justify-content:space-between;gap:16px}.ufoCommHeader span{display:block;color:#72f2be;font-size:10px;font-weight:950;letter-spacing:.18em}.ufoCommHeader strong{display:block;margin-top:4px;font-size:15px}.ufoCommClose{width:40px;height:40px;flex:0 0 40px;border:1px solid rgba(159,183,255,.24);border-radius:12px;background:rgba(255,255,255,.06);color:#fff;font-size:22px;cursor:pointer}
+    .ufoSignalGrid{display:grid;grid-template-columns:minmax(250px,.86fr) minmax(300px,1.14fr);gap:20px;margin-top:17px}.ufoSignalFigure{position:relative;min-height:260px;margin:0;overflow:hidden;border:1px solid rgba(98,232,255,.22);border-radius:18px;background:#020614;display:grid;place-items:center}.ufoSignalFigure::before{content:"";position:absolute;z-index:2;inset:0;background:repeating-linear-gradient(180deg,transparent 0 5px,rgba(98,232,255,.045) 6px);pointer-events:none}.ufoSignalFigure::after{content:"외계 탐사선 수신 자료";position:absolute;z-index:3;left:10px;bottom:9px;padding:5px 7px;border-radius:7px;background:rgba(2,7,22,.78);color:#94f4ff;font-size:8px;font-weight:900;letter-spacing:.08em}.ufoSignalFigure img{display:block;width:100%;height:100%;min-height:260px;object-fit:cover;filter:saturate(.9) contrast(1.08)}.ufoSignalFigure.received img{filter:saturate(1.12) contrast(1.06)}
+    .ufoSignalTask{display:flex;flex-direction:column;min-width:0}.ufoSignalTask .modalEyebrow{color:#72f2be}.ufoSignalTask h2{margin:8px 0 8px;font-size:clamp(24px,4vw,34px);line-height:1.08;letter-spacing:-.045em}.ufoPrompt{margin:0;color:#b9c7e5;font-size:12px;line-height:1.55}.ufoChoices{display:grid;grid-template-columns:1fr;gap:7px;margin-top:14px}.ufoChoice{min-height:43px;padding:8px 12px;border:1px solid rgba(159,183,255,.25);border-radius:12px;background:rgba(24,35,70,.74);color:#f1f6ff;font-size:12px;font-weight:900;text-align:left;cursor:pointer}.ufoChoice:hover:not(:disabled),.ufoChoice:focus-visible{border-color:#62e8ff;background:rgba(98,232,255,.11)}.ufoChoice.wrong{border-color:#ff7d91;color:#ffd9df;background:rgba(255,125,145,.09)}.ufoChoice.correct{border-color:#72f2be;color:#dcfff0;background:rgba(114,242,190,.12)}.ufoChoice:disabled{cursor:default;opacity:.48}.ufoChoice.correct:disabled{opacity:1}
+    .ufoFeedback{display:none;margin-top:11px;padding:10px 11px;border-left:3px solid #62e8ff;border-radius:9px;background:rgba(98,232,255,.07);color:#d8f9ff;font-size:11px;line-height:1.5}.ufoFeedback.show{display:block}.ufoFeedback.bad{border-color:#ff7d91;background:rgba(255,125,145,.07);color:#ffe2e7}.ufoFeedback.good{border-color:#72f2be;background:rgba(114,242,190,.08);color:#ddfff0}.ufoContinue{display:none;width:100%;min-height:45px;margin-top:auto;padding:0 13px;border:1px solid rgba(114,242,190,.48);border-radius:12px;background:linear-gradient(135deg,rgba(31,145,125,.88),rgba(61,87,190,.88));color:#fff;font-size:12px;font-weight:950;cursor:pointer}.ufoContinue.show{display:block;margin-top:12px}
     .galaxyBeacon{position:absolute;left:50%;top:50%;width:84px;height:72px;margin:-36px 0 0 -42px;padding:0;border:0;border-radius:0;background:transparent;color:#fff;display:grid;place-items:center;cursor:pointer;pointer-events:auto;box-shadow:none;transition:opacity .2s;will-change:transform}
     .galaxyBeacon:hover,.galaxyBeacon:focus-visible,.galaxyBeacon.selected{outline:0}
     .galaxyBeacon:hover .beaconPhoto,.galaxyBeacon:focus-visible .beaconPhoto,.galaxyBeacon.selected .beaconPhoto{filter:saturate(1.2) contrast(1.16) brightness(1.16) drop-shadow(0 0 8px rgba(98,232,255,.75))}
@@ -188,6 +212,18 @@
     .navGuide{position:absolute;z-index:9;left:50%;bottom:16px;transform:translateX(-50%);display:flex;align-items:center;gap:10px;padding:7px 11px;border:1px solid var(--line);border-radius:999px;background:rgba(4,8,23,.7);backdrop-filter:blur(10px);color:#aab8d9;font-size:9px;font-weight:800;pointer-events:none}
     .navGuide kbd{min-width:23px;padding:3px 5px;border:1px solid rgba(255,255,255,.2);border-radius:6px;background:rgba(255,255,255,.08);color:#fff;font:inherit;text-align:center}
     .mapScale{position:absolute;right:max(18px,var(--safe-right));top:18px;color:#8fa1c8;font-size:9px;font-weight:850;letter-spacing:.08em;pointer-events:none}
+    .navRadar{position:absolute;z-index:11;right:max(18px,var(--safe-right));top:44px;width:126px;padding:8px;border:1px solid rgba(98,232,255,.26);border-radius:16px;background:rgba(3,9,27,.76);backdrop-filter:blur(12px);box-shadow:0 15px 35px rgba(0,0,0,.28),inset 0 0 22px rgba(98,232,255,.04);pointer-events:none}
+    .navRadar[hidden]{display:none!important}.radarHeader{display:flex;justify-content:space-between;gap:7px;margin-bottom:6px;color:#9eb1d7;font-size:8px;font-weight:950;letter-spacing:.09em}.radarHeader strong{color:#72f2be}
+    .radarScreen{position:relative;width:100%;aspect-ratio:1;overflow:hidden;border:1px solid rgba(98,232,255,.28);border-radius:50%;background:radial-gradient(circle,rgba(98,232,255,.1) 0 2%,transparent 3%),radial-gradient(circle,rgba(25,65,97,.3),rgba(2,10,27,.94) 68%);box-shadow:inset 0 0 25px rgba(98,232,255,.12)}
+    .radarScreen::after{content:"";position:absolute;inset:4px;border-radius:50%;background:conic-gradient(from -18deg,rgba(98,232,255,.2),transparent 17% 100%);animation:radarSweep 5.5s linear infinite;transform-origin:center}
+    @keyframes radarSweep{to{transform:rotate(360deg)}}
+    .radarRing{position:absolute;z-index:1;left:50%;top:50%;border:1px solid rgba(98,232,255,.15);border-radius:50%;transform:translate(-50%,-50%)}.radarRingOuter{width:72%;height:72%}.radarRingInner{width:38%;height:38%}
+    .radarCrosshair::before,.radarCrosshair::after{content:"";position:absolute;z-index:1;left:50%;top:50%;background:rgba(98,232,255,.1);transform:translate(-50%,-50%)}.radarCrosshair::before{width:82%;height:1px}.radarCrosshair::after{width:1px;height:82%}
+    .radarShip{position:absolute;z-index:4;left:50%;top:50%;width:0;height:0;border-left:5px solid transparent;border-right:5px solid transparent;border-bottom:13px solid #f2fdff;filter:drop-shadow(0 0 6px #62e8ff);transform:translate(-50%,-58%)}
+    .radarDot{position:absolute;z-index:3;left:50%;top:50%;width:8px;height:8px;margin:-4px 0 0 -4px;border:1px solid rgba(255,255,255,.65);border-radius:50%;background:rgb(var(--radar-color));box-shadow:0 0 10px rgba(var(--radar-color),.95);transition:left .12s linear,top .12s linear,transform .2s}
+    .radarDot[data-type="nebula"]{--radar-color:76,235,215}.radarDot[data-type="asteroid"]{--radar-color:255,183,92}.radarDot[data-type="dust"]{--radar-color:183,124,255}.radarDot[data-type="comet"]{--radar-color:255,226,120}
+    .radarDot.visited{transform:scale(1.25);background:#72f2be;box-shadow:0 0 13px rgba(114,242,190,.95)}.radarDot.visited::after{content:"✓";position:absolute;left:50%;top:50%;color:#061820;font-size:7px;font-style:normal;font-weight:950;transform:translate(-50%,-54%)}
+    .navRadar>small{display:block;min-height:20px;margin-top:6px;color:#8fa1c8;font-size:7px;font-weight:800;line-height:1.4;text-align:center}
     .navZoomControls{position:absolute;z-index:12;right:max(16px,var(--safe-right));top:50%;transform:translateY(-50%);display:grid;gap:7px}
     .navZoomControls[hidden],.navGuide[hidden],.mapScale[hidden],.galaxyBeacons[hidden]{display:none!important}
     .navZoomButton{min-width:92px;min-height:43px;padding:0 12px;border:1px solid rgba(98,232,255,.3);border-radius:13px;background:rgba(5,12,34,.82);backdrop-filter:blur(12px);color:#e8fbff;font-size:10px;font-weight:900;cursor:pointer;box-shadow:0 10px 26px rgba(0,0,0,.22)}
@@ -226,12 +262,15 @@
     @keyframes shake{25%{transform:translateX(-5px)}50%{transform:translateX(5px)}75%{transform:translateX(-3px)}}
     .classBins{display:grid;gap:9px}.classBin{min-height:84px;padding:12px;border:1px dashed rgba(159,183,255,.3);border-radius:15px;background:rgba(10,16,40,.72);color:#fff;display:grid;grid-template-columns:44px 1fr auto;align-items:center;gap:10px;text-align:left;cursor:pointer}.classBin:hover,.classBin.active{border-color:var(--cyan);background:rgba(98,232,255,.08)}.classBin .miniGalaxy{width:38px;height:38px}.classBin strong{display:block;font-size:13px}.classBin small{display:block;margin-top:3px;color:#91a2c7;font-size:9px;line-height:1.35}.binCount{width:28px;height:28px;border-radius:9px;display:grid;place-items:center;background:rgba(255,255,255,.08);font-size:11px;font-weight:900}
     .classifyHelp{margin:12px 0 0;color:#91a2c7;font-size:10px;line-height:1.5}.classifyResult{display:none;margin-top:16px;padding:16px;border:1px solid rgba(114,242,190,.32);border-radius:16px;background:rgba(114,242,190,.07);color:#dcfff0;line-height:1.6}.classifyResult.show{display:block}.classifyResult strong{color:var(--green)}
-    @media(max-width:700px){.flightStatus{display:none}.galaxyBeacon{width:74px;height:62px;margin:-31px 0 0 -37px}.beaconPhoto{width:70px;height:58px}.miniGalaxy{width:39px;height:39px}.beaconName{top:66px;font-size:9px;opacity:0;transition:opacity .18s}.galaxyBeacon:hover .beaconName,.galaxyBeacon:focus-visible .beaconName,.galaxyBeacon.selected .beaconName{opacity:1}.navGuide{bottom:9px;width:calc(100% - 24px);justify-content:center;font-size:8px}.navGuide .desktopOnly{display:none}.mapScale{top:62px;right:10px}.navZoomControls{top:105px;right:10px;transform:none;gap:6px}.navZoomButton{min-width:104px;min-height:44px;padding:0 9px;font-size:10px}.turnSpeedControl{width:104px}.observedGalaxyPhoto{top:46%;width:94vw;height:50vh}.observedGalaxyPhoto img{border-radius:12px}.imageProvenance{bottom:2px;font-size:8px;white-space:normal}.solarSystemMarker{left:64%;top:61%}.solarSystemOverlay{top:46%;width:94vw;height:56vh;border-radius:18px}.solarHeader{left:13px;right:13px;top:11px}.solarDiagram{top:40%;width:min(78%,315px)}.planetOrder{left:10px;right:10px;bottom:84px;gap:2px}.planetOrder span{padding:4px 1px;font-size:7px}.solarInfo{left:10px;right:10px;bottom:8px;gap:4px}.solarInfo p{padding:5px 6px;font-size:7.5px}.solarInfo small{font-size:6.5px}.earthPlanet::after{left:auto;right:16px;font-size:7px}.app.observationMode .deckActions{grid-template-columns:52px minmax(0,1fr)}.app.singleActionMode .deckActions{grid-template-columns:1fr}.classifyCard{width:100%;max-height:100dvh;height:100dvh;border:0;border-radius:0;padding:calc(17px + var(--safe-top)) 14px calc(18px + var(--safe-bottom))}.classifyHeader h2{font-size:23px}.classificationBoard{grid-template-columns:1fr;gap:11px}.sampleArea,.binArea{padding:12px}.sampleGrid{grid-template-columns:repeat(2,1fr);gap:8px}.sampleCard{min-height:126px;padding:8px}.sampleGalaxyPhoto{height:72px}.classBin{min-height:68px;padding:9px}.classifyHelp{display:none}}
+    @media(max-width:700px){.landmarkLabel{left:11px;top:-11px;max-width:130px;padding:4px 6px;font-size:7.5px}.landmarkPin{width:15px;height:15px}.spaceVisitor{width:70px;height:50px;margin:-25px 0 0 -35px;transform-origin:center}.ufoDome{left:22px}.ufoHull{left:5px}.alienEyes{left:30px}.visitorLabel{top:49px;font-size:7px}.mapScale{max-width:60vw;text-align:right;line-height:1.45}.navRadar{top:86px;right:10px;width:94px;padding:6px;border-radius:13px}.radarHeader{margin-bottom:4px;font-size:7px}.navRadar>small{min-height:18px;margin-top:4px;font-size:6.5px}.radarDot{width:7px;height:7px;margin:-3.5px 0 0 -3.5px}}
+    @media(max-width:700px){.flightStatus{display:none}.galaxyBeacon{width:74px;height:62px;margin:-31px 0 0 -37px}.beaconPhoto{width:70px;height:58px}.miniGalaxy{width:39px;height:39px}.beaconName{top:66px;font-size:9px;opacity:0;transition:opacity .18s}.galaxyBeacon:hover .beaconName,.galaxyBeacon:focus-visible .beaconName,.galaxyBeacon.selected .beaconName{opacity:1}.navGuide{bottom:9px;width:calc(100% - 24px);justify-content:center;font-size:8px}.navGuide .desktopOnly{display:none}.mapScale{display:none}.navZoomControls{top:105px;right:10px;transform:none;gap:6px}.navZoomButton{min-width:104px;min-height:44px;padding:0 9px;font-size:10px}.turnSpeedControl{width:104px}.observedGalaxyPhoto{top:46%;width:94vw;height:50vh}.observedGalaxyPhoto img{border-radius:12px}.imageProvenance{bottom:2px;font-size:8px;white-space:normal}.solarSystemMarker{left:64%;top:61%}.solarSystemOverlay{top:46%;width:94vw;height:56vh;border-radius:18px}.solarHeader{left:13px;right:13px;top:11px}.solarDiagram{top:40%;width:min(78%,315px)}.planetOrder{left:10px;right:10px;bottom:84px;gap:2px}.solarInfo{left:10px;right:10px;bottom:8px;gap:4px}.solarInfo p{padding:5px 6px;font-size:7.5px}.solarInfo small{font-size:6.5px}.earthPlanet::after{left:auto;right:16px;font-size:7px}.app.observationMode .deckActions{grid-template-columns:52px minmax(0,1fr)}.app.singleActionMode .deckActions{grid-template-columns:1fr}.classifyCard{width:100%;max-height:100dvh;height:100dvh;border:0;border-radius:0;padding:calc(17px + var(--safe-top)) 14px calc(18px + var(--safe-bottom))}.classifyHeader h2{font-size:23px}.classificationBoard{grid-template-columns:1fr;gap:11px}.sampleArea,.binArea{padding:12px}.sampleGrid{grid-template-columns:repeat(2,1fr);gap:8px}.sampleCard{min-height:126px;padding:8px}.sampleGalaxyPhoto{height:72px}.classBin{min-height:68px;padding:9px}.classifyHelp{display:none}}
     @media(max-width:700px){.milkyWaySideGuide{top:46%;width:94vw;height:45vh}.edgeFeature{max-width:132px;padding:5px 7px;font-size:8px}.edgeFeature small{font-size:7px}.edgeBulge{top:4%}.edgeBulge::after{height:52px}.edgeDisk{left:1%;top:52%}.edgeDisk::after{width:28px}.edgeDust{right:1%;top:39%}.edgeDust::after{width:30px}.edgeSolar{left:57%;top:68%}.edgeSolar::after{height:26px}}
     @media(orientation:landscape) and (max-height:600px){.missionPanel.collapsed .missionBody{display:none}.navGuide{bottom:7px}.solarSystemOverlay{top:46%;width:min(88vw,760px);height:72vh}.solarDiagram{left:31%;top:54%;width:min(32%,180px)}.planetOrder{left:16px;right:16px;bottom:10px}.solarInfo{grid-template-columns:1fr;left:auto;right:18px;width:36%;top:67px;bottom:auto}.solarInfo small{display:none}.classificationBoard{grid-template-columns:1.2fr .8fr}.classifyCard{padding:14px}.classifyHeader h2{font-size:22px}.sampleCard{min-height:88px}.sampleCard .miniGalaxy{width:47px;height:47px}.classBin{min-height:61px}}
+    @media(max-width:700px){.ufoCommModal{padding:0}.ufoCommCard{width:100%;max-height:100dvh;height:100dvh;padding:calc(15px + var(--safe-top)) 14px calc(15px + var(--safe-bottom));border:0;border-radius:0}.ufoSignalGrid{grid-template-columns:1fr;gap:12px;margin-top:11px}.ufoSignalFigure{min-height:190px}.ufoSignalFigure img{min-height:190px}.ufoSignalTask h2{font-size:25px}.ufoChoices{grid-template-columns:repeat(3,1fr)}.ufoChoice{min-height:43px;padding:7px 5px;text-align:center;font-size:10px}}
+    @media(orientation:landscape) and (max-height:600px){.ufoCommCard{width:min(760px,calc(100% - 20px));height:auto;max-height:calc(100dvh - 14px);padding:12px 14px;border:1px solid rgba(98,232,255,.38);border-radius:18px}.ufoCommHeader strong{font-size:12px}.ufoCommClose{width:34px;height:34px;flex-basis:34px}.ufoSignalGrid{grid-template-columns:minmax(220px,.82fr) minmax(310px,1.18fr);gap:14px;margin-top:9px}.ufoSignalFigure,.ufoSignalFigure img{min-height:205px;height:205px}.ufoSignalTask h2{margin:4px 0 5px;font-size:21px}.ufoPrompt{font-size:10px}.ufoChoices{margin-top:8px}.ufoChoice{min-height:34px;padding:5px 7px;font-size:9px}.ufoFeedback{margin-top:7px;padding:7px 8px;font-size:9px}.ufoContinue.show{min-height:35px;margin-top:7px}}
     @media(hover:none) and (pointer:coarse){.mobileJoysticks:not([hidden]){display:flex}.navZoomControls,.navGuide{display:none!important}.instrument,.simNotice{display:none}.app:not(.observationMode) .deckButton.primary{display:none}.app:not(.observationMode) .deckActions{grid-template-columns:52px minmax(0,1fr)}}
     @media(max-width:700px) and (hover:none) and (pointer:coarse){.mobileJoysticks{bottom:10px}.joystickPad{width:94px;height:94px}.joystickKnob{width:38px;height:38px;margin:-19px}}
-    @media(orientation:landscape) and (max-height:600px) and (hover:none) and (pointer:coarse){.mobileJoysticks{left:max(18px,var(--safe-left));right:max(18px,var(--safe-right));bottom:7px}.joystickPad{width:86px;height:86px}.joystickKnob{width:34px;height:34px;margin:-17px}.joystickLabel,.touchSpeedButton{min-height:19px;padding:2px 7px;font-size:7px}}
+    @media(orientation:landscape) and (max-height:600px) and (hover:none) and (pointer:coarse){.mobileJoysticks{left:max(18px,var(--safe-left));right:max(18px,var(--safe-right));bottom:7px}.joystickPad{width:86px;height:86px}.joystickKnob{width:34px;height:34px;margin:-17px}.joystickLabel,.touchSpeedButton{min-height:19px;padding:2px 7px;font-size:7px}.navRadar{top:48px;width:88px}.navRadar>small{display:none}}
   </style>
 </head>
 <body>
@@ -257,6 +296,13 @@
       <div class="destinationLabel"><span id="sectorLabel">FREE NAVIGATION</span><h1 id="destinationName">국부 은하군 항해 지도</h1><p id="destinationSubtitle">마우스나 손가락으로 우주를 움직이고 탐사할 은하를 선택하세요.</p></div>
       <div class="reticle" id="reticle"><div class="reticleRing"></div></div><div class="scanLine" id="scanLine"></div>
       <div class="galaxyBeacons" id="galaxyBeacons" aria-label="탐사할 은하 목록"></div>
+      <div class="spaceLandmarks" id="spaceLandmarks" aria-label="길찾기용 우주 이정표"></div>
+      <button class="spaceVisitor" id="spaceVisitor" type="button" aria-label="날아가는 미확인 탐사선과 조우하기"><span class="ufoDome"></span><span class="alienEyes"></span><span class="ufoHull"></span><span class="visitorLabel">미확인 탐사선</span></button>
+      <aside class="navRadar" id="navRadar" aria-label="이정표 항법 레이더">
+        <div class="radarHeader"><span>항법 레이더</span><strong id="radarProgress">0 / 4</strong></div>
+        <div class="radarScreen" id="radarScreen"><i class="radarRing radarRingOuter"></i><i class="radarRing radarRingInner"></i><i class="radarCrosshair"></i><i class="radarShip" aria-hidden="true"></i><div class="radarDots" id="radarDots"></div></div>
+        <small id="radarNearest">가장 가까운 이정표 확인 중</small>
+      </aside>
       <figure class="observedGalaxyPhoto" id="observedGalaxyPhoto" hidden><img id="observedGalaxyImage" alt=""><button class="solarSystemMarker" id="solarSystemMarker" type="button" aria-label="우리은하 안의 태양계 위치 확대 관측" hidden></button><figcaption class="imageProvenance"><span id="imageCredit">NASA/ESA Hubble 관측 이미지</span><a id="imageSource" target="_blank" rel="noreferrer">NASA 원본 ↗</a></figcaption></figure>
       <div class="milkyWaySideGuide" id="milkyWaySideGuide" aria-label="우리은하 옆모습의 주요 특징" hidden><span class="edgeFeature edgeBulge">중심 팽대부<small>별이 밀집해 가운데가 두껍습니다.</small></span><span class="edgeFeature edgeDisk">얇은 원반<small>별과 가스가 넓고 납작하게 펼쳐집니다.</small></span><span class="edgeFeature edgeDust">어두운 먼지 띠<small>성간 먼지가 뒤쪽 별빛을 가립니다.</small></span><span class="edgeFeature edgeSolar">태양계 위치<small>중심에서 떨어진 원반 안에 있습니다.</small></span><small class="edgeModelNote">관측 자료를 바탕으로 특징을 강조한 우리은하 옆면 모식도</small></div>
       <section class="solarSystemOverlay" id="solarSystemOverlay" aria-label="태양계와 지구 위치 관측" hidden>
@@ -283,7 +329,7 @@
         <div class="instrumentRow"><span>항법 상태</span><strong id="navReadout">자유 항해</strong></div>
         <div class="instrumentRow"><span>관측 대상</span><strong id="viewReadout">선택 없음</strong></div>
       </div>
-      <p class="simNotice">교육용 항해 시뮬레이터 · 은하 사이의 실제 거리와 이동 시간, 천체의 겉보기 크기는 크게 압축했습니다.</p>
+      <p class="simNotice">교육용 항해 시뮬레이터 · 은하 사이의 실제 거리와 이동 시간, 천체의 겉보기 크기는 학습을 위해 압축했습니다.</p>
     </section>
 
     <aside class="missionPanel" id="missionPanel" aria-label="현재 탐사 미션">
@@ -314,7 +360,7 @@
       <p class="modalEyebrow">SCILAB FREE VOYAGE</p><h2 id="introTitle">우주선을 직접 움직여<br>은하를 탐사해 볼까요?</h2>
       <p class="modalLead">먼 우주에서는 은하도 작은 별빛 신호처럼 보입니다. 우주선을 움직여 신호에 접근하고, 실제 은하의 정체를 하나씩 밝혀 분류 도감을 완성하세요.</p>
       <div class="learningGrid">
-        <article class="learningCard"><b>01 · 신호 발견 항해</b><span>모바일은 왼쪽 이동·오른쪽 시점 조이스틱, PC는 마우스·휠·WASD로 별빛 신호를 추적합니다.</span></article>
+        <article class="learningCard"><b>01 · 신호 발견 항해</b><span>모바일은 두 조이스틱, PC는 마우스·휠·WASD로 이동합니다. 색 점 레이더로 이정표 방향을 보고 가까이 가면 방문 기록이 남습니다.</span></article>
         <article class="learningCard"><b>02 · 실제 은하 해금</b><span>신호 가까이에서 NASA/Hubble 이미지와 이름이 나타납니다. 우리은하에서는 태양계와 지구 위치도 확대합니다.</span></article>
         <article class="learningCard"><b>03 · 분류 도감</b><span>관측 표본을 나선·타원·불규칙 은하로 직접 끌어 놓거나 선택해 분류합니다.</span></article>
       </div>
@@ -340,6 +386,22 @@
         <section class="binArea"><p class="boardLabel">은하 분류함</p><div class="classBins" id="classBins"></div></section>
       </div>
       <div class="classifyResult" id="classifyResult"></div>
+    </section>
+  </div>
+
+  <div class="modalBackdrop ufoCommModal" id="ufoCommModal" role="dialog" aria-modal="true" aria-labelledby="ufoCommTitle">
+    <section class="ufoCommCard">
+      <header class="ufoCommHeader"><div><span>UNKNOWN CRAFT · LIVE SIGNAL</span><strong id="ufoCommProgress">외계 탐사선 교신 1 / 3</strong></div><button class="ufoCommClose" id="ufoCommClose" type="button" aria-label="UFO 교신 닫기">×</button></header>
+      <div class="ufoSignalGrid">
+        <figure class="ufoSignalFigure" id="ufoSignalFigure"><img id="ufoSignalImage" alt="이름을 가린 실제 은하 관측 이미지"></figure>
+        <section class="ufoSignalTask">
+          <p class="modalEyebrow">GALAXY SIGNAL</p><h2 id="ufoCommTitle">이 은하는 어떤 종류일까요?</h2>
+          <p class="ufoPrompt" id="ufoPrompt">전체 윤곽과 팔 구조를 관찰해 외계 탐사선의 자료를 해독하세요.</p>
+          <div class="ufoChoices" id="ufoChoices"></div>
+          <div class="ufoFeedback" id="ufoFeedback" role="status" aria-live="polite"></div>
+          <button class="ufoContinue" id="ufoContinue" type="button">사진 속 은하 앞으로 이동하기</button>
+        </section>
+      </div>
     </section>
   </div>
 
@@ -433,6 +495,12 @@
         {key:'ngc1427a',name:'왜소 은하 NGC 1427A',catalog:'NGC 1427A',distance:'약 6,200만 광년',distanceValue:62000000,type:'irregular',position:[-1780,-210,2700],scale:.8,image:galaxyAsset('ngc1427a'),credit:'NASA/ESA Hubble 관측 이미지',description:'화로자리 은하단을 지나며 기체가 압축되고 별이 만들어지는 왜소 불규칙 은하입니다.',facts:['지구에서 약 6,200만 광년 떨어져 있습니다.','대칭적인 팔이나 매끈한 타원 윤곽을 찾기 어렵습니다.','화로자리 은하단의 기체와 상호 작용하며 화살촉 같은 비대칭 모양을 보입니다.'],source:'https://science.nasa.gov/asset/hubble/galaxy-ngc-1427a-plunges-toward-the-fornax-galaxy-cluster/'},
         {key:'ngc4449',name:'왜소 은하 NGC 4449',catalog:'NGC 4449',distance:'약 1,300만 광년',distanceValue:13000000,type:'irregular',position:[-105,-1245,2100],scale:.9,image:galaxyAsset('ngc4449'),credit:'NASA/ESA Hubble 관측 이미지',description:'별 탄생 영역이 불꽃처럼 흩어진 왜소 불규칙 은하입니다.',facts:['지구에서 약 1,300만 광년 떨어져 있습니다.','붉게 빛나는 별 탄생 영역과 푸른 젊은 별 무리가 넓게 흩어져 있습니다.','규칙적인 나선팔보다 비대칭적인 별과 기체 분포가 두드러집니다.'],source:'https://science.nasa.gov/asset/hubble/stellar-fireworks-are-ablaze-in-galaxy-ngc-4449/'}
       ];
+      const spaceLandmarks=[
+        {key:'cyan-nebula',name:'청록 성운 표지',shortName:'청록 성운',type:'nebula',position:[-900,520,1300],color:'76,235,215',note:'좌현 위쪽 고정 이정표'},
+        {key:'twin-asteroids',name:'쌍둥이 소행성 지대',shortName:'소행성 지대',type:'asteroid',position:[850,-420,1150],color:'255,183,92',note:'우현 아래쪽 고정 이정표'},
+        {key:'violet-dust',name:'보라 먼지구름',shortName:'보라 먼지구름',type:'dust',position:[1250,640,2200],color:'183,124,255',note:'먼 우현 위쪽 고정 이정표'},
+        {key:'gold-comet',name:'황금 혜성길',shortName:'황금 혜성길',type:'comet',position:[-1500,-650,2450],color:'255,226,120',note:'먼 좌현 아래쪽 고정 이정표'}
+      ];
       const typeNames={spiral:'나선 은하',elliptical:'타원 은하',irregular:'불규칙 은하'};
       const criteria={spiral:'중심 둘레로 휘어진 팔 구조',elliptical:'팔 없이 매끈한 원·타원 윤곽',irregular:'일정한 전체 모양을 찾기 어려움'};
       const classSamples=[
@@ -443,6 +511,11 @@
         {id:'E',type:'irregular',image:galaxyAsset('ngc4449'),note:'비대칭 덩어리 구조'},
         {id:'F',type:'elliptical',image:galaxyAsset('ngc1132'),note:'둥글고 고른 빛 분포'}
       ];
+      const ufoSignals=[
+        {key:'m51',type:'spiral',evidence:'밝은 중심에서 바깥으로 휘어진 팔 구조가 뚜렷합니다.'},
+        {key:'m89',type:'elliptical',evidence:'뚜렷한 팔 없이 전체 빛이 둥글고 매끈하게 퍼집니다.'},
+        {key:'ngc1427a',type:'irregular',evidence:'대칭적인 팔이나 매끈한 타원 윤곽 없이 한쪽으로 흐트러져 있습니다.'}
+      ];
 
       const el=id=>document.getElementById(id);
       const canvas=el('space'),ctx=canvas.getContext('2d'),viewport=el('viewport');
@@ -451,20 +524,23 @@
         handleTitle:el('handleTitle'),step:el('missionStep'),title:el('missionTitle'),description:el('missionDescription'),task:el('taskText'),
         facts:el('facts'),choices:el('choiceGrid'),done:el('missionDone'),doneText:el('missionDoneText'),scan:el('scanButton'),warp:el('warpButton'),
         view:el('viewButton'),viewReadout:el('viewReadout'),zoomReadout:el('zoomReadout'),navReadout:el('navReadout'),systemMessage:el('systemMessage'),
-        reticle:el('reticle'),scanLine:el('scanLine'),beacons:el('galaxyBeacons'),toast:el('toast'),panel:el('missionPanel'),handle:el('missionHandle'),
-        warpFlash:el('warpFlash'),navGuide:el('navGuide'),mapScale:el('mapScale'),zoomControls:el('navZoomControls'),mapStatus:el('mapStatus'),observeStatus:el('observeStatus'),classStatus:el('classStatus'),
+        reticle:el('reticle'),scanLine:el('scanLine'),beacons:el('galaxyBeacons'),landmarks:el('spaceLandmarks'),visitor:el('spaceVisitor'),toast:el('toast'),panel:el('missionPanel'),handle:el('missionHandle'),
+        warpFlash:el('warpFlash'),navGuide:el('navGuide'),mapScale:el('mapScale'),radar:el('navRadar'),radarDots:el('radarDots'),radarProgress:el('radarProgress'),radarNearest:el('radarNearest'),zoomControls:el('navZoomControls'),mapStatus:el('mapStatus'),observeStatus:el('observeStatus'),classStatus:el('classStatus'),
         observedPhoto:el('observedGalaxyPhoto'),observedImage:el('observedGalaxyImage'),imageCredit:el('imageCredit'),imageSource:el('imageSource'),
         solarMarker:el('solarSystemMarker'),solarOverlay:el('solarSystemOverlay'),sideGuide:el('milkyWaySideGuide'),turnSpeed:el('turnSpeed'),turnSpeedReadout:el('turnSpeedReadout'),
-        joysticks:el('mobileJoysticks'),moveJoystick:el('moveJoystick'),moveKnob:el('moveJoystickKnob'),lookJoystick:el('lookJoystick'),lookKnob:el('lookJoystickKnob'),touchSpeed:el('touchSpeedButton'),mobileTurnSpeedReadout:el('mobileTurnSpeedReadout')
+        joysticks:el('mobileJoysticks'),moveJoystick:el('moveJoystick'),moveKnob:el('moveJoystickKnob'),lookJoystick:el('lookJoystick'),lookKnob:el('lookJoystickKnob'),touchSpeed:el('touchSpeedButton'),mobileTurnSpeedReadout:el('mobileTurnSpeedReadout'),
+        ufoModal:el('ufoCommModal'),ufoProgress:el('ufoCommProgress'),ufoFigure:el('ufoSignalFigure'),ufoImage:el('ufoSignalImage'),ufoTitle:el('ufoCommTitle'),ufoPrompt:el('ufoPrompt'),ufoChoices:el('ufoChoices'),ufoFeedback:el('ufoFeedback'),ufoContinue:el('ufoContinue')
       };
 
-      const REVEAL_DISTANCE=950,APPROACH_DISTANCE=1950,DOCK_DISTANCE=520;
+      const REVEAL_DISTANCE=950,APPROACH_DISTANCE=1950,DOCK_DISTANCE=520,LANDMARK_VISIT_DISTANCE=480,UFO_CONTACT_DISTANCE=460,UFO_TAP_DISTANCE=900,UFO_COMM_COOLDOWN=45000,UFO_WARP_DISTANCE=780;
+      const coarsePointer=window.matchMedia('(hover:none) and (pointer:coarse)').matches;
       let mode='map',selectedKey=null,observingKey=null,viewMode='face',solarView=false,scanning=false,warping=false,reduced=false,started=false;
       let visited=new Set(),look={x:0,y:0},targetLook={x:0,y:0},warpPower=0,toastTimer=0;
       let width=0,height=0,viewWidth=0,viewHeight=0,dpr=1,lastFrame=0,galaxySets={};
       let camera={x:0,y:0,z:0,yaw:0,pitch:0},pinchDistance=0,keys=new Set(),turnSpeed=1.1,discoveryRenderPending=false,autoDockPending=false;
       const navPointers=new Map(),touchInput={moveX:0,moveY:0,lookX:0,lookY:0};
-      let selectedSample=null,assigned=new Map(),classAttempts=0,classificationComplete=false;
+      let selectedSample=null,assigned=new Map(),classAttempts=0,classificationComplete=false,visitorEncounters=0,visitorHoldUntil=0,visitorHoldPosition=null,visitorWorldPosition=[0,0,1500],visitedLandmarks=new Set();
+      let ufoSignalIndex=0,ufoCommunicationOpen=false,ufoSignalResolved=false,nextUfoContactAt=0;
       let discovered=new Set(['milkyway']);
       const stars=[],navigationStars=[];
 
@@ -473,6 +549,7 @@
       function clamp(value,min,max){return Math.max(min,Math.min(max,value))}
       function galaxyByKey(key){return galaxies.find(item=>item.key===key)}
       function galaxyDistance(galaxy){if(!galaxy)return Infinity;const [x,y,z]=galaxy.position;return Math.hypot(x-camera.x,y-camera.y,z-camera.z)}
+      function landmarkDistance(landmark){const [x,y,z]=landmark.position;return Math.hypot(x-camera.x,y-camera.y,z-camera.z)}
       function isGalaxyRevealed(galaxy){return galaxyDistance(galaxy)<=REVEAL_DISTANCE}
       function displayGalaxyName(galaxy){return discovered.has(galaxy.key)?galaxy.name:'미확인 은하 신호'}
 
@@ -539,6 +616,32 @@
         ctx.restore();
       }
 
+      function drawSpaceLandmarks(time){
+        const ox=(width-viewWidth)/2,oy=(height-viewHeight)/2,basis=cameraBasis();
+        spaceLandmarks.forEach((landmark,index)=>{
+          const point=projectWorld(landmark.position,basis);if(!point.visible)return;
+          const x=point.x+ox,y=point.y+oy,scale=clamp(1050/point.depth,.42,1.65);
+          if(landmark.type==='nebula'||landmark.type==='dust'){
+            const isDust=landmark.type==='dust',radius=clamp((isDust?150000:128000)/point.depth,42,138);
+            coreGlow(x,y,radius,`rgba(${landmark.color},${isDust?.14:.18})`,`rgba(${landmark.color},${isDust?.065:.08})`,isDust?.58:.76);
+            coreGlow(x-radius*.22,y+radius*.12,radius*.58,`rgba(${landmark.color},.09)`,`rgba(${landmark.color},.035)`,.7);
+            coreGlow(x+radius*.3,y-radius*.12,radius*.46,'rgba(210,245,255,.07)',`rgba(${landmark.color},.025)`,.82);
+          }else if(landmark.type==='asteroid'){
+            const rand=seeded(830+index);
+            for(let rock=0;rock<17;rock++){
+              const position=[landmark.position[0]+(rand()-.5)*520,landmark.position[1]+(rand()-.5)*300,landmark.position[2]+(rand()-.5)*420],rockPoint=projectWorld(position,basis);if(!rockPoint.visible)continue;
+              const rx=rockPoint.x+ox,ry=rockPoint.y+oy,size=clamp((5+rand()*13)*950/rockPoint.depth,1.2,12),rotation=time*.00012*(rock%2?1:-1)+rock;
+              ctx.save();ctx.translate(rx,ry);ctx.rotate(rotation);ctx.fillStyle=`rgba(${landmark.color},${.32+rand()*.36})`;ctx.strokeStyle='rgba(255,225,183,.36)';ctx.lineWidth=.7;ctx.beginPath();
+              for(let corner=0;corner<7;corner++){const angle=corner*Math.PI*2/7,edge=size*(.72+rand()*.35),px=Math.cos(angle)*edge,py=Math.sin(angle)*edge*(.7+rand()*.22);if(!corner)ctx.moveTo(px,py);else ctx.lineTo(px,py)}
+              ctx.closePath();ctx.fill();ctx.stroke();ctx.restore();
+            }
+          }else{
+            const phase=time*.00018,headX=x+Math.sin(phase)*18*scale,headY=y+Math.cos(phase*.8)*10*scale,tail=clamp(118*scale,38,135),gradient=ctx.createLinearGradient(headX-tail,headY+tail*.28,headX,headY);
+            gradient.addColorStop(0,'rgba(255,226,120,0)');gradient.addColorStop(.72,'rgba(255,226,120,.2)');gradient.addColorStop(1,'rgba(233,252,255,.9)');ctx.save();ctx.globalCompositeOperation='lighter';ctx.strokeStyle=gradient;ctx.lineWidth=clamp(5*scale,1.5,6);ctx.beginPath();ctx.moveTo(headX-tail,headY+tail*.28);ctx.quadraticCurveTo(headX-tail*.42,headY+tail*.08,headX,headY);ctx.stroke();ctx.restore();coreGlow(headX,headY,clamp(24*scale,9,28),'rgba(255,255,238,.9)','rgba(255,210,94,.22)');
+          }
+        });
+      }
+
       function coreGlow(cx,cy,r,colorA,colorB,scaleY=1){
         ctx.save();ctx.translate(cx,cy);ctx.scale(1,scaleY);const g=ctx.createRadialGradient(0,0,0,0,0,r);g.addColorStop(0,colorA);g.addColorStop(.18,colorB);g.addColorStop(1,'rgba(20,35,95,0)');ctx.globalCompositeOperation='lighter';ctx.fillStyle=g;ctx.beginPath();ctx.arc(0,0,r,0,Math.PI*2);ctx.fill();ctx.restore();
       }
@@ -574,14 +677,61 @@
 
       function drawScene(time){
         const delta=Math.min(40,time-(lastFrame||time));lastFrame=time;ctx.clearRect(0,0,width,height);
-        if(mode==='map'&&!warping){const move=delta*.19,turn=delta*.0015*turnSpeed;if(keys.has('w'))moveCamera(move,false);if(keys.has('s'))moveCamera(-move,false);if(keys.has('a'))strafeCamera(-move,false);if(keys.has('d'))strafeCamera(move,false);if(keys.has('q'))moveVertical(move,false);if(keys.has('e'))moveVertical(-move,false);if(keys.has('arrowleft'))camera.yaw-=turn;if(keys.has('arrowright'))camera.yaw+=turn;if(keys.has('arrowup'))camera.pitch=clamp(camera.pitch+turn,-1.05,1.05);if(keys.has('arrowdown'))camera.pitch=clamp(camera.pitch-turn,-1.05,1.05);if(Math.abs(touchInput.moveY)>.06)moveCamera(-touchInput.moveY*move*1.65,false);if(Math.abs(touchInput.moveX)>.06)strafeCamera(touchInput.moveX*move*1.65,false);if(Math.abs(touchInput.lookX)>.06)camera.yaw+=touchInput.lookX*turn*1.8;if(Math.abs(touchInput.lookY)>.06)camera.pitch=clamp(camera.pitch-touchInput.lookY*turn*1.65,-1.05,1.05)}
+        if(mode==='map'&&!warping&&!ufoCommunicationOpen){const move=delta*.19,turn=delta*.0015*turnSpeed;if(keys.has('w'))moveCamera(move,false);if(keys.has('s'))moveCamera(-move,false);if(keys.has('a'))strafeCamera(-move,false);if(keys.has('d'))strafeCamera(move,false);if(keys.has('q'))moveVertical(move,false);if(keys.has('e'))moveVertical(-move,false);if(keys.has('arrowleft'))camera.yaw-=turn;if(keys.has('arrowright'))camera.yaw+=turn;if(keys.has('arrowup'))camera.pitch=clamp(camera.pitch+turn,-1.05,1.05);if(keys.has('arrowdown'))camera.pitch=clamp(camera.pitch-turn,-1.05,1.05);if(Math.abs(touchInput.moveY)>.06)moveCamera(-touchInput.moveY*move*.92,false);if(Math.abs(touchInput.moveX)>.06)strafeCamera(touchInput.moveX*move*.92,false);if(Math.abs(touchInput.lookX)>.06)camera.yaw+=touchInput.lookX*turn*1.8;if(Math.abs(touchInput.lookY)>.06)camera.pitch=clamp(camera.pitch-touchInput.lookY*turn*1.65,-1.05,1.05)}
         look.x+=(targetLook.x-look.x)*.045;look.y+=(targetLook.y-look.y)*.045;warpPower*=.94;drawStars();
-        if(mode==='map'){drawNavigationStars();drawMapGlows();updateBeacons()}else if(observingKey){const galaxy=galaxyByKey(observingKey);ui.observedPhoto.style.left=`calc(50% + ${look.x*18}px)`;ui.observedPhoto.style.top=`calc(${width<700?46:51}% + ${look.y*12}px)`;if(galaxy.key==='milkyway'&&viewMode==='side')drawEdgeGalaxy();else if(!solarView&&ui.observedPhoto.hidden)drawParticleGalaxy(galaxy,time)}
+        if(mode==='map'){drawNavigationStars();drawSpaceLandmarks(time);drawMapGlows();updateLandmarks();updateRadar();updateSpaceVisitor(time);updateBeacons()}else if(observingKey){const galaxy=galaxyByKey(observingKey);ui.observedPhoto.style.left=`calc(50% + ${look.x*18}px)`;ui.observedPhoto.style.top=`calc(${width<700?46:51}% + ${look.y*12}px)`;if(galaxy.key==='milkyway'&&viewMode==='side')drawEdgeGalaxy();else if(!solarView&&ui.observedPhoto.hidden)drawParticleGalaxy(galaxy,time)}
         requestAnimationFrame(drawScene);
       }
 
       function buildBeacons(){
         ui.beacons.innerHTML='';galaxies.forEach(galaxy=>{const button=document.createElement('button');button.type='button';button.className='galaxyBeacon far';button.dataset.key=galaxy.key;button.setAttribute('aria-label','미확인 은하 신호');button.innerHTML=`<img class="beaconPhoto" src="${galaxyThumb(galaxy.key)}" alt="" loading="lazy" decoding="async"><span class="beaconName"><span class="beaconTitle">미확인 신호</span><small class="beaconDistance">거리 미상</small></span>`;button.addEventListener('pointerdown',event=>event.stopPropagation());button.addEventListener('click',event=>{event.stopPropagation();selectGalaxy(galaxy.key)});ui.beacons.appendChild(button)})
+      }
+
+      function buildLandmarks(){
+        ui.landmarks.innerHTML='';spaceLandmarks.forEach(landmark=>{const marker=document.createElement('div');marker.className='spaceLandmark';marker.dataset.key=landmark.key;marker.dataset.type=landmark.type;marker.innerHTML=`<i class="landmarkPin"></i><span class="landmarkLabel">${landmark.name}<small>${landmark.note} · 거리 <b>0</b></small></span>`;ui.landmarks.appendChild(marker)})
+      }
+
+      function buildRadar(){
+        ui.radarDots.innerHTML='';spaceLandmarks.forEach(landmark=>{const dot=document.createElement('i');dot.className='radarDot';dot.dataset.key=landmark.key;dot.dataset.type=landmark.type;dot.setAttribute('role','img');dot.setAttribute('aria-label',`${landmark.name}, 항법 거리 계산 중`);ui.radarDots.appendChild(dot)})
+      }
+
+      function updateLandmarks(){
+        const basis=cameraBasis();[...ui.landmarks.children].forEach(marker=>{const landmark=spaceLandmarks.find(item=>item.key===marker.dataset.key),point=projectWorld(landmark.position,basis),range=Math.round(landmarkDistance(landmark)),scale=clamp(880/Math.max(1,range),.72,1.18),distance=marker.querySelector('b');if(distance)distance.textContent=String(range);marker.style.transform=`translate(${point.x-viewWidth/2}px,${point.y-viewHeight/2}px) scale(${scale})`;marker.style.opacity=point.visible?String(clamp(1-point.depth/7200,.42,.92)):'0';marker.style.zIndex=String(Math.round(4500-point.depth));marker.classList.toggle('visited',visitedLandmarks.has(landmark.key))});
+      }
+
+      function checkLandmarkVisits(){
+        if(!started||mode!=='map')return;let newest=null;
+        spaceLandmarks.forEach(landmark=>{if(!visitedLandmarks.has(landmark.key)&&landmarkDistance(landmark)<=LANDMARK_VISIT_DISTANCE){visitedLandmarks.add(landmark.key);newest=landmark}});
+        if(!newest)return;ui.radarProgress.textContent=`${visitedLandmarks.size} / ${spaceLandmarks.length}`;if(!selectedKey)renderPanel();showToast(`항해 기록: ${newest.name} 도착 · 이정표 ${visitedLandmarks.size}/${spaceLandmarks.length}`);if(visitedLandmarks.size===spaceLandmarks.length)setTimeout(()=>showToast('네 개 이정표 항해 기록을 모두 완성했습니다.'),900);
+      }
+
+      function updateRadar(){
+        if(mode!=='map')return;checkLandmarkVisits();let nearest=null,nearestRange=Infinity;
+        [...ui.radarDots.children].forEach(dot=>{const landmark=spaceLandmarks.find(item=>item.key===dot.dataset.key),dx=landmark.position[0]-camera.x,dz=landmark.position[2]-camera.z,range=landmarkDistance(landmark),bearing=Math.atan2(dx,dz),relative=Math.atan2(Math.sin(bearing-camera.yaw),Math.cos(bearing-camera.yaw)),radius=clamp(range/3200,.2,1)*42,x=50+Math.sin(relative)*radius,y=50-Math.cos(relative)*radius;dot.style.left=`${x}%`;dot.style.top=`${y}%`;dot.classList.toggle('visited',visitedLandmarks.has(landmark.key));dot.setAttribute('aria-label',`${landmark.name}, 거리 ${Math.round(range)}${visitedLandmarks.has(landmark.key)?', 방문 완료':''}`);if(range<nearestRange){nearest=landmark;nearestRange=range}});
+        ui.radarProgress.textContent=`${visitedLandmarks.size} / ${spaceLandmarks.length}`;ui.radarNearest.textContent=nearest?`${nearest.shortName} · ${Math.round(nearestRange)}`:'이정표 신호 없음';
+      }
+
+      function openUfoCommunication(){
+        if(ufoCommunicationOpen||mode!=='map'||ufoSignalIndex>=ufoSignals.length||performance.now()<nextUfoContactAt)return;const signal=ufoSignals[ufoSignalIndex],galaxy=galaxyByKey(signal.key);ufoCommunicationOpen=true;ufoSignalResolved=false;visitorHoldPosition=[...visitorWorldPosition];visitorHoldUntil=Infinity;keys.clear();resetTouchJoysticks();setPanel(false);ui.ufoProgress.textContent=`외계 탐사선 교신 ${ufoSignalIndex+1} / ${ufoSignals.length}`;ui.ufoImage.src=galaxy.image;ui.ufoImage.alt='이름을 가린 실제 은하 관측 이미지';ui.ufoFigure.classList.remove('received');ui.ufoTitle.textContent='이 은하는 어떤 종류일까요?';ui.ufoPrompt.textContent='전체 윤곽과 팔 구조를 관찰해 외계 탐사선의 자료를 해독하세요.';ui.ufoFeedback.className='ufoFeedback';ui.ufoFeedback.textContent='';ui.ufoContinue.classList.remove('show');ui.ufoChoices.innerHTML='';['spiral','elliptical','irregular'].forEach(type=>{const button=document.createElement('button');button.type='button';button.className='ufoChoice';button.dataset.type=type;button.textContent=typeNames[type];button.addEventListener('click',()=>answerUfoSignal(type,button));ui.ufoChoices.appendChild(button)});ui.ufoModal.classList.add('show');ui.visitor.classList.remove('encountered');void ui.visitor.offsetWidth;ui.visitor.classList.add('encountered');setTimeout(()=>ui.ufoChoices.querySelector('button')?.focus(),0);
+      }
+
+      function answerUfoSignal(type,button){
+        if(!ufoCommunicationOpen||ufoSignalResolved)return;const signal=ufoSignals[ufoSignalIndex],galaxy=galaxyByKey(signal.key);
+        if(type!==signal.type){button.classList.add('wrong');button.disabled=true;ui.ufoFeedback.className='ufoFeedback show bad';ui.ufoFeedback.textContent=`조금 달라요. ${criteria[signal.type]}이 보이는지 다시 살펴보세요.`;return}
+        ufoSignalResolved=true;button.classList.add('correct');[...ui.ufoChoices.children].forEach(choice=>choice.disabled=true);ui.ufoFigure.classList.add('received');ui.ufoTitle.textContent=`정답 · ${galaxy.name}`;ui.ufoFeedback.className='ufoFeedback show good';ui.ufoFeedback.textContent=`${signal.evidence} 사진 속 은하 앞으로 이동할 수 있습니다.`;ui.ufoContinue.classList.add('show');ui.ufoContinue.focus();
+      }
+
+      function closeUfoCommunication(){
+        if(!ufoCommunicationOpen)return;const completed=ufoSignalResolved,targetKey=completed?ufoSignals[ufoSignalIndex].key:null;ui.ufoModal.classList.remove('show');ufoCommunicationOpen=false;visitorHoldUntil=performance.now()+1200;if(completed){ufoSignalIndex++;visitorEncounters=ufoSignalIndex;nextUfoContactAt=performance.now()+UFO_COMM_COOLDOWN}else{nextUfoContactAt=performance.now()+15000;showToast('교신을 종료했습니다. 잠시 후 다시 만날 수 있습니다.')}ufoSignalResolved=false;if(!selectedKey)renderPanel();if(targetKey)warpToUfoGalaxy(targetKey);else updateRadar();
+      }
+
+      function warpToUfoGalaxy(key){
+        const galaxy=galaxyByKey(key);if(!galaxy)return;warping=true;warpPower=reduced?.2:1;keys.clear();resetTouchJoysticks();setPanel(false);ui.warpFlash.classList.remove('run');void ui.warpFlash.offsetWidth;ui.warpFlash.classList.add('run');render();setTimeout(()=>{let dx=galaxy.position[0]-camera.x,dy=galaxy.position[1]-camera.y,dz=galaxy.position[2]-camera.z,distance=Math.hypot(dx,dy,dz);if(distance<1){dx=0;dy=0;dz=1;distance=1}camera.x=galaxy.position[0]-dx/distance*UFO_WARP_DISTANCE;camera.y=galaxy.position[1]-dy/distance*UFO_WARP_DISTANCE;camera.z=galaxy.position[2]-dz/distance*UFO_WARP_DISTANCE;limitCamera();const lookX=galaxy.position[0]-camera.x,lookY=galaxy.position[1]-camera.y,lookZ=galaxy.position[2]-camera.z;camera.yaw=Math.atan2(lookX,lookZ);camera.pitch=Math.atan2(lookY,Math.hypot(lookX,lookZ));selectedKey=galaxy.key;discovered.add(galaxy.key);warping=false;render();setPanel(false);showToast(`${galaxy.name} 앞에 도착했습니다. 조금 더 가까이 가면 관측이 시작됩니다.`)},reduced?220:650);
+      }
+
+      function updateSpaceVisitor(time){
+        if(mode!=='map')return;const phase=time*.000065,movingPosition=[Math.sin(phase)*1320,Math.sin(phase*.73+1.15)*510,1520+Math.cos(phase*.81)*660],position=time<visitorHoldUntil&&visitorHoldPosition?visitorHoldPosition:movingPosition;if(time>=visitorHoldUntil)visitorHoldPosition=movingPosition;visitorWorldPosition=[...position];const point=projectWorld(position),range=Math.hypot(position[0]-camera.x,position[1]-camera.y,position[2]-camera.z),scale=clamp(920/Math.max(1,point.depth),.48,1.12),label=ui.visitor.querySelector('.visitorLabel');
+        ui.visitor.style.transform=`translate(${point.x-viewWidth/2}px,${point.y-viewHeight/2}px) scale(${scale}) rotate(${Math.sin(phase*.9)*5}deg)`;ui.visitor.style.opacity=point.visible?'1':'0';ui.visitor.style.pointerEvents=point.visible?'auto':'none';if(label)label.textContent=ufoSignalIndex>=ufoSignals.length?'교신 기록 완료':range<=1100?`교신 거리 ${Math.round(range)}`:'미확인 탐사선';if(point.visible&&started&&!ufoCommunicationOpen&&ufoSignalIndex<ufoSignals.length&&performance.now()>=nextUfoContactAt&&range<=UFO_CONTACT_DISTANCE)openUfoCommunication();
       }
 
       function projectGalaxy(galaxy){
@@ -590,7 +740,7 @@
 
       function updateBeacons(){
         let visibleCount=0;const newlyDiscovered=[],basis=cameraBasis();[...ui.beacons.children].forEach(button=>{const galaxy=galaxyByKey(button.dataset.key),point=projectWorld(galaxy.position,basis),range=galaxyDistance(galaxy),scale=clamp(800/Math.max(1,range),.48,2.45),label=button.querySelector('.beaconName'),title=button.querySelector('.beaconTitle'),distance=button.querySelector('.beaconDistance'),state=range<=REVEAL_DISTANCE?'revealed':range<=APPROACH_DISTANCE?'approaching':'far';if(point.visible)visibleCount++;if(point.visible&&state==='revealed'&&!discovered.has(galaxy.key)){discovered.add(galaxy.key);newlyDiscovered.push(galaxy)}const known=discovered.has(galaxy.key);button.classList.toggle('far',state==='far');button.classList.toggle('approaching',state==='approaching');button.classList.toggle('revealed',state==='revealed');button.classList.toggle('locked',!known);if(title)title.textContent=known?galaxy.name:'미확인 신호';if(distance)distance.textContent=known?`${galaxy.distance} · 접근 ${Math.round(range)}`:state==='approaching'?'신호 분석 중 · 더 가까이':'거리 미상 · 별빛 신호';button.setAttribute('aria-label',known?`${galaxy.name}, ${galaxy.distance}, 근접 거리 ${Math.round(range)}`:'미확인 은하 신호, 가까이 이동하면 확인할 수 있습니다');button.style.transform=`translate(${point.x-viewWidth/2}px,${point.y-viewHeight/2}px) scale(${scale})`;if(label)label.style.transform=`translateX(-50%) scale(${1/scale})`;button.style.opacity=point.visible?'1':'0';button.style.pointerEvents=point.visible?'auto':'none';button.style.zIndex=String(Math.round(5000-point.depth));button.classList.toggle('selected',selectedKey===galaxy.key);button.classList.toggle('visited',visited.has(galaxy.key));if(selectedKey===galaxy.key&&range<=DOCK_DISTANCE+1)queueProximityObservation(galaxy)});
-        const selected=selectedKey?galaxyByKey(selectedKey):null,selectedRange=selected?Math.round(galaxyDistance(selected)):null;ui.mapScale.textContent=`발견 ${discovered.size} / ${galaxies.length} · 시야 내 ${visibleCount}${selectedRange!==null?` · 목표까지 ${selectedRange}`:` · X ${Math.round(camera.x)} Y ${Math.round(camera.y)} Z ${Math.round(camera.z)}`}`;
+        const selected=selectedKey?galaxyByKey(selectedKey):null,selectedRange=selected?Math.round(galaxyDistance(selected)):null,nearest=[...spaceLandmarks].sort((a,b)=>landmarkDistance(a)-landmarkDistance(b))[0],nearestRange=Math.round(landmarkDistance(nearest)),encounterStatus=visitorEncounters?` · UFO 조우 ${visitorEncounters}`:'';ui.mapScale.textContent=`발견 ${discovered.size} / ${galaxies.length} · 이정표 ${visitedLandmarks.size}/${spaceLandmarks.length} · 시야 내 ${visibleCount}${selectedRange!==null?` · 목표까지 ${selectedRange}`:` · ${nearest.shortName} ${nearestRange}`}${encounterStatus}`;
         if(mode==='map'){ui.zoomReadout.textContent=selectedRange!==null?`거리 ${selectedRange}`:`Z ${Math.round(camera.z)}`;ui.navReadout.textContent=warping?'항해 중':selectedRange!==null&&selectedRange<=DOCK_DISTANCE?'근접 스캔 진입':'은하 신호 탐색'}
         if(newlyDiscovered.length&&started){showToast(`✦ 새 은하 발견: ${newlyDiscovered.map(galaxy=>galaxy.name).join(', ')}`);if(!discoveryRenderPending){discoveryRenderPending=true;setTimeout(()=>{discoveryRenderPending=false;render()},0)}}
       }
@@ -612,7 +762,7 @@
         if(mode==='map'){
           const galaxy=selectedKey?galaxyByKey(selectedKey):null;
           ui.handleTitle.textContent=galaxy?'목적지 선택됨':'자유 항해';ui.step.textContent='NAVIGATION';
-          if(!galaxy){ui.title.textContent='별빛 속 은하 신호를 찾으세요';ui.description.textContent='멀리 있는 은하는 작은 별처럼 보입니다. 신호를 따라 가까이 가면 실제 모습과 이름이 해금됩니다.';ui.task.textContent='모바일은 왼쪽 조이스틱으로 이동하고 오른쪽 조이스틱으로 시점을 돌립니다. PC는 드래그·휠·WASD를 사용하세요.';renderFacts([`은하 도감 발견 ${discovered.size} / ${galaxies.length}`])}
+          if(!galaxy){const landmarkLog=spaceLandmarks.filter(landmark=>visitedLandmarks.has(landmark.key)).map(landmark=>`✓ ${landmark.shortName}`);ui.title.textContent='별빛 속 은하 신호를 찾으세요';ui.description.textContent='멀리 있는 은하는 작은 별처럼 보입니다. 신호를 따라 가까이 가면 실제 모습과 이름이 해금됩니다.';ui.task.textContent='모바일은 왼쪽 조이스틱으로 이동하고 오른쪽 조이스틱으로 시점을 돌립니다. PC는 드래그·휠·WASD를 사용하세요.';renderFacts([`은하 도감 발견 ${discovered.size} / ${galaxies.length}`,`이정표 방문 ${visitedLandmarks.size} / ${spaceLandmarks.length}`,`UFO 교신 기록 ${ufoSignalIndex} / ${ufoSignals.length}`,landmarkLog.length?`항해 기록: ${landmarkLog.join(' · ')}`:'레이더의 색 점을 따라 이정표 가까이 접근하세요.'])}
           else{const known=discovered.has(galaxy.key),canTravel=isGalaxyRevealed(galaxy),range=Math.round(galaxyDistance(galaxy));ui.title.textContent=known?galaxy.name:'미확인 은하 신호';ui.description.textContent=known?`${galaxy.catalog} · ${galaxy.distance}`:'멀리서는 하나의 별빛처럼 보입니다. 더 가까이 접근해 신호를 분석하세요.';ui.task.textContent=!canTravel?'항해 거리가 아직 멉니다. 시점을 돌려 신호를 바라보고 가까이 이동하면 은하 사진과 이름이 나타납니다.':visited.has(galaxy.key)?'이미 관측한 은하입니다. 다시 방문하거나 다른 신호를 찾을 수 있습니다.':'신호 방향을 직접 맞추며 계속 가까이 이동하세요. 은하가 점점 커지고 근접 거리에 도달하면 관측 화면이 자동으로 열립니다.';renderFacts(!known?[`현재 신호 접근 거리 ${range} · 정체 분석 전`]:visited.has(galaxy.key)?[`분류: ${typeNames[galaxy.type]}`,...galaxy.facts]:[`현재 접근 거리 ${range} · 근접 관측까지 ${Math.max(0,range-DOCK_DISTANCE)}`,'모바일은 왼쪽 이동·오른쪽 시점 조이스틱을 함께 사용합니다.']);if(visited.has(galaxy.key)){const link=document.createElement('a');link.className='sourceLink';link.href=galaxy.source;link.target='_blank';link.rel='noreferrer';link.textContent='NASA 자료 확인 ↗';ui.facts.appendChild(link)}}
         }else{
           const galaxy=galaxyByKey(observingKey);ui.handleTitle.textContent=solarView?'태양계 확대':visited.has(galaxy.key)?'관측 완료':scanning?'자동 기록 중':'관측 중';ui.step.textContent=solarView?'SOLAR SYSTEM':'OBSERVATION';ui.title.textContent=solarView?'태양계의 8개 행성과 지구':galaxy.name;ui.description.textContent=solarView?'태양계는 우리은하 오리온자리 팔 부근에 있으며, 지구는 태양에서 세 번째 행성입니다.':galaxy.description;ui.task.textContent=solarView?'수성부터 해왕성까지의 순서를 비교하고, 푸른색으로 강조된 세 번째 행성 지구를 확인하세요.':visited.has(galaxy.key)?'관측 기록이 항해일지에 자동 반영되었습니다. 항해 지도로 돌아가 다른 은하를 찾아보세요.':scanning?'전체 윤곽과 중심부, 팔 구조를 살펴보세요. 관측 자료는 자동으로 기록되고 있습니다.':'관측 자료를 자동으로 준비하고 있습니다.';renderFacts(solarView?['행성 순서: 수성 → 금성 → 지구 → 화성 → 목성 → 토성 → 천왕성 → 해왕성','지구: 태양에서 세 번째 행성 · 평균 1 AU','태양계: 우리은하 중심에서 약 2만 6천 광년']:visited.has(galaxy.key)?[`분류: ${typeNames[galaxy.type]}`,...galaxy.facts]:scanning?['버튼을 누르지 않아도 잠시 후 항해일지에 자동 저장됩니다.']:[]);
@@ -623,7 +773,7 @@
       }
 
       function render(){
-        const singleAction=mode==='observe'&&observingKey!=='milkyway';updateModeStatus();app.classList.toggle('observationMode',mode==='observe');app.classList.toggle('singleActionMode',singleAction);viewport.classList.toggle('mapMode',mode==='map');ui.scan.classList.toggle('statusOnly',mode==='observe');ui.view.classList.toggle('contextualHidden',singleAction);ui.beacons.hidden=mode!=='map';ui.navGuide.hidden=mode!=='map';ui.mapScale.hidden=mode!=='map';ui.zoomControls.hidden=mode!=='map';ui.joysticks.hidden=mode!=='map';if(mode!=='map')resetTouchJoysticks();ui.reticle.style.opacity=mode==='map'?'.18':'1';renderObservedPhoto();
+        const singleAction=mode==='observe'&&observingKey!=='milkyway';updateModeStatus();app.classList.toggle('observationMode',mode==='observe');app.classList.toggle('singleActionMode',singleAction);viewport.classList.toggle('mapMode',mode==='map');ui.scan.classList.toggle('statusOnly',mode==='observe');ui.view.classList.toggle('contextualHidden',singleAction);ui.beacons.hidden=mode!=='map';ui.landmarks.hidden=mode!=='map';ui.visitor.hidden=mode!=='map';ui.radar.hidden=mode!=='map';ui.navGuide.hidden=mode!=='map';ui.mapScale.hidden=mode!=='map';ui.zoomControls.hidden=mode!=='map';ui.joysticks.hidden=mode!=='map';if(mode!=='map')resetTouchJoysticks();ui.reticle.style.opacity=mode==='map'?'.18':'1';renderObservedPhoto();
         if(mode==='map'){
           const galaxy=selectedKey?galaxyByKey(selectedKey):null,known=galaxy&&discovered.has(galaxy.key),displayName=galaxy?displayGalaxyName(galaxy):'';ui.sector.textContent='DEEP SPACE DISCOVERY';ui.name.textContent=galaxy?displayName:'은하 신호 탐색 구역';ui.subtitle.textContent=galaxy?(known?`${galaxy.distance} · 가까워질수록 크게 보입니다`:'별빛처럼 보이는 미확인 신호'):`발견한 은하 ${discovered.size} / ${galaxies.length} · 별빛 신호를 찾아 접근하세요.`;ui.view.textContent='⌾ 위치 초기화';ui.view.disabled=warping;ui.scan.textContent=classificationComplete?'▦ 결과 보기':visited.size>=3?'▦ 분류 활동':'▦ 분류 잠김';ui.scan.disabled=visited.size<3||warping;ui.warp.textContent='현재 방향으로 전진 ›';ui.warp.disabled=warping;ui.viewReadout.textContent=galaxy?displayName:'탐색 중';ui.navReadout.textContent=warping?'항해 중':'은하 신호 탐색';ui.zoomReadout.textContent=`Z ${Math.round(camera.z)}`;ui.systemMessage.textContent=visited.size>=3?'은하 분류 활동을 시작할 수 있습니다.':`발견 ${discovered.size}/${galaxies.length} · 관측 ${visited.size}/3 후 분류 활동 해금`;
         }else{
@@ -690,7 +840,7 @@
         closeClassification();const rows=[...visited].map((key,index)=>{const galaxy=galaxyByKey(key);return `<div class="reportRow"><i>${index+1}</i><strong>${galaxy.name}</strong><span>${typeNames[galaxy.type]}</span></div>`});el('reportRoute').innerHTML=rows.join('')||'<div class="reportRow"><strong>관측 기록 없음</strong></div>';el('reportScore').textContent=`${assigned.size}/${classSamples.length}`;const accuracy=Math.round(classSamples.length/Math.max(classSamples.length,classAttempts)*100);el('reportLead').textContent=`${visited.size}개 실제 은하를 관측하고 6개 표본을 분류했습니다. 분류 정확도 지표 ${accuracy}%`;el('reportConclusion').innerHTML='<strong>탐사 결론</strong><br>나선 은하는 중심 둘레로 휘어진 팔과 원반이 나타납니다. 타원 은하는 뚜렷한 팔 없이 둥글거나 타원형으로 매끈하게 보입니다. 불규칙 은하는 일정한 전체 모양을 찾기 어렵습니다. 관측 방향에 따라 같은 은하도 다르게 보일 수 있으므로 전체 윤곽과 구조를 함께 살펴야 합니다.';el('reportModal').classList.add('show');
       }
 
-      function restart(){mode='map';selectedKey=null;observingKey=null;viewMode='face';solarView=false;scanning=false;warping=false;autoDockPending=false;started=true;visited=new Set();discovered=new Set(['milkyway']);camera={x:0,y:0,z:0,yaw:0,pitch:0};assigned=new Map();selectedSample=null;classAttempts=0;classificationComplete=false;el('sampleGrid').innerHTML='';el('classBins').innerHTML='';el('reportModal').classList.remove('show');render();setPanel(false);showToast('새 탐사 항해를 시작합니다. 먼 별빛 신호를 추적하세요.')}
+      function restart(){mode='map';selectedKey=null;observingKey=null;viewMode='face';solarView=false;scanning=false;warping=false;autoDockPending=false;started=true;visited=new Set();visitedLandmarks=new Set();discovered=new Set(['milkyway']);camera={x:0,y:0,z:0,yaw:0,pitch:0};assigned=new Map();selectedSample=null;classAttempts=0;classificationComplete=false;visitorEncounters=0;visitorHoldUntil=0;visitorHoldPosition=null;ufoSignalIndex=0;ufoCommunicationOpen=false;ufoSignalResolved=false;nextUfoContactAt=performance.now()+8000;ui.ufoModal.classList.remove('show');el('sampleGrid').innerHTML='';el('classBins').innerHTML='';el('reportModal').classList.remove('show');render();updateRadar();setPanel(false);showToast('새 탐사 항해를 시작합니다. 고정 이정표를 기준으로 먼 별빛 신호를 추적하세요.')}
 
       function bindNavigation(){
         const distance=()=>{const points=[...navPointers.values()];return points.length<2?0:Math.hypot(points[0].x-points[1].x,points[0].y-points[1].y)};
@@ -701,7 +851,7 @@
         viewport.addEventListener('wheel',event=>{if(mode!=='map')return;event.preventDefault();moveCamera(-event.deltaY*.48)},{passive:false});
         el('moveForwardButton').addEventListener('click',event=>{event.stopPropagation();moveCamera(150);showToast('카메라가 바라보는 방향으로 전진했습니다.')});
         el('moveBackButton').addEventListener('click',event=>{event.stopPropagation();moveCamera(-150);showToast('카메라가 뒤로 이동했습니다.')});
-        window.addEventListener('keydown',event=>{const key=event.key.toLowerCase();if(mode==='map'&&['w','a','s','d','q','e','arrowup','arrowdown','arrowleft','arrowright'].includes(key)){keys.add(key);event.preventDefault()}});
+        window.addEventListener('keydown',event=>{const key=event.key.toLowerCase();if(ufoCommunicationOpen&&key==='escape'){closeUfoCommunication();event.preventDefault();return}if(mode==='map'&&!ufoCommunicationOpen&&['w','a','s','d','q','e','arrowup','arrowdown','arrowleft','arrowright'].includes(key)){keys.add(key);event.preventDefault()}});
         window.addEventListener('keyup',event=>keys.delete(event.key.toLowerCase()));
       }
 
@@ -723,7 +873,7 @@
       }
 
       async function requestMobileLandscape(){
-        if(!window.matchMedia('(hover:none) and (pointer:coarse)').matches||window.innerWidth>window.innerHeight)return;
+        if(!coarsePointer||window.innerWidth>window.innerHeight)return;
         let locked=false;
         try{const root=document.documentElement;if(root.requestFullscreen&&!document.fullscreenElement)await root.requestFullscreen();const orientation=window.screen?.orientation;if(orientation?.lock){await orientation.lock('landscape');locked=true}}catch{locked=false}
         if(!locked&&window.innerHeight>window.innerWidth)setTimeout(()=>showToast('자동 가로 전환이 제한됐습니다. 화면 회전 잠금을 끄고 휴대폰을 옆으로 돌려 주세요.','bad'),420);
@@ -742,13 +892,15 @@
       function updateTurnSpeed(){turnSpeed=Number(ui.turnSpeed.value);const label=turnSpeed<.8?'느림':turnSpeed>1.4?'빠름':'보통';ui.turnSpeedReadout.textContent=label;ui.mobileTurnSpeedReadout.textContent=label}
       ui.turnSpeed.addEventListener('input',updateTurnSpeed);ui.turnSpeed.addEventListener('change',()=>showToast(`시점 회전 속도: ${ui.turnSpeedReadout.textContent}`));updateTurnSpeed();
       ui.touchSpeed.addEventListener('click',event=>{event.stopPropagation();const speeds=[.45,1.1,1.75],next=speeds[(speeds.findIndex(value=>Math.abs(value-turnSpeed)<.1)+1)%speeds.length];ui.turnSpeed.value=String(next);updateTurnSpeed();showToast(`조이스틱 시점 속도: ${ui.mobileTurnSpeedReadout.textContent}`)});
+      function holdSpaceVisitor(){visitorHoldUntil=performance.now()+1200}ui.visitor.addEventListener('pointerenter',holdSpaceVisitor);ui.visitor.addEventListener('pointerdown',event=>{holdSpaceVisitor();event.stopPropagation()});ui.visitor.addEventListener('click',event=>{event.stopPropagation();if(mode!=='map'||ufoCommunicationOpen)return;if(ufoSignalIndex>=ufoSignals.length){showToast('UFO 교신 기록 3/3을 모두 완성했습니다.');return}const wait=Math.ceil((nextUfoContactAt-performance.now())/1000);if(wait>0){showToast(`교신 장치 재연결 중 · 약 ${wait}초 후 가능`);return}const range=Math.hypot(visitorWorldPosition[0]-camera.x,visitorWorldPosition[1]-camera.y,visitorWorldPosition[2]-camera.z);if(range<=UFO_TAP_DISTANCE)openUfoCommunication();else{holdSpaceVisitor();showToast(`교신 신호가 약합니다 · 현재 거리 ${Math.round(range)}`)}});
+      el('ufoCommClose').addEventListener('click',closeUfoCommunication);ui.ufoContinue.addEventListener('click',closeUfoCommunication);
       ui.observedImage.addEventListener('error',()=>{ui.observedPhoto.hidden=true;showToast('관측 이미지를 불러오지 못해 과학 모형으로 표시합니다.','bad')});
-      el('startButton').addEventListener('click',()=>{void requestMobileLandscape();started=true;el('introModal').classList.remove('show');render();setPanel(false);showToast('왼쪽 조이스틱으로 이동하고 오른쪽 조이스틱으로 시점을 돌려 보세요.')});
+      el('startButton').addEventListener('click',()=>{void requestMobileLandscape();started=true;nextUfoContactAt=performance.now()+8000;el('introModal').classList.remove('show');render();setPanel(false);showToast('왼쪽 조이스틱으로 이동하고 오른쪽 조이스틱으로 시점을 돌려 보세요.')});
       el('closeClassifyButton').addEventListener('click',closeClassification);el('closeReportButton').addEventListener('click',()=>el('reportModal').classList.remove('show'));el('restartButton').addEventListener('click',restart);
       el('motionButton').addEventListener('click',event=>{reduced=!reduced;event.currentTarget.setAttribute('aria-pressed',String(reduced));event.currentTarget.textContent=reduced?'·':'✦';showToast(reduced?'움직임 효과를 줄였습니다.':'움직임 효과를 다시 켰습니다.')});
       window.addEventListener('resize',resize,{passive:true});window.addEventListener('orientationchange',()=>setTimeout(resize,120),{passive:true});
 
-      buildParticles();buildNavigationStars();buildBeacons();bindNavigation();bindTouchJoysticks();bindPanelSwipe();resize();render();requestAnimationFrame(drawScene);
+      buildParticles();buildNavigationStars();buildBeacons();buildLandmarks();buildRadar();bindNavigation();bindTouchJoysticks();bindPanelSwipe();resize();render();updateRadar();requestAnimationFrame(drawScene);
     })();
   </script>
 </body>
