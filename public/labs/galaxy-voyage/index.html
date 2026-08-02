@@ -51,6 +51,11 @@
     .metaPill{min-height:39px;padding:8px 11px;border:1px solid var(--line);border-radius:12px;background:rgba(13,20,48,.66);display:grid;gap:1px;text-align:right}
     .metaPill span{color:#8391b6;font-size:9px;font-weight:900;letter-spacing:.12em}
     .metaPill strong{font-size:12px;white-space:nowrap}
+    .scorePill{border-color:rgba(255,211,106,.28);background:rgba(83,57,18,.28);color:inherit;cursor:pointer}
+    .scorePill strong{color:var(--amber)}
+    .scorePanel{position:fixed;z-index:80;top:78px;right:max(14px,var(--safe-right));width:min(280px,calc(100% - 28px));padding:14px;border:1px solid rgba(255,211,106,.28);border-radius:18px;background:rgba(7,11,29,.96);box-shadow:0 22px 70px rgba(0,0,0,.52);backdrop-filter:blur(18px)}
+    .scorePanel[hidden]{display:none}.scorePanelHead{display:flex;align-items:center;justify-content:space-between;gap:10px}.scorePanelHead strong{font-size:13px}.scorePanelClose{width:32px;height:32px;border:0;border-radius:10px;background:rgba(255,255,255,.08);color:#fff;cursor:pointer}.myScore{display:flex;align-items:end;gap:8px;margin:10px 0 5px}.myScore strong{color:var(--amber);font-size:35px;line-height:1}.myScore span{padding-bottom:4px;color:#95a4c9;font-size:10px;font-weight:900}.scoreRank{margin:0 0 10px;color:#cbd5ed;font-size:11px}.scoreLeaders{display:grid;gap:5px;margin:0;padding:0;list-style:none}.scoreLeaders li{display:grid;grid-template-columns:22px 1fr auto;gap:7px;padding:7px 8px;border-radius:9px;background:rgba(114,135,255,.08);font-size:10px}.scoreLeaders li.me{color:#fff4bd;background:rgba(255,211,106,.12)}
+    .classroomForm{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:18px}.classroomForm input{width:100%;min-height:48px;padding:0 13px;border:1px solid var(--line);border-radius:13px;background:rgba(3,7,22,.7);color:#fff;font:inherit}.classroomForm input:first-child{text-transform:uppercase}.classroomForm button{grid-column:1/-1}.introDivider{display:flex;align-items:center;gap:10px;margin:14px 0;color:#7f8eae;font-size:10px}.introDivider::before,.introDivider::after{content:"";height:1px;flex:1;background:var(--line)}.introSimpleActions{display:grid;grid-template-columns:1fr 1fr;gap:8px}.createResult{margin-top:12px;padding:12px;border:1px solid rgba(114,242,190,.35);border-radius:13px;background:rgba(114,242,190,.07);text-align:center}.createResult strong{display:block;margin:5px 0;color:#dcfff0;font-size:25px;letter-spacing:.14em}.createResult button{min-height:38px}.formError{min-height:18px;margin:9px 0 0;color:#ffb9c4;font-size:11px;text-align:center}
     .soundButton{width:41px;height:41px;border:1px solid var(--line);border-radius:12px;background:rgba(13,20,48,.66);color:var(--ink);display:grid;place-items:center;cursor:pointer}
     .viewport{position:absolute;inset:72px 0 92px;display:grid;place-items:center;overflow:hidden}
     .destinationLabel{position:absolute;z-index:10;top:22px;left:50%;transform:translateX(-50%);width:min(520px,calc(100% - 32px));text-align:center;pointer-events:none;text-shadow:0 3px 18px rgba(0,0,0,.8)}
@@ -158,6 +163,7 @@
       .controlDeck{min-height:82px;padding:9px 10px calc(9px + var(--safe-bottom));grid-template-columns:1fr;gap:0}.deckInfo,.deckRight{display:none}.deckActions{display:grid;grid-template-columns:52px minmax(110px,1fr) minmax(115px,1.25fr);gap:7px}.deckButton{min-height:52px;padding:0 10px;border-radius:14px;font-size:12px}.deckButton.primary{min-width:0}.viewButton span{display:none}
       .toast{top:68px;font-size:12px}.learningGrid{grid-template-columns:1fr}.learningCard{min-height:auto}.modalCard{padding:21px 18px;border-radius:22px}.modalActions{display:grid;grid-template-columns:1fr}.modalButton{width:100%}.reportHeader{display:block}.scoreOrb{margin:15px 0 0}
     }
+    @media(max-width:430px){.scorePill{padding-left:7px;padding-right:7px}.scorePill span{letter-spacing:.06em}.shipMeta{gap:4px}.scorePanel{top:64px}.classroomForm{grid-template-columns:1fr}.classroomForm button{grid-column:auto}.introSimpleActions{grid-template-columns:1fr}.introModalCard{padding:20px}.introModalCard h2{font-size:28px}.introModalCard .modalLead{font-size:13px}}
     @media(orientation:landscape) and (max-height:600px){
       .shipBar{height:48px;padding-top:calc(4px + var(--safe-top));padding-bottom:4px}.brandMark{width:34px;height:34px;flex-basis:34px}.brandText small{display:none}.viewport{inset:48px 0 66px}.destinationLabel{top:7px}.destinationLabel h1{font-size:19px}.instrument{bottom:7px}.simNotice{bottom:7px}.controlDeck{min-height:66px;padding-top:6px;padding-bottom:calc(6px + var(--safe-bottom))}.deckButton{min-height:44px}.cockpitFrame::before,.cockpitFrame::after{top:48px;bottom:66px}
       .missionPanel{left:max(10px,var(--safe-left));right:auto;top:58px;bottom:auto;width:min(310px,40vw);max-height:calc(100dvh - 132px);padding:0;border:1px solid var(--line);border-radius:17px;transform:none!important;touch-action:auto}.missionHandle{min-height:42px;display:flex;padding:7px 11px;text-align:left}.missionHandle span{margin:0}.missionHandle strong{margin-left:auto}.handleBar{display:none}.missionBody{padding:11px}.missionTitle{font-size:17px}.missionDescription{margin:6px 0 9px;font-size:11px}.taskBox{padding:9px}.facts{margin-top:8px}.fact{padding:6px 8px;font-size:10px}.choiceGrid{grid-template-columns:repeat(3,1fr);gap:5px}.choiceButton{min-height:38px;padding:7px;font-size:10px}.missionDone{margin-top:7px;padding:7px;font-size:10px}
@@ -178,14 +184,15 @@
     .spaceLandmark[data-type="nebula"]{color:#4cebd7}.spaceLandmark[data-type="asteroid"]{color:#ffb75c}.spaceLandmark[data-type="dust"]{color:#b77cff}.spaceLandmark[data-type="comet"]{color:#ffe278}
     .spaceLandmark.visited .landmarkPin{background:currentColor;box-shadow:0 0 25px currentColor}.spaceLandmark.visited .landmarkPin::after{content:"✓";inset:-2px;display:grid;place-items:center;background:transparent;color:#06101f;font-size:12px;font-style:normal;font-weight:950;box-shadow:none;transform:rotate(-45deg)}
     .spaceLandmark.visited .landmarkLabel::after{content:" · 방문 완료";color:#72f2be}
-    .spaceLandmarks[hidden],.spaceVisitor[hidden]{display:none!important}
+    .spaceLandmarks[hidden],.spaceVisitors[hidden]{display:none!important}
+    .spaceVisitors{position:absolute;inset:0;z-index:14;overflow:hidden;pointer-events:none}
     .spaceVisitor{position:absolute;z-index:14;left:50%;top:50%;width:82px;height:55px;margin:-27px 0 0 -41px;padding:0;border:0;background:transparent;color:#dffcff;cursor:pointer;filter:drop-shadow(0 0 10px rgba(98,232,255,.5));will-change:transform,opacity;touch-action:none}
     .ufoDome{position:absolute;left:26px;top:7px;width:30px;height:20px;border:2px solid #9df5ff;border-bottom:0;border-radius:24px 24px 5px 5px;background:radial-gradient(circle at 38% 36%,#eaffff 0 7%,#75dce9 13%,rgba(52,113,150,.82) 62%,rgba(7,22,48,.96));box-shadow:inset 0 0 10px rgba(211,255,255,.42)}
     .alienEyes{position:absolute;left:34px;top:14px;width:14px;height:5px;background:radial-gradient(ellipse at 20% 50%,#0b1b2a 0 35%,transparent 42%),radial-gradient(ellipse at 80% 50%,#0b1b2a 0 35%,transparent 42%)}
     .ufoHull{position:absolute;left:9px;top:24px;width:64px;height:20px;border:2px solid #8deeff;border-radius:55% 55% 48% 48%;background:linear-gradient(#e5fdff,#5aaec7 42%,#173b68 48%,#081630);box-shadow:inset 0 -5px 7px rgba(4,13,37,.72),0 7px 12px rgba(0,0,0,.34)}
     .ufoHull::after{content:"";position:absolute;left:11px;right:11px;bottom:-5px;height:6px;border-radius:50%;background:radial-gradient(circle,#fff 0 18%,#63e8ff 28%,transparent 62%) 0 0/13px 6px repeat-x;filter:drop-shadow(0 0 4px #63e8ff)}
     .visitorLabel{position:absolute;left:50%;top:51px;transform:translateX(-50%);width:max-content;padding:4px 7px;border:1px solid rgba(98,232,255,.28);border-radius:8px;background:rgba(2,7,22,.88);font-size:8px;font-weight:900;white-space:nowrap}
-    .spaceVisitor:hover,.spaceVisitor:focus-visible{outline:0;filter:drop-shadow(0 0 18px rgba(98,232,255,.9))}.spaceVisitor.encountered{animation:ufoEncounter .55s ease}
+    .spaceVisitor:hover,.spaceVisitor:focus-visible{outline:0;filter:drop-shadow(0 0 18px rgba(98,232,255,.9))}.spaceVisitor.encountered{animation:ufoEncounter .55s ease}.spaceVisitor.cooldown{opacity:0!important;pointer-events:none!important}
     @keyframes ufoEncounter{35%{filter:drop-shadow(0 0 28px #72f2be) brightness(1.4)}65%{filter:drop-shadow(0 0 20px #b77cff) brightness(1.25)}}
     .ufoCommModal{z-index:130;background:radial-gradient(circle at 50% 42%,rgba(20,68,88,.34),rgba(1,3,12,.86));backdrop-filter:blur(13px)}
     .ufoCommCard{position:relative;width:min(760px,100%);max-height:calc(100dvh - 30px);overflow:auto;padding:22px;border:1px solid rgba(98,232,255,.38);border-radius:25px;background:linear-gradient(145deg,rgba(8,25,49,.98),rgba(7,10,29,.98) 64%,rgba(35,16,55,.98));box-shadow:0 30px 100px rgba(0,0,0,.62),0 0 45px rgba(98,232,255,.12)}
@@ -287,7 +294,8 @@
       <nav class="flightStatus" aria-label="항해 상태"><span id="mapStatus" class="active">자유 항해</span><span id="observeStatus">은하 관측</span><span id="classStatus">분류 활동</span></nav>
       <div class="shipMeta">
         <div class="metaPill"><span>SHIP</span><strong>은하누리 01</strong></div>
-        <div class="metaPill"><span>VISITED</span><strong id="missionCount">0 / 50</strong></div>
+        <div class="metaPill"><span>OBSERVED</span><strong id="missionCount">0 / 50</strong></div>
+        <button class="metaPill scorePill" id="scoreButton" type="button" aria-expanded="false"><span>MY SCORE</span><strong id="expeditionScore">0</strong></button>
         <button class="soundButton" id="motionButton" type="button" aria-label="움직임 효과 줄이기" aria-pressed="false" title="움직임 효과 줄이기">✦</button>
       </div>
     </header>
@@ -297,7 +305,7 @@
       <div class="reticle" id="reticle"><div class="reticleRing"></div></div><div class="scanLine" id="scanLine"></div>
       <div class="galaxyBeacons" id="galaxyBeacons" aria-label="탐사할 은하 목록"></div>
       <div class="spaceLandmarks" id="spaceLandmarks" aria-label="길찾기용 우주 이정표"></div>
-      <button class="spaceVisitor" id="spaceVisitor" type="button" aria-label="날아가는 미확인 탐사선과 조우하기"><span class="ufoDome"></span><span class="alienEyes"></span><span class="ufoHull"></span><span class="visitorLabel">미확인 탐사선</span></button>
+      <div class="spaceVisitors" id="spaceVisitors" aria-label="날아가는 UFO"></div>
       <aside class="navRadar" id="navRadar" aria-label="이정표 항법 레이더">
         <div class="radarHeader"><span>항법 레이더</span><strong id="radarProgress">0 / 4</strong></div>
         <div class="radarScreen" id="radarScreen"><i class="radarRing radarRingOuter"></i><i class="radarRing radarRingInner"></i><i class="radarCrosshair"></i><i class="radarShip" aria-hidden="true"></i><div class="radarDots" id="radarDots"></div></div>
@@ -343,6 +351,11 @@
     </aside>
 
     <div class="toast" id="toast" role="status" aria-live="polite"></div>
+    <aside class="scorePanel" id="scorePanel" aria-label="내 점수 현황" hidden>
+      <div class="scorePanelHead"><strong id="scorePlayerName">혼자 항해</strong><button class="scorePanelClose" id="scorePanelClose" type="button" aria-label="점수 현황 닫기">×</button></div>
+      <div class="myScore"><strong id="scorePanelValue">0</strong><span>내 점수</span></div>
+      <p class="scoreRank" id="scoreRank">개인 항해 중</p><ol class="scoreLeaders" id="scoreLeaders"></ol>
+    </aside>
     <footer class="controlDeck">
       <div class="deckInfo"><i></i><span id="systemMessage">모든 항법 장치 정상</span></div>
       <div class="deckActions">
@@ -356,22 +369,20 @@
   </main>
 
   <div class="modalBackdrop show" id="introModal" role="dialog" aria-modal="true" aria-labelledby="introTitle">
-    <section class="modalCard">
-      <p class="modalEyebrow">SCILAB FREE VOYAGE</p><h2 id="introTitle">우주선을 직접 움직여<br>은하를 탐사해 볼까요?</h2>
-      <p class="modalLead">먼 우주에서는 은하도 작은 별빛 신호처럼 보입니다. 우주선을 움직여 50개의 실제 은하 신호에 접근하고, 정체를 하나씩 밝혀 분류 도감을 완성하세요.</p>
-      <div class="learningGrid">
-        <article class="learningCard"><b>01 · 신호 발견 항해</b><span>모바일은 두 조이스틱, PC는 마우스·휠·WASD로 이동합니다. 색 점 레이더로 이정표 방향을 보고 가까이 가면 방문 기록이 남습니다.</span></article>
-        <article class="learningCard"><b>02 · 실제 은하 50개 해금</b><span>신호 가까이에서 실제 관측 이미지와 이름이 나타납니다. 우리은하에서는 태양계와 지구 위치도 확대합니다.</span></article>
-        <article class="learningCard"><b>03 · 분류 도감</b><span>관측 표본을 나선·타원·불규칙 은하로 직접 끌어 놓거나 선택해 분류합니다.</span></article>
-      </div>
-      <p class="modalNotice">중요: 현재 기술로 은하 사이를 이렇게 이동할 수는 없습니다. 거리, 이동 시간, 겉보기 크기는 학습을 위해 크게 압축했습니다. 우리은하 전체는 내부에서 밖을 촬영할 수 없어 NASA의 과학적 복원 이미지를 사용합니다.</p>
-      <div class="modalActions"><button class="modalButton primary" id="startButton" type="button">자유 항해 시작</button></div>
+    <section class="modalCard introModalCard">
+      <p class="modalEyebrow">GALAXY VOYAGE</p><h2 id="introTitle">은하 항해 시작</h2>
+      <p class="modalLead">수업 코드와 이름을 입력하세요.</p>
+      <div class="classroomForm"><input id="classCodeInput" maxlength="6" autocomplete="off" placeholder="수업 코드" aria-label="수업 코드"><input id="playerNameInput" maxlength="16" autocomplete="nickname" placeholder="이름" aria-label="이름"><button class="modalButton primary" id="joinClassButton" type="button">수업 참여</button></div>
+      <p class="formError" id="classroomError" role="alert"></p>
+      <div class="introDivider">또는</div>
+      <div class="introSimpleActions"><button class="modalButton" id="startButton" type="button">혼자 시작</button><button class="modalButton" id="createClassButton" type="button">수업 만들기</button></div>
+      <div class="createResult" id="createClassResult" hidden><span>수업 코드</span><strong id="createdClassCode"></strong><button class="modalButton" id="copyClassLinkButton" type="button">링크 복사</button></div>
     </section>
   </div>
 
   <div class="modalBackdrop" id="reportModal" role="dialog" aria-modal="true" aria-labelledby="reportTitle">
     <section class="modalCard">
-      <div class="reportHeader"><div><p class="modalEyebrow">CLASSIFICATION COMPLETE</p><h2 id="reportTitle">은하 탐사 보고서</h2><p class="modalLead" id="reportLead">관측 자료를 정리했습니다.</p></div><div class="scoreOrb"><div><strong id="reportScore">6/6</strong><span>SAMPLES</span></div></div></div>
+      <div class="reportHeader"><div><p class="modalEyebrow">CLASSIFICATION COMPLETE</p><h2 id="reportTitle">은하 탐사 보고서</h2><p class="modalLead" id="reportLead">관측 자료를 정리했습니다.</p></div><div class="scoreOrb"><div><strong id="reportScore">0</strong><span>SCORE</span></div></div></div>
       <div class="reportRoute" id="reportRoute"></div><div class="reportConclusion" id="reportConclusion"></div>
       <div class="modalActions"><button class="modalButton" id="closeReportButton" type="button">계속 항해하기</button><button class="modalButton primary" id="restartButton" type="button">새 항해 시작</button></div>
     </section>
@@ -379,29 +390,13 @@
 
   <div class="modalBackdrop" id="classifyModal" role="dialog" aria-modal="true" aria-labelledby="classifyTitle">
     <section class="classifyCard">
-      <div class="classifyHeader"><div><p class="modalEyebrow">GALAXY CLASSIFICATION LAB</p><h2 id="classifyTitle">은하 분류 도감</h2><p>표본의 전체 모양을 관찰해 알맞은 분류함에 넣으세요. PC에서는 끌어 놓기, 모바일에서는 표본과 분류함을 차례로 누르면 됩니다.</p></div><button class="modalClose" id="closeClassifyButton" type="button" aria-label="분류 활동 닫기">×</button></div>
-      <div class="classifyProgress"><span id="classifyProgressText">분류 완료 0 / 6</span><span id="classifyAttempts">비교 횟수 0</span></div><div class="progressTrack"><i id="classifyProgressBar"></i></div>
+      <div class="classifyHeader"><div><p class="modalEyebrow">MY GALAXY CLASSIFICATION LAB</p><h2 id="classifyTitle">내가 관측한 은하 분류</h2><p>항해 중 가까이 지나가거나 근접 관측한 은하가 모두 표시됩니다. PC에서는 끌어 놓기, 모바일에서는 은하와 분류함을 차례로 누르세요.</p></div><button class="modalClose" id="closeClassifyButton" type="button" aria-label="분류 활동 닫기">×</button></div>
+      <div class="classifyProgress"><span id="classifyProgressText">분류 완료 0 / 0</span><span id="classifyAttempts">비교 0 · 점수 0</span></div><div class="progressTrack"><i id="classifyProgressBar"></i></div>
       <div class="classificationBoard">
-        <section class="sampleArea"><p class="boardLabel">미확인 관측 표본</p><div class="sampleGrid" id="sampleGrid"></div><p class="classifyHelp">NASA/Hubble의 실제 관측 이미지입니다. 이름은 숨겨진 채 전체 윤곽과 구조로 분류해 보세요.</p></section>
+        <section class="sampleArea"><p class="boardLabel">나의 관측 목록</p><div class="sampleGrid" id="sampleGrid"></div><p class="classifyHelp">직접 가까이 지나간 실제 은하의 관측 이미지입니다. 전체 윤곽과 팔 구조를 근거로 분류해 보세요.</p></section>
         <section class="binArea"><p class="boardLabel">은하 분류함</p><div class="classBins" id="classBins"></div></section>
       </div>
       <div class="classifyResult" id="classifyResult"></div>
-    </section>
-  </div>
-
-  <div class="modalBackdrop ufoCommModal" id="ufoCommModal" role="dialog" aria-modal="true" aria-labelledby="ufoCommTitle">
-    <section class="ufoCommCard">
-      <header class="ufoCommHeader"><div><span>UNKNOWN CRAFT · LIVE SIGNAL</span><strong id="ufoCommProgress">외계 탐사선 교신 1 / 3</strong></div><button class="ufoCommClose" id="ufoCommClose" type="button" aria-label="UFO 교신 닫기">×</button></header>
-      <div class="ufoSignalGrid">
-        <figure class="ufoSignalFigure" id="ufoSignalFigure"><img id="ufoSignalImage" alt="이름을 가린 실제 은하 관측 이미지"></figure>
-        <section class="ufoSignalTask">
-          <p class="modalEyebrow">GALAXY SIGNAL</p><h2 id="ufoCommTitle">이 은하는 어떤 종류일까요?</h2>
-          <p class="ufoPrompt" id="ufoPrompt">전체 윤곽과 팔 구조를 관찰해 외계 탐사선의 자료를 해독하세요.</p>
-          <div class="ufoChoices" id="ufoChoices"></div>
-          <div class="ufoFeedback" id="ufoFeedback" role="status" aria-live="polite"></div>
-          <button class="ufoContinue" id="ufoContinue" type="button">사진 속 은하 앞으로 이동하기</button>
-        </section>
-      </div>
     </section>
   </div>
 
@@ -546,44 +541,32 @@
       ];
       const typeNames={spiral:'나선 은하',elliptical:'타원 은하',irregular:'불규칙 은하'};
       const criteria={spiral:'중심 둘레로 휘어진 팔 구조',elliptical:'팔 없이 매끈한 원·타원 윤곽',irregular:'일정한 전체 모양을 찾기 어려움'};
-      const classSamples=[
-        {id:'A',type:'spiral',image:galaxyAsset('m51'),note:'휘어진 팔이 두드러짐'},
-        {id:'B',type:'elliptical',image:galaxyAsset('m89'),note:'매끈한 타원 윤곽'},
-        {id:'C',type:'irregular',image:galaxyAsset('ngc1427a'),note:'흩어진 별 무리'},
-        {id:'D',type:'spiral',image:galaxyAsset('ngc1300'),note:'막대와 휘어진 팔'},
-        {id:'E',type:'irregular',image:galaxyAsset('ngc4449'),note:'비대칭 덩어리 구조'},
-        {id:'F',type:'elliptical',image:galaxyAsset('ngc1132'),note:'둥글고 고른 빛 분포'}
-      ];
-      const ufoSignals=[
-        {key:'m51',type:'spiral',evidence:'밝은 중심에서 바깥으로 휘어진 팔 구조가 뚜렷합니다.'},
-        {key:'m89',type:'elliptical',evidence:'뚜렷한 팔 없이 전체 빛이 둥글고 매끈하게 퍼집니다.'},
-        {key:'ngc1427a',type:'irregular',evidence:'대칭적인 팔이나 매끈한 타원 윤곽 없이 한쪽으로 흐트러져 있습니다.'}
-      ];
-
+      let classSamples=[];
       const el=id=>document.getElementById(id);
       const canvas=el('space'),ctx=canvas.getContext('2d'),viewport=el('viewport');
       const ui={
-        sector:el('sectorLabel'),name:el('destinationName'),subtitle:el('destinationSubtitle'),missionCount:el('missionCount'),
+        sector:el('sectorLabel'),name:el('destinationName'),subtitle:el('destinationSubtitle'),missionCount:el('missionCount'),score:el('expeditionScore'),
         handleTitle:el('handleTitle'),step:el('missionStep'),title:el('missionTitle'),description:el('missionDescription'),task:el('taskText'),
         facts:el('facts'),choices:el('choiceGrid'),done:el('missionDone'),doneText:el('missionDoneText'),scan:el('scanButton'),warp:el('warpButton'),
         view:el('viewButton'),viewReadout:el('viewReadout'),zoomReadout:el('zoomReadout'),navReadout:el('navReadout'),systemMessage:el('systemMessage'),
-        reticle:el('reticle'),scanLine:el('scanLine'),beacons:el('galaxyBeacons'),landmarks:el('spaceLandmarks'),visitor:el('spaceVisitor'),toast:el('toast'),panel:el('missionPanel'),handle:el('missionHandle'),
+        reticle:el('reticle'),scanLine:el('scanLine'),beacons:el('galaxyBeacons'),landmarks:el('spaceLandmarks'),visitors:el('spaceVisitors'),toast:el('toast'),panel:el('missionPanel'),handle:el('missionHandle'),
         warpFlash:el('warpFlash'),navGuide:el('navGuide'),mapScale:el('mapScale'),radar:el('navRadar'),radarDots:el('radarDots'),radarProgress:el('radarProgress'),radarNearest:el('radarNearest'),zoomControls:el('navZoomControls'),mapStatus:el('mapStatus'),observeStatus:el('observeStatus'),classStatus:el('classStatus'),
         observedPhoto:el('observedGalaxyPhoto'),observedImage:el('observedGalaxyImage'),imageCredit:el('imageCredit'),imageSource:el('imageSource'),
         solarMarker:el('solarSystemMarker'),solarOverlay:el('solarSystemOverlay'),sideGuide:el('milkyWaySideGuide'),turnSpeed:el('turnSpeed'),turnSpeedReadout:el('turnSpeedReadout'),
         joysticks:el('mobileJoysticks'),moveJoystick:el('moveJoystick'),moveKnob:el('moveJoystickKnob'),lookJoystick:el('lookJoystick'),lookKnob:el('lookJoystickKnob'),touchSpeed:el('touchSpeedButton'),mobileTurnSpeedReadout:el('mobileTurnSpeedReadout'),
-        ufoModal:el('ufoCommModal'),ufoProgress:el('ufoCommProgress'),ufoFigure:el('ufoSignalFigure'),ufoImage:el('ufoSignalImage'),ufoTitle:el('ufoCommTitle'),ufoPrompt:el('ufoPrompt'),ufoChoices:el('ufoChoices'),ufoFeedback:el('ufoFeedback'),ufoContinue:el('ufoContinue')
+        scoreButton:el('scoreButton'),scorePanel:el('scorePanel'),scorePanelValue:el('scorePanelValue'),scorePlayerName:el('scorePlayerName'),scoreRank:el('scoreRank'),scoreLeaders:el('scoreLeaders')
       };
 
-      const REVEAL_DISTANCE=950,APPROACH_DISTANCE=1950,DOCK_DISTANCE=520,LANDMARK_VISIT_DISTANCE=480,UFO_CONTACT_DISTANCE=460,UFO_TAP_DISTANCE=900,UFO_COMM_COOLDOWN=45000,UFO_WARP_DISTANCE=780;
+      const REVEAL_DISTANCE=950,APPROACH_DISTANCE=1950,PASSBY_OBSERVE_DISTANCE=650,DOCK_DISTANCE=520,LANDMARK_VISIT_DISTANCE=480,UFO_TAP_DISTANCE=900,UFO_COMM_COOLDOWN=9000;
       const coarsePointer=window.matchMedia('(hover:none) and (pointer:coarse)').matches;
       let mode='map',selectedKey=null,observingKey=null,viewMode='face',solarView=false,scanning=false,warping=false,reduced=false,started=false;
       let visited=new Set(),look={x:0,y:0},targetLook={x:0,y:0},warpPower=0,toastTimer=0;
       let width=0,height=0,viewWidth=0,viewHeight=0,dpr=1,lastFrame=0,galaxySets={};
       let camera={x:0,y:0,z:0,yaw:0,pitch:0},pinchDistance=0,keys=new Set(),turnSpeed=1.1,discoveryRenderPending=false,autoDockPending=false;
       const navPointers=new Map(),touchInput={moveX:0,moveY:0,lookX:0,lookY:0};
-      let selectedSample=null,assigned=new Map(),classAttempts=0,classificationComplete=false,visitorEncounters=0,visitorHoldUntil=0,visitorHoldPosition=null,visitorWorldPosition=[0,0,1500],visitedLandmarks=new Set();
-      let ufoSignalIndex=0,ufoCommunicationOpen=false,ufoSignalResolved=false,nextUfoContactAt=0;
+      let selectedSample=null,assigned=new Map(),classAttempts=0,classificationComplete=false,expeditionScore=0,visitorEncounters=0,visitedLandmarks=new Set();
+      let classroom=null,scoreSince=new Date().toISOString(),scoreboardTimer=0,scoreboardLoading=false,notificationSeen=new Set();
+      const visitorStates=Array.from({length:3},(_,index)=>({index,element:null,holdUntil:0,holdPosition:null,worldPosition:[0,0,1500],cooldownUntil:0,resolving:false}));
       let discovered=new Set(['milkyway']);
       const stars=[],navigationStars=[];
 
@@ -595,6 +578,46 @@
       function landmarkDistance(landmark){const [x,y,z]=landmark.position;return Math.hypot(x-camera.x,y-camera.y,z-camera.z)}
       function isGalaxyRevealed(galaxy){return galaxyDistance(galaxy)<=REVEAL_DISTANCE}
       function displayGalaxyName(galaxy){return discovered.has(galaxy.key)?galaxy.name:'미확인 은하 신호'}
+      function setScore(value){expeditionScore=Math.max(0,Number(value)||0);if(ui.score)ui.score.textContent=String(expeditionScore);if(ui.scorePanelValue)ui.scorePanelValue.textContent=String(expeditionScore)}
+      function updateScore(delta){setScore(expeditionScore+delta)}
+      async function applyScoreChange(kind,reference,localDelta){
+        updateScore(localDelta);if(!classroom)return;
+        try{const response=await fetch(`/api/labs/galaxy-voyage/sessions/${classroom.code}/events`,{method:'POST',headers:{'content-type':'application/json','x-player-id':classroom.player.id,'x-player-key':classroom.playerKey},body:JSON.stringify({kind,reference})}),data=await response.json();if(!response.ok)throw new Error(data.error||'점수 반영 실패');if(Number.isFinite(Number(data.score)))setScore(data.score)}catch(error){showToast(error.message||'점수를 다시 확인합니다.','bad');void loadScoreboard()}
+      }
+      function recordObservation(galaxy){
+        if(!galaxy||visited.has(galaxy.key))return false;
+        visited.add(galaxy.key);discovered.add(galaxy.key);classificationComplete=false;void applyScoreChange('observation',galaxy.key,10);return true;
+      }
+      function syncClassSamples(){
+        classSamples=[...visited].map(key=>{const galaxy=galaxyByKey(key);return{id:key,key,type:galaxy.type,image:galaxy.image,name:galaxy.name}}).filter(sample=>sample.type&&sample.image);
+        const valid=new Set(classSamples.map(sample=>sample.id));assigned=new Map([...assigned].filter(([id])=>valid.has(id)));classificationComplete=classSamples.length>=3&&assigned.size===classSamples.length;
+      }
+
+      function classroomHeaders(){return classroom?{'x-player-id':classroom.player.id,'x-player-key':classroom.playerKey}:{}}
+      function showClassroomError(message=''){el('classroomError').textContent=message}
+      function startVoyage(message,type='good'){void requestMobileLandscape();started=true;el('introModal').classList.remove('show');render();setPanel(false);if(message)showToast(message,type)}
+      function renderScoreboard(data){
+        if(data?.self){setScore(data.self.score);ui.scorePlayerName.textContent=`${data.self.nickname} · ${classroom.code}`;ui.scoreRank.textContent=`${data.self.rank}위`;}
+        ui.scoreLeaders.innerHTML='';(data?.leaders||[]).slice(0,5).forEach(player=>{const item=document.createElement('li');if(player.id===classroom?.player.id)item.classList.add('me');const rank=document.createElement('span'),name=document.createElement('span'),score=document.createElement('strong');rank.textContent=String(player.rank);name.textContent=player.nickname;score.textContent=String(player.score);item.append(rank,name,score);ui.scoreLeaders.appendChild(item)});
+      }
+      async function loadScoreboard(){
+        if(!classroom||scoreboardLoading)return;scoreboardLoading=true;
+        try{const response=await fetch(`/api/labs/galaxy-voyage/sessions/${classroom.code}/scoreboard?since=${encodeURIComponent(scoreSince)}`,{headers:classroomHeaders(),cache:'no-store'}),data=await response.json();if(!response.ok)throw new Error(data.error||'점수 확인 실패');renderScoreboard(data);const newNotes=(data.notifications||[]).filter(note=>!notificationSeen.has(note.id));newNotes.forEach(note=>notificationSeen.add(note.id));if(newNotes.length)showToast(newNotes.map(note=>note.message).join(' · '),'bad');scoreSince=data.serverTime||new Date().toISOString();classroom.lastScoreSync=scoreSince;localStorage.setItem('scilab-galaxy-classroom',JSON.stringify(classroom))}catch(error){console.warn(error)}finally{scoreboardLoading=false}
+      }
+      function activateClassroom(value){classroom=value;scoreSince=value.lastScoreSync||new Date().toISOString();localStorage.setItem('scilab-galaxy-classroom',JSON.stringify(value));ui.scorePlayerName.textContent=`${value.player.nickname} · ${value.code}`;ui.scoreRank.textContent='순위 확인 중';if(!scoreboardTimer)scoreboardTimer=window.setInterval(()=>{if(!document.hidden)void loadScoreboard()},3000);void loadScoreboard()}
+      async function joinClassroom(){
+        const code=el('classCodeInput').value.trim().toUpperCase(),nickname=el('playerNameInput').value.trim();showClassroomError();if(!code||!nickname){showClassroomError('수업 코드와 이름을 입력하세요.');return}el('joinClassButton').disabled=true;
+        try{const response=await fetch(`/api/labs/galaxy-voyage/sessions/${encodeURIComponent(code)}/players`,{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({nickname})}),data=await response.json();if(!response.ok)throw new Error(data.error||'입장 실패');activateClassroom({code:data.session.code,player:data.player,playerKey:data.playerKey,lastScoreSync:new Date().toISOString()});startVoyage(`${data.player.nickname} · 수업에 입장했습니다.`)}catch(error){showClassroomError(error.message||'수업에 입장하지 못했습니다.')}finally{el('joinClassButton').disabled=false}
+      }
+      async function createClassroom(){
+        showClassroomError();el('createClassButton').disabled=true;
+        try{const response=await fetch('/api/labs/galaxy-voyage/sessions',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({title:'은하 항해 수업'})}),data=await response.json();if(!response.ok)throw new Error(data.error||'수업 생성 실패');el('createdClassCode').textContent=data.session.code;el('classCodeInput').value=data.session.code;el('createClassResult').hidden=false;history.replaceState(null,'',`${location.pathname}?class=${data.session.code}`)}catch(error){showClassroomError(error.message||'수업을 만들지 못했습니다.')}finally{el('createClassButton').disabled=false}
+      }
+      async function copyClassLink(){const code=el('createdClassCode').textContent;if(!code)return;const link=`${location.origin}${location.pathname}?class=${code}`;try{await navigator.clipboard.writeText(link);showToast('수업 링크를 복사했습니다.')}catch{showClassroomError(`수업 코드: ${code}`)}}
+      async function restoreClassroom(){
+        const saved=localStorage.getItem('scilab-galaxy-classroom');if(!saved)return false;
+        try{const value=JSON.parse(saved),since=value.lastScoreSync||new Date(0).toISOString(),response=await fetch(`/api/labs/galaxy-voyage/sessions/${value.code}/scoreboard?since=${encodeURIComponent(since)}`,{headers:{'x-player-id':value.player.id,'x-player-key':value.playerKey},cache:'no-store'});if(!response.ok)throw new Error();const data=await response.json();activateClassroom(value);renderScoreboard(data);const notes=data.notifications||[];notes.forEach(note=>notificationSeen.add(note.id));scoreSince=data.serverTime||new Date().toISOString();classroom.lastScoreSync=scoreSince;localStorage.setItem('scilab-galaxy-classroom',JSON.stringify(classroom));startVoyage(notes.length?notes.map(note=>note.message).join(' · '):`${value.player.nickname} · 수업에 다시 연결했습니다.`,notes.length?'bad':'good');return true}catch{localStorage.removeItem('scilab-galaxy-classroom');return false}
+      }
 
       function buildParticles(){
         const spiral=[];let r=seeded(31);
@@ -720,9 +743,9 @@
 
       function drawScene(time){
         const delta=Math.min(40,time-(lastFrame||time));lastFrame=time;ctx.clearRect(0,0,width,height);
-        if(mode==='map'&&!warping&&!ufoCommunicationOpen){const move=delta*.19,turn=delta*.0015*turnSpeed;if(keys.has('w'))moveCamera(move,false);if(keys.has('s'))moveCamera(-move,false);if(keys.has('a'))strafeCamera(-move,false);if(keys.has('d'))strafeCamera(move,false);if(keys.has('q'))moveVertical(move,false);if(keys.has('e'))moveVertical(-move,false);if(keys.has('arrowleft'))camera.yaw-=turn;if(keys.has('arrowright'))camera.yaw+=turn;if(keys.has('arrowup'))camera.pitch=clamp(camera.pitch+turn,-1.05,1.05);if(keys.has('arrowdown'))camera.pitch=clamp(camera.pitch-turn,-1.05,1.05);if(Math.abs(touchInput.moveY)>.06)moveCamera(-touchInput.moveY*move*.92,false);if(Math.abs(touchInput.moveX)>.06)strafeCamera(touchInput.moveX*move*.92,false);if(Math.abs(touchInput.lookX)>.06)camera.yaw+=touchInput.lookX*turn*1.8;if(Math.abs(touchInput.lookY)>.06)camera.pitch=clamp(camera.pitch-touchInput.lookY*turn*1.65,-1.05,1.05)}
+        if(mode==='map'&&!warping){const move=delta*.19,turn=delta*.0015*turnSpeed;if(keys.has('w'))moveCamera(move,false);if(keys.has('s'))moveCamera(-move,false);if(keys.has('a'))strafeCamera(-move,false);if(keys.has('d'))strafeCamera(move,false);if(keys.has('q'))moveVertical(move,false);if(keys.has('e'))moveVertical(-move,false);if(keys.has('arrowleft'))camera.yaw-=turn;if(keys.has('arrowright'))camera.yaw+=turn;if(keys.has('arrowup'))camera.pitch=clamp(camera.pitch+turn,-1.05,1.05);if(keys.has('arrowdown'))camera.pitch=clamp(camera.pitch-turn,-1.05,1.05);if(Math.abs(touchInput.moveY)>.06)moveCamera(-touchInput.moveY*move*.92,false);if(Math.abs(touchInput.moveX)>.06)strafeCamera(touchInput.moveX*move*.92,false);if(Math.abs(touchInput.lookX)>.06)camera.yaw+=touchInput.lookX*turn*1.8;if(Math.abs(touchInput.lookY)>.06)camera.pitch=clamp(camera.pitch-touchInput.lookY*turn*1.65,-1.05,1.05)}
         look.x+=(targetLook.x-look.x)*.045;look.y+=(targetLook.y-look.y)*.045;warpPower*=.94;drawStars();
-        if(mode==='map'){drawNavigationStars();drawSpaceLandmarks(time);drawMapGlows();updateLandmarks();updateRadar();updateSpaceVisitor(time);updateBeacons()}else if(observingKey){const galaxy=galaxyByKey(observingKey);ui.observedPhoto.style.left=`calc(50% + ${look.x*18}px)`;ui.observedPhoto.style.top=`calc(${width<700?46:51}% + ${look.y*12}px)`;if(galaxy.key==='milkyway'&&viewMode==='side')drawEdgeGalaxy();else if(!solarView&&ui.observedPhoto.hidden)drawParticleGalaxy(galaxy,time)}
+        if(mode==='map'){drawNavigationStars();drawSpaceLandmarks(time);drawMapGlows();updateLandmarks();updateRadar();updateSpaceVisitors(time);updateBeacons()}else if(observingKey){const galaxy=galaxyByKey(observingKey);ui.observedPhoto.style.left=`calc(50% + ${look.x*18}px)`;ui.observedPhoto.style.top=`calc(${width<700?46:51}% + ${look.y*12}px)`;if(galaxy.key==='milkyway'&&viewMode==='side')drawEdgeGalaxy();else if(!solarView&&ui.observedPhoto.hidden)drawParticleGalaxy(galaxy,time)}
         requestAnimationFrame(drawScene);
       }
 
@@ -732,6 +755,10 @@
 
       function buildLandmarks(){
         ui.landmarks.innerHTML='';spaceLandmarks.forEach(landmark=>{const marker=document.createElement('div');marker.className='spaceLandmark';marker.dataset.key=landmark.key;marker.dataset.type=landmark.type;marker.innerHTML=`<i class="landmarkPin"></i><span class="landmarkLabel">${landmark.name}<small>${landmark.note} · 거리 <b>0</b></small></span>`;ui.landmarks.appendChild(marker)})
+      }
+
+      function buildVisitors(){
+        ui.visitors.innerHTML='';visitorStates.forEach(visitor=>{const button=document.createElement('button');button.type='button';button.className='spaceVisitor';button.setAttribute('aria-label','UFO 격추하기');button.innerHTML='<span class="ufoDome"></span><span class="alienEyes"></span><span class="ufoHull"></span><span class="visitorLabel">UFO</span>';button.addEventListener('pointerenter',()=>holdVisitor(visitor));button.addEventListener('pointerdown',event=>{holdVisitor(visitor);event.stopPropagation()});button.addEventListener('click',event=>{event.stopPropagation();void resolveVisitor(visitor)});visitor.element=button;ui.visitors.appendChild(button)})
       }
 
       function buildRadar(){
@@ -754,27 +781,15 @@
         ui.radarProgress.textContent=`${visitedLandmarks.size} / ${spaceLandmarks.length}`;ui.radarNearest.textContent=nearest?`${nearest.shortName} · ${Math.round(nearestRange)}`:'이정표 신호 없음';
       }
 
-      function openUfoCommunication(){
-        if(ufoCommunicationOpen||mode!=='map'||ufoSignalIndex>=ufoSignals.length||performance.now()<nextUfoContactAt)return;const signal=ufoSignals[ufoSignalIndex],galaxy=galaxyByKey(signal.key);ufoCommunicationOpen=true;ufoSignalResolved=false;visitorHoldPosition=[...visitorWorldPosition];visitorHoldUntil=Infinity;keys.clear();resetTouchJoysticks();setPanel(false);ui.ufoProgress.textContent=`외계 탐사선 교신 ${ufoSignalIndex+1} / ${ufoSignals.length}`;ui.ufoImage.src=galaxy.image;ui.ufoImage.alt='이름을 가린 실제 은하 관측 이미지';ui.ufoFigure.classList.remove('received');ui.ufoTitle.textContent='이 은하는 어떤 종류일까요?';ui.ufoPrompt.textContent='전체 윤곽과 팔 구조를 관찰해 외계 탐사선의 자료를 해독하세요.';ui.ufoFeedback.className='ufoFeedback';ui.ufoFeedback.textContent='';ui.ufoContinue.classList.remove('show');ui.ufoChoices.innerHTML='';['spiral','elliptical','irregular'].forEach(type=>{const button=document.createElement('button');button.type='button';button.className='ufoChoice';button.dataset.type=type;button.textContent=typeNames[type];button.addEventListener('click',()=>answerUfoSignal(type,button));ui.ufoChoices.appendChild(button)});ui.ufoModal.classList.add('show');ui.visitor.classList.remove('encountered');void ui.visitor.offsetWidth;ui.visitor.classList.add('encountered');setTimeout(()=>ui.ufoChoices.querySelector('button')?.focus(),0);
+      function holdVisitor(visitor){visitor.holdUntil=performance.now()+1200;visitor.holdPosition=[...visitor.worldPosition]}
+      function localUfoResult(){const roll=Math.random();if(roll<.3)return{delta:50,message:'UFO에서 50점을 발견했습니다!'};if(roll<.42)return{delta:100,message:'UFO 대박! 100점을 획득했습니다!'};if(roll<.65)return{delta:-30,message:'UFO가 30점을 가져갔습니다.'};if(roll<.9)return{delta:30,message:'UFO에서 30점을 회수했습니다!'};const delta=Math.round((Math.random()*100-50)/10)*10;return{delta,message:`점수 파동! ${delta>=0?'+':''}${delta}점`}}
+      async function resolveVisitor(visitor){
+        if(mode!=='map'||visitor.resolving)return;const now=performance.now(),wait=Math.ceil((visitor.cooldownUntil-now)/1000);if(wait>0){showToast(`레이저 충전 중 · ${wait}초`);return}const range=Math.hypot(visitor.worldPosition[0]-camera.x,visitor.worldPosition[1]-camera.y,visitor.worldPosition[2]-camera.z);if(range>UFO_TAP_DISTANCE){holdVisitor(visitor);showToast(`격추 사거리 밖 · 거리 ${Math.round(range)}`,'bad');return}
+        visitor.resolving=true;visitor.element.classList.remove('encountered');void visitor.element.offsetWidth;visitor.element.classList.add('encountered');visitor.cooldownUntil=now+UFO_COMM_COOLDOWN;visitor.element.classList.add('cooldown');visitorEncounters++;
+        try{let result;if(classroom){const reference=globalThis.crypto?.randomUUID?.()||`${Date.now()}-${Math.random().toString(36).slice(2)}`,response=await fetch(`/api/labs/galaxy-voyage/sessions/${classroom.code}/events`,{method:'POST',headers:{'content-type':'application/json',...classroomHeaders()},body:JSON.stringify({kind:'ufo',reference})});result=await response.json();if(!response.ok)throw new Error(result.error||'UFO 이벤트 실패');setScore(result.score)}else{result=localUfoResult();updateScore(result.delta)}showToast(result.message,result.delta<0?'bad':'good');if(!selectedKey)renderPanel()}catch(error){showToast(error.message||'UFO 신호가 끊겼습니다.','bad');void loadScoreboard()}finally{visitor.resolving=false;setTimeout(()=>visitor.element.classList.remove('cooldown'),UFO_COMM_COOLDOWN)}
       }
-
-      function answerUfoSignal(type,button){
-        if(!ufoCommunicationOpen||ufoSignalResolved)return;const signal=ufoSignals[ufoSignalIndex],galaxy=galaxyByKey(signal.key);
-        if(type!==signal.type){button.classList.add('wrong');button.disabled=true;ui.ufoFeedback.className='ufoFeedback show bad';ui.ufoFeedback.textContent=`조금 달라요. ${criteria[signal.type]}이 보이는지 다시 살펴보세요.`;return}
-        ufoSignalResolved=true;button.classList.add('correct');[...ui.ufoChoices.children].forEach(choice=>choice.disabled=true);ui.ufoFigure.classList.add('received');ui.ufoTitle.textContent=`정답 · ${galaxy.name}`;ui.ufoFeedback.className='ufoFeedback show good';ui.ufoFeedback.textContent=`${signal.evidence} 사진 속 은하 앞으로 이동할 수 있습니다.`;ui.ufoContinue.classList.add('show');ui.ufoContinue.focus();
-      }
-
-      function closeUfoCommunication(){
-        if(!ufoCommunicationOpen)return;const completed=ufoSignalResolved,targetKey=completed?ufoSignals[ufoSignalIndex].key:null;ui.ufoModal.classList.remove('show');ufoCommunicationOpen=false;visitorHoldUntil=performance.now()+1200;if(completed){ufoSignalIndex++;visitorEncounters=ufoSignalIndex;nextUfoContactAt=performance.now()+UFO_COMM_COOLDOWN}else{nextUfoContactAt=performance.now()+15000;showToast('교신을 종료했습니다. 잠시 후 다시 만날 수 있습니다.')}ufoSignalResolved=false;if(!selectedKey)renderPanel();if(targetKey)warpToUfoGalaxy(targetKey);else updateRadar();
-      }
-
-      function warpToUfoGalaxy(key){
-        const galaxy=galaxyByKey(key);if(!galaxy)return;warping=true;warpPower=reduced?.2:1;keys.clear();resetTouchJoysticks();setPanel(false);ui.warpFlash.classList.remove('run');void ui.warpFlash.offsetWidth;ui.warpFlash.classList.add('run');render();setTimeout(()=>{let dx=galaxy.position[0]-camera.x,dy=galaxy.position[1]-camera.y,dz=galaxy.position[2]-camera.z,distance=Math.hypot(dx,dy,dz);if(distance<1){dx=0;dy=0;dz=1;distance=1}camera.x=galaxy.position[0]-dx/distance*UFO_WARP_DISTANCE;camera.y=galaxy.position[1]-dy/distance*UFO_WARP_DISTANCE;camera.z=galaxy.position[2]-dz/distance*UFO_WARP_DISTANCE;limitCamera();const lookX=galaxy.position[0]-camera.x,lookY=galaxy.position[1]-camera.y,lookZ=galaxy.position[2]-camera.z;camera.yaw=Math.atan2(lookX,lookZ);camera.pitch=Math.atan2(lookY,Math.hypot(lookX,lookZ));selectedKey=galaxy.key;discovered.add(galaxy.key);warping=false;render();setPanel(false);showToast(`${galaxy.name} 앞에 도착했습니다. 조금 더 가까이 가면 관측이 시작됩니다.`)},reduced?220:650);
-      }
-
-      function updateSpaceVisitor(time){
-        if(mode!=='map')return;const phase=time*.000065,movingPosition=[Math.sin(phase)*1320,Math.sin(phase*.73+1.15)*510,1520+Math.cos(phase*.81)*660],position=time<visitorHoldUntil&&visitorHoldPosition?visitorHoldPosition:movingPosition;if(time>=visitorHoldUntil)visitorHoldPosition=movingPosition;visitorWorldPosition=[...position];const point=projectWorld(position),range=Math.hypot(position[0]-camera.x,position[1]-camera.y,position[2]-camera.z),scale=clamp(920/Math.max(1,point.depth),.48,1.12),label=ui.visitor.querySelector('.visitorLabel');
-        ui.visitor.style.transform=`translate(${point.x-viewWidth/2}px,${point.y-viewHeight/2}px) scale(${scale}) rotate(${Math.sin(phase*.9)*5}deg)`;ui.visitor.style.opacity=point.visible?'1':'0';ui.visitor.style.pointerEvents=point.visible?'auto':'none';if(label)label.textContent=ufoSignalIndex>=ufoSignals.length?'교신 기록 완료':range<=1100?`교신 거리 ${Math.round(range)}`:'미확인 탐사선';if(point.visible&&started&&!ufoCommunicationOpen&&ufoSignalIndex<ufoSignals.length&&performance.now()>=nextUfoContactAt&&range<=UFO_CONTACT_DISTANCE)openUfoCommunication();
+      function updateSpaceVisitors(time){
+        if(mode!=='map')return;visitorStates.forEach(visitor=>{const phase=time*.000052+visitor.index*2.17,moving=[Math.sin(phase)*(1150+visitor.index*210),Math.sin(phase*(.69+visitor.index*.07)+1.15)*520,1280+visitor.index*470+Math.cos(phase*.81)*610],position=time<visitor.holdUntil&&visitor.holdPosition?visitor.holdPosition:moving;if(time>=visitor.holdUntil)visitor.holdPosition=moving;visitor.worldPosition=[...position];const point=projectWorld(position),range=Math.hypot(position[0]-camera.x,position[1]-camera.y,position[2]-camera.z),scale=clamp(920/Math.max(1,point.depth),.48,1.12),label=visitor.element.querySelector('.visitorLabel');visitor.element.style.transform=`translate(${point.x-viewWidth/2}px,${point.y-viewHeight/2}px) scale(${scale}) rotate(${Math.sin(phase*.9)*5}deg)`;visitor.element.style.opacity=point.visible?'1':'0';visitor.element.style.pointerEvents=point.visible?'auto':'none';if(label)label.textContent=range<=UFO_TAP_DISTANCE?'격추':'UFO'})
       }
 
       function projectGalaxy(galaxy){
@@ -782,10 +797,25 @@
       }
 
       function updateBeacons(){
-        let visibleCount=0;const newlyDiscovered=[],basis=cameraBasis();[...ui.beacons.children].forEach(button=>{const galaxy=galaxyByKey(button.dataset.key),point=projectWorld(galaxy.position,basis),range=galaxyDistance(galaxy),scale=clamp(800/Math.max(1,range),.48,2.45),label=button.querySelector('.beaconName'),title=button.querySelector('.beaconTitle'),distance=button.querySelector('.beaconDistance'),photo=button.querySelector('.beaconPhoto'),state=range<=REVEAL_DISTANCE?'revealed':range<=APPROACH_DISTANCE?'approaching':'far';if(point.visible)visibleCount++;if(point.visible&&state==='revealed'&&!discovered.has(galaxy.key)){discovered.add(galaxy.key);newlyDiscovered.push(galaxy)}const known=discovered.has(galaxy.key);if(photo&&(state!=='far'||known)&&!photo.getAttribute('src'))photo.src=photo.dataset.src;button.classList.toggle('far',state==='far');button.classList.toggle('approaching',state==='approaching');button.classList.toggle('revealed',state==='revealed');button.classList.toggle('locked',!known);if(title)title.textContent=known?galaxy.name:'미확인 신호';if(distance)distance.textContent=known?`${galaxy.distance} · 접근 ${Math.round(range)}`:state==='approaching'?'신호 분석 중 · 더 가까이':'거리 미상 · 별빛 신호';button.setAttribute('aria-label',known?`${galaxy.name}, ${galaxy.distance}, 근접 거리 ${Math.round(range)}`:'미확인 은하 신호, 가까이 이동하면 확인할 수 있습니다');button.style.transform=`translate(${point.x-viewWidth/2}px,${point.y-viewHeight/2}px) scale(${scale})`;if(label)label.style.transform=`translateX(-50%) scale(${1/scale})`;button.style.opacity=point.visible?'1':'0';button.style.pointerEvents=point.visible?'auto':'none';button.style.zIndex=String(Math.round(5000-point.depth));button.classList.toggle('selected',selectedKey===galaxy.key);button.classList.toggle('visited',visited.has(galaxy.key));if(selectedKey===galaxy.key&&range<=DOCK_DISTANCE+1)queueProximityObservation(galaxy)});
-        const selected=selectedKey?galaxyByKey(selectedKey):null,selectedRange=selected?Math.round(galaxyDistance(selected)):null,nearest=[...spaceLandmarks].sort((a,b)=>landmarkDistance(a)-landmarkDistance(b))[0],nearestRange=Math.round(landmarkDistance(nearest)),encounterStatus=visitorEncounters?` · UFO 조우 ${visitorEncounters}`:'';ui.mapScale.textContent=`발견 ${discovered.size} / ${galaxies.length} · 이정표 ${visitedLandmarks.size}/${spaceLandmarks.length} · 시야 내 ${visibleCount}${selectedRange!==null?` · 목표까지 ${selectedRange}`:` · ${nearest.shortName} ${nearestRange}`}${encounterStatus}`;
+        let visibleCount=0;const newlyDiscovered=[],newlyObserved=[],basis=cameraBasis();
+        [...ui.beacons.children].forEach(button=>{
+          const galaxy=galaxyByKey(button.dataset.key),point=projectWorld(galaxy.position,basis),range=galaxyDistance(galaxy),scale=clamp(800/Math.max(1,range),.48,2.45),label=button.querySelector('.beaconName'),title=button.querySelector('.beaconTitle'),distance=button.querySelector('.beaconDistance'),photo=button.querySelector('.beaconPhoto'),state=range<=REVEAL_DISTANCE?'revealed':range<=APPROACH_DISTANCE?'approaching':'far';
+          if(point.visible)visibleCount++;
+          if(point.visible&&state==='revealed'&&!discovered.has(galaxy.key)){discovered.add(galaxy.key);newlyDiscovered.push(galaxy)}
+          if(started&&mode==='map'&&!warping&&range<=PASSBY_OBSERVE_DISTANCE&&recordObservation(galaxy))newlyObserved.push(galaxy);
+          const known=discovered.has(galaxy.key);
+          if(photo&&(state!=='far'||known)&&!photo.getAttribute('src'))photo.src=photo.dataset.src;
+          button.classList.toggle('far',state==='far');button.classList.toggle('approaching',state==='approaching');button.classList.toggle('revealed',state==='revealed');button.classList.toggle('locked',!known);
+          if(title)title.textContent=known?galaxy.name:'미확인 신호';
+          if(distance)distance.textContent=known?`${galaxy.distance} · 접근 ${Math.round(range)}`:state==='approaching'?'신호 분석 중 · 더 가까이':'거리 미상 · 별빛 신호';
+          button.setAttribute('aria-label',known?`${galaxy.name}, ${galaxy.distance}, 근접 거리 ${Math.round(range)}${visited.has(galaxy.key)?', 관측 목록 등록':''}`:'미확인 은하 신호, 가까이 이동하면 확인할 수 있습니다');
+          button.style.transform=`translate(${point.x-viewWidth/2}px,${point.y-viewHeight/2}px) scale(${scale})`;if(label)label.style.transform=`translateX(-50%) scale(${1/scale})`;button.style.opacity=point.visible?'1':'0';button.style.pointerEvents=point.visible?'auto':'none';button.style.zIndex=String(Math.round(5000-point.depth));button.classList.toggle('selected',selectedKey===galaxy.key);button.classList.toggle('visited',visited.has(galaxy.key));if(selectedKey===galaxy.key&&range<=DOCK_DISTANCE+1)queueProximityObservation(galaxy)
+        });
+        const selected=selectedKey?galaxyByKey(selectedKey):null,selectedRange=selected?Math.round(galaxyDistance(selected)):null,nearest=[...spaceLandmarks].sort((a,b)=>landmarkDistance(a)-landmarkDistance(b))[0],nearestRange=Math.round(landmarkDistance(nearest)),encounterStatus=visitorEncounters?` · UFO 격추 ${visitorEncounters}`:'';ui.mapScale.textContent=`발견 ${discovered.size} / ${galaxies.length} · 이정표 ${visitedLandmarks.size}/${spaceLandmarks.length} · 시야 내 ${visibleCount}${selectedRange!==null?` · 목표까지 ${selectedRange}`:` · ${nearest.shortName} ${nearestRange}`}${encounterStatus}`;
         if(mode==='map'){ui.zoomReadout.textContent=selectedRange!==null?`거리 ${selectedRange}`:`Z ${Math.round(camera.z)}`;ui.navReadout.textContent=warping?'항해 중':selectedRange!==null&&selectedRange<=DOCK_DISTANCE?'근접 스캔 진입':'은하 신호 탐색'}
-        if(newlyDiscovered.length&&started){showToast(`✦ 새 은하 발견: ${newlyDiscovered.map(galaxy=>galaxy.name).join(', ')}`);if(!discoveryRenderPending){discoveryRenderPending=true;setTimeout(()=>{discoveryRenderPending=false;render()},0)}}
+        if(newlyObserved.length){showToast(`+${newlyObserved.length*10}점 · 가까이 지나간 ${newlyObserved.map(galaxy=>galaxy.name).join(', ')}을 관측 목록에 추가했습니다.`);if(visited.size===3)setTimeout(()=>showToast('관측 은하 3개 확보 · 나의 분류 활동이 열렸습니다!'),700)}
+        else if(newlyDiscovered.length&&started)showToast(`✦ 새 은하 발견: ${newlyDiscovered.map(galaxy=>galaxy.name).join(', ')}`);
+        if((newlyDiscovered.length||newlyObserved.length)&&!discoveryRenderPending){discoveryRenderPending=true;setTimeout(()=>{discoveryRenderPending=false;render()},0)}
       }
 
       function renderFacts(items=[]){ui.facts.innerHTML='';items.forEach(text=>{const item=document.createElement('div');item.className='fact';item.textContent=text;ui.facts.appendChild(item)})}
@@ -805,24 +835,24 @@
         if(mode==='map'){
           const galaxy=selectedKey?galaxyByKey(selectedKey):null;
           ui.handleTitle.textContent=galaxy?'목적지 선택됨':'자유 항해';ui.step.textContent='NAVIGATION';
-          if(!galaxy){const landmarkLog=spaceLandmarks.filter(landmark=>visitedLandmarks.has(landmark.key)).map(landmark=>`✓ ${landmark.shortName}`);ui.title.textContent='별빛 속 은하 신호를 찾으세요';ui.description.textContent='멀리 있는 은하는 작은 별처럼 보입니다. 신호를 따라 가까이 가면 실제 모습과 이름이 해금됩니다.';ui.task.textContent='모바일은 왼쪽 조이스틱으로 이동하고 오른쪽 조이스틱으로 시점을 돌립니다. PC는 드래그·휠·WASD를 사용하세요.';renderFacts([`은하 도감 발견 ${discovered.size} / ${galaxies.length}`,`이정표 방문 ${visitedLandmarks.size} / ${spaceLandmarks.length}`,`UFO 교신 기록 ${ufoSignalIndex} / ${ufoSignals.length}`,landmarkLog.length?`항해 기록: ${landmarkLog.join(' · ')}`:'레이더의 색 점을 따라 이정표 가까이 접근하세요.'])}
-          else{const known=discovered.has(galaxy.key),canTravel=isGalaxyRevealed(galaxy),range=Math.round(galaxyDistance(galaxy));ui.title.textContent=known?galaxy.name:'미확인 은하 신호';ui.description.textContent=known?`${galaxy.catalog} · ${galaxy.distance}`:'멀리서는 하나의 별빛처럼 보입니다. 더 가까이 접근해 신호를 분석하세요.';ui.task.textContent=!canTravel?'항해 거리가 아직 멉니다. 시점을 돌려 신호를 바라보고 가까이 이동하면 은하 사진과 이름이 나타납니다.':visited.has(galaxy.key)?'이미 관측한 은하입니다. 다시 방문하거나 다른 신호를 찾을 수 있습니다.':'신호 방향을 직접 맞추며 계속 가까이 이동하세요. 은하가 점점 커지고 근접 거리에 도달하면 관측 화면이 자동으로 열립니다.';renderFacts(!known?[`현재 신호 접근 거리 ${range} · 정체 분석 전`]:visited.has(galaxy.key)?[`분류: ${typeNames[galaxy.type]}`,...galaxy.facts]:[`현재 접근 거리 ${range} · 근접 관측까지 ${Math.max(0,range-DOCK_DISTANCE)}`,'모바일은 왼쪽 이동·오른쪽 시점 조이스틱을 함께 사용합니다.']);if(visited.has(galaxy.key)){const link=document.createElement('a');link.className='sourceLink';link.href=galaxy.source;link.target='_blank';link.rel='noreferrer';link.textContent='관측 자료 확인 ↗';ui.facts.appendChild(link)}}
+          if(!galaxy){const landmarkLog=spaceLandmarks.filter(landmark=>visitedLandmarks.has(landmark.key)).map(landmark=>`✓ ${landmark.shortName}`);ui.title.textContent='별빛 속 은하 신호를 찾으세요';ui.description.textContent='멀리 있는 은하는 작은 별처럼 보입니다. 은하 가까이를 지나가면 관측 목록에 자동으로 추가됩니다.';ui.task.textContent='모바일은 왼쪽 조이스틱으로 이동하고 오른쪽 조이스틱으로 시점을 돌립니다. PC는 드래그·휠·WASD를 사용하세요.';renderFacts([`관측 목록 ${visited.size} / ${galaxies.length} · 탐사 점수 ${expeditionScore}`,`이정표 방문 ${visitedLandmarks.size} / ${spaceLandmarks.length}`,`UFO 격추 ${visitorEncounters}`,landmarkLog.length?`항해 기록: ${landmarkLog.join(' · ')}`:'레이더의 색 점을 따라 이정표 가까이 접근하세요.'])}
+          else{const known=discovered.has(galaxy.key),canTravel=isGalaxyRevealed(galaxy),range=Math.round(galaxyDistance(galaxy)),classifiedType=assigned.get(galaxy.key);ui.title.textContent=known?galaxy.name:'미확인 은하 신호';ui.description.textContent=known?`${galaxy.catalog} · ${galaxy.distance}`:'멀리서는 하나의 별빛처럼 보입니다. 더 가까이 접근해 신호를 분석하세요.';ui.task.textContent=!canTravel?'항해 거리가 아직 멉니다. 시점을 돌려 신호를 바라보고 가까이 이동하면 은하 사진과 이름이 나타납니다.':visited.has(galaxy.key)?'관측 목록에 등록된 은하입니다. 분류 활동에서 종류를 판단해 보세요.':'더 가까이 지나가면 방문 화면을 열지 않아도 관측 목록에 자동으로 추가됩니다.';renderFacts(!known?[`현재 신호 접근 거리 ${range} · 정체 분석 전`]:visited.has(galaxy.key)?[`분류 상태: ${classifiedType?typeNames[classifiedType]:'아직 분류하지 않음'}`,...galaxy.facts]:[`현재 접근 거리 ${range} · 자동 관측까지 ${Math.max(0,range-PASSBY_OBSERVE_DISTANCE)}`,'모바일은 왼쪽 이동·오른쪽 시점 조이스틱을 함께 사용합니다.']);if(visited.has(galaxy.key)){const link=document.createElement('a');link.className='sourceLink';link.href=galaxy.source;link.target='_blank';link.rel='noreferrer';link.textContent='관측 자료 확인 ↗';ui.facts.appendChild(link)}}
         }else{
-          const galaxy=galaxyByKey(observingKey);ui.handleTitle.textContent=solarView?'태양계 확대':visited.has(galaxy.key)?'관측 완료':scanning?'자동 기록 중':'관측 중';ui.step.textContent=solarView?'SOLAR SYSTEM':'OBSERVATION';ui.title.textContent=solarView?'태양계의 8개 행성과 지구':galaxy.name;ui.description.textContent=solarView?'태양계는 우리은하 오리온자리 팔 부근에 있으며, 지구는 태양에서 세 번째 행성입니다.':galaxy.description;ui.task.textContent=solarView?'수성부터 해왕성까지의 순서를 비교하고, 푸른색으로 강조된 세 번째 행성 지구를 확인하세요.':visited.has(galaxy.key)?'관측 기록이 항해일지에 자동 반영되었습니다. 항해 지도로 돌아가 다른 은하를 찾아보세요.':scanning?'전체 윤곽과 중심부, 팔 구조를 살펴보세요. 관측 자료는 자동으로 기록되고 있습니다.':'관측 자료를 자동으로 준비하고 있습니다.';renderFacts(solarView?['행성 순서: 수성 → 금성 → 지구 → 화성 → 목성 → 토성 → 천왕성 → 해왕성','지구: 태양에서 세 번째 행성 · 평균 1 AU','태양계: 우리은하 중심에서 약 2만 6천 광년']:visited.has(galaxy.key)?[`분류: ${typeNames[galaxy.type]}`,...galaxy.facts]:scanning?['버튼을 누르지 않아도 잠시 후 항해일지에 자동 저장됩니다.']:[]);
+          const galaxy=galaxyByKey(observingKey),classifiedType=assigned.get(galaxy.key);ui.handleTitle.textContent=solarView?'태양계 확대':visited.has(galaxy.key)?'관측 완료':scanning?'자동 기록 중':'관측 중';ui.step.textContent=solarView?'SOLAR SYSTEM':'OBSERVATION';ui.title.textContent=solarView?'태양계의 8개 행성과 지구':galaxy.name;ui.description.textContent=solarView?'태양계는 우리은하 오리온자리 팔 부근에 있으며, 지구는 태양에서 세 번째 행성입니다.':galaxy.description;ui.task.textContent=solarView?'수성부터 해왕성까지의 순서를 비교하고, 푸른색으로 강조된 세 번째 행성 지구를 확인하세요.':visited.has(galaxy.key)?'관측 기록이 항해일지에 반영되었습니다. 항해 지도로 돌아가 분류할 은하를 더 모아 보세요.':scanning?'전체 윤곽과 중심부, 팔 구조를 살펴보세요. 관측 자료는 자동으로 기록되고 있습니다.':'관측 자료를 자동으로 준비하고 있습니다.';renderFacts(solarView?['행성 순서: 수성 → 금성 → 지구 → 화성 → 목성 → 토성 → 천왕성 → 해왕성','지구: 태양에서 세 번째 행성 · 평균 1 AU','태양계: 우리은하 중심에서 약 2만 6천 광년']:visited.has(galaxy.key)?[`분류 상태: ${classifiedType?typeNames[classifiedType]:'아직 분류하지 않음'}`,...galaxy.facts]:scanning?['버튼을 누르지 않아도 잠시 후 항해일지에 자동 저장됩니다.']:[]);
           if(galaxy.key==='milkyway'&&!solarView){const button=document.createElement('button');button.type='button';button.className='panelAction';button.textContent=viewMode==='face'?'우리은하 옆면 보기':'우리은하 정면 보기';button.addEventListener('click',toggleMilkyWayView);ui.choices.appendChild(button);if(viewMode==='face'){const solarButton=document.createElement('button');solarButton.type='button';solarButton.className='panelAction';solarButton.textContent='☉ 태양계·지구 위치 관찰';solarButton.addEventListener('click',openSolarSystem);ui.choices.appendChild(solarButton)}}
           if(solarView){const backButton=document.createElement('button');backButton.type='button';backButton.className='panelAction';backButton.textContent='← 우리은하로 돌아가기';backButton.addEventListener('click',closeSolarSystem);ui.choices.appendChild(backButton)}
-          if(visited.has(galaxy.key)){const link=document.createElement('a');link.className='sourceLink';link.href=galaxy.source;link.target='_blank';link.rel='noreferrer';link.textContent='관측 자료 확인 ↗';ui.facts.appendChild(link);ui.done.classList.add('show');ui.doneText.textContent=`${typeNames[galaxy.type]} 관측 기록을 완성했습니다.`}
+          if(visited.has(galaxy.key)){const link=document.createElement('a');link.className='sourceLink';link.href=galaxy.source;link.target='_blank';link.rel='noreferrer';link.textContent='관측 자료 확인 ↗';ui.facts.appendChild(link);ui.done.classList.add('show');ui.doneText.textContent=classifiedType?`${typeNames[classifiedType]} 분류까지 완료했습니다.`:'관측 목록에 저장했습니다. 분류 활동에서 종류를 판단하세요.'}
         }
       }
 
       function render(){
-        const singleAction=mode==='observe'&&observingKey!=='milkyway';updateModeStatus();app.classList.toggle('observationMode',mode==='observe');app.classList.toggle('singleActionMode',singleAction);viewport.classList.toggle('mapMode',mode==='map');ui.scan.classList.toggle('statusOnly',mode==='observe');ui.view.classList.toggle('contextualHidden',singleAction);ui.beacons.hidden=mode!=='map';ui.landmarks.hidden=mode!=='map';ui.visitor.hidden=mode!=='map';ui.radar.hidden=mode!=='map';ui.navGuide.hidden=mode!=='map';ui.mapScale.hidden=mode!=='map';ui.zoomControls.hidden=mode!=='map';ui.joysticks.hidden=mode!=='map';if(mode!=='map')resetTouchJoysticks();ui.reticle.style.opacity=mode==='map'?'.18':'1';renderObservedPhoto();
+        const singleAction=mode==='observe'&&observingKey!=='milkyway';updateModeStatus();app.classList.toggle('observationMode',mode==='observe');app.classList.toggle('singleActionMode',singleAction);viewport.classList.toggle('mapMode',mode==='map');ui.scan.classList.toggle('statusOnly',mode==='observe');ui.view.classList.toggle('contextualHidden',singleAction);ui.beacons.hidden=mode!=='map';ui.landmarks.hidden=mode!=='map';ui.visitors.hidden=mode!=='map';ui.radar.hidden=mode!=='map';ui.navGuide.hidden=mode!=='map';ui.mapScale.hidden=mode!=='map';ui.zoomControls.hidden=mode!=='map';ui.joysticks.hidden=mode!=='map';if(mode!=='map')resetTouchJoysticks();ui.reticle.style.opacity=mode==='map'?'.18':'1';renderObservedPhoto();
         if(mode==='map'){
-          const galaxy=selectedKey?galaxyByKey(selectedKey):null,known=galaxy&&discovered.has(galaxy.key),displayName=galaxy?displayGalaxyName(galaxy):'';ui.sector.textContent='DEEP SPACE DISCOVERY';ui.name.textContent=galaxy?displayName:'은하 신호 탐색 구역';ui.subtitle.textContent=galaxy?(known?`${galaxy.distance} · 가까워질수록 크게 보입니다`:'별빛처럼 보이는 미확인 신호'):`발견한 은하 ${discovered.size} / ${galaxies.length} · 별빛 신호를 찾아 접근하세요.`;ui.view.textContent='⌾ 위치 초기화';ui.view.disabled=warping;ui.scan.textContent=classificationComplete?'▦ 결과 보기':visited.size>=3?'▦ 분류 활동':'▦ 분류 잠김';ui.scan.disabled=visited.size<3||warping;ui.warp.textContent='현재 방향으로 전진 ›';ui.warp.disabled=warping;ui.viewReadout.textContent=galaxy?displayName:'탐색 중';ui.navReadout.textContent=warping?'항해 중':'은하 신호 탐색';ui.zoomReadout.textContent=`Z ${Math.round(camera.z)}`;ui.systemMessage.textContent=visited.size>=3?'은하 분류 활동을 시작할 수 있습니다.':`발견 ${discovered.size}/${galaxies.length} · 관측 ${visited.size}/3 후 분류 활동 해금`;
+          const galaxy=selectedKey?galaxyByKey(selectedKey):null,known=galaxy&&discovered.has(galaxy.key),displayName=galaxy?displayGalaxyName(galaxy):'';ui.sector.textContent='DEEP SPACE DISCOVERY';ui.name.textContent=galaxy?displayName:'은하 신호 탐색 구역';ui.subtitle.textContent=galaxy?(known?`${galaxy.distance} · 가까워질수록 크게 보입니다`:'별빛처럼 보이는 미확인 신호'):`발견한 은하 ${discovered.size} / ${galaxies.length} · 별빛 신호를 찾아 접근하세요.`;ui.view.textContent='⌾ 위치 초기화';ui.view.disabled=warping;ui.scan.textContent=classificationComplete?'▦ 결과 보기':visited.size>=3?`▦ 나의 분류 (${visited.size})`:'▦ 분류 잠김';ui.scan.disabled=visited.size<3||warping;ui.warp.textContent='현재 방향으로 전진 ›';ui.warp.disabled=warping;ui.viewReadout.textContent=galaxy?displayName:'탐색 중';ui.navReadout.textContent=warping?'항해 중':'은하 신호 탐색';ui.zoomReadout.textContent=`Z ${Math.round(camera.z)}`;ui.systemMessage.textContent=visited.size>=3?`관측한 은하 ${visited.size}개를 분류할 수 있습니다. · ${expeditionScore}점`:`은하 가까이를 지나 관측 ${visited.size}/3을 모으면 분류 활동이 열립니다. · ${expeditionScore}점`;
         }else{
-          const galaxy=galaxyByKey(observingKey);ui.sector.textContent=solarView?'SOLAR SYSTEM · EARTH':galaxy.catalog;ui.name.textContent=solarView?'태양계와 지구 위치':galaxy.name;ui.subtitle.textContent=solarView?'우리은하 → 오리온팔 → 태양계 → 지구':`지구로부터 ${galaxy.distance} · 교육용 근접 관측`;ui.view.textContent=solarView?'← 우리은하':galaxy.key==='milkyway'?'◉ 관측 방향':'⌖ 항해 지도';ui.view.disabled=warping;ui.scan.textContent=scanning?'⌁ 자동 분석 중':visited.has(galaxy.key)?'✓ 자동 기록 완료':'⌁ 자동 기록 준비';ui.scan.disabled=true;ui.warp.textContent='항해 지도로 돌아가기 ›';ui.warp.disabled=warping;ui.viewReadout.textContent=solarView?'지구 · 3번째 행성':galaxy.key==='milkyway'?(viewMode==='side'?'옆면':'정면'):typeNames[galaxy.type];ui.navReadout.textContent=solarView?'태양계 확대':scanning?'자동 분석 중':visited.has(galaxy.key)?'기록 완료':'근접 관측';ui.zoomReadout.textContent=solarView?'1 AU':`× ${(2.1+(galaxy.scale||1)).toFixed(1)}`;ui.systemMessage.textContent=solarView?'지구는 태양에서 세 번째 행성입니다.':visited.has(galaxy.key)?'관측 자료가 현재 항해일지에 자동 반영되었습니다.':'관측 자료를 자동으로 분석하고 있습니다.';
+          const galaxy=galaxyByKey(observingKey);ui.sector.textContent=solarView?'SOLAR SYSTEM · EARTH':galaxy.catalog;ui.name.textContent=solarView?'태양계와 지구 위치':galaxy.name;ui.subtitle.textContent=solarView?'우리은하 → 오리온팔 → 태양계 → 지구':`지구로부터 ${galaxy.distance} · 교육용 근접 관측`;ui.view.textContent=solarView?'← 우리은하':galaxy.key==='milkyway'?'◉ 관측 방향':'⌖ 항해 지도';ui.view.disabled=warping;ui.scan.textContent=scanning?'⌁ 자동 분석 중':visited.has(galaxy.key)?'✓ 자동 기록 완료':'⌁ 자동 기록 준비';ui.scan.disabled=true;ui.warp.textContent='항해 지도로 돌아가기 ›';ui.warp.disabled=warping;ui.viewReadout.textContent=solarView?'지구 · 3번째 행성':galaxy.key==='milkyway'?(viewMode==='side'?'옆면':'정면'):(assigned.has(galaxy.key)?typeNames[assigned.get(galaxy.key)]:'분류 전');ui.navReadout.textContent=solarView?'태양계 확대':scanning?'자동 분석 중':visited.has(galaxy.key)?'기록 완료':'근접 관측';ui.zoomReadout.textContent=solarView?'1 AU':`× ${(2.1+(galaxy.scale||1)).toFixed(1)}`;ui.systemMessage.textContent=solarView?'지구는 태양에서 세 번째 행성입니다.':visited.has(galaxy.key)?'관측 자료가 현재 항해일지에 자동 반영되었습니다.':'관측 자료를 자동으로 분석하고 있습니다.';
         }
-        ui.missionCount.textContent=`${visited.size} / ${galaxies.length}`;renderPanel();updateBeacons();
+        ui.missionCount.textContent=`${visited.size} / ${galaxies.length}`;if(ui.score)ui.score.textContent=String(expeditionScore);renderPanel();updateBeacons();
       }
 
       function selectGalaxy(key){if(mode!=='map'||warping)return;selectedKey=key;render();setPanel(true);const galaxy=galaxyByKey(key);showToast(discovered.has(key)?`${galaxy.name}을 목적지로 선택했습니다.`:'미확인 은하 신호입니다. 더 가까이 이동해 정체를 밝혀 보세요.')}
@@ -844,7 +874,7 @@
 
       function runScan(automatic=false){
         if(mode!=='observe'||!observingKey||scanning||visited.has(observingKey))return;const galaxy=galaxyByKey(observingKey);scanning=true;ui.reticle.classList.add('scanning');ui.scanLine.classList.remove('running');void ui.scanLine.offsetWidth;ui.scanLine.classList.add('running');render();
-        setTimeout(()=>{scanning=false;ui.reticle.classList.remove('scanning');visited.add(galaxy.key);render();setPanel(false);showToast(`${galaxy.name}: ${typeNames[galaxy.type]}의 특징을 ${automatic?'자동으로 ':''}기록했습니다.`);if(visited.size===3)setTimeout(()=>showToast('은하 세 곳을 관측해 분류 활동이 열렸습니다!'),700)},1650);
+        setTimeout(()=>{scanning=false;ui.reticle.classList.remove('scanning');const added=recordObservation(galaxy);render();setPanel(false);showToast(`${added?'+10점 · ':''}${galaxy.name} 관측 자료를 ${automatic?'자동으로 ':''}목록에 기록했습니다.`);if(visited.size===3)setTimeout(()=>showToast('관측 은하 3개 확보 · 나의 분류 활동이 열렸습니다!'),700)},1650);
       }
 
       function handleView(){if(mode==='map')resetMap();else if(solarView)closeSolarSystem();else if(observingKey==='milkyway')toggleMilkyWayView();else returnToMap()}
@@ -852,8 +882,8 @@
       function handleWarp(){if(mode==='map'){moveCamera(180);showToast('현재 바라보는 방향으로 전진합니다.')}else returnToMap()}
 
       function buildClassification(){
-        const grid=el('sampleGrid'),bins=el('classBins');grid.innerHTML='';bins.innerHTML='';
-        classSamples.forEach(sample=>{const button=document.createElement('button');button.type='button';button.className='sampleCard';button.draggable=true;button.dataset.id=sample.id;button.innerHTML=`<img class="sampleGalaxyPhoto" src="${sample.image}" alt="관측 표본 ${sample.id}" loading="lazy" decoding="async"><strong>관측 표본 ${sample.id}</strong><small>전체 모양을 비교하세요</small>`;button.addEventListener('click',()=>selectSample(sample.id));button.addEventListener('dragstart',event=>{selectedSample=sample.id;event.dataTransfer.setData('text/plain',sample.id);renderClassification()});button.addEventListener('dragend',()=>document.querySelectorAll('.classBin').forEach(bin=>bin.classList.remove('active')));grid.appendChild(button)});
+        syncClassSamples();const grid=el('sampleGrid'),bins=el('classBins');grid.innerHTML='';bins.innerHTML='';
+        classSamples.forEach((sample,index)=>{const button=document.createElement('button');button.type='button';button.className='sampleCard';button.draggable=true;button.dataset.id=sample.id;button.innerHTML=`<img class="sampleGalaxyPhoto" src="${sample.image}" alt="내가 관측한 은하 ${index+1}" loading="lazy" decoding="async"><strong>관측 은하 ${index+1}</strong><small>전체 모양과 팔을 비교하세요</small>`;button.addEventListener('click',()=>selectSample(sample.id));button.addEventListener('dragstart',event=>{selectedSample=sample.id;event.dataTransfer.setData('text/plain',sample.id);renderClassification()});button.addEventListener('dragend',()=>document.querySelectorAll('.classBin').forEach(bin=>bin.classList.remove('active')));grid.appendChild(button)});
         ['spiral','elliptical','irregular'].forEach(type=>{const button=document.createElement('button');button.type='button';button.className='classBin';button.dataset.type=type;button.innerHTML=`<i class="miniGalaxy ${type}" aria-hidden="true"></i><span><strong>${typeNames[type]}</strong><small>${criteria[type]}</small></span><i class="binCount" id="bin-${type}">0</i>`;button.addEventListener('click',()=>assignSample(type));button.addEventListener('dragover',event=>{event.preventDefault();button.classList.add('active')});button.addEventListener('dragleave',()=>button.classList.remove('active'));button.addEventListener('drop',event=>{event.preventDefault();selectedSample=event.dataTransfer.getData('text/plain');button.classList.remove('active');assignSample(type)});bins.appendChild(button)});
         renderClassification();
       }
@@ -861,29 +891,29 @@
       function selectSample(id){if(assigned.has(id))return;selectedSample=selectedSample===id?null:id;renderClassification();if(selectedSample)showToast(`표본 ${id}을 선택했습니다. 알맞은 분류함을 누르세요.`)}
       function assignSample(type){
         if(!selectedSample){showToast('먼저 분류할 관측 표본을 선택하세요.','bad');return}const sample=classSamples.find(item=>item.id===selectedSample);classAttempts++;
-        if(sample.type===type){assigned.set(sample.id,type);selectedSample=null;showToast(`표본 ${sample.id}: ${typeNames[type]}로 분류했습니다.`);if(assigned.size===classSamples.length)classificationComplete=true}
-        else{const card=document.querySelector(`.sampleCard[data-id="${sample.id}"]`);card?.classList.remove('wrong');void card?.offsetWidth;card?.classList.add('wrong');showToast(`${criteria[type]}이 표본의 모습과 일치하는지 다시 비교해 보세요.`,'bad')}
+        if(sample.type===type){void applyScoreChange('classification_correct',sample.id,100);assigned.set(sample.id,type);selectedSample=null;showToast(`+100점 · ${typeNames[type]}로 정확히 분류했습니다.`);if(assigned.size===classSamples.length)classificationComplete=true}
+        else{void applyScoreChange('classification_wrong',`${sample.id}:${type}:${classAttempts}`,-20);const card=document.querySelector(`.sampleCard[data-id="${sample.id}"]`);card?.classList.remove('wrong');void card?.offsetWidth;card?.classList.add('wrong');showToast(`-20점 · ${criteria[type]}이 표본의 모습과 일치하는지 다시 비교해 보세요.`,'bad')}
         renderClassification();
       }
 
       function renderClassification(){
         document.querySelectorAll('.sampleCard').forEach(card=>{card.classList.toggle('selected',card.dataset.id===selectedSample);card.classList.toggle('assigned',assigned.has(card.dataset.id));card.setAttribute('aria-pressed',String(card.dataset.id===selectedSample))});
         ['spiral','elliptical','irregular'].forEach(type=>{const count=[...assigned.values()].filter(value=>value===type).length;const target=el(`bin-${type}`);if(target)target.textContent=String(count)});
-        el('classifyProgressText').textContent=`분류 완료 ${assigned.size} / ${classSamples.length}`;el('classifyAttempts').textContent=`비교 횟수 ${classAttempts}`;el('classifyProgressBar').style.width=`${assigned.size/classSamples.length*100}%`;
+        el('classifyProgressText').textContent=`분류 완료 ${assigned.size} / ${classSamples.length}`;el('classifyAttempts').textContent=`비교 ${classAttempts} · 점수 ${expeditionScore}`;el('classifyProgressBar').style.width=`${classSamples.length?assigned.size/classSamples.length*100:0}%`;
         const result=el('classifyResult');result.classList.toggle('show',classificationComplete);
-        if(classificationComplete){const accuracy=Math.round(classSamples.length/Math.max(classSamples.length,classAttempts)*100);result.innerHTML=`<strong>분류 도감 완성!</strong><br>형태 근거를 사용해 6개 표본을 모두 분류했습니다. 첫 판단 정확도 지표는 ${accuracy}%입니다.<div class="modalActions"><button class="modalButton primary" id="openReportButton" type="button">탐사 보고서 보기</button></div>`;el('openReportButton').addEventListener('click',openReport)}else result.innerHTML='';
+        if(classificationComplete){const accuracy=Math.round(classSamples.length/Math.max(classSamples.length,classAttempts)*100);result.innerHTML=`<strong>나의 분류 도감 완성!</strong><br>직접 관측한 ${classSamples.length}개 은하를 모두 분류했습니다. 정확도 지표는 ${accuracy}%, 현재 탐사 점수는 ${expeditionScore}점입니다.<div class="modalActions"><button class="modalButton primary" id="openReportButton" type="button">탐사 보고서 보기</button></div>`;el('openReportButton').addEventListener('click',openReport)}else result.innerHTML='';
       }
 
       function openClassification(){
-        if(visited.size<3){showToast('먼저 서로 다른 은하 세 곳을 관측하세요.','bad');return}el('classifyModal').classList.add('show');if(!el('sampleGrid').children.length)buildClassification();updateModeStatus();
+        if(visited.size<3){showToast('은하 가까이를 지나 관측 목록을 3개 이상 모으세요.','bad');return}buildClassification();el('classifyModal').classList.add('show');updateModeStatus();
       }
       function closeClassification(){el('classifyModal').classList.remove('show');updateModeStatus();render()}
 
       function openReport(){
-        closeClassification();const rows=[...visited].map((key,index)=>{const galaxy=galaxyByKey(key);return `<div class="reportRow"><i>${index+1}</i><strong>${galaxy.name}</strong><span>${typeNames[galaxy.type]}</span></div>`});el('reportRoute').innerHTML=rows.join('')||'<div class="reportRow"><strong>관측 기록 없음</strong></div>';el('reportScore').textContent=`${assigned.size}/${classSamples.length}`;const accuracy=Math.round(classSamples.length/Math.max(classSamples.length,classAttempts)*100);el('reportLead').textContent=`${visited.size}개 실제 은하를 관측하고 6개 표본을 분류했습니다. 분류 정확도 지표 ${accuracy}%`;el('reportConclusion').innerHTML='<strong>탐사 결론</strong><br>나선 은하는 중심 둘레로 휘어진 팔과 원반이 나타납니다. 타원 은하는 뚜렷한 팔 없이 둥글거나 타원형으로 매끈하게 보입니다. 불규칙 은하는 일정한 전체 모양을 찾기 어렵습니다. 관측 방향에 따라 같은 은하도 다르게 보일 수 있으므로 전체 윤곽과 구조를 함께 살펴야 합니다.';el('reportModal').classList.add('show');
+        closeClassification();const rows=classSamples.map((sample,index)=>{const galaxy=galaxyByKey(sample.key);return `<div class="reportRow"><i>${index+1}</i><strong>${galaxy.name}</strong><span>${typeNames[assigned.get(sample.id)]}</span></div>`});el('reportRoute').innerHTML=rows.join('')||'<div class="reportRow"><strong>관측 기록 없음</strong></div>';el('reportScore').textContent=String(expeditionScore);const accuracy=Math.round(classSamples.length/Math.max(classSamples.length,classAttempts)*100);el('reportLead').textContent=`가까이 지나간 ${visited.size}개 실제 은하를 관측하고 모두 분류했습니다. 분류 정확도 지표 ${accuracy}%`;el('reportConclusion').innerHTML='<strong>탐사 결론</strong><br>나선 은하는 중심 둘레로 휘어진 팔과 원반이 나타납니다. 타원 은하는 뚜렷한 팔 없이 둥글거나 타원형으로 매끈하게 보입니다. 불규칙 은하는 일정한 전체 모양을 찾기 어렵습니다. 관측 방향에 따라 같은 은하도 다르게 보일 수 있으므로 전체 윤곽과 구조를 함께 살펴야 합니다.';el('reportModal').classList.add('show');
       }
 
-      function restart(){mode='map';selectedKey=null;observingKey=null;viewMode='face';solarView=false;scanning=false;warping=false;autoDockPending=false;started=true;visited=new Set();visitedLandmarks=new Set();discovered=new Set(['milkyway']);camera={x:0,y:0,z:0,yaw:0,pitch:0};assigned=new Map();selectedSample=null;classAttempts=0;classificationComplete=false;visitorEncounters=0;visitorHoldUntil=0;visitorHoldPosition=null;ufoSignalIndex=0;ufoCommunicationOpen=false;ufoSignalResolved=false;nextUfoContactAt=performance.now()+8000;ui.ufoModal.classList.remove('show');el('sampleGrid').innerHTML='';el('classBins').innerHTML='';el('reportModal').classList.remove('show');render();updateRadar();setPanel(false);showToast('새 탐사 항해를 시작합니다. 고정 이정표를 기준으로 먼 별빛 신호를 추적하세요.')}
+      function restart(){mode='map';selectedKey=null;observingKey=null;viewMode='face';solarView=false;scanning=false;warping=false;autoDockPending=false;started=true;visited=new Set();visitedLandmarks=new Set();discovered=new Set(['milkyway']);camera={x:0,y:0,z:0,yaw:0,pitch:0};classSamples=[];assigned=new Map();selectedSample=null;classAttempts=0;classificationComplete=false;if(!classroom)setScore(0);visitorEncounters=0;visitorStates.forEach(visitor=>{visitor.holdUntil=0;visitor.holdPosition=null;visitor.cooldownUntil=0;visitor.resolving=false;visitor.element?.classList.remove('cooldown')});el('sampleGrid').innerHTML='';el('classBins').innerHTML='';el('reportModal').classList.remove('show');render();updateRadar();setPanel(false);showToast('새 탐사 항해를 시작합니다.')}
 
       function bindNavigation(){
         const distance=()=>{const points=[...navPointers.values()];return points.length<2?0:Math.hypot(points[0].x-points[1].x,points[0].y-points[1].y)};
@@ -894,7 +924,7 @@
         viewport.addEventListener('wheel',event=>{if(mode!=='map')return;event.preventDefault();moveCamera(-event.deltaY*.48)},{passive:false});
         el('moveForwardButton').addEventListener('click',event=>{event.stopPropagation();moveCamera(150);showToast('카메라가 바라보는 방향으로 전진했습니다.')});
         el('moveBackButton').addEventListener('click',event=>{event.stopPropagation();moveCamera(-150);showToast('카메라가 뒤로 이동했습니다.')});
-        window.addEventListener('keydown',event=>{const key=event.key.toLowerCase();if(ufoCommunicationOpen&&key==='escape'){closeUfoCommunication();event.preventDefault();return}if(mode==='map'&&!ufoCommunicationOpen&&['w','a','s','d','q','e','arrowup','arrowdown','arrowleft','arrowright'].includes(key)){keys.add(key);event.preventDefault()}});
+        window.addEventListener('keydown',event=>{const key=event.key.toLowerCase();if(key==='escape'&&!ui.scorePanel.hidden){ui.scorePanel.hidden=true;ui.scoreButton.setAttribute('aria-expanded','false');return}if(mode==='map'&&['w','a','s','d','q','e','arrowup','arrowdown','arrowleft','arrowright'].includes(key)){keys.add(key);event.preventDefault()}});
         window.addEventListener('keyup',event=>keys.delete(event.key.toLowerCase()));
       }
 
@@ -935,15 +965,16 @@
       function updateTurnSpeed(){turnSpeed=Number(ui.turnSpeed.value);const label=turnSpeed<.8?'느림':turnSpeed>1.4?'빠름':'보통';ui.turnSpeedReadout.textContent=label;ui.mobileTurnSpeedReadout.textContent=label}
       ui.turnSpeed.addEventListener('input',updateTurnSpeed);ui.turnSpeed.addEventListener('change',()=>showToast(`시점 회전 속도: ${ui.turnSpeedReadout.textContent}`));updateTurnSpeed();
       ui.touchSpeed.addEventListener('click',event=>{event.stopPropagation();const speeds=[.45,1.1,1.75],next=speeds[(speeds.findIndex(value=>Math.abs(value-turnSpeed)<.1)+1)%speeds.length];ui.turnSpeed.value=String(next);updateTurnSpeed();showToast(`조이스틱 시점 속도: ${ui.mobileTurnSpeedReadout.textContent}`)});
-      function holdSpaceVisitor(){visitorHoldUntil=performance.now()+1200}ui.visitor.addEventListener('pointerenter',holdSpaceVisitor);ui.visitor.addEventListener('pointerdown',event=>{holdSpaceVisitor();event.stopPropagation()});ui.visitor.addEventListener('click',event=>{event.stopPropagation();if(mode!=='map'||ufoCommunicationOpen)return;if(ufoSignalIndex>=ufoSignals.length){showToast('UFO 교신 기록 3/3을 모두 완성했습니다.');return}const wait=Math.ceil((nextUfoContactAt-performance.now())/1000);if(wait>0){showToast(`교신 장치 재연결 중 · 약 ${wait}초 후 가능`);return}const range=Math.hypot(visitorWorldPosition[0]-camera.x,visitorWorldPosition[1]-camera.y,visitorWorldPosition[2]-camera.z);if(range<=UFO_TAP_DISTANCE)openUfoCommunication();else{holdSpaceVisitor();showToast(`교신 신호가 약합니다 · 현재 거리 ${Math.round(range)}`)}});
-      el('ufoCommClose').addEventListener('click',closeUfoCommunication);ui.ufoContinue.addEventListener('click',closeUfoCommunication);
       ui.observedImage.addEventListener('error',()=>{ui.observedPhoto.hidden=true;showToast('관측 이미지를 불러오지 못해 과학 모형으로 표시합니다.','bad')});
-      el('startButton').addEventListener('click',()=>{void requestMobileLandscape();started=true;nextUfoContactAt=performance.now()+8000;el('introModal').classList.remove('show');render();setPanel(false);showToast('왼쪽 조이스틱으로 이동하고 오른쪽 조이스틱으로 시점을 돌려 보세요.')});
+      ui.scoreButton.addEventListener('click',()=>{const opening=ui.scorePanel.hidden;ui.scorePanel.hidden=!opening;ui.scoreButton.setAttribute('aria-expanded',String(opening));if(opening)void loadScoreboard()});el('scorePanelClose').addEventListener('click',()=>{ui.scorePanel.hidden=true;ui.scoreButton.setAttribute('aria-expanded','false')});
+      el('joinClassButton').addEventListener('click',()=>void joinClassroom());el('playerNameInput').addEventListener('keydown',event=>{if(event.key==='Enter')void joinClassroom()});el('createClassButton').addEventListener('click',()=>void createClassroom());el('copyClassLinkButton').addEventListener('click',()=>void copyClassLink());
+      el('startButton').addEventListener('click',()=>startVoyage('은하 가까이를 지나 관측하고 UFO를 찾아보세요.'));
       el('closeClassifyButton').addEventListener('click',closeClassification);el('closeReportButton').addEventListener('click',()=>el('reportModal').classList.remove('show'));el('restartButton').addEventListener('click',restart);
       el('motionButton').addEventListener('click',event=>{reduced=!reduced;event.currentTarget.setAttribute('aria-pressed',String(reduced));event.currentTarget.textContent=reduced?'·':'✦';showToast(reduced?'움직임 효과를 줄였습니다.':'움직임 효과를 다시 켰습니다.')});
       window.addEventListener('resize',resize,{passive:true});window.addEventListener('orientationchange',()=>setTimeout(resize,120),{passive:true});
 
-      buildParticles();buildNavigationStars();buildBeacons();buildLandmarks();buildRadar();bindNavigation();bindTouchJoysticks();bindPanelSwipe();resize();render();updateRadar();requestAnimationFrame(drawScene);
+      const requestedClass=new URLSearchParams(location.search).get('class');if(requestedClass)el('classCodeInput').value=requestedClass.toUpperCase().slice(0,6);
+      buildParticles();buildNavigationStars();buildBeacons();buildLandmarks();buildVisitors();buildRadar();bindNavigation();bindTouchJoysticks();bindPanelSwipe();resize();render();updateRadar();void restoreClassroom();requestAnimationFrame(drawScene);
     })();
   </script>
 </body>
