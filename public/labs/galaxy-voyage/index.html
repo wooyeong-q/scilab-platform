@@ -536,7 +536,6 @@
       const spaceLandmarks=[
         {key:'cyan-nebula',name:'청록 성운 표지',shortName:'청록 성운',type:'nebula',position:[-900,520,1300],color:'76,235,215',note:'좌현 위쪽 고정 이정표'},
         {key:'twin-asteroids',name:'쌍둥이 소행성 지대',shortName:'소행성 지대',type:'asteroid',position:[850,-420,1150],color:'255,183,92',note:'우현 아래쪽 고정 이정표'},
-        {key:'violet-dust',name:'보라 먼지구름',shortName:'보라 먼지구름',type:'dust',position:[1250,640,2200],color:'183,124,255',note:'먼 우현 위쪽 고정 이정표'},
         {key:'gold-comet',name:'황금 혜성길',shortName:'황금 혜성길',type:'comet',position:[-1500,-650,2450],color:'255,226,120',note:'먼 좌현 아래쪽 고정 이정표'}
       ];
       const typeNames={spiral:'나선 은하',elliptical:'타원 은하',irregular:'불규칙 은하'};
@@ -694,10 +693,10 @@
             coreGlow(x+radius*.3,y-radius*.12,radius*.46,'rgba(210,245,255,.07)',`rgba(${landmark.color},.025)`,.82);
           }else if(landmark.type==='asteroid'){
             const rand=seeded(830+index);
-            for(let rock=0;rock<17;rock++){
-              const position=[landmark.position[0]+(rand()-.5)*520,landmark.position[1]+(rand()-.5)*300,landmark.position[2]+(rand()-.5)*420],rockPoint=projectWorld(position,basis);if(!rockPoint.visible)continue;
-              const rx=rockPoint.x+ox,ry=rockPoint.y+oy,size=clamp((5+rand()*13)*950/rockPoint.depth,1.2,12),rotation=time*.00012*(rock%2?1:-1)+rock;
-              ctx.save();ctx.translate(rx,ry);ctx.rotate(rotation);ctx.fillStyle=`rgba(${landmark.color},${.32+rand()*.36})`;ctx.strokeStyle='rgba(255,225,183,.36)';ctx.lineWidth=.7;ctx.beginPath();
+            for(let rock=0;rock<7;rock++){
+              const position=[landmark.position[0]+(rand()-.5)*420,landmark.position[1]+(rand()-.5)*230,landmark.position[2]+(rand()-.5)*340],rockPoint=projectWorld(position,basis);if(!rockPoint.visible)continue;
+              const rx=rockPoint.x+ox,ry=rockPoint.y+oy,size=clamp((4+rand()*9)*900/rockPoint.depth,1,7),rotation=time*.000045*(rock%2?1:-1)+rock;
+              ctx.save();ctx.translate(rx,ry);ctx.rotate(rotation);ctx.fillStyle=`rgba(${landmark.color},${.28+rand()*.24})`;ctx.strokeStyle='rgba(255,225,183,.28)';ctx.lineWidth=.6;ctx.beginPath();
               for(let corner=0;corner<7;corner++){const angle=corner*Math.PI*2/7,edge=size*(.72+rand()*.35),px=Math.cos(angle)*edge,py=Math.sin(angle)*edge*(.7+rand()*.22);if(!corner)ctx.moveTo(px,py);else ctx.lineTo(px,py)}
               ctx.closePath();ctx.fill();ctx.stroke();ctx.restore();
             }
@@ -772,7 +771,7 @@
       function checkLandmarkVisits(){
         if(!started||mode!=='map')return;let newest=null;
         spaceLandmarks.forEach(landmark=>{if(!visitedLandmarks.has(landmark.key)&&landmarkDistance(landmark)<=LANDMARK_VISIT_DISTANCE){visitedLandmarks.add(landmark.key);newest=landmark}});
-        if(!newest)return;ui.radarProgress.textContent=`${visitedLandmarks.size} / ${spaceLandmarks.length}`;if(!selectedKey)renderPanel();showToast(`항해 기록: ${newest.name} 도착 · 이정표 ${visitedLandmarks.size}/${spaceLandmarks.length}`);if(visitedLandmarks.size===spaceLandmarks.length)setTimeout(()=>showToast('네 개 이정표 항해 기록을 모두 완성했습니다.'),900);
+        if(!newest)return;ui.radarProgress.textContent=`${visitedLandmarks.size} / ${spaceLandmarks.length}`;if(!selectedKey)renderPanel();showToast(`항해 기록: ${newest.name} 도착 · 이정표 ${visitedLandmarks.size}/${spaceLandmarks.length}`);if(visitedLandmarks.size===spaceLandmarks.length)setTimeout(()=>showToast('모든 이정표 항해 기록을 완성했습니다.'),900);
       }
 
       function updateRadar(){
