@@ -10,7 +10,7 @@ export async function POST(request: Request, { params }: Context) {
     if (!code) return noStore({ error: '수업 코드를 확인해 주세요.' }, { status: 400 });
     const parsed: unknown = await request.json().catch(() => ({}));
     const body = parsed && typeof parsed === 'object' && !Array.isArray(parsed) ? parsed as Record<string, unknown> : {};
-    const result = await requestStarEscapeHint(code, request.headers.get('x-player-id') || '', request.headers.get('x-player-key') || '', body.stage);
+    const result = await requestStarEscapeHint(code, request.headers.get('x-player-id') || '', request.headers.get('x-player-key') || '', body.stage, body.question);
     if (result.status === 'unauthorized') return noStore({ error: '입장 정보를 확인해 주세요.' }, { status: 401 });
     if (result.status === 'invalid') return noStore({ error: '현재 단계를 확인해 주세요.' }, { status: 400 });
     if (result.status === 'stale') return noStore({ error: '다른 대원이 이미 다음 단계로 이동했습니다.' }, { status: 409 });
