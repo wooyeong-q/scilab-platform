@@ -371,8 +371,9 @@ export async function controlStarEscapeSession(code: string, teacherKey: string,
   const action = String(input.action || '');
   if (action === 'start') {
     const rows = await db`UPDATE star_escape_sessions SET started_at=COALESCE(started_at, NOW()) WHERE id=${sessionId} RETURNING started_at`;
-    await db`UPDATE star_escape_team_progress SET stage_started_at=COALESCE(stage_started_at, ${String(rows[0]?.started_at || new Date().toISOString())}), updated_at=NOW() WHERE session_id=${sessionId}`;
-    return { status: 'started' as const, startedAt: new Date(String(rows[0].started_at)).toISOString() };
+    const startedAt = new Date(String(rows[0]?.started_at || new Date().toISOString())).toISOString();
+    await db`UPDATE star_escape_team_progress SET stage_started_at=COALESCE(stage_started_at, ${startedAt}), updated_at=NOW() WHERE session_id=${sessionId}`;
+    return { status: 'started' as const, startedAt };
   }
   if (action === 'hint') {
     const message = String(input.message || '').trim().slice(0, 200);
