@@ -7,6 +7,7 @@ let initialized = false;
 
 const EARTHQUAKE_VOLCANO_APP_URL = 'https://scilab-platform.vercel.app/labs/earthquake-volcano/index.html';
 const GALAXY_VOYAGE_APP_URL = 'https://scilab-platform.vercel.app/labs/galaxy-voyage/index.html';
+const MILKY_WAY_OBJECTS_APP_URL = 'https://scilab-platform.vercel.app/labs/galaxy-voyage/index.html?experience=milky-way-objects';
 
 export type Submission = {
   id:string; title:string; author:string; url:string; category:string; grade:string; summary:string; tags:string[];
@@ -66,6 +67,9 @@ export async function ensureDatabase(){
     await sql`INSERT INTO programs (id,title,summary,description,category,grade,tags,icon,url,author,featured,duration,format,standard,source_url)
       VALUES ('galaxy-voyage','은하 항해일지','먼 별빛 신호를 추적해 실제 은하를 발견하고 태양계와 지구 위치까지 관찰합니다.','마우스·키보드 또는 손가락으로 3차원 우주를 움직여 먼 별빛 신호에 접근합니다. 가까워지면 NASA/Hubble 실제 은하 이미지와 이름이 해금되며, 우리은하에서는 태양계와 지구의 위치를 확대 관찰할 수 있습니다. 은하의 전체 모양을 스캔한 뒤 여러 표본을 나선 은하·타원 은하·불규칙 은하로 분류하는 탐사형 학습 프로그램입니다.','별과 우주','중학교 2학년','["은하","3D 탐사","태양계","지구 위치","은하 분류"]'::jsonb,'🚀',${GALAXY_VOYAGE_APP_URL},'SciLab',TRUE,'20~25분','웹 시뮬레이션','은하의 모양과 특징을 관찰하고 나선 은하, 타원 은하, 불규칙 은하로 구분할 수 있다.','https://github.com/wooyeong-q/scilab-platform/tree/main/public/labs/galaxy-voyage')
       ON CONFLICT(id) DO NOTHING`;
+    await sql`INSERT INTO programs (id,title,summary,description,category,grade,tags,icon,url,author,featured,duration,format,standard,source_url)
+      VALUES ('milky-way-objects','우리은하 천체 탐사','우리은하의 실제 성운과 성단을 찾아 관측하고 다섯 종류로 분류합니다.','마우스·키보드 또는 모바일 터치 조이스틱으로 3차원 우주를 자유롭게 탐사합니다. 천체 가까이를 지나가면 실제 관측 사진이 자동으로 관측 목록에 추가되며, 발광 성운·반사 성운·암흑 성운·산개 성단·구상 성단의 특징을 비교해 분류합니다. 수업 코드와 실시간 점수, UFO 이벤트도 사용할 수 있습니다.','별과 우주','중학교 2학년','["우리은하","성운","성단","천체 분류","3D 탐사"]'::jsonb,'🔭',${MILKY_WAY_OBJECTS_APP_URL},'SciLab',TRUE,'20~25분','웹 시뮬레이션','우리은하에 있는 다양한 천체를 관찰하고 발광 성운, 반사 성운, 암흑 성운, 산개 성단, 구상 성단으로 분류할 수 있다.','https://github.com/wooyeong-q/scilab-platform/tree/main/public/labs/galaxy-voyage')
+      ON CONFLICT(id) DO UPDATE SET title=EXCLUDED.title,summary=EXCLUDED.summary,description=EXCLUDED.description,category=EXCLUDED.category,grade=EXCLUDED.grade,tags=EXCLUDED.tags,icon=EXCLUDED.icon,url=EXCLUDED.url,author=EXCLUDED.author,featured=EXCLUDED.featured,duration=EXCLUDED.duration,format=EXCLUDED.format,standard=EXCLUDED.standard,source_url=EXCLUDED.source_url,updated_at=NOW()`;
   }
   await sql`UPDATE programs SET url=${EARTHQUAKE_VOLCANO_APP_URL}, updated_at=NOW() WHERE id='gas-learning-app' AND url<>${EARTHQUAKE_VOLCANO_APP_URL}`;
   initialized=true;
