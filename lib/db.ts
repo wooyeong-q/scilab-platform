@@ -8,6 +8,7 @@ let initialized = false;
 const EARTHQUAKE_VOLCANO_APP_URL = 'https://scilab-platform.vercel.app/labs/earthquake-volcano/index.html';
 const GALAXY_VOYAGE_APP_URL = 'https://scilab-platform.vercel.app/labs/galaxy-voyage/index.html';
 const MILKY_WAY_OBJECTS_APP_URL = 'https://scilab-platform.vercel.app/labs/galaxy-voyage/index.html?experience=milky-way-objects';
+const STAR_ESCAPE_APP_URL = 'https://scilab-platform.vercel.app/labs/star-escape/index.html';
 
 export type Submission = {
   id:string; title:string; author:string; url:string; category:string; grade:string; summary:string; tags:string[];
@@ -69,6 +70,9 @@ export async function ensureDatabase(){
       ON CONFLICT(id) DO NOTHING`;
     await sql`INSERT INTO programs (id,title,summary,description,category,grade,tags,icon,url,author,featured,duration,format,standard,source_url)
       VALUES ('milky-way-objects','우리은하 천체 탐사','우리은하의 실제 성운과 성단을 찾아 관측하고 다섯 종류로 분류합니다.','마우스·키보드 또는 모바일 터치 조이스틱으로 3차원 우주를 자유롭게 탐사합니다. 천체 가까이를 지나가면 실제 관측 사진이 자동으로 관측 목록에 추가되며, 발광 성운·반사 성운·암흑 성운·산개 성단·구상 성단의 특징을 비교해 분류합니다. 수업 코드와 실시간 점수, UFO 이벤트도 사용할 수 있습니다.','별과 우주','중학교 2학년','["우리은하","성운","성단","천체 분류","3D 탐사"]'::jsonb,'🔭',${MILKY_WAY_OBJECTS_APP_URL},'SciLab',TRUE,'20~25분','웹 시뮬레이션','우리은하에 있는 다양한 천체를 관찰하고 발광 성운, 반사 성운, 암흑 성운, 산개 성단, 구상 성단으로 분류할 수 있다.','https://github.com/wooyeong-q/scilab-platform/tree/main/public/labs/galaxy-voyage')
+      ON CONFLICT(id) DO UPDATE SET title=EXCLUDED.title,summary=EXCLUDED.summary,description=EXCLUDED.description,category=EXCLUDED.category,grade=EXCLUDED.grade,tags=EXCLUDED.tags,icon=EXCLUDED.icon,url=EXCLUDED.url,author=EXCLUDED.author,featured=EXCLUDED.featured,duration=EXCLUDED.duration,format=EXCLUDED.format,standard=EXCLUDED.standard,source_url=EXCLUDED.source_url,updated_at=NOW()`;
+    await sql`INSERT INTO programs (id,title,summary,description,category,grade,tags,icon,url,author,featured,duration,format,standard,source_url)
+      VALUES ('star-escape','우주방위대: 지구 귀환 작전','서로 다른 별과 우리은하 자료를 공유해 고장 난 우주 정거장을 탈출하는 실시간 협력 방탈출입니다.','모둠원 각자가 스마트폰·태블릿·PC로 접속해 서로 다른 보안 자료를 확인합니다. 별의 색과 표면 온도, 밝기와 등급, 우리은하의 모양과 구성, 지구의 우주적 위치를 비교해 4단계 암호를 해결합니다. 제한시간 30분, 실시간 순위표, 모둠 힌트, 교사용 문제별 정답률·평균 소요시간·관제 힌트 기능을 제공합니다.','별과 우주','중학교 2학년','["별의 특징","우리은하","협력 학습","방탈출","실시간 수업"]'::jsonb,'🛡️',${STAR_ESCAPE_APP_URL},'SciLab',TRUE,'20~30분','협력형 방탈출','별의 색·표면 온도·밝기 등 여러 특징을 설명하고 우리은하의 모양과 구성 및 태양계의 위치를 이해할 수 있다.','https://github.com/wooyeong-q/scilab-platform/tree/main/public/labs/star-escape')
       ON CONFLICT(id) DO UPDATE SET title=EXCLUDED.title,summary=EXCLUDED.summary,description=EXCLUDED.description,category=EXCLUDED.category,grade=EXCLUDED.grade,tags=EXCLUDED.tags,icon=EXCLUDED.icon,url=EXCLUDED.url,author=EXCLUDED.author,featured=EXCLUDED.featured,duration=EXCLUDED.duration,format=EXCLUDED.format,standard=EXCLUDED.standard,source_url=EXCLUDED.source_url,updated_at=NOW()`;
   }
   await sql`UPDATE programs SET url=${EARTHQUAKE_VOLCANO_APP_URL}, updated_at=NOW() WHERE id='gas-learning-app' AND url<>${EARTHQUAKE_VOLCANO_APP_URL}`;
