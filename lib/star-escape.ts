@@ -94,6 +94,16 @@ export async function ensureStarEscapeDatabase() {
   if (initialization) return initialization;
   initialization = (async () => {
     const db = database();
+    const schemaRows = await db`SELECT
+      to_regclass('public.star_escape_sessions') IS NOT NULL AS has_sessions,
+      EXISTS (
+        SELECT 1 FROM information_schema.columns
+        WHERE table_schema='public' AND table_name='star_escape_team_progress' AND column_name='question_no'
+      ) AS has_question_progress`;
+    if (schemaRows[0]?.has_sessions && schemaRows[0]?.has_question_progress) {
+      initialized = true;
+      return;
+    }
     await db`CREATE TABLE IF NOT EXISTS star_escape_sessions (
       id TEXT PRIMARY KEY,
       code TEXT NOT NULL UNIQUE,
