@@ -8,9 +8,9 @@ const CODE_ALPHABET = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
 const STAGE_QUESTION_COUNTS = [3, 3, 4, 3] as const;
 const QUESTIONS = [
   [
-    { answer: 'BLUE', label: '동력핵 색 선택', hint: '표면 온도가 가장 높은 별은 푸른색으로 보입니다.' },
-    { answer: 'OBAFGKM', label: '별의 온도 순서', hint: '분광형은 표면 온도가 높은 별부터 O-B-A-F-G-K-M 순서입니다.' },
-    { answer: '7139', label: '대원 자료 조합', hint: '네 대원이 가진 별을 표면 온도가 높은 순서대로 놓고 보안 숫자를 읽으세요.' },
+    { answer: 'A', label: '관측 기록 불일치', hint: '각 기록 번호의 별 색을 먼저 모으세요. 푸른색 A와 흰색 B의 온도 비교가 맞는지 확인해 보세요.' },
+    { answer: 'BWYR', label: '손상된 관측 기록 복원', hint: 'R3은 노란색입니다. R1>R3, R2는 가장 뜨겁지 않음, R4<R2 조건을 모두 적용하세요.' },
+    { answer: 'C1C4', label: '최종 기록 검증', hint: '온도 정보가 없는 C3은 판단할 수 없습니다. 남은 기록 중 별의 색과 온도 관계가 맞는 두 기록을 찾으세요.' },
   ],
   [
     { answer: 'EMISSION', label: '발광성운 판별', hint: '주변의 뜨거운 별이 기체를 빛나게 하면 발광성운입니다.' },
@@ -99,8 +99,12 @@ export async function ensureStarEscapeDatabase() {
       EXISTS (
         SELECT 1 FROM information_schema.columns
         WHERE table_schema='public' AND table_name='star_escape_team_progress' AND column_name='question_no'
-      ) AS has_question_progress`;
-    if (schemaRows[0]?.has_sessions && schemaRows[0]?.has_question_progress) {
+      ) AS has_question_progress,
+      EXISTS (
+        SELECT 1 FROM information_schema.columns
+        WHERE table_schema='public' AND table_name='star_escape_team_progress' AND column_name='last_action_status'
+      ) AS has_action_progress`;
+    if (schemaRows[0]?.has_sessions && schemaRows[0]?.has_question_progress && schemaRows[0]?.has_action_progress) {
       initialized = true;
       return;
     }
@@ -135,6 +139,9 @@ export async function ensureStarEscapeDatabase() {
       question_started_at TIMESTAMPTZ,
       penalty_seconds INTEGER NOT NULL DEFAULT 0 CHECK (penalty_seconds >= 0),
       hint_count INTEGER NOT NULL DEFAULT 0 CHECK (hint_count >= 0),
+      last_submitter TEXT,
+      last_action_status TEXT,
+      last_action_at TIMESTAMPTZ,
       completed_at TIMESTAMPTZ,
       updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
       PRIMARY KEY(session_id, team_name)
@@ -164,6 +171,9 @@ export async function ensureStarEscapeDatabase() {
     )`;
     await db`ALTER TABLE star_escape_team_progress ADD COLUMN IF NOT EXISTS question_no INTEGER NOT NULL DEFAULT 1`;
     await db`ALTER TABLE star_escape_team_progress ADD COLUMN IF NOT EXISTS question_started_at TIMESTAMPTZ`;
+    await db`ALTER TABLE star_escape_team_progress ADD COLUMN IF NOT EXISTS last_submitter TEXT`;
+    await db`ALTER TABLE star_escape_team_progress ADD COLUMN IF NOT EXISTS last_action_status TEXT`;
+    await db`ALTER TABLE star_escape_team_progress ADD COLUMN IF NOT EXISTS last_action_at TIMESTAMPTZ`;
     await db`ALTER TABLE star_escape_attempts ADD COLUMN IF NOT EXISTS question_no INTEGER NOT NULL DEFAULT 1`;
     await db`ALTER TABLE star_escape_hints ADD COLUMN IF NOT EXISTS question_no INTEGER NOT NULL DEFAULT 1`;
     await db`CREATE INDEX IF NOT EXISTS star_escape_sessions_expires_idx ON star_escape_sessions(expires_at)`;
@@ -294,6 +304,9 @@ export async function getStarEscapeState(code: string, playerId: string, playerK
       hintCount: Number(progress.hint_count || 0),
       penaltySeconds: penalty,
       remainingSeconds: Math.max(0, session.durationSeconds - elapsed - penalty),
+      lastSubmitter: progress.last_submitter ? String(progress.last_submitter) : null,
+      lastActionStatus: progress.last_action_status ? String(progress.last_action_status) : null,
+      lastActionAt: progress.last_action_at ? new Date(String(progress.last_action_at)).toISOString() : null,
     },
     members: memberRows.map((row) => ({ id: String(row.id), nickname: String(row.nickname), role: Number(row.role_no), online: Date.now() - new Date(String(row.last_seen_at)).getTime() < 15000 })),
     leaderboard: leaderboardFromRows(leaderboardRows as Record<string, unknown>[]),
@@ -331,17 +344,36 @@ export async function submitStarEscapeAnswer(code: string, playerId: string, pla
   const elapsedMs = Math.max(0, Math.min(3600000, Date.now() - questionStartedAt));
   await db`INSERT INTO star_escape_attempts (id, session_id, team_name, player_id, stage, question_no, answer, is_correct, elapsed_ms)
     VALUES (${randomUUID()}, ${sessionId}, ${team}, ${playerId}, ${stage}, ${question}, ${answer}, ${correct}, ${elapsedMs})`;
-  if (!correct) return { status: 'wrong' as const };
+  if (!correct) {
+    const actionRows = await db`UPDATE star_escape_team_progress SET
+        last_submitter=${String(player.nickname)}, last_action_status='wrong', last_action_at=NOW(), updated_at=NOW()
+      WHERE session_id=${sessionId} AND team_name=${team} AND stage=${stage} AND question_no=${question}
+      RETURNING last_action_at`;
+    return {
+      status: 'wrong' as const,
+      submitter: String(player.nickname),
+      actionAt: actionRows[0]?.last_action_at ? new Date(String(actionRows[0].last_action_at)).toISOString() : null,
+    };
+  }
   const lastQuestion = question === STAGE_QUESTION_COUNTS[stage - 1];
   const nextStage = lastQuestion ? stage + 1 : stage;
   const nextQuestion = lastQuestion ? 1 : question + 1;
   const updated = await db`UPDATE star_escape_team_progress SET stage=${nextStage}, question_no=${nextQuestion},
       stage_started_at=CASE WHEN ${lastQuestion} THEN NOW() ELSE stage_started_at END,
-      question_started_at=NOW(), completed_at=CASE WHEN ${nextStage}=5 THEN NOW() ELSE completed_at END, updated_at=NOW()
+      question_started_at=NOW(), completed_at=CASE WHEN ${nextStage}=5 THEN NOW() ELSE completed_at END,
+      last_submitter=${String(player.nickname)}, last_action_status='correct', last_action_at=NOW(), updated_at=NOW()
     WHERE session_id=${sessionId} AND team_name=${team} AND stage=${stage} AND question_no=${question}
-    RETURNING stage, question_no, completed_at`;
+    RETURNING stage, question_no, completed_at, last_action_at`;
   return updated[0]
-    ? { status: 'correct' as const, stage: nextStage, question: nextQuestion, sceneCompleted: lastQuestion, completed: nextStage === 5 }
+    ? {
+        status: 'correct' as const,
+        stage: nextStage,
+        question: nextQuestion,
+        sceneCompleted: lastQuestion,
+        completed: nextStage === 5,
+        submitter: String(player.nickname),
+        actionAt: new Date(String(updated[0].last_action_at)).toISOString(),
+      }
     : { status: 'stale' as const };
 }
 
