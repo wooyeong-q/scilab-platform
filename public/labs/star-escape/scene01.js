@@ -82,6 +82,13 @@
     3: { id: 'navigation', title: '항법장치 안전 검증', length: 2, label: '2자리 검증 암호' },
   };
 
+  var verificationRecords = [
+    { code: '1', label: 'C1', color: '푸른색 별', statement: '네 표본 중 표면 온도가 가장 높다.', image: 'stars/star_observation_blue.webp' },
+    { code: '2', label: 'C2', color: '붉은색 별', statement: 'C1보다 표면 온도가 높다.', image: 'stars/star_observation_red.webp' },
+    { code: '3', label: 'C3', color: '노란색 별', statement: '[대상 기록 손상]보다 표면 온도가 높다.', image: 'stars/star_observation_yellow.webp' },
+    { code: '4', label: 'C4', color: '흰색 별', statement: '노란색 별 C3보다 표면 온도가 높다.', image: 'stars/star_observation_white.webp' },
+  ];
+
   function esc(value) {
     return String(value == null ? '' : value).replace(/[&<>"']/g, function (char) {
       return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[char];
@@ -295,15 +302,28 @@
 
   function puzzleMarkup(question) {
     var lock = locks[question];
-    return '<section class="s1-puzzle"><header class="s1-puzzle-head"><div><small>SCENE 01 · LOCK ' + question + '/3</small><h2>' + lock.title + '</h2></div><button class="s1-close" id="s1PuzzleClose" aria-label="닫기">×</button></header>' +
+    return '<section class="s1-puzzle"><header class="s1-puzzle-head"><div><small>SCENE 01 · LOCK ' + question + '/3</small><h2>' + lock.title + '</h2></div>' + (question === 3 ? '' : '<button class="s1-close" id="s1PuzzleClose" aria-label="닫기">×</button>') + '</header>' +
       '<div class="s1-puzzle-body">' + activityMarkup(question) + '<div class="s1-hintbox" id="hintbox"></div></div>' +
-      '<footer class="s1-footer"><p class="s1-feedback" id="feedback" aria-live="polite"></p><button class="secondary" id="hintBtn">힌트 · ' + Math.min(context.state.progress.hintCount, 3) + '/3 무료</button><button class="primary" id="s1Submit">' + (question === 2 ? '연결 확인' : '입력') + '</button></footer></section>';
+      '<footer class="s1-footer"><p class="s1-feedback" id="feedback" aria-live="polite"></p><button class="secondary" id="hintBtn">힌트 · ' + Math.min(context.state.progress.hintCount, 3) + '/3 무료</button><button class="primary" id="s1Submit">' + (question === 2 ? '연결 확인' : question === 3 ? '검증 완료' : '입력') + '</button></footer></section>';
   }
 
   function activityMarkup(question) {
     if (question === 2) return wireActivityMarkup();
+    if (question === 3) return verificationActivityMarkup();
     var lock = locks[question];
     return '<div class="s1-lock-panel"><p>비밀번호를 입력하시오.</p><input class="s1-code-input" id="s1CodeInput" type="text" inputmode="numeric" pattern="[0-9]*" autocomplete="off" maxlength="' + lock.length + '" value="' + esc(codeValue) + '" placeholder="' + Array(lock.length + 1).join('•') + '" aria-label="비밀번호 입력"></div>';
+  }
+
+  function verificationActivityMarkup() {
+    var selected = codeValue.split('');
+    var records = verificationRecords.map(function (record) {
+      var active = selected.indexOf(record.code) >= 0;
+      return '<button type="button" class="s1-record ' + (active ? 'selected' : '') + '" data-record-code="' + record.code + '" aria-pressed="' + active + '">' +
+        '<span class="s1-record-image"><img src="' + image(record.image) + '" alt="' + esc(record.color) + '"></span>' +
+        '<span class="s1-record-copy"><strong>' + record.label + '</strong><b>' + esc(record.color) + '</b><span>“' + esc(record.statement) + '”</span></span>' +
+        '<i>' + (active ? '선택됨' : '선택') + '</i></button>';
+    }).join('');
+    return '<div class="s1-verification-panel"><div class="s1-verification-guide"><small>FINAL RECORD CHECK</small><b>참이라고 확인할 수 있는 기록 두 개를 선택하세요.</b><p>별의 표면 온도는 <em>푸른색 → 흰색 → 노란색 → 붉은색</em> 순으로 낮아집니다. 자료가 부족한 기록은 참으로 확정할 수 없습니다.</p></div><div class="s1-records">' + records + '</div><p class="s1-selection-count">선택한 기록 <b>' + selected.length + ' / 2</b></p></div>';
   }
 
   function wireActivityMarkup() {
@@ -513,8 +533,7 @@
 
   function bindPuzzle(question) {
     var close = document.getElementById('s1PuzzleClose');
-    if (!close) return;
-    close.addEventListener('click', function () { puzzleOpen = false; draw(); });
+    if (close) close.addEventListener('click', function () { puzzleOpen = false; draw(); });
     if (question === 2) {
       requestAnimationFrame(updateWirePaths);
       document.querySelectorAll('.s1-wire-node.color img').forEach(function (star) {
@@ -529,6 +548,23 @@
     if (input) input.addEventListener('input', function () {
       codeValue = input.value.replace(/\D/g, '').slice(0, locks[question].length);
       input.value = codeValue;
+    });
+    document.querySelectorAll('[data-record-code]').forEach(function (button) {
+      button.addEventListener('click', function () {
+        var code = button.dataset.recordCode;
+        var selected = codeValue.split('').filter(Boolean);
+        var index = selected.indexOf(code);
+        if (index >= 0) selected.splice(index, 1);
+        else if (selected.length < 2) selected.push(code);
+        else {
+          var feedback = document.getElementById('feedback');
+          feedback.textContent = '기록은 두 개까지만 선택할 수 있습니다. 선택한 기록을 한 번 더 누르면 해제됩니다.';
+          feedback.className = 's1-feedback bad';
+          return;
+        }
+        codeValue = selected.sort().join('');
+        draw();
+      });
     });
     document.querySelectorAll('[data-wire-role]').forEach(function (button) {
       button.addEventListener('click', function () {
@@ -596,9 +632,9 @@
       codeValue = '';
       activeWire = 'R1';
       wireMapping = {};
-      nextGuideOpen = Number(options.state.progress.question || 1) === 3 && !nextGuideSeen;
+      nextGuideOpen = false;
       inspect = null;
-      puzzleOpen = false;
+      puzzleOpen = Number(options.state.progress.question || 1) === 3;
       lastQuestion = 0;
     }
     var question = currentQuestion();
@@ -608,9 +644,10 @@
       codeValue = '';
       activeWire = question === 2 ? 'R1' : null;
       wireMapping = {};
-      nextGuideOpen = question === 3 && !nextGuideSeen;
+      nextGuideOpen = false;
       banner = question === 2 ? '비상 전력 복구 완료 · 관측 수납함 전자 잠금 활성화' : '수납함 개방 완료 · 검증 기록 4개 전송';
     }
+    if (question === 3) puzzleOpen = true;
     lastQuestion = question;
     draw();
   }
