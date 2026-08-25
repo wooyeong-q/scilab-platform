@@ -88,7 +88,7 @@
   }
 
   function storageKey(suffix) {
-    return 'scilab-star-escape-scene01-v3:' + identity + ':' + suffix;
+    return 'scilab-star-escape-scene01-v4:' + identity + ':' + suffix;
   }
 
   function restoreLocal() {
@@ -222,8 +222,57 @@
     return '<section class="s1-inspect ' + (inspect.clue ? 'clue' : '') + '">' +
       '<img src="' + image(inspect.image) + '" alt="">' +
       '<div><small>' + (inspect.clue ? (inspect.revealed ? '대원 ' + inspect.role + ' 전용 단서' : '이상한 흔적 발견') : 'INVESTIGATION') + '</small><b>' + esc(inspect.name) + '</b><p>' + esc(inspect.text) + '</p>' +
-      (inspect.clue && !inspect.revealed ? '<button class="s1-inspect-action" id="inspectReveal">' + esc(inspect.action || '자세히 보기') + '</button>' : '') + '</div>' +
+      (inspect.clue && !inspect.revealed ? inspectTaskMarkup() : '') + '</div>' +
       '<button id="inspectClose" aria-label="닫기">×</button></section>';
+  }
+
+  function inspectTaskType(action) {
+    if (/불러오기/.test(action)) return 'hold';
+    if (/펼치/.test(action)) return 'unfold';
+    if (/확대/.test(action)) return 'zoom';
+    if (/노이즈|신호|복원/.test(action)) return 'tune';
+    return 'wipe';
+  }
+
+  function inspectTaskMarkup() {
+    var type = inspectTaskType(inspect.action || '');
+    if (type === 'wipe') {
+      return '<div class="s1-direct-task wipe" id="inspectWipe" role="application" aria-label="' + esc(inspect.action) + '"><span class="s1-task-mask" id="inspectTaskVisual"></span><span class="s1-task-copy">손가락이나 마우스로 문질러 주세요 <b id="inspectTaskValue">0%</b></span></div>';
+    }
+    if (type === 'hold') {
+      return '<button class="s1-direct-task hold" id="inspectHold"><span class="s1-hold-ring" id="inspectTaskVisual"></span><span><b>길게 눌러 로그 불러오기</b><small>손을 떼지 말고 기다리세요 · <em id="inspectTaskValue">0%</em></small></span></button>';
+    }
+    var instructions = type === 'unfold' ? '오른쪽으로 밀어 종이를 펼치세요' : type === 'zoom' ? '오른쪽으로 밀어 화면을 확대하세요' : '오른쪽으로 밀어 신호를 선명하게 하세요';
+    return '<div class="s1-direct-task slider ' + type + '"><span class="s1-task-symbol" id="inspectTaskVisual"></span><label><b>' + instructions + '</b><input id="inspectSlider" type="range" min="0" max="100" value="0" aria-label="' + esc(inspect.action) + '"></label><output id="inspectTaskValue">0%</output></div>';
+  }
+
+  function updateInspectTask(value) {
+    var progress = Math.max(0, Math.min(100, Math.round(value)));
+    var visual = document.getElementById('inspectTaskVisual');
+    var output = document.getElementById('inspectTaskValue');
+    if (visual) {
+      visual.style.setProperty('--progress', progress);
+      if (visual.classList.contains('s1-task-mask')) visual.style.opacity = String(1 - progress / 100);
+      if (visual.classList.contains('s1-task-symbol')) {
+        var task = visual.closest('.s1-direct-task');
+        if (task && task.classList.contains('zoom')) visual.style.transform = 'scale(' + (1 + progress * 0.003) + ')';
+        if (task && task.classList.contains('unfold')) visual.style.transform = 'skewX(' + ((100 - progress) * -0.08) + 'deg)';
+        if (task && task.classList.contains('tune')) visual.style.filter = 'blur(' + ((100 - progress) * 0.015) + 'px)';
+      }
+      if (visual.classList.contains('s1-hold-ring')) visual.style.background = 'conic-gradient(var(--cyan) ' + progress + '%, #263453 0)';
+    }
+    if (output) output.textContent = progress + '%';
+    return progress;
+  }
+
+  function completeInspectTask() {
+    if (!inspect || !inspect.clue || inspect.revealed) return;
+    visited.add(inspect.key);
+    saveVisited();
+    inspect.revealed = true;
+    inspect.text = inspect.detail;
+    inspect.image = inspect.detailImage;
+    draw();
   }
 
   function nextGuideMarkup() {
@@ -299,15 +348,72 @@
       try { localStorage.setItem(storageKey('q3-guide'), 'seen'); } catch (_error) {}
       draw();
     });
-    var inspectReveal = document.getElementById('inspectReveal');
-    if (inspectReveal) inspectReveal.addEventListener('click', function () {
-      visited.add(inspect.key);
-      saveVisited();
-      inspect.revealed = true;
-      inspect.text = inspect.detail;
-      inspect.image = inspect.detailImage;
-      draw();
+    bindInspectTask();
+  }
+
+  function bindInspectTask() {
+    var wipe = document.getElementById('inspectWipe');
+    if (wipe) {
+      var wiping = false;
+      var wipeProgress = 0;
+      var lastX = 0;
+      var lastY = 0;
+      wipe.addEventListener('pointerdown', function (event) {
+        wiping = true;
+        lastX = event.clientX;
+        lastY = event.clientY;
+        wipe.setPointerCapture(event.pointerId);
+        event.preventDefault();
+      });
+      wipe.addEventListener('pointermove', function (event) {
+        if (!wiping) return;
+        var distance = Math.hypot(event.clientX - lastX, event.clientY - lastY);
+        lastX = event.clientX;
+        lastY = event.clientY;
+        wipeProgress = updateInspectTask(wipeProgress + distance * 0.85);
+        if (wipeProgress >= 100) completeInspectTask();
+        event.preventDefault();
+      });
+      wipe.addEventListener('pointerup', function () { wiping = false; });
+      wipe.addEventListener('pointercancel', function () { wiping = false; });
+    }
+    var slider = document.getElementById('inspectSlider');
+    if (slider) slider.addEventListener('input', function () {
+      var progress = updateInspectTask(Number(slider.value));
+      if (progress >= 96) completeInspectTask();
     });
+    var hold = document.getElementById('inspectHold');
+    if (hold) {
+      var holdFrame = 0;
+      var holdStarted = 0;
+      var holding = false;
+      function stopHold(reset) {
+        holding = false;
+        if (holdFrame) cancelAnimationFrame(holdFrame);
+        holdFrame = 0;
+        if (reset) updateInspectTask(0);
+      }
+      function advanceHold(time) {
+        if (!holding) return;
+        var progress = updateInspectTask((time - holdStarted) / 12);
+        if (progress >= 100) {
+          stopHold(false);
+          completeInspectTask();
+          return;
+        }
+        holdFrame = requestAnimationFrame(advanceHold);
+      }
+      hold.addEventListener('pointerdown', function (event) {
+        holding = true;
+        holdStarted = performance.now();
+        hold.setPointerCapture(event.pointerId);
+        holdFrame = requestAnimationFrame(advanceHold);
+        event.preventDefault();
+      });
+      hold.addEventListener('pointerup', function () { stopHold(true); });
+      hold.addEventListener('pointercancel', function () { stopHold(true); });
+      hold.addEventListener('contextmenu', function (event) { event.preventDefault(); });
+    }
   }
 
   function bindPuzzle(question) {
