@@ -84,7 +84,7 @@
   }
 
   function storageKey(suffix) {
-    return 'scilab-star-escape-scene01-v2:' + identity + ':' + suffix;
+    return 'scilab-star-escape-scene01-v3:' + identity + ':' + suffix;
   }
 
   function restoreLocal() {
