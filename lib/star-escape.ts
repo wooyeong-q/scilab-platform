@@ -8,9 +8,9 @@ const CODE_ALPHABET = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
 const STAGE_QUESTION_COUNTS = [3, 3, 4, 3] as const;
 const QUESTIONS = [
   [
-    { answer: 'A', label: '관측 기록 불일치', hint: '각 기록 번호의 별 색을 먼저 모으세요. 푸른색 A와 흰색 B의 온도 비교가 맞는지 확인해 보세요.' },
-    { answer: 'BWYR', label: '손상된 관측 기록 복원', hint: 'R3은 노란색입니다. R1>R3, R2는 가장 뜨겁지 않음, R4<R2 조건을 모두 적용하세요.' },
-    { answer: 'C1C4', label: '최종 기록 검증', hint: '온도 정보가 없는 C3은 판단할 수 없습니다. 남은 기록 중 별의 색과 온도 관계가 맞는 두 기록을 찾으세요.' },
+    { answer: '7139', label: '비상 전력 암호', hint: '각 대원의 별 색과 숫자를 모은 뒤, 별의 표면 온도가 높은 순서대로 숫자를 배열하세요.' },
+    { answer: '4826', label: '관측 수납함 암호', hint: 'R3은 노란색입니다. 네 조건으로 R1~R4의 색을 정한 뒤, 통신기에 적힌 색별 숫자로 바꾸세요.' },
+    { answer: '14', label: '항법장치 검증 암호', hint: '자료가 부족한 기록은 틀린 기록과 다릅니다. 과학적으로 참이라고 확인되는 기록 번호 두 개를 고르세요.' },
   ],
   [
     { answer: 'EMISSION', label: '발광성운 판별', hint: '주변의 뜨거운 별이 기체를 빛나게 하면 발광성운입니다.' },
