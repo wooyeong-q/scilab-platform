@@ -137,6 +137,12 @@
 @media(max-height:560px) and (orientation:landscape){.s1-next-guide-card{padding:11px}.s1-next-guide-card h2{margin:3px 0;font-size:16px}.s1-next-guide-card>p{font-size:8px}.s1-next-guide-card ol{margin:7px 0}.s1-next-guide-card li{padding:5px}.s1-next-guide-card li>b{width:22px;height:22px;font-size:10px}.s1-next-guide-card li>span{font-size:7px}.s1-next-guide-card>button{min-height:34px}}
 @media(max-height:560px) and (orientation:landscape){.s1-direct-task.wipe{height:31px}.s1-direct-task.slider,.s1-inspect .s1-direct-task.hold{min-height:32px;margin-top:4px;padding:2px 5px}.s1-task-symbol,.s1-hold-ring{width:24px;height:24px}.s1-hold-ring::after{width:17px;height:17px}.s1-direct-task.slider{grid-template-columns:25px 1fr 29px}.s1-inspect .s1-direct-task.hold{grid-template-columns:25px 1fr 29px}.s1-task-copy,.s1-task-copy b,.s1-direct-task.slider label>b,.s1-direct-task.hold span:nth-child(2) b{font-size:7px}}
 
+/* Mobile Safari leaves a short, very wide game viewport below its browser chrome. */
+@media(orientation:landscape) and (max-height:700px){
+  .s1-shell{place-items:stretch}
+  .s1-room{width:100%;height:100%;max-height:none;aspect-ratio:auto}
+}
+
 /* Large observation targets and non-linear cable layout */
 @media(max-width:900px){
   .s1-wire-board{min-height:320px;grid-template-columns:minmax(82px,100px) minmax(46px,.55fr) minmax(300px,1.8fr);gap:8px;padding:7px}
