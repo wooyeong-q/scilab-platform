@@ -57,22 +57,22 @@
 
   var roleClues = {
     1: [
-      { id: 'window', title: '관측창 하단 센서', intro: '관측창 아래쪽에 성에와 먼지로 덮인 소형 센서가 붙어 있다. 희미한 표시등이 아직 깜빡인다.', action: '센서 표면 닦기', text: '센서 표면을 닦아 내자 푸른빛 별 사진과 함께 ‘관측 표본 A’가 나타난다. 아래에는 ‘복구 숫자 7’이 희미하게 새겨져 있다.', image: 'stars/star_observation_blue.webp' },
-      { id: 'monitor', title: '관측 모니터의 잔상', intro: '꺼진 줄 알았던 모니터 한쪽에 희미한 별 영상이 반복해서 번쩍인다. 화면을 확대하면 기록을 읽을 수 있을 것 같다.', action: '영상 확대하기', text: '영상을 확대하자 흰빛 별 옆에 ‘관측 표본 B’가 표시된다. 손상되지 않은 하단 기록에는 ‘복구 숫자 1’이라고 적혀 있다.', image: 'stars/star_observation_white.webp' },
-      { id: 'torn', title: '바닥에 떨어진 관측 기록지', intro: '바닥의 포장지 아래에서 반쯤 찢어진 관측 기록지가 보인다. 접힌 부분 안쪽에 글씨가 남아 있다.', action: '종이 펼쳐보기', text: '종이를 조심스럽게 펼치자 노란빛 별 사진과 ‘관측 표본 C’가 드러난다. 마지막 줄에는 ‘복구 숫자 3’이 적혀 있다.', image: 'stars/star_observation_yellow.webp' },
-      { id: 'warning', title: '경고등 보조 센서', intro: '붉은 경고등 아래의 작은 센서가 그을음에 덮여 있다. 표면에 긁힌 글자가 보이지만 바로 읽히지 않는다.', action: '그을음 닦아내기', text: '그을음을 닦고 자세히 보니 붉은빛 별 사진 옆에 ‘관측 표본 D’가 표시된다. 모서리에는 ‘복구 숫자 9’가 새겨져 있다.', image: 'stars/star_observation_red.webp' },
+      { id: 'window', mode: 'instant', title: '관측창 하단 자동 센서', intro: '', action: '', text: '센서가 대원 카드를 인식하자 푸른빛 별 사진과 ‘관측 표본 A’가 자동으로 열린다. 하단 복구 숫자는 7이다.', image: 'stars/star_observation_blue.webp' },
+      { id: 'monitor', mode: 'zoom', title: '관측 모니터의 잔상', intro: '꺼진 줄 알았던 모니터 한쪽에 희미한 별 영상이 반복해서 번쩍인다. 화면을 확대하면 기록을 읽을 수 있을 것 같다.', action: '영상 확대하기', text: '영상을 확대하자 흰빛 별 옆에 ‘관측 표본 B’가 표시된다. 손상되지 않은 하단 기록에는 ‘복구 숫자 1’이라고 적혀 있다.', image: 'stars/star_observation_white.webp' },
+      { id: 'tools', mode: 'press', title: '정비 도구함의 점검 카드', intro: '렌치 아래에 노란색 관측 카드가 끼워져 있다. 고정 클립을 누르면 카드를 꺼낼 수 있다.', action: '고정 클립 열기', text: '카드를 꺼내자 노란빛 별 사진과 ‘관측 표본 C’가 나타난다. 마지막 줄의 복구 숫자는 3이다.', image: 'stars/star_observation_yellow.webp' },
+      { id: 'warning', mode: 'hold', title: '경고등 점멸 기록', intro: '붉은 경고등 옆의 보조 기록기가 짧은 신호를 반복하고 있다. 신호를 끝까지 수신해야 기록이 열린다.', action: '점멸 신호 수신', text: '신호 수신이 끝나자 붉은빛 별 사진과 ‘관측 표본 D’가 표시된다. 모서리에 복구 숫자 9가 선명하게 나타난다.', image: 'stars/star_observation_red.webp' },
     ],
     2: [
-      { id: 'torn', title: '찢어진 메모 조각', intro: '찢어진 기록지 뒷면에 연필로 급하게 쓴 문장이 있다. 종이가 접혀 있어 끝부분이 보이지 않는다.', action: '접힌 부분 펼치기', text: '접힌 부분을 펴자 “R1의 별은 R3의 별보다 표면 온도가 높다.”라는 문장이 온전히 드러난다.', image: 'memos/memo_fragment_01.webp' },
-      { id: 'terminal', title: '복구 단말의 임시 기록', intro: '복구된 단말 구석에 삭제되지 않은 임시 기록 하나가 남아 있다. 글자가 심하게 깨져 있다.', action: '깨진 문장 복원', text: '깨진 문장을 복원하자 “R2는 네 별 중 표면 온도가 가장 높은 별이 아니다.”라고 표시된다.', image: 'memos/memo_fragment_02.webp' },
-      { id: 'monitor', title: '손상된 R3 관측 화면', intro: '관측 모니터의 R3 화면만 색상 정보가 흐릿하다. 노이즈를 줄이면 원래 색을 확인할 수 있을 것 같다.', action: '화면 노이즈 제거', text: '노이즈를 제거하자 R3 화면이 노란빛으로 선명해진다. 하단에는 “R3에서 관측한 별은 노란색”이라고 적혀 있다.', image: 'memos/memo_fragment_03.webp' },
-      { id: 'window', title: '관측창 프레임의 낙서', intro: '관측창 프레임 안쪽에 손가락으로 긁어 쓴 듯한 짧은 기록이 있다. 먼지 때문에 일부만 보인다.', action: '먼지 닦아내기', text: '먼지를 닦자 “R4의 별은 R2의 별보다 표면 온도가 낮다.”라는 문장이 나타난다.', image: 'memos/memo_fragment_04.webp' },
+      { id: 'door', mode: 'press', title: '중앙 통로의 자석 태그', intro: '잠긴 중앙 통로 옆에 작은 자석 태그가 거꾸로 붙어 있다. 앞면에는 아무것도 없지만 뒤쪽에 기록이 있는 듯하다.', action: '자석 태그 뒤집기', text: '태그를 뒤집자 “R1의 별은 R3의 별보다 표면 온도가 높다.”라는 문장이 나타난다.', image: 'memos/memo_fragment_01.webp' },
+      { id: 'terminal', mode: 'instant', title: '복구 단말의 자동 백업', intro: '', action: '', text: '복구 단말이 전력을 되찾으며 백업 문장을 자동으로 띄운다. “R2는 네 별 중 표면 온도가 가장 높은 별이 아니다.”', image: 'memos/memo_fragment_02.webp' },
+      { id: 'communicator', mode: 'hold', title: '통신기의 R3 음성 기록', intro: '통신기 수신함에 R3가 남긴 짧은 음성 기록이 있다. 잡음이 많아 끝까지 수신해야 한다.', action: '음성 기록 수신', text: '음성 기록이 재생된다. “R3에서 관측한 별은 노란색이다.”', image: 'memos/memo_fragment_03.webp' },
+      { id: 'trash', mode: 'unfold', title: '우주식량 포장지 안쪽', intro: '구겨진 포장지 안쪽에 누군가 급히 적은 문장이 비친다. 포장지를 펴면 읽을 수 있을 것 같다.', action: '포장지 펼치기', text: '포장지를 펼치자 “R4의 별은 R2의 별보다 표면 온도가 낮다.”라는 문장이 온전히 보인다.', image: 'memos/memo_fragment_04.webp' },
     ],
     3: [
-      { id: 'monitor', title: '관측 모니터 검증 카드 C1', intro: '모니터 안쪽에 C1 검증 카드가 겹쳐 떠 있다. 별 사진 아래의 판정 문장은 확대해야 읽을 수 있다.', action: '검증 카드 확대', text: '확대해 보니 C1은 푸른색 별이며 “네 표본 중 표면 온도가 가장 높다.”라고 기록되어 있다.', image: 'stars/star_observation_blue.webp' },
-      { id: 'terminal', title: '전력 단말 검증 기록 C2', intro: '전력 단말에 항법장치가 전송한 C2 임시 기록이 남아 있다. 화면 일부가 깜빡거린다.', action: '화면 신호 고정', text: '화면을 고정하자 C2는 붉은색 별이며 “C1보다 표면 온도가 높다.”라고 기록되어 있다.', image: 'stars/star_observation_red.webp' },
-      { id: 'torn', title: '찢어진 검증 기록 C3', intro: '찢어진 종이 사이에 C3 검증표가 끼어 있다. 표면 온도 칸이 얼룩으로 가려져 있다.', action: '얼룩 주변 살펴보기', text: '얼룩 주변을 살펴보니 C3은 노란색 별이지만 표면 온도 자료는 지워져 있어 기록의 참·거짓을 판단할 수 없다.', image: 'stars/star_observation_yellow.webp' },
-      { id: 'window', title: '관측창 센서 로그 C4', intro: '관측창 센서에 C4라는 오래된 로그가 남아 있다. 세부 기록을 불러오려면 화면을 더 자세히 봐야 한다.', action: '센서 로그 불러오기', text: '로그를 펼치자 C4는 흰색 별이며 “노란색 별 C3보다 표면 온도가 높다.”라고 기록되어 있다.', image: 'stars/star_observation_white.webp' },
+      { id: 'storage', mode: 'press', title: '열린 수납함의 검증 카드 C1', intro: '방금 열린 수납함 안쪽에 C1 카드가 자석으로 고정되어 있다.', action: 'C1 카드 꺼내기', text: 'C1은 푸른색 별이며 “네 표본 중 표면 온도가 가장 높다.”라고 기록되어 있다.', image: 'stars/star_observation_blue.webp' },
+      { id: 'tools', mode: 'instant', title: '정비 태블릿 검증 기록 C2', intro: '', action: '', text: '정비 태블릿이 C2를 바로 표시한다. C2는 붉은색 별이며 “C1보다 표면 온도가 높다.”라고 기록되어 있다.', image: 'stars/star_observation_red.webp' },
+      { id: 'window', mode: 'zoom', title: '관측창 투영 기록 C3', intro: '관측창에 C3 검증표가 작게 투영되어 있다. 확대하면 남은 정보를 확인할 수 있다.', action: '투영 기록 확대', text: 'C3은 노란색 별이지만 표면 온도 자료가 없어 기록의 참·거짓을 판단할 수 없다.', image: 'stars/star_observation_yellow.webp' },
+      { id: 'communicator', mode: 'hold', title: '통신기 검증 로그 C4', intro: '통신기가 C4 로그를 수신하고 있다. 전송이 끝날 때까지 신호를 유지해야 한다.', action: 'C4 로그 수신', text: 'C4는 흰색 별이며 “노란색 별 C3보다 표면 온도가 높다.”라고 기록되어 있다.', image: 'stars/star_observation_white.webp' },
     ],
   };
 
@@ -89,7 +89,7 @@
   }
 
   function storageKey(suffix) {
-    return 'scilab-star-escape-scene01-v4:' + identity + ':' + suffix;
+    return 'scilab-star-escape-scene01-v5:' + identity + ':' + suffix;
   }
 
   function restoreLocal() {
@@ -160,7 +160,11 @@
     var clueRole = availableRoles().find(function (role) { return roleClue(question, role).id === id; });
     var clue = clueRole ? roleClue(question, clueRole) : null;
     var foundClue = Boolean(clue);
-    var revealed = foundClue && visited.has(key);
+    var revealed = foundClue && (clue.mode === 'instant' || visited.has(key));
+    if (foundClue && clue.mode === 'instant' && !visited.has(key)) {
+      visited.add(key);
+      saveVisited();
+    }
     if (!foundClue) {
       visited.add(key);
       saveVisited();
@@ -174,6 +178,7 @@
       image: foundClue && revealed ? clue.image : (objectImages[id] || 'characters/ui_lumen_ai_icon.webp'),
       detailImage: foundClue ? clue.image : '',
       action: foundClue ? clue.action : '',
+      mode: foundClue ? clue.mode : '',
       clue: foundClue,
       role: clueRole,
       revealed: revealed,
@@ -227,7 +232,8 @@
       '<button id="inspectClose" aria-label="닫기">×</button></section>';
   }
 
-  function inspectTaskType(action) {
+  function inspectTaskType(action, mode) {
+    if (mode) return mode;
     if (/불러오기/.test(action)) return 'hold';
     if (/펼치/.test(action)) return 'unfold';
     if (/확대/.test(action)) return 'zoom';
@@ -236,7 +242,10 @@
   }
 
   function inspectTaskMarkup() {
-    var type = inspectTaskType(inspect.action || '');
+    var type = inspectTaskType(inspect.action || '', inspect.mode);
+    if (type === 'press') {
+      return '<button class="s1-direct-task reveal" id="inspectReveal"><span aria-hidden="true">＋</span><b>' + esc(inspect.action || '기록 확인하기') + '</b><small>눌러서 단서를 확인하세요</small></button>';
+    }
     if (type === 'wipe') {
       return '<div class="s1-direct-task wipe" id="inspectWipe" role="application" aria-label="' + esc(inspect.action) + '"><span class="s1-task-mask" id="inspectTaskVisual"></span><span class="s1-task-copy">손가락이나 마우스로 문질러 주세요 <b id="inspectTaskValue">0%</b></span></div>';
     }
@@ -312,7 +321,7 @@
     }).join('');
     var colorButtons = colors.map(function (color) {
       var assigned = roles.find(function (role) { return wireMapping[role] === color.id; });
-      return '<button class="s1-wire-node color ' + (assigned ? 'connected' : '') + '" data-wire-color="' + color.id + '" aria-label="' + color.label + ' 단자"><i class="s1-wire-plug" style="--wire:' + color.wire + '"></i><img src="' + image(color.image) + '" alt="' + color.label + '"><span><b>' + color.label + '</b><small>' + (assigned ? assigned + ' 연결됨' : '선택하여 연결') + '</small></span></button>';
+      return '<button class="s1-wire-node color ' + (assigned ? 'connected' : '') + '" data-wire-color="' + color.id + '" aria-label="' + color.label + ' 단자" style="--wire:' + color.wire + '"><i class="s1-wire-plug"></i><span class="s1-star-visual"><img src="' + image(color.image) + '" alt="' + color.label + '"></span><span class="s1-star-copy"><b>' + color.label + '</b><small>' + (assigned ? assigned + ' 연결됨' : '별 단자') + '</small></span></button>';
     }).join('');
     var lines = roles.map(function (role) {
       var colorId = wireMapping[role];
@@ -321,8 +330,20 @@
       return '<path class="s1-wire-shadow" data-wire-path="' + role + '"></path><path class="s1-wire-line" data-wire-path="' + role + '" style="--wire:' + color.wire + '"></path>';
     }).join('');
     var connectedCount = Object.keys(wireMapping).length;
-    return '<div class="s1-wire-panel"><div class="s1-wire-guide"><small>RESTORE WIRING</small><b>대원별 관측 전선 연결</b><p>' + (activeWire ? activeWire + ' 전선과 연결할 별 색을 선택하세요.' : '연결을 바꾸려면 R 단자를 다시 선택하세요.') + '</p><span>' + connectedCount + ' / 4 연결</span></div>' +
-      '<div class="s1-wire-board"><div class="s1-wire-bank roles">' + roleButtons + '</div><svg class="s1-wire-canvas" aria-hidden="true">' + lines + '</svg><div class="s1-wire-bank colors">' + colorButtons + '</div></div></div>';
+    return '<div class="s1-wire-panel"><div class="s1-wire-guide"><small>RESTORE WIRING</small><b>대원별 관측 전선 연결</b><p>위쪽 R 단자에서 아래쪽 별 단자로 전선을 끌거나, 두 단자를 차례로 선택하세요.</p><div class="s1-wire-actions"><button type="button" id="s1WireReset" ' + (connectedCount ? '' : 'disabled') + '>초기화</button><span>' + connectedCount + ' / 4 연결</span></div></div>' +
+      '<div class="s1-wire-board"><div class="s1-wire-bank roles">' + roleButtons + '</div><svg class="s1-wire-canvas" aria-hidden="true">' + lines + '<path class="s1-wire-preview" id="s1WirePreview"></path></svg><div class="s1-wire-bank colors">' + colorButtons + '</div></div></div>';
+  }
+
+  function wireCurve(x1, y1, x2, y2, index) {
+    var board = document.querySelector('.s1-wire-board');
+    var width = board ? board.getBoundingClientRect().width : Math.abs(x2 - x1) || 320;
+    var vertical = Math.max(80, y2 - y1);
+    var sway = width * [-0.11, 0.09, -0.07, 0.12][index % 4];
+    var middleX = (x1 + x2) / 2 + sway;
+    var middleY = y1 + vertical * 0.52;
+    return 'M ' + x1 + ' ' + y1 +
+      ' C ' + x1 + ' ' + (y1 + vertical * 0.2) + ', ' + middleX + ' ' + (middleY - vertical * 0.12) + ', ' + middleX + ' ' + middleY +
+      ' C ' + middleX + ' ' + (middleY + vertical * 0.15) + ', ' + x2 + ' ' + (y2 - vertical * 0.22) + ', ' + x2 + ' ' + y2;
   }
 
   function updateWirePaths() {
@@ -344,13 +365,59 @@
       var y1 = sourceRect.top + sourceRect.height / 2 - boardRect.top;
       var x2 = targetRect.left + targetRect.width / 2 - boardRect.left;
       var y2 = targetRect.top + targetRect.height / 2 - boardRect.top;
-      var travel = x2 - x1;
-      var bendOffsets = [-0.14, 0.12, -0.08, 0.16];
-      var bendY = (y1 + y2) / 2 + boardRect.height * bendOffsets[index];
-      bendY = Math.max(14, Math.min(boardRect.height - 14, bendY));
-      var d = 'M ' + x1 + ' ' + y1 + ' C ' + (x1 + travel * 0.18) + ' ' + y1 + ', ' + (x1 + travel * 0.24) + ' ' + bendY + ', ' + (x1 + travel * 0.46) + ' ' + bendY + ' C ' + (x1 + travel * 0.68) + ' ' + bendY + ', ' + (x1 + travel * 0.8) + ' ' + y2 + ', ' + x2 + ' ' + y2;
+      var d = wireCurve(x1, y1, x2, y2, index);
       document.querySelectorAll('[data-wire-path="' + role + '"]').forEach(function (path) { path.setAttribute('d', d); });
     });
+  }
+
+  function connectWire(role, colorId) {
+    Object.keys(wireMapping).forEach(function (mappedRole) {
+      if (wireMapping[mappedRole] === colorId) delete wireMapping[mappedRole];
+    });
+    wireMapping[role] = colorId;
+    activeWire = ['R1', 'R2', 'R3', 'R4'].find(function (item) { return !wireMapping[item]; }) || null;
+    draw();
+  }
+
+  function beginWireDrag(role, event) {
+    var board = document.querySelector('.s1-wire-board');
+    var preview = document.getElementById('s1WirePreview');
+    var source = document.querySelector('[data-wire-role="' + role + '"] .s1-wire-plug');
+    if (!board || !preview || !source) return;
+    activeWire = role;
+    var boardRect = board.getBoundingClientRect();
+    var sourceRect = source.getBoundingClientRect();
+    var x1 = sourceRect.left + sourceRect.width / 2 - boardRect.left;
+    var y1 = sourceRect.top + sourceRect.height / 2 - boardRect.top;
+    var roleIndex = ['R1', 'R2', 'R3', 'R4'].indexOf(role);
+    function move(pointer) {
+      var x2 = Math.max(0, Math.min(boardRect.width, pointer.clientX - boardRect.left));
+      var y2 = Math.max(y1 + 8, Math.min(boardRect.height, pointer.clientY - boardRect.top));
+      preview.setAttribute('d', wireCurve(x1, y1, x2, y2, roleIndex));
+    }
+    function finish(pointer) {
+      window.removeEventListener('pointermove', move);
+      window.removeEventListener('pointerup', finish);
+      window.removeEventListener('pointercancel', cancel);
+      var target = document.elementFromPoint(pointer.clientX, pointer.clientY);
+      var color = target && target.closest ? target.closest('[data-wire-color]') : null;
+      if (color) connectWire(role, color.dataset.wireColor);
+      else {
+        preview.removeAttribute('d');
+        draw();
+      }
+    }
+    function cancel() {
+      window.removeEventListener('pointermove', move);
+      window.removeEventListener('pointerup', finish);
+      window.removeEventListener('pointercancel', cancel);
+      preview.removeAttribute('d');
+    }
+    move(event);
+    window.addEventListener('pointermove', move);
+    window.addEventListener('pointerup', finish);
+    window.addEventListener('pointercancel', cancel);
+    event.preventDefault();
   }
 
   function bindRoom() {
@@ -378,6 +445,8 @@
   }
 
   function bindInspectTask() {
+    var reveal = document.getElementById('inspectReveal');
+    if (reveal) reveal.addEventListener('click', completeInspectTask);
     var wipe = document.getElementById('inspectWipe');
     if (wipe) {
       var wiping = false;
@@ -466,17 +535,22 @@
         activeWire = button.dataset.wireRole;
         draw();
       });
+      var plug = button.querySelector('.s1-wire-plug');
+      if (plug) plug.addEventListener('pointerdown', function (event) {
+        beginWireDrag(button.dataset.wireRole, event);
+      });
     });
     document.querySelectorAll('[data-wire-color]').forEach(function (button) {
       button.addEventListener('click', function () {
         if (!activeWire) activeWire = ['R1', 'R2', 'R3', 'R4'].find(function (role) { return !wireMapping[role]; }) || 'R1';
-        Object.keys(wireMapping).forEach(function (role) {
-          if (wireMapping[role] === button.dataset.wireColor) delete wireMapping[role];
-        });
-        wireMapping[activeWire] = button.dataset.wireColor;
-        activeWire = ['R1', 'R2', 'R3', 'R4'].find(function (role) { return !wireMapping[role]; }) || null;
-        draw();
+        connectWire(activeWire, button.dataset.wireColor);
       });
+    });
+    var reset = document.getElementById('s1WireReset');
+    if (reset) reset.addEventListener('click', function () {
+      wireMapping = {};
+      activeWire = 'R1';
+      draw();
     });
     var hint = document.getElementById('hintBtn');
     if (hint) hint.addEventListener('click', context.hint);
