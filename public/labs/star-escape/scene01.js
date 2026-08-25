@@ -164,7 +164,7 @@
       return;
     }
     var target = objects.find(function (item) { return item.id === id; });
-    var clueRole = availableRoles().find(function (role) { return roleClue(question, role).id === id; });
+    var clueRole = question < 3 ? availableRoles().find(function (role) { return roleClue(question, role).id === id; }) : null;
     var clue = clueRole ? roleClue(question, clueRole) : null;
     var foundClue = Boolean(clue);
     var revealed = foundClue && (clue.mode === 'instant' || visited.has(key));
@@ -200,7 +200,7 @@
   function objective(question) {
     if (question === 1) return '방 안의 장치를 조사해 <b>비상 전력</b>을 복구하세요.';
     if (question === 2) return '새로 작동한 장치를 조사해 <b>관측 수납함</b>을 여세요.';
-    return '검증 기록을 조사한 뒤 노란색으로 빛나는 <b>항법장치</b>에 기록 번호를 입력하세요.';
+    return '노란색으로 빛나는 <b>항법장치</b>를 눌러 최종 검증을 시작하세요.';
   }
 
   function roomMarkup(question) {
@@ -302,7 +302,7 @@
 
   function puzzleMarkup(question) {
     var lock = locks[question];
-    return '<section class="s1-puzzle"><header class="s1-puzzle-head"><div><small>SCENE 01 · LOCK ' + question + '/3</small><h2>' + lock.title + '</h2></div>' + (question === 3 ? '' : '<button class="s1-close" id="s1PuzzleClose" aria-label="닫기">×</button>') + '</header>' +
+    return '<section class="s1-puzzle"><header class="s1-puzzle-head"><div><small>SCENE 01 · LOCK ' + question + '/3</small><h2>' + lock.title + '</h2></div><button class="s1-close" id="s1PuzzleClose" aria-label="닫기">×</button></header>' +
       '<div class="s1-puzzle-body">' + activityMarkup(question) + '<div class="s1-hintbox" id="hintbox"></div></div>' +
       '<footer class="s1-footer"><p class="s1-feedback" id="feedback" aria-live="polite"></p><button class="secondary" id="hintBtn">힌트 · ' + Math.min(context.state.progress.hintCount, 3) + '/3 무료</button><button class="primary" id="s1Submit">' + (question === 2 ? '연결 확인' : question === 3 ? '검증 완료' : '입력') + '</button></footer></section>';
   }
@@ -634,7 +634,7 @@
       wireMapping = {};
       nextGuideOpen = false;
       inspect = null;
-      puzzleOpen = Number(options.state.progress.question || 1) === 3;
+      puzzleOpen = false;
       lastQuestion = 0;
     }
     var question = currentQuestion();
@@ -647,7 +647,6 @@
       nextGuideOpen = false;
       banner = question === 2 ? '비상 전력 복구 완료 · 관측 수납함 전자 잠금 활성화' : '수납함 개방 완료 · 검증 기록 4개 전송';
     }
-    if (question === 3) puzzleOpen = true;
     lastQuestion = question;
     draw();
   }
