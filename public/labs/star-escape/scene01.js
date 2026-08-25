@@ -8,6 +8,8 @@
   var inspect = null;
   var puzzleOpen = false;
   var codeValue = '';
+  var activeWire = 'R1';
+  var wireMapping = {};
   var introStep = 0;
   var banner = '';
   var lastQuestion = 0;
@@ -124,7 +126,7 @@
     var powered = question > 1;
     var common = {
       door: question < 3 ? '중앙 통로는 단단히 잠겨 있다. 다른 장치에서 잠금 해제 신호를 보내야 한다.' : '항법장치의 최종 검증이 끝나면 열릴 것 같다.',
-      communicator: question === 1 ? '통신기 측면에 낡은 복구 설명서가 끼워져 있다. 펼쳐 보니 “별의 표면 온도가 높은 순서부터 각 대원의 복구 숫자를 입력한다.”라고 적혀 있다.' : question === 2 ? '통신기 뒷면에 작은 변환표가 붙어 있다. “R1부터 R4 순서로 입력 · 푸른색 4 · 흰색 8 · 노란색 2 · 붉은색 6”이라고 쓰여 있다.' : '통신기에서 짧은 검증 음성이 반복된다. “과학적으로 참인 기록 두 개의 번호를 작은 수부터 입력하라.”',
+      communicator: question === 1 ? '통신기 측면에 낡은 복구 설명서가 끼워져 있다. 펼쳐 보니 “별의 표면 온도가 높은 순서부터 각 대원의 복구 숫자를 입력한다.”라고 적혀 있다.' : question === 2 ? '통신기 뒷면의 배선 설명서가 켜졌다. “각 대원이 확인한 별의 색과 같은 단자에 R1~R4 전선을 연결한다.”라고 적혀 있다.' : '통신기에서 짧은 검증 음성이 반복된다. “과학적으로 참인 기록 두 개의 번호를 작은 수부터 입력하라.”',
       navigation: question < 3 ? '항법장치는 전력이 부족해 잠들어 있다.' : '안전 검증 암호를 요구하는 항법장치다.',
       storage: question === 1 ? '전자 잠금장치에 전력이 들어오지 않는다.' : question === 2 ? '네 자리 암호로 잠긴 관측 자료 수납함이다.' : '수납함이 열려 있다. 내부 자료는 모두 꺼낸 상태다.',
       monitor: question === 1 ? '전원이 부족하지만 일부 별 영상은 남아 있다.' : '관측 데이터 화면이 다시 켜졌다.',
@@ -221,12 +223,44 @@
     var lock = locks[question];
     return '<section class="s1-puzzle"><header class="s1-puzzle-head"><div><small>SCENE 01 · LOCK ' + question + '/3</small><h2>' + lock.title + '</h2></div><button class="s1-close" id="s1PuzzleClose" aria-label="닫기">×</button></header>' +
       '<div class="s1-puzzle-body">' + activityMarkup(question) + '<div class="s1-hintbox" id="hintbox"></div></div>' +
-      '<footer class="s1-footer"><p class="s1-feedback" id="feedback" aria-live="polite"></p><button class="secondary" id="hintBtn">힌트 · ' + Math.min(context.state.progress.hintCount, 3) + '/3 무료</button><button class="primary" id="s1Submit">입력</button></footer></section>';
+      '<footer class="s1-footer"><p class="s1-feedback" id="feedback" aria-live="polite"></p><button class="secondary" id="hintBtn">힌트 · ' + Math.min(context.state.progress.hintCount, 3) + '/3 무료</button><button class="primary" id="s1Submit">' + (question === 2 ? '연결 확인' : '입력') + '</button></footer></section>';
   }
 
   function activityMarkup(question) {
+    if (question === 2) return wireActivityMarkup();
     var lock = locks[question];
     return '<div class="s1-lock-panel"><p>비밀번호를 입력하시오.</p><input class="s1-code-input" id="s1CodeInput" type="text" inputmode="numeric" pattern="[0-9]*" autocomplete="off" maxlength="' + lock.length + '" value="' + esc(codeValue) + '" placeholder="' + Array(lock.length + 1).join('•') + '" aria-label="비밀번호 입력"></div>';
+  }
+
+  function wireActivityMarkup() {
+    var roles = ['R1', 'R2', 'R3', 'R4'];
+    var colors = [
+      { id: 'B', label: '푸른색 별', image: 'stars/star_observation_blue.webp', wire: '#4ea5ff' },
+      { id: 'W', label: '흰색 별', image: 'stars/star_observation_white.webp', wire: '#f3f6ff' },
+      { id: 'Y', label: '노란색 별', image: 'stars/star_observation_yellow.webp', wire: '#ffd44f' },
+      { id: 'R', label: '붉은색 별', image: 'stars/star_observation_red.webp', wire: '#ff6471' },
+    ];
+    var roleButtons = roles.map(function (role) {
+      var connected = wireMapping[role];
+      var label = connected ? colors.find(function (item) { return item.id === connected; }).label : '연결 안 됨';
+      return '<button class="s1-wire-node role ' + (activeWire === role ? 'active' : '') + ' ' + (connected ? 'connected' : '') + '" data-wire-role="' + role + '" aria-pressed="' + (activeWire === role) + '"><span class="s1-wire-plug"></span><b>' + role + '</b><small>' + label + '</small></button>';
+    }).join('');
+    var colorButtons = colors.map(function (color) {
+      var assigned = roles.find(function (role) { return wireMapping[role] === color.id; });
+      return '<button class="s1-wire-node color ' + (assigned ? 'connected' : '') + '" data-wire-color="' + color.id + '" aria-label="' + color.label + ' 단자"><img src="' + image(color.image) + '" alt=""><span><b>' + color.label + '</b><small>' + (assigned ? assigned + ' 연결됨' : '선택하여 연결') + '</small></span><i class="s1-wire-plug" style="--wire:' + color.wire + '"></i></button>';
+    }).join('');
+    var lines = roles.map(function (role, roleIndex) {
+      var colorId = wireMapping[role];
+      if (!colorId) return '';
+      var colorIndex = colors.findIndex(function (item) { return item.id === colorId; });
+      var color = colors[colorIndex];
+      var y1 = 12.5 + roleIndex * 25;
+      var y2 = 12.5 + colorIndex * 25;
+      return '<path class="s1-wire-shadow" d="M 0 ' + y1 + ' C 38 ' + y1 + ', 62 ' + y2 + ', 100 ' + y2 + '"></path><path class="s1-wire-line" style="--wire:' + color.wire + '" d="M 0 ' + y1 + ' C 38 ' + y1 + ', 62 ' + y2 + ', 100 ' + y2 + '"></path>';
+    }).join('');
+    var connectedCount = Object.keys(wireMapping).length;
+    return '<div class="s1-wire-panel"><div class="s1-wire-guide"><small>RESTORE WIRING</small><b>대원별 관측 전선 연결</b><p>' + (activeWire ? activeWire + ' 전선과 연결할 별 색을 선택하세요.' : '연결을 바꾸려면 R 단자를 다시 선택하세요.') + '</p><span>' + connectedCount + ' / 4 연결</span></div>' +
+      '<div class="s1-wire-board"><div class="s1-wire-bank roles">' + roleButtons + '</div><svg class="s1-wire-canvas" viewBox="0 0 100 100" preserveAspectRatio="none" aria-hidden="true">' + lines + '</svg><div class="s1-wire-bank colors">' + colorButtons + '</div></div></div>';
   }
 
   function bindRoom() {
@@ -263,12 +297,37 @@
       codeValue = input.value.replace(/\D/g, '').slice(0, locks[question].length);
       input.value = codeValue;
     });
+    document.querySelectorAll('[data-wire-role]').forEach(function (button) {
+      button.addEventListener('click', function () {
+        activeWire = button.dataset.wireRole;
+        draw();
+      });
+    });
+    document.querySelectorAll('[data-wire-color]').forEach(function (button) {
+      button.addEventListener('click', function () {
+        if (!activeWire) activeWire = ['R1', 'R2', 'R3', 'R4'].find(function (role) { return !wireMapping[role]; }) || 'R1';
+        Object.keys(wireMapping).forEach(function (role) {
+          if (wireMapping[role] === button.dataset.wireColor) delete wireMapping[role];
+        });
+        wireMapping[activeWire] = button.dataset.wireColor;
+        activeWire = ['R1', 'R2', 'R3', 'R4'].find(function (role) { return !wireMapping[role]; }) || null;
+        draw();
+      });
+    });
     var hint = document.getElementById('hintBtn');
     if (hint) hint.addEventListener('click', context.hint);
     document.getElementById('s1Submit').addEventListener('click', async function () {
       var answer = codeValue;
       var feedback = document.getElementById('feedback');
-      if (answer.length !== locks[question].length) {
+      if (question === 2) {
+        if (Object.keys(wireMapping).length !== 4) {
+          feedback.textContent = 'R1부터 R4까지 네 전선을 모두 연결하세요.';
+          feedback.className = 's1-feedback bad';
+          return;
+        }
+        var colorCodes = { B: '4', W: '8', Y: '2', R: '6' };
+        answer = ['R1', 'R2', 'R3', 'R4'].map(function (role) { return colorCodes[wireMapping[role]]; }).join('');
+      } else if (answer.length !== locks[question].length) {
         feedback.textContent = locks[question].length + '자리 암호를 모두 입력하세요.';
         feedback.className = 's1-feedback bad';
         return;
@@ -297,6 +356,8 @@
       identity = nextIdentity;
       restoreLocal();
       codeValue = '';
+      activeWire = 'R1';
+      wireMapping = {};
       inspect = null;
       puzzleOpen = false;
       lastQuestion = 0;
@@ -306,6 +367,8 @@
       inspect = null;
       puzzleOpen = false;
       codeValue = '';
+      activeWire = question === 2 ? 'R1' : null;
+      wireMapping = {};
       banner = question === 2 ? '비상 전력 복구 완료 · 관측 수납함 전자 잠금 활성화' : '관측 수납함 개방 · 항법장치 안전 검증 활성화';
     }
     lastQuestion = question;
