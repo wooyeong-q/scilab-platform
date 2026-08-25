@@ -10,6 +10,7 @@
   var codeValue = '';
   var activeWire = 'R1';
   var wireMapping = {};
+  var wireResizeBound = false;
   var nextGuideOpen = false;
   var nextGuideSeen = false;
   var introStep = 0;
@@ -299,10 +300,10 @@
   function wireActivityMarkup() {
     var roles = ['R1', 'R2', 'R3', 'R4'];
     var colors = [
-      { id: 'B', label: '푸른색 별', image: 'stars/star_observation_blue.webp', wire: '#4ea5ff' },
-      { id: 'W', label: '흰색 별', image: 'stars/star_observation_white.webp', wire: '#f3f6ff' },
       { id: 'Y', label: '노란색 별', image: 'stars/star_observation_yellow.webp', wire: '#ffd44f' },
       { id: 'R', label: '붉은색 별', image: 'stars/star_observation_red.webp', wire: '#ff6471' },
+      { id: 'B', label: '푸른색 별', image: 'stars/star_observation_blue.webp', wire: '#4ea5ff' },
+      { id: 'W', label: '흰색 별', image: 'stars/star_observation_white.webp', wire: '#f3f6ff' },
     ];
     var roleButtons = roles.map(function (role) {
       var connected = wireMapping[role];
@@ -311,20 +312,45 @@
     }).join('');
     var colorButtons = colors.map(function (color) {
       var assigned = roles.find(function (role) { return wireMapping[role] === color.id; });
-      return '<button class="s1-wire-node color ' + (assigned ? 'connected' : '') + '" data-wire-color="' + color.id + '" aria-label="' + color.label + ' 단자"><img src="' + image(color.image) + '" alt=""><span><b>' + color.label + '</b><small>' + (assigned ? assigned + ' 연결됨' : '선택하여 연결') + '</small></span><i class="s1-wire-plug" style="--wire:' + color.wire + '"></i></button>';
+      return '<button class="s1-wire-node color ' + (assigned ? 'connected' : '') + '" data-wire-color="' + color.id + '" aria-label="' + color.label + ' 단자"><i class="s1-wire-plug" style="--wire:' + color.wire + '"></i><img src="' + image(color.image) + '" alt="' + color.label + '"><span><b>' + color.label + '</b><small>' + (assigned ? assigned + ' 연결됨' : '선택하여 연결') + '</small></span></button>';
     }).join('');
-    var lines = roles.map(function (role, roleIndex) {
+    var lines = roles.map(function (role) {
       var colorId = wireMapping[role];
       if (!colorId) return '';
-      var colorIndex = colors.findIndex(function (item) { return item.id === colorId; });
-      var color = colors[colorIndex];
-      var y1 = 12.5 + roleIndex * 25;
-      var y2 = 12.5 + colorIndex * 25;
-      return '<path class="s1-wire-shadow" d="M 0 ' + y1 + ' C 38 ' + y1 + ', 62 ' + y2 + ', 100 ' + y2 + '"></path><path class="s1-wire-line" style="--wire:' + color.wire + '" d="M 0 ' + y1 + ' C 38 ' + y1 + ', 62 ' + y2 + ', 100 ' + y2 + '"></path>';
+      var color = colors.find(function (item) { return item.id === colorId; });
+      return '<path class="s1-wire-shadow" data-wire-path="' + role + '"></path><path class="s1-wire-line" data-wire-path="' + role + '" style="--wire:' + color.wire + '"></path>';
     }).join('');
     var connectedCount = Object.keys(wireMapping).length;
     return '<div class="s1-wire-panel"><div class="s1-wire-guide"><small>RESTORE WIRING</small><b>대원별 관측 전선 연결</b><p>' + (activeWire ? activeWire + ' 전선과 연결할 별 색을 선택하세요.' : '연결을 바꾸려면 R 단자를 다시 선택하세요.') + '</p><span>' + connectedCount + ' / 4 연결</span></div>' +
-      '<div class="s1-wire-board"><div class="s1-wire-bank roles">' + roleButtons + '</div><svg class="s1-wire-canvas" viewBox="0 0 100 100" preserveAspectRatio="none" aria-hidden="true">' + lines + '</svg><div class="s1-wire-bank colors">' + colorButtons + '</div></div></div>';
+      '<div class="s1-wire-board"><div class="s1-wire-bank roles">' + roleButtons + '</div><svg class="s1-wire-canvas" aria-hidden="true">' + lines + '</svg><div class="s1-wire-bank colors">' + colorButtons + '</div></div></div>';
+  }
+
+  function updateWirePaths() {
+    var board = document.querySelector('.s1-wire-board');
+    var svg = document.querySelector('.s1-wire-canvas');
+    if (!board || !svg) return;
+    var boardRect = board.getBoundingClientRect();
+    if (!boardRect.width || !boardRect.height) return;
+    svg.setAttribute('viewBox', '0 0 ' + boardRect.width + ' ' + boardRect.height);
+    ['R1', 'R2', 'R3', 'R4'].forEach(function (role, index) {
+      var colorId = wireMapping[role];
+      if (!colorId) return;
+      var source = document.querySelector('[data-wire-role="' + role + '"] .s1-wire-plug');
+      var target = document.querySelector('[data-wire-color="' + colorId + '"] .s1-wire-plug');
+      if (!source || !target) return;
+      var sourceRect = source.getBoundingClientRect();
+      var targetRect = target.getBoundingClientRect();
+      var x1 = sourceRect.left + sourceRect.width / 2 - boardRect.left;
+      var y1 = sourceRect.top + sourceRect.height / 2 - boardRect.top;
+      var x2 = targetRect.left + targetRect.width / 2 - boardRect.left;
+      var y2 = targetRect.top + targetRect.height / 2 - boardRect.top;
+      var travel = x2 - x1;
+      var bendOffsets = [-0.14, 0.12, -0.08, 0.16];
+      var bendY = (y1 + y2) / 2 + boardRect.height * bendOffsets[index];
+      bendY = Math.max(14, Math.min(boardRect.height - 14, bendY));
+      var d = 'M ' + x1 + ' ' + y1 + ' C ' + (x1 + travel * 0.18) + ' ' + y1 + ', ' + (x1 + travel * 0.24) + ' ' + bendY + ', ' + (x1 + travel * 0.46) + ' ' + bendY + ' C ' + (x1 + travel * 0.68) + ' ' + bendY + ', ' + (x1 + travel * 0.8) + ' ' + y2 + ', ' + x2 + ' ' + y2;
+      document.querySelectorAll('[data-wire-path="' + role + '"]').forEach(function (path) { path.setAttribute('d', d); });
+    });
   }
 
   function bindRoom() {
@@ -420,6 +446,16 @@
     var close = document.getElementById('s1PuzzleClose');
     if (!close) return;
     close.addEventListener('click', function () { puzzleOpen = false; draw(); });
+    if (question === 2) {
+      requestAnimationFrame(updateWirePaths);
+      document.querySelectorAll('.s1-wire-node.color img').forEach(function (star) {
+        star.addEventListener('load', updateWirePaths, { once: true });
+      });
+      if (!wireResizeBound) {
+        window.addEventListener('resize', updateWirePaths);
+        wireResizeBound = true;
+      }
+    }
     var input = document.getElementById('s1CodeInput');
     if (input) input.addEventListener('input', function () {
       codeValue = input.value.replace(/\D/g, '').slice(0, locks[question].length);

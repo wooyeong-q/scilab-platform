@@ -56,14 +56,16 @@
 .s1-lock-panel p{margin:0 0 18px;color:#f7f9ff;font-size:clamp(18px,2.2vw,25px);font-weight:850}
 .s1-code-input{width:min(320px,100%);height:68px;padding:8px 14px;border:1px solid #62e7ffaa;border-radius:11px;outline:0;background:#020611;color:#fff;-webkit-text-fill-color:#fff;text-align:center;font-size:32px;font-weight:900;letter-spacing:.28em;font-variant-numeric:tabular-nums;box-shadow:inset 0 0 22px #000,0 0 24px #62e7ff12}
 .s1-code-input:focus{border-color:var(--gold);box-shadow:0 0 0 3px #ffd66e1f,inset 0 0 22px #000}
-.s1-wire-panel{width:min(720px,100%);margin:auto;padding:14px;border:1px solid #62e7ff55;border-radius:15px;background:linear-gradient(135deg,#081127,#101d42);box-shadow:0 18px 45px #0008}
+.s1-wire-panel{width:min(940px,100%);margin:auto;padding:14px;border:1px solid #62e7ff55;border-radius:15px;background:linear-gradient(135deg,#081127,#101d42);box-shadow:0 18px 45px #0008}
 .s1-wire-guide{position:relative;margin-bottom:10px;padding-right:92px}
 .s1-wire-guide small{display:block;color:var(--cyan);font-size:7px;font-weight:900;letter-spacing:.14em}
 .s1-wire-guide b{display:block;margin:2px 0;color:#f7f9ff;font-size:15px}
 .s1-wire-guide p{margin:0;color:#cbd7f1;font-size:9px}
 .s1-wire-guide>span{position:absolute;right:0;top:5px;padding:7px 9px;border:1px solid #62e7ff55;border-radius:8px;background:#050b1d;color:var(--cyan);font-size:10px;font-weight:900}
-.s1-wire-board{display:grid;grid-template-columns:minmax(115px,1fr) minmax(90px,1.15fr) minmax(160px,1.25fr);gap:8px;min-height:210px;padding:9px;border:1px solid #ffffff16;border-radius:12px;background:#020611}
-.s1-wire-bank{display:grid;grid-template-rows:repeat(4,1fr);gap:7px;min-height:0}
+.s1-wire-board{position:relative;display:grid;grid-template-columns:minmax(105px,120px) minmax(90px,1fr) minmax(330px,1.75fr);gap:10px;min-height:350px;padding:10px;border:1px solid #ffffff16;border-radius:12px;background:#020611}
+.s1-wire-bank{position:relative;z-index:2;min-height:0}
+.s1-wire-bank.roles{display:grid;grid-template-rows:repeat(4,1fr);gap:9px;grid-column:1}
+.s1-wire-bank.colors{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));grid-template-rows:repeat(2,minmax(0,1fr));gap:12px;grid-column:3}
 .s1-wire-node{position:relative;min-width:0;min-height:42px;border:1px solid #3c4f7c;border-radius:9px;background:#0c1733;color:#eef3ff;text-align:left;transition:border-color .16s,background .16s,transform .16s;touch-action:manipulation}
 .s1-wire-node:active{transform:scale(.98)}
 .s1-wire-node.role{padding:5px 22px 5px 9px}
@@ -72,10 +74,11 @@
 .s1-wire-node.role.active{border-color:var(--gold);background:#ffd66e18;box-shadow:0 0 0 2px #ffd66e1f}
 .s1-wire-node.role.active .s1-wire-plug{border-color:var(--gold);box-shadow:0 0 0 4px #2c2a28,0 0 12px #ffd66e99}
 .s1-wire-node.connected{border-color:#65edb466}
-.s1-wire-node.color{display:grid;grid-template-columns:34px 1fr 13px;gap:7px;align-items:center;padding:4px 7px}
-.s1-wire-node.color img{width:32px;height:32px;border-radius:50%;object-fit:cover;background:#000}
-.s1-wire-node.color .s1-wire-plug{width:13px;height:13px;border:2px solid var(--wire);border-radius:50%;background:#071024;box-shadow:0 0 0 4px #111d3b,0 0 9px var(--wire)}
-.s1-wire-canvas{width:100%;height:100%;overflow:visible}
+.s1-wire-node.color{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;padding:7px;text-align:center;overflow:visible}
+.s1-wire-node.color img{width:110px;height:110px;max-width:82%;border-radius:12px;object-fit:cover;background:#000;box-shadow:0 0 22px color-mix(in srgb,var(--wire) 35%,transparent)}
+.s1-wire-node.color .s1-wire-plug{position:absolute;left:-7px;top:50%;width:15px;height:15px;transform:translateY(-50%);border:2px solid var(--wire);border-radius:50%;background:#071024;box-shadow:0 0 0 4px #111d3b,0 0 12px var(--wire)}
+.s1-wire-node.color b{font-size:10px}.s1-wire-node.color small{font-size:7px}
+.s1-wire-canvas{position:absolute;z-index:1;inset:0;width:100%;height:100%;overflow:visible;pointer-events:none}
 .s1-wire-shadow,.s1-wire-line{fill:none;vector-effect:non-scaling-stroke}
 .s1-wire-shadow{stroke:#000;stroke-width:8;opacity:.85}
 .s1-wire-line{stroke:var(--wire);stroke-width:4;stroke-linecap:round;filter:drop-shadow(0 0 3px var(--wire))}
@@ -124,3 +127,26 @@
 @media(max-width:900px){.s1-next-guide-card{padding:14px}.s1-next-guide-card h2{font-size:18px}.s1-next-guide-card ol{margin:10px 0}.s1-next-guide-card li{padding:7px}}
 @media(max-height:560px) and (orientation:landscape){.s1-next-guide-card{padding:11px}.s1-next-guide-card h2{margin:3px 0;font-size:16px}.s1-next-guide-card>p{font-size:8px}.s1-next-guide-card ol{margin:7px 0}.s1-next-guide-card li{padding:5px}.s1-next-guide-card li>b{width:22px;height:22px;font-size:10px}.s1-next-guide-card li>span{font-size:7px}.s1-next-guide-card>button{min-height:34px}}
 @media(max-height:560px) and (orientation:landscape){.s1-direct-task.wipe{height:31px}.s1-direct-task.slider,.s1-inspect .s1-direct-task.hold{min-height:32px;margin-top:4px;padding:2px 5px}.s1-task-symbol,.s1-hold-ring{width:24px;height:24px}.s1-hold-ring::after{width:17px;height:17px}.s1-direct-task.slider{grid-template-columns:25px 1fr 29px}.s1-inspect .s1-direct-task.hold{grid-template-columns:25px 1fr 29px}.s1-task-copy,.s1-task-copy b,.s1-direct-task.slider label>b,.s1-direct-task.hold span:nth-child(2) b{font-size:7px}}
+
+/* Large observation targets and non-linear cable layout */
+@media(max-width:900px){
+  .s1-wire-board{min-height:320px;grid-template-columns:minmax(82px,100px) minmax(46px,.55fr) minmax(300px,1.8fr);gap:8px;padding:7px}
+  .s1-wire-node.color{display:flex;padding:5px}
+  .s1-wire-node.color img{width:100px;height:100px;max-width:84%}
+}
+@media(max-height:560px) and (orientation:landscape){
+  .s1-wire-board{min-height:310px;gap:7px;padding:6px}
+  .s1-wire-bank.roles{gap:5px}
+  .s1-wire-bank.colors{gap:8px}
+  .s1-wire-node.color{display:flex;padding:4px}
+  .s1-wire-node.color img{width:110px;height:110px;max-width:86%}
+  .s1-wire-node.color .s1-wire-plug,.s1-wire-node.role .s1-wire-plug{width:11px;height:11px}
+}
+@media(max-width:600px) and (orientation:portrait){
+  .s1-wire-board{grid-template-columns:1fr;grid-template-rows:62px minmax(80px,1fr) 360px;min-height:520px}
+  .s1-wire-bank.roles{grid-column:1;grid-row:1;grid-template-columns:repeat(4,1fr);grid-template-rows:1fr}
+  .s1-wire-node.role{padding:5px 5px 18px;text-align:center}
+  .s1-wire-node.role .s1-wire-plug{left:50%;right:auto;top:auto;bottom:-7px;transform:translateX(-50%)}
+  .s1-wire-bank.colors{grid-column:1;grid-row:3}
+  .s1-wire-node.color img{width:118px;height:118px}
+}
