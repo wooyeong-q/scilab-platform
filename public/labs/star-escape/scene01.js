@@ -7,13 +7,11 @@
   var visited = new Set();
   var inspect = null;
   var puzzleOpen = false;
-  var activeRole = 1;
   var codeValue = '';
   var introStep = 0;
   var banner = '';
   var lastQuestion = 0;
 
-  var roleNames = ['항성 분석관', '성운 관측관', '성단 기록관', '항법 통신관'];
   var intro = [
     ['루멘', '…대원 여러분, 응답할 수 있습니까?'],
     ['대원', '응답 가능. 상황을 보고해.'],
@@ -115,12 +113,6 @@
     return roleClues[question][role - 1];
   }
 
-  function clueAvailable(question, role) {
-    if (role !== context.state.player.role) return availableRoles().indexOf(role) >= 0;
-    var clue = roleClue(question, role);
-    return visited.has('q' + question + ':' + clue.id);
-  }
-
   function availableRoles() {
     var occupied = new Set((context.state.members || []).map(function (member) { return member.role; }));
     return [1, 2, 3, 4].filter(function (role) {
@@ -159,14 +151,16 @@
     visited.add('q' + question + ':' + id);
     saveVisited();
     var target = objects.find(function (item) { return item.id === id; });
-    var clue = roleClue(question, context.state.player.role);
-    var foundClue = clue.id === id;
+    var clueRole = availableRoles().find(function (role) { return roleClue(question, role).id === id; });
+    var clue = clueRole ? roleClue(question, clueRole) : null;
+    var foundClue = Boolean(clue);
     inspect = {
       id: id,
       name: foundClue ? clue.title : (target ? target.name : '조사 대상'),
       text: foundClue ? clue.text : objectText(id, question),
       image: foundClue ? clue.image : (objectImages[id] || 'characters/ui_lumen_ai_icon.webp'),
       clue: foundClue,
+      role: clueRole,
     };
     draw();
   }
@@ -208,43 +202,22 @@
   }
 
   function inspectMarkup() {
-    return '<section class="s1-inspect">' +
+    return '<section class="s1-inspect ' + (inspect.clue ? 'clue' : '') + '">' +
       '<img src="' + image(inspect.image) + '" alt="">' +
-      '<div><small>' + (inspect.clue ? 'PERSONAL CLUE FOUND' : 'INVESTIGATION') + '</small><b>' + esc(inspect.name) + '</b><p>' + esc(inspect.text) + '</p></div>' +
+      '<div><small>' + (inspect.clue ? '대원 ' + inspect.role + ' 전용 단서' : 'INVESTIGATION') + '</small><b>' + esc(inspect.name) + '</b><p>' + esc(inspect.text) + '</p></div>' +
       '<button id="inspectClose" aria-label="닫기">×</button></section>';
-  }
-
-  function roleTabs() {
-    var roles = availableRoles();
-    if (roles.indexOf(activeRole) < 0) activeRole = context.state.player.role;
-    return '<div class="s1-role-tabs">' + roles.map(function (role) {
-      return '<button data-role="' + role + '" class="' + (role === activeRole ? 'on' : '') + '">대원 ' + role + (role === context.state.player.role ? ' · 내 자료' : ' · 빈 역할') + '</button>';
-    }).join('') + '</div>';
-  }
-
-  function intelMarkup(question) {
-    var clue = roleClue(question, activeRole);
-    if (!clueAvailable(question, activeRole)) {
-      return '<div class="s1-intel locked"><img src="' + image('characters/ui_lumen_ai_icon.webp') + '" alt="잠긴 단서"><div><small>대원 ' + activeRole + ' 전용 단서</small><b>아직 단서를 찾지 못했습니다</b><p>암호창을 닫고 방 안의 파란 조사 지점을 더 확인하세요.</p></div></div>';
-    }
-    return '<div class="s1-intel"><img src="' + image(clue.image) + '" alt=""><div><small>대원 ' + activeRole + ' 전용 단서 · ' + esc(roleNames[activeRole - 1]) + '</small><b>' + esc(clue.title) + '</b><p>' + esc(clue.text) + '</p></div></div>';
   }
 
   function puzzleMarkup(question) {
     var lock = locks[question];
-    var prompts = [
-      '각 대원이 찾은 별 색과 보안 숫자를 공유하세요. 통신기의 복구 규칙에 맞춰 암호를 만드세요.',
-      '네 대원의 조건을 비교해 R1~R4의 별 색을 알아내고, 통신기의 색별 숫자로 바꾸세요.',
-      '네 검증 기록 중 과학적으로 참인 기록 두 개를 찾아 기록 번호를 순서대로 입력하세요.',
-    ];
     return '<section class="s1-puzzle"><header class="s1-puzzle-head"><div><small>SCENE 01 · LOCK ' + question + '/3</small><h2>' + lock.title + '</h2></div><button class="s1-close" id="s1PuzzleClose" aria-label="닫기">×</button></header>' +
-      '<div class="s1-puzzle-body"><p class="s1-prompt">' + prompts[question - 1] + '</p>' + roleTabs() + intelMarkup(question) + activityMarkup(question) + '<div class="s1-hintbox" id="hintbox"></div></div>' +
-      '<footer class="s1-footer"><p class="s1-feedback" id="feedback">누구나 입력할 수 있으며, 성공하면 모둠 전체 장치가 함께 작동합니다.</p><button class="secondary" id="hintBtn">힌트 · ' + Math.min(context.state.progress.hintCount, 3) + '/3 무료</button><button class="primary" id="s1Submit">잠금 해제</button></footer></section>';
+      '<div class="s1-puzzle-body">' + activityMarkup(question) + '<div class="s1-hintbox" id="hintbox"></div></div>' +
+      '<footer class="s1-footer"><p class="s1-feedback" id="feedback" aria-live="polite"></p><button class="secondary" id="hintBtn">힌트 · ' + Math.min(context.state.progress.hintCount, 3) + '/3 무료</button><button class="primary" id="s1Submit">입력</button></footer></section>';
   }
 
   function activityMarkup(question) {
     var lock = locks[question];
-    return '<div class="s1-lock-panel"><div><small>DEVICE LOCKED</small><b>' + lock.label + '</b><p>방에서 찾은 단서를 모둠원과 비교한 뒤 입력하세요.</p></div><input class="s1-code-input" id="s1CodeInput" type="text" inputmode="numeric" pattern="[0-9]*" autocomplete="off" maxlength="' + lock.length + '" value="' + esc(codeValue) + '" placeholder="' + Array(lock.length + 1).join('•') + '" aria-label="' + lock.label + '"></div>';
+    return '<div class="s1-lock-panel"><p>비밀번호를 입력하시오.</p><input class="s1-code-input" id="s1CodeInput" type="text" inputmode="numeric" pattern="[0-9]*" autocomplete="off" maxlength="' + lock.length + '" value="' + esc(codeValue) + '" placeholder="' + Array(lock.length + 1).join('•') + '" aria-label="비밀번호 입력"></div>';
   }
 
   function bindRoom() {
@@ -267,9 +240,6 @@
     var close = document.getElementById('s1PuzzleClose');
     if (!close) return;
     close.addEventListener('click', function () { puzzleOpen = false; draw(); });
-    document.querySelectorAll('[data-role]').forEach(function (button) {
-      button.addEventListener('click', function () { activeRole = Number(button.dataset.role); draw(); });
-    });
     var input = document.getElementById('s1CodeInput');
     if (input) input.addEventListener('input', function () {
       codeValue = input.value.replace(/\D/g, '').slice(0, locks[question].length);
@@ -308,7 +278,6 @@
     if (identity !== nextIdentity) {
       identity = nextIdentity;
       restoreLocal();
-      activeRole = options.state.player.role;
       codeValue = '';
       inspect = null;
       puzzleOpen = false;
