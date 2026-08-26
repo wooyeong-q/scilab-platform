@@ -13,9 +13,9 @@ const QUESTIONS = [
     { answer: '14', label: '항법장치 검증 암호', hint: '자료가 부족한 기록은 틀린 기록과 다릅니다. 과학적으로 참이라고 확인되는 기록 번호 두 개를 고르세요.' },
   ],
   [
-    { answer: 'A', label: '관측 센서 기준 표적', hint: '배경별은 그대로 두고 관측 위치를 바꿨을 때 가장 크게 움직여 보이는 표적을 찾으세요.' },
-    { answer: 'AB50', label: '연주시차 관측 보정', hint: '3월과 9월은 6개월 차이입니다. 두 위치 사이 전체 이동량의 절반이 연주시차입니다.' },
-    { answer: 'KMNL', label: '별 거리 자료 복구', hint: '같은 눈금에서 연주시차가 클수록 가까운 별입니다. 네 대원의 자료를 큰 순서로 비교하세요.' },
+    { answer: 'A', label: '관측 센서 기준 표적', hint: '각 대원이 본 표적이 배경에 대해 얼마나 위치가 달라졌는지 말해 보세요.', hints: ['각 대원이 본 표적이 배경에 대해 얼마나 위치가 달라졌는지 말해 보세요.', '가까운 물체일수록 관측 위치가 바뀌었을 때 시차가 크게 나타납니다.', '네 표적 중 A의 위치 변화가 가장 큽니다.'] },
+    { answer: 'AB50', label: '연주시차 관측 보정', hint: '세 대원이 받은 관측 날짜부터 서로 말해 보세요.', hints: ['세 대원이 받은 관측 날짜부터 서로 말해 보세요.', '연주시차를 확인하려면 6개월 간격의 관측 기록이 필요합니다.', '3월 18일과 9월 18일을 선택하세요. 연주시차는 두 위치 사이 시차의 절반입니다.'] },
+    { answer: 'KMNL', label: '별 거리 자료 복구', hint: '먼저 네 별의 연주시차가 큰 순서를 말로 정리하세요.', hints: ['먼저 네 별의 연주시차가 큰 순서를 말로 정리하세요.', '연주시차가 클수록 별까지의 거리는 가깝습니다.', '연주시차는 K > M > N > L 순입니다. 따라서 가까운 순서도 K → M → N → L입니다.'] },
   ],
   [
     { answer: 'OPEN', label: '산개성단 판별', hint: '젊은 별들이 은하 원반에서 느슨하고 불규칙하게 모여 있습니다.' },
@@ -388,6 +388,11 @@ export async function requestStarEscapeHint(code: string, playerId: string, play
   const db = database();
   const sessionId = String(player.session_id);
   const team = String(player.team_name);
+  const priorHintRows = await db`SELECT COUNT(*)::int AS count FROM star_escape_hints
+    WHERE session_id=${sessionId} AND team_name=${team} AND hint_type='request' AND stage=${stage} AND question_no=${question}`;
+  const hintNumber = Number(priorHintRows[0]?.count || 0);
+  const configuredHints = (config as { hint: string; hints?: readonly string[] }).hints;
+  const hint = configuredHints?.[Math.min(hintNumber, configuredHints.length - 1)] || config.hint;
   const updated = await db`UPDATE star_escape_team_progress SET hint_count=hint_count+1,
       penalty_seconds=penalty_seconds+CASE WHEN hint_count>=3 THEN 30 ELSE 0 END, updated_at=NOW()
     WHERE session_id=${sessionId} AND team_name=${team} AND stage=${stage} AND question_no=${question}
@@ -399,7 +404,7 @@ export async function requestStarEscapeHint(code: string, playerId: string, play
     VALUES (${randomUUID()}, ${sessionId}, ${team}, ${playerId}, 'request', ${stage}, ${question}, ${`${String(player.nickname)} · ${stage}-${question} 문제 힌트 요청`})`;
   return {
     status: 'ok' as const,
-    hint: config.hint,
+    hint,
     hintCount: count,
     penaltySeconds: Number(updated[0].penalty_seconds || 0),
     penaltyAdded: count > 3 ? 30 : 0,
