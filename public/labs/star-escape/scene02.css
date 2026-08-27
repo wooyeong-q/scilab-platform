@@ -75,9 +75,8 @@
 .s2-room-stage4{background-image:url('/labs/star-escape/assets/scene02/scene2_room_04_door_open.webp')}
 .s2-room-stage0::after,.s2-room-stage1::after,.s2-room-stage2::after,.s2-room-stage3::after,.s2-room-stage4::after{background:linear-gradient(180deg,#0206150a 54%,#02061570 100%)}
 
-/* Only unresolved observation cards are marked. Puzzle devices and the riddle location stay unmarked. */
-.s2-hotspot::after,.s2-hotspot.required::after,.s2-hotspot.visited::after{display:none!important}
-.s2-hotspot.card-clue::after{display:block!important;content:"";position:absolute;left:50%;top:50%;width:9px;height:9px;transform:translate(-50%,-50%);border:2px solid #9af1ff;border-radius:50%;background:#0a152dee;box-shadow:0 0 0 6px #62e7ff22,0 0 18px #62e7ffaa;opacity:.82;animation:s2Ping 2.2s infinite}
+/* Every normal investigation/device point is visible. Only the riddle answer location stays unmarked. */
+.s2-hotspot::after,.s2-hotspot.required::after,.s2-hotspot.visited::after{display:block!important}
 .s2-hotspot.secret-clue,.s2-hotspot.secret-clue:hover,.s2-hotspot.secret-clue:focus-visible{border-color:transparent!important;background:transparent!important;box-shadow:none!important;outline:none}
 .s2-hotspot.secret-clue::after{display:none!important}
 
@@ -92,6 +91,7 @@
 
 /* Riddle-driven annual-parallax password. */
 .s2-q2-panel{max-width:850px;margin:0 auto}.s2-riddle-box{margin-top:10px;padding:13px 15px;border:1px solid #62e7ff55;border-radius:12px;background:linear-gradient(145deg,#06142b,#081025)}
+.s2-q2-compact{max-width:680px;padding:16px}.s2-q2-compact-head small,.s2-q2-compact-head b{display:block}.s2-q2-compact-head small{color:var(--cyan);font-size:7px;font-weight:900;letter-spacing:.12em}.s2-q2-compact-head b{margin-top:3px;font-size:16px}
 .s2-riddle-box small{color:var(--cyan);font-size:7px;font-weight:900;letter-spacing:.12em}.s2-riddle-box p{margin:7px 0 0;color:#e9f1ff;font-size:12px;line-height:1.65;text-align:center}.s2-riddle-box b{color:var(--gold)}
 .s2-definition-locked,.s2-definition-record{display:grid;gap:5px;margin-top:9px;padding:11px 13px;border-radius:11px}
 .s2-definition-locked{border:1px dashed #687895;background:#030817;color:#9eacc6;text-align:center}.s2-definition-locked b{color:#eef5ff;font-size:11px}.s2-definition-locked span,.s2-definition-locked em{font-size:8px;font-style:normal}.s2-definition-locked em{color:var(--gold)}
