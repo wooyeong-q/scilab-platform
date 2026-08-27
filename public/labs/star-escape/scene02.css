@@ -66,3 +66,40 @@
 
 @media(max-width:700px){.s2-one-screen-compare{grid-template-columns:1fr 1.2fr 1fr;gap:4px}.s2-observation-card.q2-mini .s2-photo-field,.s2-overlay-stack{height:100px}.s2-observation-card.q2-mini footer{display:none}.s2-q2-answer{grid-template-columns:1fr}.s2-q2-answer .s2-science-note{display:none}.s2-power-node b{display:none}.s2-power-node small{font-size:5px}.s2-recovery-flash{top:17%;padding:9px}.s2-recovery-flash b{font-size:14px}}
 @media(orientation:landscape) and (max-height:700px){.s2-q2-panel{padding:5px}.s2-q2-panel .s2-guide p{font-size:7px}.s2-q2-panel .s2-story-why{display:none}.s2-q2-panel>.s2-mission-chain{margin:3px 0;padding:2px}.s2-q2-workspace{padding:4px}.s2-one-screen-compare{margin-top:3px}.s2-observation-card.q2-mini .s2-photo-field,.s2-overlay-stack{height:86px}.s2-observation-card.q2-mini header,.s2-overlap-card>header{padding:3px 5px}.s2-observation-card.q2-mini footer{display:none}.s2-opacity-control{padding:2px 5px}.s2-q2-answer{margin-top:3px}.s2-q2-answer .s2-parallax-options button{min-height:32px;padding:3px 5px}.s2-q2-answer .s2-parallax-options span{font-size:6px}.s2-q2-answer .s2-science-note{padding:3px 5px}.s2-power-node b,.s2-power-node small{font-size:5px}.s2-recovery-flash{top:11%;padding:8px}.s2-recovery-flash b{font-size:14px}}
+
+/* Scene 2 final story flow and supplied room recovery backgrounds. */
+.s2-room-stage0{background-image:url('/labs/star-escape/assets/scene02/scene2_room_00_standby.webp')}
+.s2-room-stage1{background-image:url('/labs/star-escape/assets/scene02/scene2_room_01_sensor_restored.webp')}
+.s2-room-stage2{background-image:url('/labs/star-escape/assets/scene02/scene2_room_02_parallax_active.webp')}
+.s2-room-stage3{background-image:url('/labs/star-escape/assets/scene02/scene2_room_03_distance_restored.webp')}
+.s2-room-stage4{background-image:url('/labs/star-escape/assets/scene02/scene2_room_04_door_open.webp')}
+.s2-room-stage0::after,.s2-room-stage1::after,.s2-room-stage2::after,.s2-room-stage3::after,.s2-room-stage4::after{background:linear-gradient(180deg,#0206150a 54%,#02061570 100%)}
+
+/* Only unresolved observation cards are marked. Puzzle devices and the riddle location stay unmarked. */
+.s2-hotspot::after,.s2-hotspot.required::after,.s2-hotspot.visited::after{display:none!important}
+.s2-hotspot.card-clue::after{display:block!important;content:"";position:absolute;left:50%;top:50%;width:9px;height:9px;transform:translate(-50%,-50%);border:2px solid #9af1ff;border-radius:50%;background:#0a152dee;box-shadow:0 0 0 6px #62e7ff22,0 0 18px #62e7ffaa;opacity:.82;animation:s2Ping 2.2s infinite}
+.s2-hotspot.secret-clue,.s2-hotspot.secret-clue:hover,.s2-hotspot.secret-clue:focus-visible{border-color:transparent!important;background:transparent!important;box-shadow:none!important;outline:none}
+.s2-hotspot.secret-clue::after{display:none!important}
+
+/* One reusable, overlaid evidence view. Both date markers represent the same unchanged star. */
+.s2-evidence-overlap{overflow:hidden;border:1px solid #62e7ff66;border-radius:13px;background:#071127;box-shadow:0 8px 24px #0006}
+.s2-evidence-overlap header{display:flex;align-items:center;justify-content:space-between;gap:8px;padding:8px 10px;border-bottom:1px solid #ffffff18;background:#102047}
+.s2-evidence-overlap header b{color:var(--cyan);font-size:12px}.s2-evidence-overlap header span{color:#b7c7de;font-size:8px}
+.s2-evidence-field{position:relative;height:205px;overflow:hidden;background:radial-gradient(circle at 10% 24%,#fff 0 1px,transparent 2px),radial-gradient(circle at 21% 70%,#9cc7e8 0 1.5px,transparent 2.5px),radial-gradient(circle at 35% 39%,#fff 0 1px,transparent 2px),radial-gradient(circle at 47% 78%,#7ca4c8 0 1px,transparent 2px),radial-gradient(circle at 62% 20%,#fff 0 1.5px,transparent 2.5px),radial-gradient(circle at 76% 65%,#a8d5f4 0 1px,transparent 2px),radial-gradient(circle at 90% 35%,#fff 0 1px,transparent 2px),linear-gradient(#01040b,#07142c)}
+.s2-evidence-target{position:absolute;top:50%;width:19px;height:19px;transform:translate(-50%,-50%);border:3px solid #e8fdff;border-radius:50%;background:#42d8ff;box-shadow:0 0 0 7px #62e7ff1d,0 0 21px #62e7ff}
+.s2-evidence-target em{position:absolute;left:50%;top:24px;transform:translateX(-50%);padding:3px 5px;border:1px solid #62e7ff55;border-radius:5px;background:#020611df;color:#dffaff;font-size:7px;font-style:normal;font-weight:900;white-space:nowrap}
+.s2-evidence-overlap footer{padding:7px 10px;color:#aebbd2;font-size:8px}
+
+/* Riddle-driven annual-parallax password. */
+.s2-q2-panel{max-width:850px;margin:0 auto}.s2-riddle-box{margin-top:10px;padding:13px 15px;border:1px solid #62e7ff55;border-radius:12px;background:linear-gradient(145deg,#06142b,#081025)}
+.s2-riddle-box small{color:var(--cyan);font-size:7px;font-weight:900;letter-spacing:.12em}.s2-riddle-box p{margin:7px 0 0;color:#e9f1ff;font-size:12px;line-height:1.65;text-align:center}.s2-riddle-box b{color:var(--gold)}
+.s2-definition-locked,.s2-definition-record{display:grid;gap:5px;margin-top:9px;padding:11px 13px;border-radius:11px}
+.s2-definition-locked{border:1px dashed #687895;background:#030817;color:#9eacc6;text-align:center}.s2-definition-locked b{color:#eef5ff;font-size:11px}.s2-definition-locked span,.s2-definition-locked em{font-size:8px;font-style:normal}.s2-definition-locked em{color:var(--gold)}
+.s2-definition-record{border:1px solid #65edb477;background:#65edb40d}.s2-definition-record small{color:var(--good);font-size:7px;font-weight:900}.s2-definition-record p{margin:0;color:#eefbf7;font-size:13px;line-height:1.65;text-align:center}.s2-definition-record strong{color:var(--gold)}.s2-definition-record span{color:#bcd9d0;font-size:8px;text-align:center}
+.s2-password-field{display:grid;grid-template-columns:auto minmax(180px,1fr);gap:10px;align-items:center;margin-top:10px;padding:9px 11px;border:1px solid #ffffff20;border-radius:10px;background:#071127}.s2-password-field span{font-size:9px;font-weight:900}.s2-password-field input{width:100%;height:42px;padding:8px 12px;border:1px solid #62e7ff77;border-radius:9px;background:#020611;color:white;text-align:center;font-size:15px;font-weight:900;letter-spacing:.12em;outline:none}.s2-password-field input:focus{border-color:var(--gold);box-shadow:0 0 0 3px #ffd66e1c}
+.s2-definition-found{grid-template-columns:118px 1fr auto}.s2-definition-icon{width:108px;height:108px;display:grid;place-items:center;border:1px solid #65edb477;border-radius:13px;background:#65edb414;color:var(--good);font-size:42px}.s2-definition-found strong{color:var(--gold)}
+
+.s2-door-open-notice{position:absolute;z-index:12;right:2%;bottom:3%;width:min(370px,47%);display:grid;grid-template-columns:1fr auto;gap:12px;align-items:center;padding:12px 13px;border:1px solid #65edb499;border-radius:13px;background:#061c1af0;box-shadow:0 12px 40px #000b,0 0 28px #65edb42d}.s2-door-open-notice small,.s2-door-open-notice b,.s2-door-open-notice span{display:block}.s2-door-open-notice small{color:var(--good);font-size:7px;font-weight:900;letter-spacing:.13em}.s2-door-open-notice b{margin:2px 0;font-size:14px}.s2-door-open-notice span{color:#bff8e4;font-size:8px}.s2-door-open-notice button{white-space:nowrap}
+
+@media(max-width:700px){.s2-evidence-field{height:155px}.s2-password-field{grid-template-columns:1fr;gap:5px}.s2-definition-found{grid-template-columns:80px 1fr auto}.s2-definition-icon{width:72px;height:72px}.s2-door-open-notice{right:2%;left:2%;bottom:2%;width:auto;grid-template-columns:1fr auto}}
+@media(orientation:landscape) and (max-height:700px){.s2-riddle-box{margin-top:5px;padding:6px 9px}.s2-riddle-box p{margin-top:3px;font-size:8px;line-height:1.4}.s2-definition-locked,.s2-definition-record{margin-top:5px;padding:5px 8px}.s2-definition-record p{font-size:9px;line-height:1.4}.s2-password-field{margin-top:5px;padding:5px 8px}.s2-password-field input{height:34px}.s2-evidence-field{height:100px}.s2-door-open-notice{bottom:2%;padding:8px 10px}.s2-door-open-notice b{font-size:11px}}
