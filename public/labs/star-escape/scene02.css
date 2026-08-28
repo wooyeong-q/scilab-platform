@@ -70,7 +70,7 @@
 /* Scene 2 final story flow and supplied room recovery backgrounds. */
 .s2-room-stage0{background-image:url('/labs/star-escape/assets/scene02/scene2_room_00_standby_v2.webp')}
 .s2-room-stage1{background-image:url('/labs/star-escape/assets/scene02/scene2_room_01_sensor_restored_v2.webp')}
-.s2-room-stage2{background-image:url('/labs/star-escape/assets/scene02/scene2_room_02_parallax_active_v2.webp')}
+.s2-room-stage2{background-image:url('/labs/star-escape/assets/scene02/scene2_room_02_parallax_active_pencil.webp')}
 .s2-room-stage3{background-image:url('/labs/star-escape/assets/scene02/scene2_room_03_distance_restored_v2.webp')}
 .s2-room-stage-panel-open{background-image:url('/labs/star-escape/assets/scene02/scene2_room_03_panel_open_v2.webp')}
 .s2-room-stage4{background-image:url('/labs/star-escape/assets/scene02/scene2_room_04_door_open_v2.webp')}
@@ -105,3 +105,16 @@
 
 @media(max-width:700px){.s2-evidence-field{height:155px}.s2-password-field{grid-template-columns:1fr;gap:5px}.s2-definition-found{grid-template-columns:80px 1fr auto}.s2-definition-icon{width:72px;height:72px}.s2-door-open-notice,.s2-panel-open-notice{right:2%;left:2%;bottom:2%;width:auto;grid-template-columns:1fr auto}}
 @media(orientation:landscape) and (max-height:700px){.s2-riddle-box{margin-top:5px;padding:6px 9px}.s2-riddle-box p{margin-top:3px;font-size:8px;line-height:1.4}.s2-definition-locked,.s2-definition-record{margin-top:5px;padding:5px 8px}.s2-definition-record p{font-size:9px;line-height:1.4}.s2-password-field{margin-top:5px;padding:5px 8px}.s2-password-field input{height:34px}.s2-evidence-field{height:100px}.s2-door-open-notice,.s2-panel-open-notice{bottom:2%;padding:8px 10px}.s2-door-open-notice b,.s2-panel-open-notice b{font-size:11px}}
+
+/* Dialogue portraits, readable speaker names, hover labels, and the unlocked wall-panel state. */
+.s2-dialogue small{font-size:14px;letter-spacing:.04em}
+.s2-hotspot{--spot-x:50%;--spot-y:50%}
+.s2-hotspot::after{left:var(--spot-x);top:var(--spot-y)}
+.s2-hotspot:not(.secret-clue):hover::before,.s2-hotspot:not(.secret-clue):focus-visible::before{content:attr(data-label);position:absolute;z-index:40;left:var(--spot-x);top:calc(var(--spot-y) - 17px);transform:translate(-50%,-100%);width:max-content;max-width:180px;padding:6px 9px;border:1px solid #62e7ff88;border-radius:7px;background:#050b1df2;color:#f7fbff;font-size:10px;font-weight:900;line-height:1.25;white-space:nowrap;box-shadow:0 8px 22px #000a;pointer-events:none}
+.s2-object-calibration{--spot-x:40%;--spot-y:24%}
+.s2-panel-unlocked-overlay{position:absolute;z-index:7;right:.8%;top:8%;width:12%;height:39%;object-fit:contain;filter:drop-shadow(0 0 12px #62e7ff66);pointer-events:none}
+.s2-ending-panel-hotspot{z-index:20}
+.s2-ending-dialogue{display:grid;grid-template-columns:78px 1fr;gap:13px;align-items:center}
+.s2-ending-dialogue img{width:72px;height:72px;object-fit:contain;filter:drop-shadow(0 0 12px #62e7ff55)}
+.s2-ending-dialogue small{font-size:13px}
+@media(max-width:900px){.s2-dialogue small{font-size:11px}.s2-ending-dialogue{grid-template-columns:58px 1fr}.s2-ending-dialogue img{width:52px;height:52px}.s2-ending-dialogue small{font-size:11px}}

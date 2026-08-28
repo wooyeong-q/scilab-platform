@@ -209,7 +209,7 @@
       var classes = ['s1-hotspot'];
       if (visited.has(key)) classes.push('visited');
       if (question === 3 && item.id === 'navigation') classes.push('required');
-      return '<button class="' + classes.join(' ') + '" data-object="' + item.id + '" aria-label="' + esc(item.name) + '" style="left:' + item.box[0] + '%;top:' + item.box[1] + '%;width:' + item.box[2] + '%;height:' + item.box[3] + '%"></button>';
+      return '<button class="' + classes.join(' ') + '" data-object="' + item.id + '" data-label="' + esc(item.name) + '" aria-label="' + esc(item.name) + '" style="left:' + item.box[0] + '%;top:' + item.box[1] + '%;width:' + item.box[2] + '%;height:' + item.box[3] + '%"></button>';
     }).join('');
     return '<div class="s1-shell"><div class="s1-room ' + roomState(question) + '" data-power="' + roomState(question) + '">' +
       '<div class="s1-title"><small>OBSERVATION ROOM 01</small><b>뒤바뀐 별 기록</b></div>' +
@@ -225,8 +225,11 @@
 
   function dialogueMarkup() {
     var item = intro[Math.min(introStep, intro.length - 1)];
+    var isLumen = item[0].indexOf('루멘') === 0;
+    var role = Math.max(1, Math.min(4, Number(context.state.player.role || 1)));
+    var portrait = isLumen ? 'ui_lumen_ai_icon.webp' : 'char_student_0' + role + '_' + ['female_bob', 'male_tablet', 'female_ponytail', 'male_glasses'][role - 1] + '.webp';
     return '<button class="s1-dialogue" id="s1Dialogue">' +
-      '<img class="portrait" src="' + image('characters/ui_lumen_ai_icon.webp') + '" alt="루멘">' +
+      '<img class="portrait" src="' + image('characters/' + portrait) + '" alt="' + esc(item[0]) + '">' +
       '<span><small>' + esc(item[0]) + '</small><p>' + esc(item[1]) + '</p></span>' +
       '<span class="advance">터치하여 계속 ▼</span></button>';
   }
@@ -625,7 +628,7 @@
 
   function render(options) {
     context = options;
-    var nextIdentity = options.state.session.code + ':' + options.state.player.team + ':' + options.state.player.role;
+    var nextIdentity = options.state.session.code + ':' + options.state.player.team + ':' + options.state.player.role + ':' + (options.state.session.startedAt || 'waiting');
     if (identity !== nextIdentity) {
       identity = nextIdentity;
       restoreLocal();

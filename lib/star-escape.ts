@@ -479,6 +479,33 @@ export async function controlStarEscapeSession(code: string, teacherKey: string,
       question_started_at=COALESCE(question_started_at, ${startedAt}), updated_at=NOW() WHERE session_id=${sessionId}`;
     return { status: 'started' as const, startedAt };
   }
+  if (action === 'extend') {
+    const seconds = Math.max(300, Math.min(1800, Number(input.seconds) || 600));
+    const rows = await db`UPDATE star_escape_sessions SET duration_seconds=LEAST(3600,
+        GREATEST(duration_seconds, CEIL(EXTRACT(EPOCH FROM (NOW()-started_at)))::int)+${seconds})
+      WHERE id=${sessionId} AND started_at IS NOT NULL
+      RETURNING duration_seconds, started_at`;
+    if (!rows[0]) return { status: 'invalid' as const };
+    const elapsed = Math.max(0, Math.floor((Date.now() - new Date(String(rows[0].started_at)).getTime()) / 1000));
+    return {
+      status: 'extended' as const,
+      durationSeconds: Number(rows[0].duration_seconds || 1800),
+      remainingSeconds: Math.max(0, Number(rows[0].duration_seconds || 1800) - elapsed),
+    };
+  }
+  if (action === 'restart') {
+    const rows = await db`UPDATE star_escape_sessions SET started_at=NOW(), duration_seconds=1800
+      WHERE id=${sessionId} RETURNING started_at`;
+    if (!rows[0]) return { status: 'invalid' as const };
+    const startedAt = new Date(String(rows[0].started_at)).toISOString();
+    await db`DELETE FROM star_escape_attempts WHERE session_id=${sessionId}`;
+    await db`DELETE FROM star_escape_hints WHERE session_id=${sessionId}`;
+    await db`UPDATE star_escape_team_progress SET stage=1, question_no=1,
+      stage_started_at=${startedAt}, question_started_at=${startedAt}, penalty_seconds=0, hint_count=0,
+      last_submitter=NULL, last_action_status=NULL, last_action_at=NULL, completed_at=NULL, updated_at=NOW()
+      WHERE session_id=${sessionId}`;
+    return { status: 'restarted' as const, startedAt, durationSeconds: 1800 };
+  }
   if (action === 'hint') {
     const message = String(input.message || '').trim().slice(0, 200);
     const teamValue = String(input.team || 'all');
