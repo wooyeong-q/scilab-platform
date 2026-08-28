@@ -177,6 +177,36 @@
   .s1-star-visual{width:clamp(72px,13vw,104px);height:clamp(72px,13vw,104px)}
   .s1-wire-node.color .s1-star-visual img{width:100%;height:100%;max-width:none;transform:scale(4.8)}
 }
+
+/* Large visual-novel portraits and classroom-readable puzzle copy. */
+.s1-dialogue{overflow:visible}
+.s1-dialogue.speaker-crew{left:27%;display:block;min-height:126px;padding:22px 20px 18px}
+.s1-dialogue.speaker-crew .portrait{position:absolute;z-index:2;left:-205px;bottom:-2px;width:195px;height:270px;object-fit:contain;object-position:center bottom;filter:drop-shadow(0 15px 16px #000b)}
+.s1-dialogue.speaker-ai{grid-template-columns:98px 1fr;gap:15px}
+.s1-dialogue.speaker-ai .portrait{width:92px;height:92px}
+.s1-dialogue small{font-size:15px}.s1-dialogue p{font-size:clamp(15px,1.55vw,20px)}
+.s1-puzzle-head small{font-size:10px}.s1-puzzle-head h2{font-size:22px}
+.s1-wire-guide small,.s1-verification-guide small{font-size:10px}
+.s1-wire-guide b{font-size:19px}.s1-wire-guide p{font-size:13px;line-height:1.5}
+.s1-verification-guide>b{font-size:21px}.s1-verification-guide p{font-size:14px;line-height:1.6}
+.s1-wire-node b{font-size:13px}.s1-wire-node small{font-size:9px}
+.s1-record strong{font-size:19px}.s1-record-copy>b{font-size:13px}.s1-record-copy>span{font-size:12px;line-height:1.55}
+.s1-star-card b{font-size:12px}.s1-selection-count{font-size:12px}.s1-selection-count b{font-size:14px}
+.s1-feedback,.s1-hintbox{font-size:12px;line-height:1.55}.s1-footer button{font-size:13px}
+@media(max-width:900px){
+  .s1-dialogue.speaker-crew{left:25%;right:2%;min-height:105px;padding:17px 14px 15px}
+  .s1-dialogue.speaker-crew .portrait{left:-150px;width:142px;height:218px}
+  .s1-dialogue.speaker-ai{grid-template-columns:72px 1fr}.s1-dialogue.speaker-ai .portrait{width:66px;height:66px}
+  .s1-dialogue small{font-size:13px}.s1-dialogue p{font-size:14px}
+}
+@media(max-width:600px) and (orientation:portrait){
+  .s1-dialogue.speaker-crew{left:31%;min-height:112px}
+  .s1-dialogue.speaker-crew .portrait{left:-116px;width:110px;height:185px}
+}
+@media(max-height:560px) and (orientation:landscape){
+  .s1-dialogue.speaker-crew{left:19%;min-height:88px;padding:14px 13px 12px}
+  .s1-dialogue.speaker-crew .portrait{left:-132px;width:126px;height:178px}
+}
 @media(max-height:560px) and (orientation:landscape){
   .s1-wire-board{grid-template-columns:repeat(4,minmax(0,1fr));grid-template-rows:46px minmax(62px,1fr) 112px;column-gap:9px;min-height:250px;padding:6px 10px 10px}
   .s1-wire-bank.roles{grid-column:1/-1;grid-row:1;grid-template-columns:repeat(4,minmax(0,1fr));grid-template-rows:1fr;gap:9px}

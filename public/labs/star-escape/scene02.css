@@ -118,3 +118,45 @@
 .s2-ending-dialogue img{width:72px;height:72px;object-fit:contain;filter:drop-shadow(0 0 12px #62e7ff55)}
 .s2-ending-dialogue small{font-size:13px}
 @media(max-width:900px){.s2-dialogue small{font-size:11px}.s2-ending-dialogue{grid-template-columns:58px 1fr}.s2-ending-dialogue img{width:52px;height:52px}.s2-ending-dialogue small{font-size:11px}}
+
+/* Large visual-novel portraits and classroom-readable puzzle copy. */
+.s2-dialogue{overflow:visible}
+.s2-dialogue.speaker-crew{left:27%;display:block;min-height:126px;padding:22px 20px 18px}
+.s2-dialogue.speaker-crew>img{position:absolute;z-index:2;left:-205px;bottom:-2px;width:195px;height:270px;object-fit:contain;object-position:center bottom;filter:drop-shadow(0 15px 16px #000b)}
+.s2-dialogue.speaker-ai,.s2-dialogue.speaker-device{grid-template-columns:98px 1fr;gap:15px}
+.s2-dialogue.speaker-ai>img,.s2-dialogue.speaker-device>img{width:92px;height:92px;object-fit:contain;filter:drop-shadow(0 0 15px #62e7ff66)}
+.s2-dialogue small{font-size:15px}.s2-dialogue p{font-size:clamp(15px,1.55vw,20px)}
+.s2-puzzle-head small{font-size:10px}.s2-puzzle-head h2{font-size:22px}
+.s2-puzzle .s2-guide small{font-size:10px}.s2-puzzle .s2-guide b{font-size:19px}.s2-puzzle .s2-guide p{font-size:13px;line-height:1.55}
+.s2-puzzle .s2-story-why strong{font-size:11px}.s2-puzzle .s2-story-why span{font-size:12px;line-height:1.55}
+.s2-coop-note{padding:10px 12px;font-size:12px;line-height:1.55}
+.s2-card b{font-size:14px}.s2-card small{font-size:9px}.s2-letter-card span{font-size:10px}.s2-letter-card b{font-size:31px}.s2-letter-card small{font-size:8px}
+.s2-slot-label{font-size:13px}.s2-slot{font-size:12px}.s2-selection-note{font-size:11px}.s2-selection-note b{font-size:13px}.s2-selection-note button{font-size:10px}
+.s2-feedback{font-size:12px;line-height:1.5}.s2-footer button{font-size:13px}
+.s2-clue-tab-button{font-size:11px}.s2-clue-tab-button b{font-size:10px}.s2-role-tabs button{font-size:11px}
+.s2-clue-drawer>header small{font-size:10px}.s2-clue-drawer h2{font-size:22px}.s2-clue-summary b{font-size:14px}.s2-clue-summary span{font-size:11px}.s2-clue-help,.s2-clue-empty{font-size:12px}
+.s2-observation-card header b{font-size:14px}.s2-observation-card header span{font-size:11px}.s2-observation-card footer{font-size:10px}.s2-missing-card span{font-size:11px}
+.s2-distance-rail>span{font-size:11px}.s2-distance-slot{font-size:12px}.s2-star-chip small{font-size:9px}
+.s2-q2-compact-head small{font-size:10px}.s2-q2-compact-head b{font-size:20px}.s2-riddle-box small{font-size:10px}.s2-riddle-box p{font-size:16px}.s2-password-field span{font-size:12px}.s2-password-field input{font-size:17px}
+.s2-ending-dialogue{overflow:visible}
+.s2-ending-dialogue.speaker-crew{display:block;width:min(720px,76%);margin-left:18%;padding:20px 22px 23px}
+.s2-ending-dialogue.speaker-crew>img{position:absolute;z-index:2;left:-190px;bottom:-2px;width:180px;height:255px;object-fit:contain;object-position:center bottom;filter:drop-shadow(0 15px 16px #000b)}
+.s2-ending-dialogue.speaker-ai,.s2-ending-dialogue.speaker-device{grid-template-columns:82px 1fr}
+.s2-ending-dialogue.speaker-ai>img,.s2-ending-dialogue.speaker-device>img{width:76px;height:76px}
+.s2-ending-dialogue small{font-size:14px}.s2-ending-dialogue p{font-size:clamp(14px,1.45vw,19px)}
+@media(max-width:900px){
+  .s2-dialogue.speaker-crew{left:25%;right:2%;min-height:105px;padding:17px 14px 15px}
+  .s2-dialogue.speaker-crew>img{left:-150px;width:142px;height:218px}
+  .s2-dialogue.speaker-ai,.s2-dialogue.speaker-device{grid-template-columns:72px 1fr}.s2-dialogue.speaker-ai>img,.s2-dialogue.speaker-device>img{width:66px;height:66px}
+  .s2-dialogue small{font-size:13px}.s2-dialogue p{font-size:14px}
+  .s2-ending-dialogue.speaker-crew{width:72%;margin-left:22%}.s2-ending-dialogue.speaker-crew>img{left:-126px;width:120px;height:195px}
+}
+@media(max-width:600px) and (orientation:portrait){
+  .s2-dialogue.speaker-crew{left:31%;min-height:112px}
+  .s2-dialogue.speaker-crew>img{left:-116px;width:110px;height:185px}
+}
+@media(max-height:560px) and (orientation:landscape){
+  .s2-dialogue.speaker-crew{left:19%;min-height:88px;padding:14px 13px 12px}
+  .s2-dialogue.speaker-crew>img{left:-132px;width:126px;height:178px}
+  .s2-ending-dialogue.speaker-crew{width:78%;min-height:82px;margin-left:16%;padding:14px 16px 19px}.s2-ending-dialogue.speaker-crew>img{left:-116px;width:110px;height:165px}
+}

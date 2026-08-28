@@ -228,7 +228,7 @@
     var isLumen = item[0].indexOf('루멘') === 0;
     var role = Math.max(1, Math.min(4, Number(context.state.player.role || 1)));
     var portrait = isLumen ? 'ui_lumen_ai_icon.webp' : 'char_student_0' + role + '_' + ['female_bob', 'male_tablet', 'female_ponytail', 'male_glasses'][role - 1] + '.webp';
-    return '<button class="s1-dialogue" id="s1Dialogue">' +
+    return '<button class="s1-dialogue ' + (isLumen ? 'speaker-ai' : 'speaker-crew') + '" id="s1Dialogue">' +
       '<img class="portrait" src="' + image('characters/' + portrait) + '" alt="' + esc(item[0]) + '">' +
       '<span><small>' + esc(item[0]) + '</small><p>' + esc(item[1]) + '</p></span>' +
       '<span class="advance">터치하여 계속 ▼</span></button>';
