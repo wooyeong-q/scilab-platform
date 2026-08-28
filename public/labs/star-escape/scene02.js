@@ -19,14 +19,14 @@ var intro=[
 ];
 var objects=[
 {id:'leftObserver',name:'좌우 관측 위치 전환 장치',box:[5,34,23,36]},
-{id:'camera',name:'천장 보조 카메라',box:[38,2,21,18]},
+{id:'camera',name:'천장 보조 카메라',box:[24,0,16,20]},
 {id:'hatch',name:'바닥 점검구',box:[34,67,27,26]},
-{id:'rail',name:'이동식 관측 레일',box:[72,62,24,27]},
+{id:'rail',name:'이동식 관측 레일',box:[1,54,21,19]},
 {id:'calibration',name:'관측 센서 점검 장치',box:[25,38,22,28]},
-{id:'pencil',name:'콘솔 위 연필',box:[29,48,10,12]},
+{id:'pencil',name:'콘솔 위 연필',box:[29,48,7,10]},
 {id:'orbit',name:'중앙 궤도 관측 투영기',box:[58,30,16,38]},
 {id:'distance',name:'거리 자료 복구 장치',box:[70,35,26,31]},
-{id:'communicator',name:'일반 통신기',box:[64,18,8,21]},
+{id:'communicator',name:'일반 통신기',box:[59,25,5,17]},
 {id:'panel',name:'수상한 벽면 패널',box:[89,16,9,29]},
 {id:'window',name:'관측창',box:[0,9,25,28]},
 {id:'storage',name:'빈 보관함',box:[2,72,14,20]},
@@ -71,7 +71,7 @@ function objective(q){if(q===1)return'관측 카드로 <b>위치 변화가 가�
 function missionChain(){return''}
 function storyWhy(q){if(q===1)return'거리 자료가 사라져 기준별을 다시 정해야 합니다. 각 요원이 맡은 별의 3월·9월 관측 카드를 찾아 위치 변화를 비교하세요.';if(q===2)return'센서는 켜졌지만 연주시차의 정의가 지워졌습니다. 방 안에 숨은 정의 기록을 찾아 분석 장치의 암호를 복원해야 합니다.';return'연주시차가 큰 별일수록 가깝습니다. 네 요원의 관측 결과를 합치면 3번 구획 문을 여는 거리표를 만들 수 있습니다.'}
 function powerStateMarkup(){return''}
-function roomMarkup(q){var required=q===1?'calibration':q===2?'orbit':'distance',stage=q===1?0:q===2?2:3;var hotspots=objects.map(function(o){if(o.id==='pencil'&&q!==2)return'';var found=cardForObject(o.id),done=found&&foundCards.has(found.card.id),isSecret=o.id==='pencil';var cls='s2-hotspot'+(done?' visited':'')+(!done&&found?' card-clue':'')+(isSecret?' secret-clue':'')+(o.id===required?' required':'');var label=isSecret?'콘솔 위 연필':found?'숨겨진 '+found.card.epoch+' 관측 카드':o.name;return'<button class="'+cls+'" data-s2-object="'+o.id+'" aria-label="'+esc(label)+'" style="left:'+o.box[0]+'%;top:'+o.box[1]+'%;width:'+o.box[2]+'%;height:'+o.box[3]+'%"></button>'}).join('');
+function roomMarkup(q){var required=q===1?'calibration':q===2?'orbit':'distance',stage=q===1?(puzzleOpen?1:0):q===2?2:3;var hotspots=objects.map(function(o){if(o.id==='pencil'&&q!==2)return'';var found=cardForObject(o.id),done=found&&foundCards.has(found.card.id),isSecret=o.id==='pencil';var cls='s2-hotspot'+(done?' visited':'')+(!done&&found?' card-clue':'')+(isSecret?' secret-clue':'')+(o.id===required?' required':'');var label=isSecret?'콘솔 위 연필':found?'숨겨진 '+found.card.epoch+' 관측 카드':o.name;return'<button class="'+cls+'" data-s2-object="'+o.id+'" aria-label="'+esc(label)+'" style="left:'+o.box[0]+'%;top:'+o.box[1]+'%;width:'+o.box[2]+'%;height:'+o.box[3]+'%"></button>'}).join('');
 return'<div class="s2-shell"><div class="s2-room s2-room-stage'+stage+'"><div class="s2-title"><small>DISTANCE CALIBRATION ROOM 02</small><b>어긋난 별의 위치</b></div><div class="s2-objective">현재 목표 · '+objective(q)+'</div>'+hotspots+(!puzzleOpen?clueTabButton():'')+(banner?'<div class="s2-system">'+esc(banner)+'</div>':'')+(transitionNotice?transitionMarkup():'')+(inspect?inspectMarkup():'')+(introStep<intro.length?dialogueMarkup():'')+(puzzleOpen?puzzleMarkup(q):'')+(clueTabOpen?clueTabMarkup(q):'')+'</div></div>'}
 function transitionMarkup(){return'<section class="s2-transition" role="dialog" aria-modal="true"><div><small>MISSION LINK UPDATED</small><h2>'+esc(transitionNotice.title)+'</h2><p>'+esc(transitionNotice.text)+'</p><button class="primary" id="s2TransitionContinue">다음 장치 확인</button></div></section>'}
 function dialogueMarkup(){var d=intro[Math.min(introStep,intro.length-1)];return'<button class="s2-dialogue" id="s2Dialogue"><img src="/labs/star-escape/assets/scene01/characters/ui_lumen_ai_icon.webp" alt=""><span><small>'+esc(d[0])+'</small><p>'+esc(d[1])+'</p></span><i class="advance">터치하여 계속 ▼</i></button>'}

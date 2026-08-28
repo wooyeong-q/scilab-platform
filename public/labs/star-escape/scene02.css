@@ -68,12 +68,12 @@
 @media(orientation:landscape) and (max-height:700px){.s2-q2-panel{padding:5px}.s2-q2-panel .s2-guide p{font-size:7px}.s2-q2-panel .s2-story-why{display:none}.s2-q2-panel>.s2-mission-chain{margin:3px 0;padding:2px}.s2-q2-workspace{padding:4px}.s2-one-screen-compare{margin-top:3px}.s2-observation-card.q2-mini .s2-photo-field,.s2-overlay-stack{height:86px}.s2-observation-card.q2-mini header,.s2-overlap-card>header{padding:3px 5px}.s2-observation-card.q2-mini footer{display:none}.s2-opacity-control{padding:2px 5px}.s2-q2-answer{margin-top:3px}.s2-q2-answer .s2-parallax-options button{min-height:32px;padding:3px 5px}.s2-q2-answer .s2-parallax-options span{font-size:6px}.s2-q2-answer .s2-science-note{padding:3px 5px}.s2-power-node b,.s2-power-node small{font-size:5px}.s2-recovery-flash{top:11%;padding:8px}.s2-recovery-flash b{font-size:14px}}
 
 /* Scene 2 final story flow and supplied room recovery backgrounds. */
-.s2-room-stage0{background-image:url('/labs/star-escape/assets/scene02/scene2_room_00_standby_pencil.webp')}
-.s2-room-stage1{background-image:url('/labs/star-escape/assets/scene02/scene2_room_01_sensor_restored_pencil.webp')}
-.s2-room-stage2{background-image:url('/labs/star-escape/assets/scene02/scene2_room_02_parallax_active_pencil.webp')}
-.s2-room-stage3{background-image:url('/labs/star-escape/assets/scene02/scene2_room_03_distance_restored_pencil.webp')}
-.s2-room-stage-panel-open{background-image:url('/labs/star-escape/assets/scene02/scene2_room_03_panel_open_pencil.webp')}
-.s2-room-stage4{background-image:url('/labs/star-escape/assets/scene02/scene2_room_04_door_open_pencil.webp')}
+.s2-room-stage0{background-image:url('/labs/star-escape/assets/scene02/scene2_room_00_standby_v2.webp')}
+.s2-room-stage1{background-image:url('/labs/star-escape/assets/scene02/scene2_room_01_sensor_restored_v2.webp')}
+.s2-room-stage2{background-image:url('/labs/star-escape/assets/scene02/scene2_room_02_parallax_active_v2.webp')}
+.s2-room-stage3{background-image:url('/labs/star-escape/assets/scene02/scene2_room_03_distance_restored_v2.webp')}
+.s2-room-stage-panel-open{background-image:url('/labs/star-escape/assets/scene02/scene2_room_03_panel_open_v2.webp')}
+.s2-room-stage4{background-image:url('/labs/star-escape/assets/scene02/scene2_room_04_door_open_v2.webp')}
 .s2-room-stage0::after,.s2-room-stage1::after,.s2-room-stage2::after,.s2-room-stage3::after,.s2-room-stage-panel-open::after,.s2-room-stage4::after{background:linear-gradient(180deg,#0206150a 54%,#02061570 100%)}
 
 /* Every normal investigation/device point is visible. Only the pencil riddle answer stays unmarked. */
