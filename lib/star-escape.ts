@@ -18,10 +18,10 @@ const QUESTIONS = [
     { answer: 'ACDB', label: '같은 별 거리 자료 복구', hint: '처음 조사한 별 A~D의 두 관측 카드에서 위치 변화가 큰 순서를 공유하세요.', hints: ['각 요원이 단서 탭을 다시 열어 3월·9월 카드의 위치 변화를 비교하세요.', '연주시차가 클수록 별까지의 거리는 가깝습니다.', '위치 변화는 A > C > D > B입니다. 따라서 가까운 순서는 A → C → D → B입니다.'] },
   ],
   [
-    { answer: 'OPEN', label: '산개성단 판별', hint: '젊은 별들이 은하 원반에서 느슨하고 불규칙하게 모여 있습니다.' },
-    { answer: 'GLOBULAR', label: '구상성단 판별', hint: '오래된 별들이 둥글고 조밀하게 모이며 우리은하 헤일로에 분포합니다.' },
-    { answer: '1212', label: '성단 기록 비교', hint: '1은 산개성단, 2는 구상성단입니다. 대원 1번부터 차례로 분류하세요.' },
-    { answer: '35214', label: '천체 5종 분류', hint: '발광성운 1, 반사성운 2, 암흑성운 3, 산개성단 4, 구상성단 5로 바꾸세요.' },
+    { answer: '123456', label: '별의 등급 표시 복구', hint: '별은 등급 숫자가 작을수록 밝습니다.' },
+    { answer: 'A', label: '겉보기등급 비교', hint: '전송된 관측 자료와 등급 기준을 다시 확인하세요.', hints: ['각 대원의 단서 탭에 전송된 겉보기등급을 말로 공유하세요.', '별은 등급 숫자가 작을수록 밝습니다.'] },
+    { answer: 'C', label: '기준 거리 실제 밝기 비교', hint: '현재 별들은 서로 다른 거리에 있습니다.', hints: ['현재 별들은 서로 다른 거리에 있습니다.', '별들을 같은 거리에서 비교해 보세요.'] },
+    { answer: 'XYZ', label: '겉보기등급·절대등급 거리 판정', hint: '겉보기등급은 지구에서 보이는 밝기입니다.', hints: ['겉보기등급은 지구에서 보이는 밝기입니다.', '절대등급은 10 pc에서의 밝기입니다.', '실제보다 밝게 보이면 가까운 쪽, 어둡게 보이면 먼 쪽입니다.'] },
   ],
   [
     { answer: 'BARREDSPIRAL', label: '우리은하 모양', hint: '우리은하는 중심에 막대 구조가 있는 나선은하입니다.' },
@@ -103,8 +103,12 @@ export async function ensureStarEscapeDatabase() {
       EXISTS (
         SELECT 1 FROM information_schema.columns
         WHERE table_schema='public' AND table_name='star_escape_team_progress' AND column_name='last_action_status'
-      ) AS has_action_progress`;
-    if (schemaRows[0]?.has_sessions && schemaRows[0]?.has_question_progress && schemaRows[0]?.has_action_progress) {
+      ) AS has_action_progress,
+      EXISTS (
+        SELECT 1 FROM information_schema.columns
+        WHERE table_schema='public' AND table_name='star_escape_team_progress' AND column_name='scene_state'
+      ) AS has_scene_state`;
+    if (schemaRows[0]?.has_sessions && schemaRows[0]?.has_question_progress && schemaRows[0]?.has_action_progress && schemaRows[0]?.has_scene_state) {
       initialized = true;
       return;
     }
@@ -142,6 +146,7 @@ export async function ensureStarEscapeDatabase() {
       last_submitter TEXT,
       last_action_status TEXT,
       last_action_at TIMESTAMPTZ,
+      scene_state JSONB NOT NULL DEFAULT '{}'::jsonb,
       completed_at TIMESTAMPTZ,
       updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
       PRIMARY KEY(session_id, team_name)
@@ -174,6 +179,7 @@ export async function ensureStarEscapeDatabase() {
     await db`ALTER TABLE star_escape_team_progress ADD COLUMN IF NOT EXISTS last_submitter TEXT`;
     await db`ALTER TABLE star_escape_team_progress ADD COLUMN IF NOT EXISTS last_action_status TEXT`;
     await db`ALTER TABLE star_escape_team_progress ADD COLUMN IF NOT EXISTS last_action_at TIMESTAMPTZ`;
+    await db`ALTER TABLE star_escape_team_progress ADD COLUMN IF NOT EXISTS scene_state JSONB NOT NULL DEFAULT '{}'::jsonb`;
     await db`ALTER TABLE star_escape_attempts ADD COLUMN IF NOT EXISTS question_no INTEGER NOT NULL DEFAULT 1`;
     await db`ALTER TABLE star_escape_hints ADD COLUMN IF NOT EXISTS question_no INTEGER NOT NULL DEFAULT 1`;
     await db`CREATE INDEX IF NOT EXISTS star_escape_sessions_expires_idx ON star_escape_sessions(expires_at)`;
@@ -307,6 +313,7 @@ export async function getStarEscapeState(code: string, playerId: string, playerK
       lastSubmitter: progress.last_submitter ? String(progress.last_submitter) : null,
       lastActionStatus: progress.last_action_status ? String(progress.last_action_status) : null,
       lastActionAt: progress.last_action_at ? new Date(String(progress.last_action_at)).toISOString() : null,
+      sceneState: progress.scene_state && typeof progress.scene_state === 'object' ? progress.scene_state : {},
     },
     members: memberRows.map((row) => ({ id: String(row.id), nickname: String(row.nickname), role: Number(row.role_no), online: Date.now() - new Date(String(row.last_seen_at)).getTime() < 15000 })),
     leaderboard: leaderboardFromRows(leaderboardRows as Record<string, unknown>[]),
@@ -360,7 +367,8 @@ export async function submitStarEscapeAnswer(code: string, playerId: string, pla
   const nextQuestion = lastQuestion ? 1 : question + 1;
   const updated = await db`UPDATE star_escape_team_progress SET stage=${nextStage}, question_no=${nextQuestion},
       stage_started_at=CASE WHEN ${lastQuestion} THEN NOW() ELSE stage_started_at END,
-      question_started_at=NOW(), completed_at=CASE WHEN ${nextStage}=5 THEN NOW() ELSE completed_at END,
+      question_started_at=NOW(), scene_state=CASE WHEN ${lastQuestion} THEN '{}'::jsonb ELSE scene_state END,
+      completed_at=CASE WHEN ${nextStage}=5 THEN NOW() ELSE completed_at END,
       last_submitter=${String(player.nickname)}, last_action_status='correct', last_action_at=NOW(), updated_at=NOW()
     WHERE session_id=${sessionId} AND team_name=${team} AND stage=${stage} AND question_no=${question}
     RETURNING stage, question_no, completed_at, last_action_at`;
@@ -374,6 +382,91 @@ export async function submitStarEscapeAnswer(code: string, playerId: string, pla
         submitter: String(player.nickname),
         actionAt: new Date(String(updated[0].last_action_at)).toISOString(),
       }
+    : { status: 'stale' as const };
+}
+
+function sceneSlots(value: unknown, size: number, allowed: readonly string[]) {
+  if (!Array.isArray(value) || value.length !== size) return null;
+  const slots = value.map((entry) => String(entry ?? ''));
+  if (slots.some((entry) => entry && !allowed.includes(entry))) return null;
+  const placed = slots.filter(Boolean);
+  return new Set(placed).size === placed.length ? slots : null;
+}
+
+function normalizeSceneState(value: unknown) {
+  if (!value || typeof value !== 'object' || Array.isArray(value)) return null;
+  const input = value as Record<string, unknown>;
+  const p1Slots = sceneSlots(input.p1Slots, 6, ['1', '2', '3', '4', '5', '6']);
+  const p4Slots = sceneSlots(input.p4Slots, 3, ['X', 'Y', 'Z']);
+  if (!p1Slots || !p4Slots) return null;
+
+  const positionInput = input.p3Positions;
+  if (!positionInput || typeof positionInput !== 'object' || Array.isArray(positionInput)) return null;
+  const rawPositions = positionInput as Record<string, unknown>;
+  const p3Positions = Object.fromEntries(['A', 'B', 'C', 'D'].map((letter) => {
+    const position = Number(rawPositions[letter]);
+    return [letter, Number.isFinite(position) ? Math.max(10, Math.min(90, Math.round(position * 10) / 10)) : 50];
+  })) as Record<'A' | 'B' | 'C' | 'D', number>;
+
+  const q2Selected = ['A', 'B', 'C', 'D'].includes(String(input.q2Selected || '')) ? String(input.q2Selected) : '';
+  const referenceCard = ['A', 'B', 'C', 'D'].includes(String(input.referenceCard || '')) ? String(input.referenceCard) : '';
+  const p1Complete = input.p1Complete === true && p1Slots.join('') === '123456';
+  const dataSent = p1Complete && input.dataSent === true;
+  const q2Complete = dataSent && q2Selected === 'A' && input.q2Complete === true;
+  const p3Aligned = q2Complete && Object.values(p3Positions).every((position) => position === 50) && input.p3Aligned === true;
+  const p3ResultConfirmed = p3Aligned && input.p3ResultConfirmed === true;
+  const q3Complete = p3ResultConfirmed && referenceCard === 'C' && input.q3Complete === true;
+  const p4Complete = q3Complete && p4Slots.join('') === 'XYZ' && input.p4Complete === true;
+  const maintenanceOpen = p4Complete && input.maintenanceOpen === true;
+  const requestedDialogue = Number(input.maintenanceDialogue);
+  const maintenanceDialogue = maintenanceOpen && Number.isInteger(requestedDialogue)
+    ? Math.max(0, Math.min(2, requestedDialogue))
+    : -1;
+  const recordingStarted = maintenanceOpen && maintenanceDialogue >= 2 && input.recordingStarted === true;
+  const requestedLine = Number(input.recordingLine);
+  const recordingLine = recordingStarted && Number.isInteger(requestedLine)
+    ? Math.max(0, Math.min(5, requestedLine))
+    : 0;
+  const recordingComplete = recordingStarted && recordingLine === 5 && input.recordingComplete === true;
+
+  return {
+    p1Slots,
+    p1Complete,
+    dataSent,
+    q2Selected,
+    q2Complete,
+    p3Positions,
+    p3Aligned,
+    p3ResultConfirmed,
+    referenceCard,
+    q3Complete,
+    p4Slots,
+    p4Complete,
+    maintenanceOpen,
+    maintenanceDialogue,
+    recordingStarted,
+    recordingLine,
+    recordingComplete,
+  };
+}
+
+export async function updateStarEscapeSceneState(code: string, playerId: string, playerKey: string, stageValue: unknown, questionValue: unknown, stateValue: unknown) {
+  await ensureStarEscapeDatabase();
+  const player = await verifiedPlayer(code, playerId, playerKey);
+  if (!player) return { status: 'unauthorized' as const };
+  const stage = Number(stageValue);
+  const question = Number(questionValue);
+  const sceneState = normalizeSceneState(stateValue);
+  if (stage !== 3 || !Number.isInteger(question) || question < 1 || question > STAGE_QUESTION_COUNTS[2] || !sceneState) {
+    return { status: 'invalid' as const };
+  }
+  const serialized = JSON.stringify(sceneState);
+  const rows = await database()`UPDATE star_escape_team_progress SET scene_state=${serialized}::jsonb, updated_at=NOW()
+    WHERE session_id=${String(player.session_id)} AND team_name=${String(player.team_name)}
+      AND stage=${stage} AND question_no=${question}
+    RETURNING scene_state`;
+  return rows[0]
+    ? { status: 'ok' as const, sceneState: rows[0].scene_state }
     : { status: 'stale' as const };
 }
 
@@ -502,7 +595,8 @@ export async function controlStarEscapeSession(code: string, teacherKey: string,
     await db`DELETE FROM star_escape_hints WHERE session_id=${sessionId}`;
     await db`UPDATE star_escape_team_progress SET stage=1, question_no=1,
       stage_started_at=${startedAt}, question_started_at=${startedAt}, penalty_seconds=0, hint_count=0,
-      last_submitter=NULL, last_action_status=NULL, last_action_at=NULL, completed_at=NULL, updated_at=NOW()
+      last_submitter=NULL, last_action_status=NULL, last_action_at=NULL, scene_state='{}'::jsonb,
+      completed_at=NULL, updated_at=NOW()
       WHERE session_id=${sessionId}`;
     return { status: 'restarted' as const, startedAt, durationSeconds: 1800 };
   }
