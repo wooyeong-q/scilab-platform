@@ -37,7 +37,7 @@
 
   var absoluteMagnitudes = { A: 2, B: 4, C: -2, D: 5 };
   var distanceDefaults = { A: 22, B: 37, C: 82, D: 68 };
-  var distanceLanes = { A: '24%', B: '41%', C: '59%', D: '76%' };
+  var distanceAngles = { A: -135, B: -45, C: 45, D: 135 };
   var recordingLines = [
     { speaker: '미확인 음성', text: '여기까지 왔다면 알겠지.' },
     { speaker: '미확인 음성', text: '보이는 값과 실제 값은 같지 않아.' },
@@ -296,24 +296,51 @@
       '</div></div>' + puzzleFooter('전송된 관측 자료와 등급 기준을 비교하세요.', false, '') + '</section>';
   }
 
-  function brightness(letter, x) {
+  function distanceFromPosition(position) {
+    return 5 + (Number(position) - 10) / 80 * 10;
+  }
+
+  function distanceLabel(position) {
+    return distanceFromPosition(position).toFixed(1) + ' pc';
+  }
+
+  function distancePoint(letter, position) {
+    var angle = distanceAngles[letter] * Math.PI / 180;
+    var radius = 9 + Number(position) * .22;
+    return {
+      x: (50 + Math.cos(angle) * radius).toFixed(2),
+      y: (49 + Math.sin(angle) * radius * 4 / 3).toFixed(2),
+    };
+  }
+
+  function brightness(letter, position) {
     var base = { A: 1.08, B: .86, C: 1.42, D: .72 }[letter];
-    var distance = 3.5 + (Number(x) - 10) / 80 * 15;
+    var distance = distanceFromPosition(position);
     return Math.max(.42, Math.min(1.75, base * Math.pow(10 / distance, .72))).toFixed(2);
   }
 
   function p3Markup(state) {
     var positions = distanceDraft || state.p3Positions;
+    var alignedCount = ['A', 'B', 'C', 'D'].filter(function (letter) { return Math.abs(Number(positions[letter]) - 50) < .01; }).length;
+    var spokes = ['A', 'B', 'C', 'D'].map(function (letter) {
+      return '<i class="s3-distance-spoke" style="--angle:' + distanceAngles[letter] + 'deg" aria-hidden="true"></i>';
+    }).join('');
     var stars = ['A', 'B', 'C', 'D'].map(function (letter) {
-      var x = Number(positions[letter]);
-      var snapped = Math.abs(x - 50) < .01;
-      return '<button class="s3-distance-star' + (snapped ? ' snapped' : '') + '" data-s3-distance-star="' + letter + '" style="--x:' + x + '%;--lane:' + distanceLanes[letter] + ';--bright:' + brightness(letter, x) + '" aria-label="별 ' + letter + ' 거리 이동">' +
-        '<img src="' + img('scene03_p03_star_' + letter.toLowerCase() + '.png') + '" alt="별 ' + letter + '"><small>' + letter + (snapped ? ' · 10 pc' : '') + '</small></button>';
+      var position = Number(positions[letter]);
+      var point = distancePoint(letter, position);
+      var snapped = Math.abs(position - 50) < .01;
+      var selected = selectedKind === 'p3' && selectedValue === letter;
+      return '<button class="s3-distance-star' + (snapped ? ' snapped' : '') + (selected ? ' selected' : '') + '" data-s3-distance-star="' + letter + '" style="--sx:' + point.x + '%;--sy:' + point.y + '%;--bright:' + brightness(letter, position) + '" aria-label="별 ' + letter + ', 현재 거리 ' + distanceLabel(position) + ', 10 pc 기준 고리로 이동">' +
+        '<img src="' + img('scene03_p03_star_' + letter.toLowerCase() + '.png') + '" alt="별 ' + letter + '"><small>' + letter + ' · ' + distanceLabel(position) + '</small></button>';
+    }).join('');
+    var readouts = ['A', 'B', 'C', 'D'].map(function (letter) {
+      var done = Math.abs(Number(positions[letter]) - 50) < .01;
+      return '<span class="' + (done ? 'done' : '') + '"><b>' + letter + '</b>' + distanceLabel(positions[letter]) + '</span>';
     }).join('');
     return '<section class="s3-puzzle" role="dialog" aria-modal="true">' + puzzleHeader(3, '같은 거리에서 실제 밝기 비교') +
-      '<div class="s3-puzzle-body"><div class="s3-distance-layout"><div class="s3-distance-guide"><p>별들의 실제 밝기를 비교할 수 있도록 <strong>조건을 같게</strong> 만드세요.</p><small>별을 움직이면 보이는 밝기가 실시간으로 변합니다.</small></div>' +
-      '<div class="s3-distance-surface" id="s3DistanceSurface"><div class="s3-distance-axis"><span class="near">가까운 위치</span><span class="far">먼 위치</span></div><button class="s3-tenpc-line" id="s3TenPc" aria-label="기준 거리 10 pc"></button>' + stars + '</div></div></div>' +
-      puzzleFooter(state.p3Aligned ? '모든 별이 기준 거리 10 pc에 있습니다.' : '별을 같은 거리 조건으로 맞추세요.', false, '') +
+      '<div class="s3-puzzle-body"><div class="s3-distance-layout"><div class="s3-distance-guide"><p>별 A~D를 각각 끌어 <strong>노란색 10 pc 기준 고리</strong>에 맞추세요.</p><small>별을 누른 뒤 기준 고리를 눌러도 이동합니다.</small><div class="s3-distance-progress"><b>' + alignedCount + '/4</b><span>10 pc 고정</span></div></div>' +
+      '<div class="s3-distance-surface" id="s3DistanceSurface">' + spokes + '<button class="s3-tenpc-ring' + (selectedKind === 'p3' && selectedValue ? ' ready' : '') + '" id="s3TenPc" aria-label="선택한 별을 기준 거리 10 pc로 이동"></button><i class="s3-distance-center" aria-hidden="true"></i>' + stars + '<div class="s3-distance-readouts" aria-live="polite">' + readouts + '</div></div></div></div>' +
+      puzzleFooter(state.p3Aligned ? '완료 · 네 별이 모두 10 pc 기준 고리에 고정되었습니다.' : '각 별을 드래그하거나, 별 선택 후 10 pc 기준 고리를 누르세요.', false, '') +
       (state.p3Aligned ? absoluteResultMarkup() : '') + '</section>';
   }
 
@@ -595,10 +622,18 @@
         function update(moveEvent) {
           moved = true;
           var rect = surface.getBoundingClientRect();
-          var percent = Math.max(10, Math.min(90, (moveEvent.clientX - rect.left) / rect.width * 100));
-          distanceDraft[letter] = Math.round(percent * 10) / 10;
-          element.style.setProperty('--x', distanceDraft[letter] + '%');
+          var angle = distanceAngles[letter] * Math.PI / 180;
+          var centerX = rect.left + rect.width * .5;
+          var centerY = rect.top + rect.height * .49;
+          var projection = (moveEvent.clientX - centerX) * Math.cos(angle) + (moveEvent.clientY - centerY) * Math.sin(angle);
+          var position = (projection / rect.width - .09) / .0022;
+          distanceDraft[letter] = Math.round(Math.max(10, Math.min(90, position)) * 10) / 10;
+          var point = distancePoint(letter, distanceDraft[letter]);
+          element.style.setProperty('--sx', point.x + '%');
+          element.style.setProperty('--sy', point.y + '%');
           element.style.setProperty('--bright', brightness(letter, distanceDraft[letter]));
+          var label = element.querySelector('small');
+          if (label) label.textContent = letter + ' · ' + distanceLabel(distanceDraft[letter]);
         }
 
         async function finish() {
@@ -613,7 +648,7 @@
             draw();
             return;
           }
-          if (Math.abs(Number(distanceDraft[letter]) - 50) <= 7) distanceDraft[letter] = 50;
+          if (Math.abs(Number(distanceDraft[letter]) - 50) <= 6) distanceDraft[letter] = 50;
           var aligned = ['A', 'B', 'C', 'D'].every(function (name) { return Math.abs(Number(distanceDraft[name]) - 50) < .01; });
           var positions = Object.assign({}, distanceDraft);
           distanceDraft = null;
@@ -636,7 +671,7 @@
     });
     var line = document.getElementById('s3TenPc');
     if (line) line.onclick = async function () {
-      if (selectedKind !== 'p3' || !selectedValue) return;
+      if (selectedKind !== 'p3' || !selectedValue) return setFeedback('먼저 이동할 별 A~D 중 하나를 선택하세요.', true);
       var state = sceneState();
       var positions = Object.assign({}, state.p3Positions);
       positions[selectedValue] = 50;
