@@ -196,34 +196,19 @@
   }
 
   function objective(state, q) {
-    if (q === 1) return '① 왼쪽 파란 점을 눌러 등급 측정 장치를 복구하세요.';
-    if (q === 2) return '② 중앙 파란 점을 눌러 네 별의 겉보기등급을 비교하세요.';
-    if (q === 3 && !state.p3ResultConfirmed) return '③ 아래 파란 점을 눌러 모든 별의 거리를 10 pc로 맞추세요.';
-    if (q === 3) return '③ 오른쪽 파란 점을 눌러 실제로 가장 밝은 별을 넣으세요.';
-    if (!state.p4Complete) return '④ 아래 파란 점을 눌러 세 별의 거리를 판정하세요.';
-    if (!state.maintenanceOpen) return '오른쪽 파란 점의 작은 정비 패널을 조사하세요.';
-    if (!state.recordingStarted) return '패널 안의 비인가 수동 기록 장치를 조사하세요.';
-    if (!state.recordingComplete) return '수동 기록 장치의 녹음을 끝까지 확인하세요.';
-    return '다음 구획 연결을 준비하세요.';
+    if (q === 1) return '루멘 · 왼쪽 등급 측정 장치의 깨진 표시를 복구하세요.';
+    if (q === 2) return '루멘 · 중앙 분석 장치에서 네 별의 겉보기등급을 비교하세요.';
+    if (q === 3 && !state.p3ResultConfirmed) return '루멘 · 아래 거리 장치에서 네 별을 10 pc에 맞추세요.';
+    if (q === 3) return '루멘 · 오른쪽 삽입 장치에 실제로 가장 밝은 별을 넣으세요.';
+    if (!state.p4Complete) return '루멘 · 열린 거리 판정 패널을 복구하세요.';
+    if (!state.maintenanceOpen) return '루멘 · 오른쪽 작은 정비 패널에서 신호가 감지됩니다.';
+    if (!state.recordingStarted) return '루멘 · 패널 안의 수동 기록을 재생하세요.';
+    if (!state.recordingComplete) return '루멘 · 남은 기록을 끝까지 확인하세요.';
+    return '루멘 · 다음 구획 연결을 준비합니다.';
   }
 
-  function missionChain(state, q) {
-    var current = q === 1 ? 1 : q === 2 ? 2 : q === 3 ? 3 : 4;
-    var labels = ['등급 복구', '겉보기등급', '10 pc · 절대등급', '거리 판정'];
-    return '<nav class="s3-mission-chain" aria-label="장면 3 진행 순서">' + labels.map(function (label, index) {
-      var step = index + 1;
-      var className = step < current || state.p4Complete ? 'done' : step === current ? 'active' : '';
-      return '<span class="' + className + '"><b>' + step + '</b>' + label + '</span>' + (step < labels.length ? '<i>›</i>' : '');
-    }).join('') + '</nav>';
-  }
-
-  function roomStatus(state, q) {
-    if (q === 2 && !state.dataSent) return '<div class="s3-status"><b>등급 측정 장치 정상화</b><span>중앙 분석 장치 일부 활성 · 거리 비교 장치 대기 전원 켜짐</span></div>';
-    if (q === 3 && !state.p3ResultConfirmed) return '<div class="s3-status"><b>거리 비교 장치 패널 개방</b><span>중앙 분석 장치 하단에서 펼쳐진 장치를 직접 조사하세요.</span></div>';
-    if (q === 3 && state.p3ResultConfirmed && !state.q3Complete) return '<div class="s3-status"><b>기준 별 삽입 장치 활성화</b><span>기준 거리에서 실제 밝기가 가장 큰 별 카드를 넣으세요.</span></div>';
-    if (q === 4 && !state.p4Complete) return '<div class="s3-status"><b>최종 거리 판정 패널 개방</b><span>가까움 · 10 pc · 멀어짐 슬롯을 확인하세요.</span></div>';
-    if (state.p4Complete && !state.maintenanceOpen) return '<div class="s3-status"><b>별빛 분석 시스템 복구 완료</b><span>오른쪽 작은 정비 패널의 잠금이 풀렸습니다.</span></div>';
-    return '';
+  function clueTabButton(inside) {
+    return '<button class="s3-clue-button' + (inside ? ' inside' : ' s3-room-clue') + '" data-s3-clue-open><span>단서 탭</span><b>1/1</b></button>';
   }
 
   function roomMarkup(state, q) {
@@ -233,15 +218,14 @@
     var referenceClass = q === 3 && state.p3ResultConfirmed && !state.q3Complete ? ' active' : q < 3 || !state.p3ResultConfirmed ? ' locked' : ' done';
     var lockClass = q === 4 && !state.p4Complete ? ' active' : state.p4Complete ? ' done' : ' locked';
     var maintenanceClass = state.p4Complete ? ' active' : ' locked';
-    var clueButton = state.dataSent ? '<button class="s3-clue-button s3-room-clue" data-s3-clue-open>단서 탭</button>' : '';
+    var clueButton = state.dataSent ? clueTabButton(false) : '';
     var maintenanceOpen = state.maintenanceOpen ? '<div class="s3-maintenance-room-open"><img src="' + img('scene03_obj_manual_recorder.png') + '" alt="비인가 수동 기록 장치"></div>' : '';
     var screenIdentity = q >= 3 || state.q2Complete
       ? '<span class="s3-screen-label a">A</span><span class="s3-screen-label b">B</span><span class="s3-screen-label c">C</span><span class="s3-screen-label d">D</span><div class="s3-auto-result">분석 완료 · 가장 밝게 관측되는 별 <b>A</b></div>'
       : '<div class="s3-screen-locked">관측 채널 식별 코드 잠김</div>';
     return '<div class="s3-room ' + roomClass(state, q) + '">' +
       '<div class="s3-title"><small>03 — 별빛 분석 구획</small><b>가장 밝은 별은 누구인가?</b></div>' +
-      '<div class="s3-objective">현재 목표 · ' + objective(state, q) + '</div>' +
-      missionChain(state, q) +
+      '<div class="s3-objective">' + objective(state, q) + '</div>' +
       screenIdentity +
       '<button class="s3-hotspot s3-hotspot-magnitude' + magnitudeActive + '" data-s3-object="magnitude" data-label="' + (q === 1 ? '고장 난 별의 등급 측정 장치' : '복구된 별의 등급 측정 장치') + '" aria-label="별의 등급 측정 장치"></button>' +
       '<button class="s3-hotspot s3-hotspot-analysis' + analysisClass + '" data-s3-object="analysis" data-label="중앙 별빛 분석 장치" aria-label="중앙 별빛 분석 장치"></button>' +
@@ -249,7 +233,7 @@
       '<button class="s3-hotspot s3-hotspot-reference' + referenceClass + '" data-s3-object="reference" data-label="기준 별 삽입 장치" aria-label="기준 별 삽입 장치"></button>' +
       (q === 4 ? '<button class="s3-hotspot s3-hotspot-lock' + lockClass + '" data-s3-object="lock" data-label="최종 거리 판정 패널" aria-label="최종 거리 판정 패널"></button>' : '') +
       '<button class="s3-hotspot s3-hotspot-maintenance' + maintenanceClass + '" data-s3-object="maintenance" data-label="작은 정비 패널" aria-label="작은 정비 패널"></button>' +
-      maintenanceOpen + clueButton + roomStatus(state, q) +
+      maintenanceOpen + clueButton +
       '</div>';
   }
 
@@ -306,7 +290,7 @@
     var cards = ['A', 'B', 'C', 'D'].filter(function (letter) { return letter !== selected; }).map(function (letter) { return starCard(letter, 'q2', false); }).join('');
     return '<section class="s3-puzzle" role="dialog" aria-modal="true">' + puzzleHeader(2, '네 별의 겉보기등급 비교') +
       '<div class="s3-puzzle-body"><div class="s3-analysis-layout">' +
-      '<div class="s3-analysis-console"><div class="s3-action-strip"><b>무엇을 해야 하나요?</b><span>① <strong>단서 탭</strong>에서 각자 받은 A–D 등급 확인</span><i>›</i><span>② 네 대원의 값을 공유</span><i>›</i><span>③ 가장 작은 등급의 문자를 오른쪽 슬롯에 넣기</span></div><div><h3>식별 코드가 잠긴 공용 관측 화면</h3><p>네 화면의 밝기는 보이지만 어느 화면이 A·B·C·D인지는 알 수 없습니다. 개인 자료의 문자와 등급을 말로 공유하세요.</p></div>' + starMonitor() + '<p><strong>겉보기등급 숫자가 작을수록 밝게 보입니다.</strong></p></div>' +
+      '<div class="s3-analysis-console"><div class="s3-console-brief"><b>루멘</b><span>식별 코드는 잠겨 있습니다. 각자 받은 A–D 등급을 공유해 가장 작은 등급의 문자를 선택하세요.</span></div><div><h3>식별 코드가 잠긴 공용 관측 화면</h3><p>네 화면의 밝기는 보이지만 어느 화면이 A·B·C·D인지는 알 수 없습니다.</p></div>' + starMonitor() + '<p><strong>겉보기등급 숫자가 작을수록 밝게 보입니다.</strong></p></div>' +
       '<aside class="s3-analysis-side"><h3>가장 밝은 별 선택</h3><div class="s3-analysis-slot' + (selected ? ' filled' : '') + '" id="s3AnalysisSlot" data-s3-drop="q2" data-slot="analysis">' + (selected ? starCard(selected, 'q2', true) : 'A–D 중 한 문자를 이곳에 넣으세요.') + '</div>' +
       '<div><div class="s3-card-bank" data-s3-drop="q2" data-slot="bank">' + cards + '</div>' + selectionHelp('q2', '문자 카드를 끌어 선택 슬롯에 넣으세요.') + '</div></aside>' +
       '</div></div>' + puzzleFooter('전송된 관측 자료와 등급 기준을 비교하세요.', false, '') + '</section>';
@@ -384,28 +368,28 @@
   }
 
   function p4Markup(state) {
-    var names = ['가까움', '10 pc', '멀어짐'];
     var classes = ['near', 'ten', 'far'];
     var slots = state.p4Slots.map(function (value, index) {
-      return '<div class="s3-lock-slot ' + classes[index] + (value ? ' filled' : '') + '" data-s3-drop="p4" data-slot="' + index + '">' + (value ? lockCard(value, true) : names[index]) + '</div>';
+      var labels = ['가까움 슬롯', '10 pc 슬롯', '멀어짐 슬롯'];
+      return '<div class="s3-lock-slot ' + classes[index] + (value ? ' filled' : '') + '" data-s3-drop="p4" data-slot="' + index + '" aria-label="' + labels[index] + '">' + (value ? lockCard(value, true) : '') + '</div>';
     }).join('');
     var cards = ['X', 'Y', 'Z'].filter(function (letter) { return state.p4Slots.indexOf(letter) < 0; }).map(function (letter) { return lockCard(letter, false); }).join('');
     return '<section class="s3-puzzle" role="dialog" aria-modal="true">' + puzzleHeader(4, '마지막 거리 판정 잠금') +
       '<div class="s3-puzzle-body"><div class="s3-lock-layout"><div class="s3-lock-device' + (state.p4Complete ? ' complete' : '') + '">' + slots + '</div>' +
-      '<aside class="s3-lock-bank"><div><h3>X · Y · Z 거리 판정 카드</h3><p><strong>① 두 등급을 비교</strong>하고, <strong>② 카드를 왼쪽 거리 슬롯에 배치</strong>한 뒤 확인하세요.</p></div><div class="s3-distance-rule"><b>거리 판정 기준</b><span><i>겉보기 &lt; 절대</i>가까움</span><span><i>겉보기 = 절대</i>10 pc</span><span><i>겉보기 &gt; 절대</i>멀어짐</span></div>' +
+      '<aside class="s3-lock-bank"><div><h3>X · Y · Z 거리 판정 카드</h3><p>두 등급을 비교해 사진 속 세 슬롯에 카드를 넣으세요.</p></div><div class="s3-distance-rule"><b>카드 판정 기준</b><span>겉보기 &lt; 절대</span><span>겉보기 = 절대</span><span>겉보기 &gt; 절대</span></div>' +
       '<div class="s3-card-bank" data-s3-drop="p4" data-slot="bank">' + cards + '</div>' + selectionHelp('p4', '카드를 끌어 알맞은 거리 슬롯에 넣으세요.') + '</aside></div></div>' +
       puzzleFooter('세 카드를 모두 배치한 뒤 확인하세요.', true, '확인', state.p4Slots.some(function (value) { return !value; })) + '</section>';
   }
 
   function maintenanceMarkup(state) {
-    return '<section class="s3-maintenance" role="dialog" aria-modal="true"><div class="s3-maintenance-bay"><button class="s3-recorder-button" id="s3Recorder" aria-label="비인가 수동 기록 장치 재생"><img src="' + img('scene03_obj_manual_recorder.png') + '" alt="비인가 수동 기록 장치"></button></div>' +
+    return '<section class="s3-maintenance" role="dialog" aria-modal="true"><div class="s3-maintenance-bay"><button class="s3-recorder-button" id="s3Recorder" aria-label="비인가 수동 기록 장치 재생"><img src="' + img('scene03_obj_manual_recorder.png') + '" alt="비인가 수동 기록 장치"><span><i aria-hidden="true">▶</i> 녹음 재생</span></button></div>' +
       '<div class="s3-maintenance-copy"><small>비인가 장비 발견</small><h2>작은 정비 패널 내부</h2><p><strong>대원:</strong> “또 이 장치야.”</p><p><strong>루멘:</strong> “동일한 형태의 비인가 기록 장치입니다.”</p><p>장면 2에서 발견한 장치와 같은 계열입니다. 장치를 직접 눌러 저장된 녹음을 재생하세요.</p>' +
       '<button class="secondary" id="s3MaintenanceClose">방으로 돌아가기</button></div></section>';
   }
 
   function puzzleHeader(number, title) {
     return '<header class="s3-puzzle-head"><div><small>장면 03 · 문제 ' + number + '/4</small><h2>' + esc(title) + '</h2></div><div class="s3-puzzle-actions">' +
-      (sceneState().dataSent ? '<button class="s3-clue-button" data-s3-clue-open>단서 탭</button>' : '') +
+      (sceneState().dataSent ? clueTabButton(true) : '') +
       '<button class="s3-close" id="s3PuzzleClose" aria-label="장치 확대 화면 닫기">×</button></div></header>';
   }
 
@@ -441,15 +425,15 @@
 
   function resultMarkup(mode) {
     if (mode === 'p1') {
-      return '<div class="s3-result-overlay"><article class="s3-result-card"><header><small>찰칵 · 장치 전원 활성화</small><h2>별의 등급 표시 복구 완료</h2></header><div class="s3-result-body"><p><strong>등급 숫자가 작을수록 밝다.</strong></p><p>왼쪽 장치가 정상화되어 중앙 시스템에 등급 기준과 전원이 공급됩니다.</p></div><button class="primary" id="s3ResultContinue">방으로 돌아가기</button></article></div>';
+      return '<div class="s3-result-overlay"><article class="s3-result-card"><header><small>찰칵 · 전원 신호 감지</small><h2>별의 등급 표시 복구 완료</h2></header><div class="s3-result-body"><p><strong>등급 숫자가 작을수록 밝다.</strong></p><p>여섯 표시가 제자리를 찾자 중앙 분석 장치에 전원이 들어옵니다.</p></div><button class="primary" id="s3ResultContinue">방의 변화 확인</button></article></div>';
     }
     if (mode === 'q2') {
-      return '<div class="s3-result-overlay"><article class="s3-result-card"><header><small>관측 결과 확인</small><h2>가장 밝게 보이는 별 A · 확인 완료</h2></header><div class="s3-result-body"><div class="s3-result-alert"><b>실제 밝기 · 판단할 수 없습니다.</b><span>별들의 거리가 서로 다릅니다.</span></div><p>“…별이 얼마나 밝게 보이는지만 믿지 마.”</p><p><strong>루멘:</strong> “A가 가장 밝게 보이는 것은 맞습니다.”<br>“하지만 현재 별들은 서로 다른 거리에 있습니다.”</p></div><button class="primary" id="s3ResultContinue">방으로 돌아가기</button></article></div>';
+      return '<div class="s3-result-overlay"><article class="s3-result-card"><header><small>관측 결과 확인</small><h2>가장 밝게 보이는 별 A</h2></header><div class="s3-result-body"><div class="s3-result-alert"><b>실제 밝기는 아직 판단할 수 없습니다.</b><span>별들의 거리가 서로 다릅니다.</span></div><p>루멘이 분석을 멈추자 중앙 장치 아래에서 거리 비교 장치가 펼쳐집니다.</p></div><button class="primary" id="s3ResultContinue">방의 변화 확인</button></article></div>';
     }
     if (mode === 'q3') {
-      return '<div class="s3-result-overlay"><article class="s3-result-card"><header><small>기준 별 삽입 완료</small><h2>기준 별 C</h2></header><div class="s3-result-body"><p><strong>실제 밝기 확인 완료</strong></p><p>별빛 분석 자료 복구 진행 중</p><div class="s3-result-alert"><b>최종 거리 판정 패널 개방</b><span>아직 장면 3은 끝나지 않았습니다.</span></div></div><button class="primary" id="s3ResultContinue">열린 거리 판정 패널 확인</button></article></div>';
+      return '<div class="s3-result-overlay"><article class="s3-result-card"><header><small>기준 별 삽입 완료</small><h2>실제로 가장 밝은 별 C</h2></header><div class="s3-result-body"><p>기준 별이 고정되자 중앙 장치 아래의 마지막 판정 패널이 열립니다.</p></div><button class="primary" id="s3ResultContinue">방의 변화 확인</button></article></div>';
     }
-    return '<div class="s3-result-overlay"><article class="s3-result-card"><header><small>철컥 · 세 슬롯 잠김</small><h2>거리 판정 완료</h2></header><div class="s3-result-body"><p><strong>별빛 분석 시스템 복구 완료</strong></p><p>이 시점에서만 장면 3의 최종 잠금이 풀렸습니다.</p><div class="s3-result-alert"><b>작은 정비 패널 잠금 해제</b><span>녹음은 자동 재생되지 않습니다. 방에서 패널을 직접 조사하세요.</span></div></div><button class="primary" id="s3ResultContinue">복구된 방 확인</button></article></div>';
+    return '<div class="s3-result-overlay"><article class="s3-result-card"><header><small>철컥 · 세 슬롯 잠김</small><h2>별빛 분석 시스템 복구 완료</h2></header><div class="s3-result-body"><p>장치의 조명이 정상으로 돌아오고, 오른쪽 작은 정비 패널에서 낯선 신호가 깜박입니다.</p></div><button class="primary" id="s3ResultContinue">복구된 방 보기</button></article></div>';
   }
 
   function recordingMarkup(state) {
@@ -880,7 +864,8 @@
         var mode = resultMode;
         markResultSeen(mode);
         resultMode = '';
-        if (mode === 'q3') puzzle = 'p4';
+        puzzle = '';
+        inspect = null;
         draw();
       };
     }
