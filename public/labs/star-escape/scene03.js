@@ -200,7 +200,7 @@
     if (q === 2) return '루멘 · 중앙 분석 장치에서 네 별의 겉보기등급을 비교하세요.';
     if (q === 3 && !state.p3ResultConfirmed) return '루멘 · 아래 거리 장치에서 네 별을 10 pc에 맞추세요.';
     if (q === 3) return '루멘 · 오른쪽 삽입 장치에 실제로 가장 밝은 별을 넣으세요.';
-    if (!state.p4Complete) return '루멘 · 열린 거리 판정 패널을 복구하세요.';
+    if (!state.p4Complete) return '루멘 · 중앙 분석 화면의 마지막 거리 판정을 완료하세요.';
     if (!state.maintenanceOpen) return '루멘 · 오른쪽 작은 정비 패널에서 신호가 감지됩니다.';
     if (!state.recordingStarted) return '루멘 · 패널 안의 수동 기록을 재생하세요.';
     if (!state.recordingComplete) return '루멘 · 남은 기록을 끝까지 확인하세요.';
@@ -213,10 +213,9 @@
 
   function roomMarkup(state, q) {
     var magnitudeActive = q === 1 ? ' active' : ' done';
-    var analysisClass = q === 2 ? ' active' : q < 2 ? ' locked' : ' done';
+    var analysisClass = q === 2 || q === 4 && !state.p4Complete ? ' active' : q < 2 ? ' locked' : ' done';
     var distanceClass = q === 3 && !state.p3ResultConfirmed ? ' active' : q < 3 ? ' locked' : ' done';
     var referenceClass = q === 3 && state.p3ResultConfirmed && !state.q3Complete ? ' active' : q < 3 || !state.p3ResultConfirmed ? ' locked' : ' done';
-    var lockClass = q === 4 && !state.p4Complete ? ' active' : state.p4Complete ? ' done' : ' locked';
     var maintenanceClass = state.p4Complete ? ' active' : ' locked';
     var clueButton = state.dataSent ? clueTabButton(false) : '';
     var maintenanceOpen = state.maintenanceOpen ? '<div class="s3-maintenance-room-open"><img src="' + img('scene03_obj_manual_recorder.png') + '" alt="비인가 수동 기록 장치"></div>' : '';
@@ -228,10 +227,9 @@
       '<div class="s3-objective">' + objective(state, q) + '</div>' +
       screenIdentity +
       '<button class="s3-hotspot s3-hotspot-magnitude' + magnitudeActive + '" data-s3-object="magnitude" data-label="' + (q === 1 ? '고장 난 별의 등급 측정 장치' : '복구된 별의 등급 측정 장치') + '" aria-label="별의 등급 측정 장치"></button>' +
-      '<button class="s3-hotspot s3-hotspot-analysis' + analysisClass + '" data-s3-object="analysis" data-label="중앙 별빛 분석 장치" aria-label="중앙 별빛 분석 장치"></button>' +
+      '<button class="s3-hotspot s3-hotspot-analysis' + analysisClass + '" data-s3-object="analysis" data-label="' + (q === 4 && !state.p4Complete ? '최종 거리 판정 화면' : '중앙 별빛 분석 장치') + '" aria-label="' + (q === 4 && !state.p4Complete ? '최종 거리 판정 화면' : '중앙 별빛 분석 장치') + '"></button>' +
       '<button class="s3-hotspot s3-hotspot-distance' + distanceClass + '" data-s3-object="distance" data-label="거리 비교 장치" aria-label="거리 비교 장치"></button>' +
       '<button class="s3-hotspot s3-hotspot-reference' + referenceClass + '" data-s3-object="reference" data-label="기준 별 삽입 장치" aria-label="기준 별 삽입 장치"></button>' +
-      (q === 4 ? '<button class="s3-hotspot s3-hotspot-lock' + lockClass + '" data-s3-object="lock" data-label="최종 거리 판정 패널" aria-label="최종 거리 판정 패널"></button>' : '') +
       '<button class="s3-hotspot s3-hotspot-maintenance' + maintenanceClass + '" data-s3-object="maintenance" data-label="작은 정비 패널" aria-label="작은 정비 패널"></button>' +
       maintenanceOpen + clueButton +
       '</div>';
@@ -337,7 +335,7 @@
       var done = Math.abs(Number(positions[letter]) - 50) < .01;
       return '<span class="' + (done ? 'done' : '') + '"><b>' + letter + '</b>' + distanceLabel(positions[letter]) + '</span>';
     }).join('');
-    return '<section class="s3-puzzle" role="dialog" aria-modal="true">' + puzzleHeader(3, '같은 거리에서 실제 밝기 비교') +
+    return '<section class="s3-puzzle s3-puzzle-distance" role="dialog" aria-modal="true">' + puzzleHeader(3, '같은 거리에서 실제 밝기 비교') +
       '<div class="s3-puzzle-body"><div class="s3-distance-layout"><div class="s3-distance-guide"><p>별 A~D를 각각 끌어 <strong>노란색 10 pc 기준 고리</strong>에 맞추세요.</p><small>별을 누른 뒤 기준 고리를 눌러도 이동합니다.</small><div class="s3-distance-progress"><b>' + alignedCount + '/4</b><span>10 pc 고정</span></div></div>' +
       '<div class="s3-distance-surface" id="s3DistanceSurface">' + spokes + '<button class="s3-tenpc-ring' + (selectedKind === 'p3' && selectedValue ? ' ready' : '') + '" id="s3TenPc" aria-label="선택한 별을 기준 거리 10 pc로 이동"></button><i class="s3-distance-center" aria-hidden="true"></i>' + stars + '<div class="s3-distance-readouts" aria-live="polite">' + readouts + '</div></div></div></div>' +
       puzzleFooter(state.p3Aligned ? '완료 · 네 별이 모두 10 pc 기준 고리에 고정되었습니다.' : '각 별을 드래그하거나, 별 선택 후 10 pc 기준 고리를 누르세요.', false, '') +
@@ -431,7 +429,7 @@
       return '<div class="s3-result-overlay"><article class="s3-result-card"><header><small>관측 결과 확인</small><h2>가장 밝게 보이는 별 A</h2></header><div class="s3-result-body"><div class="s3-result-alert"><b>실제 밝기는 아직 판단할 수 없습니다.</b><span>별들의 거리가 서로 다릅니다.</span></div><p>루멘이 분석을 멈추자 중앙 장치 아래에서 거리 비교 장치가 펼쳐집니다.</p></div><button class="primary" id="s3ResultContinue">방의 변화 확인</button></article></div>';
     }
     if (mode === 'q3') {
-      return '<div class="s3-result-overlay"><article class="s3-result-card"><header><small>기준 별 삽입 완료</small><h2>실제로 가장 밝은 별 C</h2></header><div class="s3-result-body"><p>기준 별이 고정되자 중앙 장치 아래의 마지막 판정 패널이 열립니다.</p></div><button class="primary" id="s3ResultContinue">방의 변화 확인</button></article></div>';
+      return '<div class="s3-result-overlay"><article class="s3-result-card"><header><small>기준 별 삽입 완료</small><h2>실제로 가장 밝은 별 C</h2></header><div class="s3-result-body"><p>기준 별이 고정되자 중앙 분석 화면이 마지막 거리 판정 모드로 전환됩니다.</p></div><button class="primary" id="s3ResultContinue">방의 변화 확인</button></article></div>';
     }
     return '<div class="s3-result-overlay"><article class="s3-result-card"><header><small>철컥 · 세 슬롯 잠김</small><h2>별빛 분석 시스템 복구 완료</h2></header><div class="s3-result-body"><p>장치의 조명이 정상으로 돌아오고, 오른쪽 작은 정비 패널에서 낯선 신호가 깜박입니다.</p></div><button class="primary" id="s3ResultContinue">복구된 방 보기</button></article></div>';
   }
@@ -728,7 +726,11 @@
         inspect = null;
         puzzle = 'q2';
         if (!state.dataSent) beginTransmission();
-      } else inspect = { title: '중앙 별빛 분석 장치', text: '가장 밝게 보이는 별 A는 확인했지만, 별들의 거리가 달라 실제 밝기는 바로 판단할 수 없습니다.', state: '거리 비교 자료 필요', image: img('scene03_room_state02_distance_unlocked.webp'), focus: 'analysis' };
+      } else if (q === 4 && !state.p4Complete) {
+        inspect = null;
+        puzzle = 'p4';
+      } else if (state.p4Complete) inspect = { title: '복구된 중앙 별빛 분석 장치', text: '세 별의 겉보기등급과 절대등급을 비교한 거리 판정이 완료되었습니다.', state: '별빛 분석 시스템 복구 완료', image: img('scene03_room_complete.webp'), focus: 'analysis' };
+      else inspect = { title: '중앙 별빛 분석 장치', text: '가장 밝게 보이는 별 A는 확인했지만, 별들의 거리가 달라 실제 밝기는 바로 판단할 수 없습니다.', state: '거리 비교 자료 필요', image: img('scene03_room_state02_distance_unlocked.webp'), focus: 'analysis' };
       draw();
       return;
     }
@@ -747,14 +749,6 @@
         puzzle = 'reference';
       } else if (q >= 4 || state.q3Complete) inspect = { title: '기준 별 C', text: '기준 거리 10 pc에서 절대등급이 가장 작은 C가 기준 별로 설정되어 있습니다.', state: '실제 밝기 확인 완료', image: img('scene03_obj_reference_slot.webp') };
       else inspect = { title: '기준 별 삽입 장치', text: '거리 비교 장치의 절대등급 결과를 먼저 확인해야 합니다.', state: '잠김', image: img('scene03_obj_reference_slot.webp') };
-      draw();
-      return;
-    }
-    if (id === 'lock') {
-      if (q === 4 && !state.p4Complete) {
-        inspect = null;
-        puzzle = 'p4';
-      } else inspect = { title: '최종 거리 판정 패널', text: state.p4Complete ? '세 카드가 정확한 위치에 잠겨 있습니다.' : '기준 별 C가 설정되기 전에는 열리지 않습니다.', state: state.p4Complete ? '거리 판정 완료' : '숨김 · 잠김', image: img(state.p4Complete ? 'scene03_p04_distance_lock_complete.webp' : 'scene03_p04_distance_lock.webp') };
       draw();
       return;
     }
