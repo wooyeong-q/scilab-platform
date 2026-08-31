@@ -57,6 +57,10 @@
     return ROOT + name;
   }
 
+  function playDistanceSound(kind) {
+    if (ctx && ctx.sound && typeof ctx.sound.play === 'function') ctx.sound.play(kind);
+  }
+
   function question() {
     return Number(ctx && ctx.state && ctx.state.progress.question || 1);
   }
@@ -304,10 +308,10 @@
 
   function distancePoint(letter, position) {
     var angle = distanceAngles[letter] * Math.PI / 180;
-    var radius = 9 + Number(position) * .22;
+    var radius = 15 + Number(position) * .1;
     return {
       x: (50 + Math.cos(angle) * radius).toFixed(2),
-      y: (49 + Math.sin(angle) * radius * 4 / 3).toFixed(2),
+      y: (49 + Math.sin(angle) * radius * 21 / 10).toFixed(2),
     };
   }
 
@@ -336,8 +340,7 @@
       return '<span class="' + (done ? 'done' : '') + '"><b>' + letter + '</b>' + distanceLabel(positions[letter]) + '</span>';
     }).join('');
     return '<section class="s3-puzzle s3-puzzle-distance" role="dialog" aria-modal="true">' + puzzleHeader(3, '같은 거리에서 실제 밝기 비교') +
-      '<div class="s3-puzzle-body"><div class="s3-distance-layout"><div class="s3-distance-guide"><p>별 A~D를 각각 끌어 <strong>노란색 10 pc 기준 고리</strong>에 맞추세요.</p><small>별을 누른 뒤 기준 고리를 눌러도 이동합니다.</small><div class="s3-distance-progress"><b>' + alignedCount + '/4</b><span>10 pc 고정</span></div></div>' +
-      '<div class="s3-distance-surface" id="s3DistanceSurface">' + spokes + '<button class="s3-tenpc-ring' + (selectedKind === 'p3' && selectedValue ? ' ready' : '') + '" id="s3TenPc" aria-label="선택한 별을 기준 거리 10 pc로 이동"></button><i class="s3-distance-center" aria-hidden="true"></i>' + stars + '<div class="s3-distance-readouts" aria-live="polite">' + readouts + '</div></div></div></div>' +
+      '<div class="s3-puzzle-body"><div class="s3-distance-layout"><div class="s3-distance-surface" id="s3DistanceSurface">' + spokes + '<button class="s3-tenpc-ring' + (selectedKind === 'p3' && selectedValue ? ' ready' : '') + '" id="s3TenPc" aria-label="선택한 별을 기준 거리 10 pc로 이동"></button><i class="s3-distance-center" aria-hidden="true"></i>' + stars + '<div class="s3-distance-progress" aria-live="polite"><b>' + alignedCount + '/4</b><span>10 pc 고정</span></div><div class="s3-distance-readouts" aria-live="polite">' + readouts + '</div></div></div></div>' +
       puzzleFooter(state.p3Aligned ? '완료 · 네 별이 모두 10 pc 기준 고리에 고정되었습니다.' : '각 별을 드래그하거나, 별 선택 후 10 pc 기준 고리를 누르세요.', false, '') +
       (state.p3Aligned ? absoluteResultMarkup() : '') + '</section>';
   }
@@ -624,7 +627,7 @@
           var centerX = rect.left + rect.width * .5;
           var centerY = rect.top + rect.height * .49;
           var projection = (moveEvent.clientX - centerX) * Math.cos(angle) + (moveEvent.clientY - centerY) * Math.sin(angle);
-          var position = (projection / rect.width - .09) / .0022;
+          var position = (projection / rect.width - .15) / .001;
           distanceDraft[letter] = Math.round(Math.max(10, Math.min(90, position)) * 10) / 10;
           var point = distancePoint(letter, distanceDraft[letter]);
           element.style.setProperty('--sx', point.x + '%');
@@ -646,10 +649,12 @@
             draw();
             return;
           }
-          if (Math.abs(Number(distanceDraft[letter]) - 50) <= 6) distanceDraft[letter] = 50;
+          var snapped = Math.abs(Number(distanceDraft[letter]) - 50) <= 6;
+          if (snapped) distanceDraft[letter] = 50;
           var aligned = ['A', 'B', 'C', 'D'].every(function (name) { return Math.abs(Number(distanceDraft[name]) - 50) < .01; });
           var positions = Object.assign({}, distanceDraft);
           distanceDraft = null;
+          if (snapped) playDistanceSound(aligned ? 'complete' : 'lock');
           await syncScene({ p3Positions: positions, p3Aligned: aligned });
         }
 
@@ -675,6 +680,7 @@
       positions[selectedValue] = 50;
       clearSelection();
       var aligned = ['A', 'B', 'C', 'D'].every(function (letter) { return Math.abs(Number(positions[letter]) - 50) < .01; });
+      playDistanceSound(aligned ? 'complete' : 'lock');
       await syncScene({ p3Positions: positions, p3Aligned: aligned });
     };
   }
