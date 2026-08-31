@@ -196,15 +196,25 @@
   }
 
   function objective(state, q) {
-    if (q === 1) return '별빛 분석 기록의 오류를 찾아라.';
-    if (q === 2) return '중앙 별빛 분석 장치의 관측 자료를 확인하세요.';
-    if (q === 3 && !state.p3ResultConfirmed) return '별들의 실제 밝기를 비교할 수 있도록 조건을 같게 만드세요.';
-    if (q === 3) return '실제로 가장 밝은 별을 기준 별 삽입 장치에 넣으세요.';
-    if (!state.p4Complete) return '겉보기등급과 절대등급으로 마지막 거리 판정 잠금을 해제하세요.';
-    if (!state.maintenanceOpen) return '잠금이 풀린 작은 정비 패널을 조사하세요.';
+    if (q === 1) return '① 왼쪽 파란 점을 눌러 등급 측정 장치를 복구하세요.';
+    if (q === 2) return '② 중앙 파란 점을 눌러 네 별의 겉보기등급을 비교하세요.';
+    if (q === 3 && !state.p3ResultConfirmed) return '③ 아래 파란 점을 눌러 모든 별의 거리를 10 pc로 맞추세요.';
+    if (q === 3) return '③ 오른쪽 파란 점을 눌러 실제로 가장 밝은 별을 넣으세요.';
+    if (!state.p4Complete) return '④ 아래 파란 점을 눌러 세 별의 거리를 판정하세요.';
+    if (!state.maintenanceOpen) return '오른쪽 파란 점의 작은 정비 패널을 조사하세요.';
     if (!state.recordingStarted) return '패널 안의 비인가 수동 기록 장치를 조사하세요.';
     if (!state.recordingComplete) return '수동 기록 장치의 녹음을 끝까지 확인하세요.';
     return '다음 구획 연결을 준비하세요.';
+  }
+
+  function missionChain(state, q) {
+    var current = q === 1 ? 1 : q === 2 ? 2 : q === 3 ? 3 : 4;
+    var labels = ['등급 복구', '겉보기등급', '10 pc · 절대등급', '거리 판정'];
+    return '<nav class="s3-mission-chain" aria-label="장면 3 진행 순서">' + labels.map(function (label, index) {
+      var step = index + 1;
+      var className = step < current || state.p4Complete ? 'done' : step === current ? 'active' : '';
+      return '<span class="' + className + '"><b>' + step + '</b>' + label + '</span>' + (step < labels.length ? '<i>›</i>' : '');
+    }).join('') + '</nav>';
   }
 
   function roomStatus(state, q) {
@@ -217,19 +227,22 @@
   }
 
   function roomMarkup(state, q) {
-    var magnitudeActive = q === 1 ? ' active' : '';
-    var analysisClass = q === 2 ? ' active' : q < 2 ? ' locked' : '';
-    var distanceClass = q >= 3 ? ' active' : ' locked';
-    var referenceClass = q === 3 && state.p3ResultConfirmed ? ' active' : q < 3 || !state.p3ResultConfirmed ? ' locked' : '';
-    var lockClass = q === 4 && !state.p4Complete ? ' active' : ' locked';
+    var magnitudeActive = q === 1 ? ' active' : ' done';
+    var analysisClass = q === 2 ? ' active' : q < 2 ? ' locked' : ' done';
+    var distanceClass = q === 3 && !state.p3ResultConfirmed ? ' active' : q < 3 ? ' locked' : ' done';
+    var referenceClass = q === 3 && state.p3ResultConfirmed && !state.q3Complete ? ' active' : q < 3 || !state.p3ResultConfirmed ? ' locked' : ' done';
+    var lockClass = q === 4 && !state.p4Complete ? ' active' : state.p4Complete ? ' done' : ' locked';
     var maintenanceClass = state.p4Complete ? ' active' : ' locked';
     var clueButton = state.dataSent ? '<button class="s3-clue-button s3-room-clue" data-s3-clue-open>단서 탭</button>' : '';
     var maintenanceOpen = state.maintenanceOpen ? '<div class="s3-maintenance-room-open"><img src="' + img('scene03_obj_manual_recorder.png') + '" alt="비인가 수동 기록 장치"></div>' : '';
+    var screenIdentity = q >= 3 || state.q2Complete
+      ? '<span class="s3-screen-label a">A</span><span class="s3-screen-label b">B</span><span class="s3-screen-label c">C</span><span class="s3-screen-label d">D</span><div class="s3-auto-result">분석 완료 · 가장 밝게 관측되는 별 <b>A</b></div>'
+      : '<div class="s3-screen-locked">관측 채널 식별 코드 잠김</div>';
     return '<div class="s3-room ' + roomClass(state, q) + '">' +
       '<div class="s3-title"><small>03 — 별빛 분석 구획</small><b>가장 밝은 별은 누구인가?</b></div>' +
       '<div class="s3-objective">현재 목표 · ' + objective(state, q) + '</div>' +
-      '<span class="s3-screen-label a">A</span><span class="s3-screen-label b">B</span><span class="s3-screen-label c">C</span><span class="s3-screen-label d">D</span>' +
-      '<div class="s3-auto-result">가장 밝게 관측되는 별 <b>A</b></div>' +
+      missionChain(state, q) +
+      screenIdentity +
       '<button class="s3-hotspot s3-hotspot-magnitude' + magnitudeActive + '" data-s3-object="magnitude" data-label="' + (q === 1 ? '고장 난 별의 등급 측정 장치' : '복구된 별의 등급 측정 장치') + '" aria-label="별의 등급 측정 장치"></button>' +
       '<button class="s3-hotspot s3-hotspot-analysis' + analysisClass + '" data-s3-object="analysis" data-label="중앙 별빛 분석 장치" aria-label="중앙 별빛 분석 장치"></button>' +
       '<button class="s3-hotspot s3-hotspot-distance' + distanceClass + '" data-s3-object="distance" data-label="거리 비교 장치" aria-label="거리 비교 장치"></button>' +
@@ -243,7 +256,7 @@
   function inspectMarkup() {
     if (!inspect) return '';
     return '<section class="s3-inspect" role="dialog" aria-modal="true">' +
-      '<div class="s3-inspect-media"><img src="' + esc(inspect.image || img('scene03_room_base.webp')) + '" alt=""></div>' +
+      '<div class="s3-inspect-media' + (inspect.focus ? ' focus-' + esc(inspect.focus) : '') + '"><img src="' + esc(inspect.image || img('scene03_room_base.webp')) + '" alt=""></div>' +
       '<div><small>장치 조사</small><b>' + esc(inspect.title) + '</b><p>' + esc(inspect.text) + '</p>' + (inspect.state ? '<span>' + esc(inspect.state) + '</span>' : '') + '</div>' +
       '<button class="s3-close" id="s3InspectClose" aria-label="조사 화면 닫기">×</button></section>';
   }
@@ -267,14 +280,17 @@
   }
 
   function starCard(letter, kind, placed) {
-    return '<button class="s3-star-card' + (placed ? ' placed' : '') + (selectedKind === kind && selectedValue === letter ? ' selected' : '') + '" data-s3-draggable="' + kind + '" data-value="' + letter + '" aria-label="별 ' + letter + ' 카드">' +
-      '<img src="' + img('scene03_obj_star_card_' + letter.toLowerCase() + '.png') + '" alt="별 ' + letter + '"></button>';
+    var face = kind === 'q2'
+      ? '<span class="s3-choice-letter" aria-hidden="true">' + letter + '</span>'
+      : '<img src="' + img('scene03_obj_star_card_' + letter.toLowerCase() + '.png') + '" alt="별 ' + letter + '">';
+    return '<button class="s3-star-card' + (kind === 'q2' ? ' q2-choice' : '') + (placed ? ' placed' : '') + (selectedKind === kind && selectedValue === letter ? ' selected' : '') + '" data-s3-draggable="' + kind + '" data-value="' + letter + '" aria-label="별 ' + letter + ' 카드">' +
+      face + '</button>';
   }
 
   function starMonitor() {
-    return '<div class="s3-star-monitor" aria-label="A, B, C, D 별 관측 화면">' + ['A', 'B', 'C', 'D'].map(function (letter) {
-      return '<div class="s3-monitor-star ' + letter.toLowerCase() + '"><b>' + letter + '</b><img src="' + img('scene03_obj_star_card_' + letter.toLowerCase() + '.png') + '" alt="별 ' + letter + '"></div>';
-    }).join('') + '</div>';
+    return '<div class="s3-star-monitor" aria-label="식별 코드가 잠긴 네 개의 별빛 관측 화면">' + ['A', 'B', 'C', 'D'].map(function (letter) {
+      return '<div class="s3-monitor-star ' + letter.toLowerCase() + '"><i aria-hidden="true">✦</i></div>';
+    }).join('') + '<span class="s3-monitor-lock">어느 화면이 A·B·C·D인지는 표시되지 않습니다.</span></div>';
   }
 
   function transmitMarkup() {
@@ -290,9 +306,9 @@
     var cards = ['A', 'B', 'C', 'D'].filter(function (letter) { return letter !== selected; }).map(function (letter) { return starCard(letter, 'q2', false); }).join('');
     return '<section class="s3-puzzle" role="dialog" aria-modal="true">' + puzzleHeader(2, '네 별의 겉보기등급 비교') +
       '<div class="s3-puzzle-body"><div class="s3-analysis-layout">' +
-      '<div class="s3-analysis-console"><div><h3>별빛 관측 화면</h3><p>공통 화면에는 관측 등급 수치가 표시되지 않습니다. 각 대원의 개인 자료를 말로 공유하세요.</p></div>' + starMonitor() + '<p>현재 가장 밝게 관측되는 별을 분석 장치에 넣으세요.</p></div>' +
-      '<aside class="s3-analysis-side"><h3>분석 슬롯</h3><div class="s3-analysis-slot' + (selected ? ' filled' : '') + '" id="s3AnalysisSlot" data-s3-drop="q2" data-slot="analysis">' + (selected ? starCard(selected, 'q2', true) : '별 카드를 이곳에 넣으세요.') + '</div>' +
-      '<div><div class="s3-card-bank" data-s3-drop="q2" data-slot="bank">' + cards + '</div>' + selectionHelp('q2', '별 카드를 끌어 분석 슬롯에 넣으세요.') + '</div></aside>' +
+      '<div class="s3-analysis-console"><div class="s3-action-strip"><b>무엇을 해야 하나요?</b><span>① <strong>단서 탭</strong>에서 각자 받은 A–D 등급 확인</span><i>›</i><span>② 네 대원의 값을 공유</span><i>›</i><span>③ 가장 작은 등급의 문자를 오른쪽 슬롯에 넣기</span></div><div><h3>식별 코드가 잠긴 공용 관측 화면</h3><p>네 화면의 밝기는 보이지만 어느 화면이 A·B·C·D인지는 알 수 없습니다. 개인 자료의 문자와 등급을 말로 공유하세요.</p></div>' + starMonitor() + '<p><strong>겉보기등급 숫자가 작을수록 밝게 보입니다.</strong></p></div>' +
+      '<aside class="s3-analysis-side"><h3>가장 밝은 별 선택</h3><div class="s3-analysis-slot' + (selected ? ' filled' : '') + '" id="s3AnalysisSlot" data-s3-drop="q2" data-slot="analysis">' + (selected ? starCard(selected, 'q2', true) : 'A–D 중 한 문자를 이곳에 넣으세요.') + '</div>' +
+      '<div><div class="s3-card-bank" data-s3-drop="q2" data-slot="bank">' + cards + '</div>' + selectionHelp('q2', '문자 카드를 끌어 선택 슬롯에 넣으세요.') + '</div></aside>' +
       '</div></div>' + puzzleFooter('전송된 관측 자료와 등급 기준을 비교하세요.', false, '') + '</section>';
   }
 
@@ -364,7 +380,7 @@
   function lockCard(letter, placed) {
     var values = { X: [1, 3], Y: [2, 2], Z: [5, 1] }[letter];
     return '<button class="s3-lock-card' + (placed ? ' placed' : '') + (selectedKind === 'p4' && selectedValue === letter ? ' selected' : '') + '" data-s3-draggable="p4" data-value="' + letter + '" aria-label="' + letter + ' 카드, 겉보기등급 ' + values[0] + ', 절대등급 ' + values[1] + '">' +
-      '<img src="' + img('scene03_p04_card_' + letter.toLowerCase() + '.png') + '" alt="' + letter + ' 카드"><span class="s3-card-values">겉보기등급 <b>' + values[0] + '</b><br>절대등급 <b>' + values[1] + '</b></span></button>';
+      '<img src="' + img('scene03_p04_card_' + letter.toLowerCase() + '.png') + '" alt="' + letter + ' 카드"><span class="s3-card-values"><span><em>겉보기등급</em><b>' + values[0] + '</b></span><span><em>절대등급</em><b>' + values[1] + '</b></span></span></button>';
   }
 
   function p4Markup(state) {
@@ -376,7 +392,7 @@
     var cards = ['X', 'Y', 'Z'].filter(function (letter) { return state.p4Slots.indexOf(letter) < 0; }).map(function (letter) { return lockCard(letter, false); }).join('');
     return '<section class="s3-puzzle" role="dialog" aria-modal="true">' + puzzleHeader(4, '마지막 거리 판정 잠금') +
       '<div class="s3-puzzle-body"><div class="s3-lock-layout"><div class="s3-lock-device' + (state.p4Complete ? ' complete' : '') + '">' + slots + '</div>' +
-      '<aside class="s3-lock-bank"><div><h3>X · Y · Z 거리 판정 카드</h3><p>겉보기등급과 절대등급을 비교해 가까움, 10 pc, 멀어짐 슬롯에 한 장씩 넣으세요.</p></div>' +
+      '<aside class="s3-lock-bank"><div><h3>X · Y · Z 거리 판정 카드</h3><p><strong>① 두 등급을 비교</strong>하고, <strong>② 카드를 왼쪽 거리 슬롯에 배치</strong>한 뒤 확인하세요.</p></div><div class="s3-distance-rule"><b>거리 판정 기준</b><span><i>겉보기 &lt; 절대</i>가까움</span><span><i>겉보기 = 절대</i>10 pc</span><span><i>겉보기 &gt; 절대</i>멀어짐</span></div>' +
       '<div class="s3-card-bank" data-s3-drop="p4" data-slot="bank">' + cards + '</div>' + selectionHelp('p4', '카드를 끌어 알맞은 거리 슬롯에 넣으세요.') + '</aside></div></div>' +
       puzzleFooter('세 카드를 모두 배치한 뒤 확인하세요.', true, '확인', state.p4Slots.some(function (value) { return !value; })) + '</section>';
   }
@@ -723,12 +739,12 @@
       return;
     }
     if (id === 'analysis') {
-      if (q < 2) inspect = { title: '중앙 별빛 분석 장치', text: '등급 기준과 전원이 부족합니다. 왼쪽의 고장 난 등급 측정 장치를 먼저 복구해야 합니다.', state: '부분 작동 · 분석 기능 잠김', image: img('scene03_room_base.webp') };
+      if (q < 2) inspect = { title: '중앙 별빛 분석 장치', text: '등급 기준과 전원이 부족합니다. 왼쪽의 고장 난 등급 측정 장치를 먼저 복구해야 합니다.', state: '부분 작동 · 분석 기능 잠김', image: img('scene03_room_base.webp'), focus: 'analysis' };
       else if (q === 2) {
         inspect = null;
         puzzle = 'q2';
         if (!state.dataSent) beginTransmission();
-      } else inspect = { title: '중앙 별빛 분석 장치', text: '가장 밝게 보이는 별 A는 확인했지만, 별들의 거리가 달라 실제 밝기는 바로 판단할 수 없습니다.', state: '거리 비교 자료 필요', image: img('scene03_room_state02_distance_unlocked.webp') };
+      } else inspect = { title: '중앙 별빛 분석 장치', text: '가장 밝게 보이는 별 A는 확인했지만, 별들의 거리가 달라 실제 밝기는 바로 판단할 수 없습니다.', state: '거리 비교 자료 필요', image: img('scene03_room_state02_distance_unlocked.webp'), focus: 'analysis' };
       draw();
       return;
     }
@@ -760,7 +776,7 @@
     }
     if (id === 'maintenance') {
       if (!state.p4Complete) {
-        inspect = { title: '작은 정비 패널', text: '별빛 분석 시스템의 최종 거리 판정 잠금과 연결되어 있습니다.', state: '잠김', image: img('scene03_room_base.webp') };
+        inspect = { title: '작은 정비 패널', text: '별빛 분석 시스템의 최종 거리 판정 잠금과 연결되어 있습니다.', state: '잠김', image: img('scene03_room_base.webp'), focus: 'maintenance' };
         draw();
         return;
       }
