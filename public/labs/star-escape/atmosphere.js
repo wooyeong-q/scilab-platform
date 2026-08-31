@@ -40,7 +40,7 @@
   }
 
   function storageKey(snapshot, name) {
-    return 'scilab-star-escape-atmosphere-v1:' + snapshot.identity + ':' + name;
+    return 'scilab-star-escape-atmosphere-v2:' + snapshot.identity + ':' + name;
   }
 
   function once(snapshot, name, callback) {
@@ -112,7 +112,7 @@
     if (!root) return;
     var element = root.querySelector('.scene-atmosphere-flicker');
     element.classList.toggle('red', !!red);
-    replayClass(element, 'show', 520);
+    replayClass(element, 'show', 2100);
     play('flicker');
   }
 
@@ -123,9 +123,29 @@
     play('flicker');
   }
 
-  function silhouette(position) {
-    ensureRoot(previous || stateSnapshot());
-    if (!root || reducedMotion) return;
+  function roomIsClear() {
+    if (!game || !game.querySelector('.s1-room,.s2-room,.s3-room,.scene-transition-to-4')) return false;
+    return !game.querySelector('.s1-dialogue,.s1-puzzle,.s1-inspect,.s2-dialogue,.s2-ending-dialogue,.s2-puzzle,.s2-inspect,.s3-dialogue,.s3-puzzle,.s3-result-overlay,.dialog,[role="dialog"]');
+  }
+
+  function silhouette(position, context) {
+    var snapshot = stateSnapshot();
+    context = context || { stage: snapshot && snapshot.stage, attempts: 0, settled: false };
+    if (!snapshot || snapshot.stage !== context.stage || reducedMotion) return;
+    ensureRoot(snapshot);
+    if (!root) return;
+    if (!roomIsClear()) {
+      if (context.attempts < 180) later(function () {
+        silhouette(position, { stage: context.stage, attempts: context.attempts + 1, settled: false });
+      }, 400);
+      return;
+    }
+    if (context.attempts > 0 && !context.settled) {
+      later(function () {
+        silhouette(position, { stage: context.stage, attempts: context.attempts, settled: true });
+      }, 480);
+      return;
+    }
     var element = root.querySelector('.scene-atmosphere-silhouette');
     element.className = 'scene-atmosphere-silhouette ' + (position || 'right');
     replayClass(element, 'show', 520);
@@ -150,20 +170,24 @@
           play('mysteryLock');
           note('추가 잠금 기록은 없습니다.');
         }, 950);
+        later(function () { silhouette('right'); }, 4200);
       } else if (snapshot.stage === 2) {
         later(function () {
           play('interference');
           note('공식 통신 장비 · 송신 기록 없음');
         }, 1150);
+        later(function () { silhouette('left'); }, 4600);
       } else if (snapshot.stage === 3) {
         later(function () {
           glitch('자동 분석 · 가장 밝게 관측되는 별 <strong>A → C → A</strong>', true);
         }, 1250);
+        later(function () { silhouette('panel'); }, 4500);
       } else if (snapshot.stage === 4) {
         later(function () {
           play('mysteryLock');
           note('잠금 기록이 일치하지 않습니다.');
         }, 800);
+        later(function () { silhouette('center'); }, 4200);
       }
     });
   }

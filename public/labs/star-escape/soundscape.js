@@ -46,8 +46,8 @@
     source.buffer = buffer;
     source.loop = true;
     filter.type = 'bandpass';
-    filter.frequency.value = 330;
-    filter.Q.value = 1.1;
+    filter.frequency.value = 175;
+    filter.Q.value = .72;
     source.connect(filter);
     filter.connect(gain);
     gain.connect(music);
@@ -76,14 +76,14 @@
     try {
       audio = new AudioEngine();
       master = makeGain(.0001);
-      music = makeGain(.82);
-      effects = makeGain(.72);
+      music = makeGain(.66);
+      effects = makeGain(.52);
       music.connect(master);
       effects.connect(master);
       master.connect(audio.destination);
-      createDrone(55, 'sine');
-      createDrone(82.41, 'triangle');
-      createDrone(116.54, 'sine');
+      createDrone(46.25, 'sine');
+      createDrone(49, 'triangle');
+      createDrone(65.41, 'sine');
       createNoise();
       return true;
     } catch (error) {
@@ -99,12 +99,12 @@
   function applyMix() {
     if (!audio) return;
     var audible = active && !muted && !document.hidden;
-    ramp(master.gain, audible ? .72 : .0001, audible ? .45 : .16);
-    ramp(drones[0].gain.gain, audible ? .042 : .0001, .55);
-    ramp(drones[1].gain.gain, audible ? (.009 + stage * .004) : .0001, .55);
-    ramp(drones[2].gain.gain, audible ? (stage === 1 ? .002 : stage === 2 ? .005 : stage === 3 ? .009 : .012) : .0001, .55);
-    ramp(atmosphere.gain.gain, audible ? (.003 + stage * .002) : .0001, .55);
-    atmosphere.filter.frequency.setTargetAtTime(260 + stage * 85, audio.currentTime, .5);
+    ramp(master.gain, audible ? .42 : .0001, audible ? .7 : .16);
+    ramp(drones[0].gain.gain, audible ? .028 : .0001, .8);
+    ramp(drones[1].gain.gain, audible ? (.005 + stage * .0014) : .0001, .8);
+    ramp(drones[2].gain.gain, audible ? (stage === 1 ? .0015 : stage === 2 ? .003 : stage === 3 ? .0045 : .006) : .0001, .8);
+    ramp(atmosphere.gain.gain, .0001, .8);
+    atmosphere.filter.frequency.setTargetAtTime(120 + stage * 28, audio.currentTime, .8);
   }
 
   function tone(frequency, duration, volume, type, delay, destination) {
@@ -123,7 +123,7 @@
     oscillator.stop(start + duration + .03);
   }
 
-  function sweep(from, to, duration, volume, type) {
+  function sweep(from, to, duration, volume, type, destination) {
     if (!audio) return;
     var start = audio.currentTime;
     var oscillator = audio.createOscillator();
@@ -135,7 +135,7 @@
     gain.gain.exponentialRampToValueAtTime(volume || .04, start + .012);
     gain.gain.exponentialRampToValueAtTime(.0001, start + duration);
     oscillator.connect(gain);
-    gain.connect(effects);
+    gain.connect(destination || effects);
     oscillator.start(start);
     oscillator.stop(start + duration + .03);
   }
@@ -155,7 +155,7 @@
     filter.frequency.value = centerFrequency || 620;
     filter.Q.value = .8;
     gain.gain.setValueAtTime(.0001, start);
-    gain.gain.exponentialRampToValueAtTime(volume || .02, start + .018);
+    gain.gain.exponentialRampToValueAtTime((volume || .02) * .38, start + .018);
     gain.gain.exponentialRampToValueAtTime(.0001, start + duration);
     source.connect(filter);
     filter.connect(gain);
@@ -168,13 +168,18 @@
     if (!active) return;
     ambientTimer = window.setTimeout(function () {
       if (active && !muted && !document.hidden && audio) {
-        var notes = stage === 1 ? [174.61, 196] : stage === 2 ? [174.61, 207.65, 233.08] : stage === 3 ? [164.81, 207.65, 246.94] : [146.83, 185, 233.08];
+        var notes = stage === 1 ? [61.74, 65.41] : stage === 2 ? [58.27, 65.41, 69.3] : stage === 3 ? [55, 61.74, 69.3] : [49, 58.27, 65.41];
         var note = notes[Math.floor(Math.random() * notes.length)];
-        tone(note, 1.7, .012 + stage * .002, 'sine', 0, music);
-        tone(note * 1.5, 1.05, .005, 'sine', .12, music);
+        tone(note, 4.6, .005 + stage * .0006, 'sine', 0, music);
+        tone(note * 1.05946, 3.8, .0036, 'triangle', .32, music);
+        sweep(note * 1.5, note * .72, 4.2, .0032 + stage * .00035, 'sine', music);
+        if (stage >= 2) {
+          tone(34.65, .24, .011, 'sine', .7, music);
+          tone(32.7, .3, .008, 'sine', 1.12, music);
+        }
       }
       scheduleAmbient();
-    }, 5200 + Math.random() * 5200 - stage * 450);
+    }, 8200 + Math.random() * 5200 - stage * 360);
   }
 
   function unlock() {
@@ -278,7 +283,7 @@
     window.clearTimeout(duckTimer);
     ramp(music.gain, Math.max(.03, Number(level) || .08), .08);
     duckTimer = window.setTimeout(function () {
-      if (music) ramp(music.gain, .82, .48);
+      if (music) ramp(music.gain, .66, .7);
     }, Math.max(120, Number(duration) || 800));
   }
 
