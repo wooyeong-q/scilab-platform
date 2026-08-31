@@ -103,7 +103,7 @@
     ramp(drones[0].gain.gain, audible ? .028 : .0001, .8);
     ramp(drones[1].gain.gain, audible ? (.005 + stage * .0014) : .0001, .8);
     ramp(drones[2].gain.gain, audible ? (stage === 1 ? .0015 : stage === 2 ? .003 : stage === 3 ? .0045 : .006) : .0001, .8);
-    ramp(atmosphere.gain.gain, audible ? (.00045 + stage * .00022) : .0001, .8);
+    ramp(atmosphere.gain.gain, .0001, .8);
     atmosphere.filter.frequency.setTargetAtTime(120 + stage * 28, audio.currentTime, .8);
   }
 
@@ -123,7 +123,7 @@
     oscillator.stop(start + duration + .03);
   }
 
-  function sweep(from, to, duration, volume, type) {
+  function sweep(from, to, duration, volume, type, destination) {
     if (!audio) return;
     var start = audio.currentTime;
     var oscillator = audio.createOscillator();
@@ -135,7 +135,7 @@
     gain.gain.exponentialRampToValueAtTime(volume || .04, start + .012);
     gain.gain.exponentialRampToValueAtTime(.0001, start + duration);
     oscillator.connect(gain);
-    gain.connect(effects);
+    gain.connect(destination || effects);
     oscillator.start(start);
     oscillator.stop(start + duration + .03);
   }
@@ -170,11 +170,16 @@
       if (active && !muted && !document.hidden && audio) {
         var notes = stage === 1 ? [61.74, 65.41] : stage === 2 ? [58.27, 65.41, 69.3] : stage === 3 ? [55, 61.74, 69.3] : [49, 58.27, 65.41];
         var note = notes[Math.floor(Math.random() * notes.length)];
-        tone(note, 3.5, .0048 + stage * .0006, 'sine', 0, music);
-        tone(note * 1.05946, 2.9, .0032, 'triangle', .28, music);
+        tone(note, 4.6, .005 + stage * .0006, 'sine', 0, music);
+        tone(note * 1.05946, 3.8, .0036, 'triangle', .32, music);
+        sweep(note * 1.5, note * .72, 4.2, .0032 + stage * .00035, 'sine', music);
+        if (stage >= 2) {
+          tone(34.65, .24, .011, 'sine', .7, music);
+          tone(32.7, .3, .008, 'sine', 1.12, music);
+        }
       }
       scheduleAmbient();
-    }, 9000 + Math.random() * 6500 - stage * 420);
+    }, 8200 + Math.random() * 5200 - stage * 360);
   }
 
   function unlock() {

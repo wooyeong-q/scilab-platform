@@ -123,9 +123,29 @@
     play('flicker');
   }
 
-  function silhouette(position) {
-    ensureRoot(previous || stateSnapshot());
-    if (!root || reducedMotion) return;
+  function roomIsClear() {
+    if (!game || !game.querySelector('.s1-room,.s2-room,.s3-room,.scene-transition-to-4')) return false;
+    return !game.querySelector('.s1-dialogue,.s1-puzzle,.s1-inspect,.s2-dialogue,.s2-ending-dialogue,.s2-puzzle,.s2-inspect,.s3-dialogue,.s3-puzzle,.s3-result-overlay,.dialog,[role="dialog"]');
+  }
+
+  function silhouette(position, context) {
+    var snapshot = stateSnapshot();
+    context = context || { stage: snapshot && snapshot.stage, attempts: 0, settled: false };
+    if (!snapshot || snapshot.stage !== context.stage || reducedMotion) return;
+    ensureRoot(snapshot);
+    if (!root) return;
+    if (!roomIsClear()) {
+      if (context.attempts < 180) later(function () {
+        silhouette(position, { stage: context.stage, attempts: context.attempts + 1, settled: false });
+      }, 400);
+      return;
+    }
+    if (context.attempts > 0 && !context.settled) {
+      later(function () {
+        silhouette(position, { stage: context.stage, attempts: context.attempts, settled: true });
+      }, 480);
+      return;
+    }
     var element = root.querySelector('.scene-atmosphere-silhouette');
     element.className = 'scene-atmosphere-silhouette ' + (position || 'right');
     replayClass(element, 'show', 520);
