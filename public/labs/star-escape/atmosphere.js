@@ -40,7 +40,7 @@
   }
 
   function storageKey(snapshot, name) {
-    return 'scilab-star-escape-atmosphere-v2:' + snapshot.identity + ':' + name;
+    return 'scilab-star-escape-atmosphere-v3:' + snapshot.identity + ':' + name;
   }
 
   function once(snapshot, name, callback) {
@@ -130,26 +130,34 @@
 
   function silhouette(position, context) {
     var snapshot = stateSnapshot();
-    context = context || { stage: snapshot && snapshot.stage, attempts: 0, settled: false };
+    context = context || { stage: snapshot && snapshot.stage, attempts: 0, settled: false, duration: 900 };
     if (!snapshot || snapshot.stage !== context.stage || reducedMotion) return;
     ensureRoot(snapshot);
     if (!root) return;
     if (!roomIsClear()) {
       if (context.attempts < 180) later(function () {
-        silhouette(position, { stage: context.stage, attempts: context.attempts + 1, settled: false });
+        silhouette(position, { stage: context.stage, attempts: context.attempts + 1, settled: false, duration: context.duration });
       }, 400);
       return;
     }
     if (context.attempts > 0 && !context.settled) {
       later(function () {
-        silhouette(position, { stage: context.stage, attempts: context.attempts, settled: true });
+        silhouette(position, { stage: context.stage, attempts: context.attempts, settled: true, duration: context.duration });
       }, 480);
       return;
     }
     var element = root.querySelector('.scene-atmosphere-silhouette');
     element.className = 'scene-atmosphere-silhouette ' + (position || 'right');
-    replayClass(element, 'show', 520);
-    play('anomaly');
+    replayClass(element, 'show', context.duration || 900);
+    play(position === 'doorway' ? 'doorDread' : 'anomaly');
+  }
+
+  function radioInterference(strong) {
+    ensureRoot(previous || stateSnapshot());
+    if (!root || reducedMotion) return;
+    replayClass(root, strong ? 'radio-active-strong' : 'radio-active', strong ? 820 : 620);
+    replayClass(root.querySelector('.scene-atmosphere-tear'), 'show', strong ? 650 : 430);
+    play(strong ? 'radioStaticStrong' : 'radioStatic');
   }
 
   function glitch(html, isError) {
@@ -170,24 +178,20 @@
           play('mysteryLock');
           note('추가 잠금 기록은 없습니다.');
         }, 950);
-        later(function () { silhouette('right'); }, 4200);
       } else if (snapshot.stage === 2) {
         later(function () {
           play('interference');
           note('공식 통신 장비 · 송신 기록 없음');
         }, 1150);
-        later(function () { silhouette('left'); }, 4600);
       } else if (snapshot.stage === 3) {
         later(function () {
           glitch('자동 분석 · 가장 밝게 관측되는 별 <strong>A → C → A</strong>', true);
         }, 1250);
-        later(function () { silhouette('panel'); }, 4500);
       } else if (snapshot.stage === 4) {
         later(function () {
           play('mysteryLock');
           note('잠금 기록이 일치하지 않습니다.');
         }, 800);
-        later(function () { silhouette('center'); }, 4200);
       }
     });
   }
@@ -211,20 +215,9 @@
       if (!oldState.p1Complete && newState.p1Complete) once(snapshot, 'scene-3-p1-complete', function () {
         later(function () { play('metalStep'); note('복구 명령 외 장치 반응 감지'); }, 420);
       });
-      if (!oldState.dataSent && newState.dataSent && snapshot.role === 3) once(snapshot, 'scene-3-transfer-shadow', function () {
-        later(function () { silhouette('center'); }, 180);
-      });
       if (!oldState.q2Complete && newState.q2Complete) once(snapshot, 'scene-3-q2-reversal', function () {
         duck(1150, .06);
         later(function () { flicker(false); play('breath'); }, 150);
-      });
-      var oldPositions = oldState.p3Positions || {};
-      var newPositions = newState.p3Positions || {};
-      var crossedRing = ['A', 'B', 'C', 'D'].some(function (letter) {
-        return Math.abs(Number(oldPositions[letter]) - 50) > 8 && Math.abs(Number(newPositions[letter]) - 50) <= 8;
-      });
-      if (crossedRing) once(snapshot, 'scene-3-distance-shadow', function () {
-        later(function () { flicker(false); silhouette('left'); }, 120);
       });
       if (!oldState.p3Aligned && newState.p3Aligned) once(snapshot, 'scene-3-ten-pc-silence', function () {
         duck(950, .025);
@@ -253,24 +246,45 @@
         later(function () { glitch('기록 수정 · <strong>17분 전</strong>', false); }, 700);
       });
     }
-    if (snapshot.stage === 1 && game.querySelector('.s1-ending')) {
+    if (game.querySelector('.s1-ending')) {
       once(snapshot, 'scene-1-ending-signal', function () {
-        duck(1100, .08);
-        later(function () { play('interference'); }, 220);
-        later(function () { play('breath'); }, 760);
+        duck(1500, .14);
+        later(function () { radioInterference(true); }, 220);
+        later(function () { play('breath'); }, 880);
       });
     }
-    if (snapshot.stage === 2 && game.querySelector('.s2-panel-open-notice')) {
-      once(snapshot, 'scene-2-transmitter-open', function () {
-        duck(900, .07);
-        play('interference');
+    var scene2Signal = game.querySelector('.s2-panel-signal-stage .s2-ending-dialogue');
+    if (scene2Signal) {
+      var scene2Speaker = scene2Signal.querySelector('small');
+      var scene2Line = scene2Signal.querySelector('p');
+      if (scene2Speaker && scene2Speaker.textContent.trim() === '미확인 음성') {
+        var scene2VoiceKey = (scene2Line && scene2Line.textContent || 'unknown').replace(/\s+/g, ' ').trim().slice(0, 36);
+        once(snapshot, 'scene-2-transmitter-voice-' + scene2VoiceKey, function () {
+          duck(1750, .16);
+          later(function () { radioInterference(false); }, 40);
+        });
+      }
+    }
+    if (game.querySelector('.s2-door-open-notice')) {
+      once(snapshot, 'scene-2-open-door-silhouette', function () {
+        later(function () {
+          flicker(false);
+          silhouette('doorway', { stage: snapshot.stage, attempts: 0, settled: true, duration: 980 });
+        }, 420);
       });
     }
-    if (snapshot.stage === 2 && game.querySelector('.s2-panel-signal-stage')) {
-      once(snapshot, 'scene-2-transmitter-play', function () {
-        duck(1300, .035);
-        play('breath');
-      });
+    var scene3Recording = game.querySelector('.s3-recording-screen .s3-recording-card');
+    if (scene3Recording && !game.querySelector('#s3Proceed')) {
+      var scene3Speaker = scene3Recording.querySelector('small');
+      var scene3Line = scene3Recording.querySelector('.s3-recording-line');
+      var speakerName = scene3Speaker && scene3Speaker.textContent.trim();
+      if (speakerName === '미확인 음성' || speakerName === '잡음') {
+        var scene3VoiceKey = (scene3Line && scene3Line.textContent || speakerName).replace(/\s+/g, ' ').trim().slice(0, 36);
+        once(snapshot, 'scene-3-recorder-voice-' + scene3VoiceKey, function () {
+          duck(speakerName === '잡음' ? 1100 : 1650, .16);
+          later(function () { radioInterference(speakerName === '잡음'); }, 35);
+        });
+      }
     }
     if (snapshot.stage === 3 && game.querySelector('.s3-result-overlay') && /가장 밝게 보이는 별 A/.test(game.textContent)) {
       once(snapshot, 'scene-3-result-a-anomaly', function () {
@@ -311,22 +325,10 @@
     var target = event.target.closest && event.target.closest('button');
     if (!target) return;
 
-    if (snapshot.stage === 1 && target.matches('.s1-hotspot[data-object="window"],.s1-hotspot[data-object="monitor"]')) {
-      once(snapshot, 'scene-1-reflection-shadow', function () { later(function () { silhouette('right'); }, 90); });
-    }
-    if (snapshot.stage === 2 && snapshot.question === 1 && snapshot.role === 2 && target.matches('.s2-hotspot[data-s2-object="window"],.s2-hotspot[data-s2-object="camera"]')) {
-      once(snapshot, 'scene-2-role-shadow', function () { later(function () { silhouette('left'); }, 100); });
-    }
-    if (snapshot.stage === 2 && snapshot.question === 2 && target.matches('.s2-hotspot[data-s2-object="orbit"]')) {
-      once(snapshot, 'scene-2-parallax-edge-shadow', function () { later(function () { silhouette('right'); }, 260); });
-    }
     if (snapshot.stage === 2 && snapshot.question === 2 && snapshot.role === 4 && target.matches('[data-s2-clue-open],#s2ClueTab')) {
       once(snapshot, 'scene-2-route-check', function () {
         later(function () { glitch('전송 경로 확인 불가 · <strong>우회 수신 완료</strong>', true); }, 120);
       });
-    }
-    if (snapshot.stage === 3 && target.matches('.s3-hotspot[data-s3-object="analysis"],.s3-hotspot[data-s3-object="maintenance"]')) {
-      once(snapshot, 'scene-3-room-shadow', function () { later(function () { silhouette('panel'); }, 160); });
     }
     scheduleSync();
   }

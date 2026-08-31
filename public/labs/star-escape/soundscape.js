@@ -76,14 +76,14 @@
     try {
       audio = new AudioEngine();
       master = makeGain(.0001);
-      music = makeGain(.66);
-      effects = makeGain(.52);
+      music = makeGain(.82);
+      effects = makeGain(.6);
       music.connect(master);
       effects.connect(master);
       master.connect(audio.destination);
-      createDrone(46.25, 'sine');
-      createDrone(49, 'triangle');
-      createDrone(65.41, 'sine');
+      createDrone(73.42, 'sine');
+      createDrone(77.78, 'triangle');
+      createDrone(110, 'sine');
       createNoise();
       return true;
     } catch (error) {
@@ -99,10 +99,10 @@
   function applyMix() {
     if (!audio) return;
     var audible = active && !muted && !document.hidden;
-    ramp(master.gain, audible ? .42 : .0001, audible ? .7 : .16);
-    ramp(drones[0].gain.gain, audible ? .028 : .0001, .8);
-    ramp(drones[1].gain.gain, audible ? (.005 + stage * .0014) : .0001, .8);
-    ramp(drones[2].gain.gain, audible ? (stage === 1 ? .0015 : stage === 2 ? .003 : stage === 3 ? .0045 : .006) : .0001, .8);
+    ramp(master.gain, audible ? .58 : .0001, audible ? .7 : .16);
+    ramp(drones[0].gain.gain, audible ? .055 : .0001, .8);
+    ramp(drones[1].gain.gain, audible ? (.018 + stage * .002) : .0001, .8);
+    ramp(drones[2].gain.gain, audible ? (stage === 1 ? .009 : stage === 2 ? .012 : stage === 3 ? .015 : .018) : .0001, .8);
     ramp(atmosphere.gain.gain, .0001, .8);
     atmosphere.filter.frequency.setTargetAtTime(120 + stage * 28, audio.currentTime, .8);
   }
@@ -168,18 +168,18 @@
     if (!active) return;
     ambientTimer = window.setTimeout(function () {
       if (active && !muted && !document.hidden && audio) {
-        var notes = stage === 1 ? [61.74, 65.41] : stage === 2 ? [58.27, 65.41, 69.3] : stage === 3 ? [55, 61.74, 69.3] : [49, 58.27, 65.41];
+        var notes = stage === 1 ? [98, 103.83] : stage === 2 ? [92.5, 103.83, 110] : stage === 3 ? [87.31, 98, 110] : [82.41, 92.5, 103.83];
         var note = notes[Math.floor(Math.random() * notes.length)];
-        tone(note, 4.6, .005 + stage * .0006, 'sine', 0, music);
-        tone(note * 1.05946, 3.8, .0036, 'triangle', .32, music);
-        sweep(note * 1.5, note * .72, 4.2, .0032 + stage * .00035, 'sine', music);
+        tone(note, 5.2, .021 + stage * .0014, 'sine', 0, music);
+        tone(note * 1.05946, 4.4, .013, 'triangle', .32, music);
+        sweep(note * 1.5, note * .72, 4.8, .011 + stage * .0008, 'sine', music);
         if (stage >= 2) {
-          tone(34.65, .24, .011, 'sine', .7, music);
-          tone(32.7, .3, .008, 'sine', 1.12, music);
+          tone(55, .3, .028, 'sine', .7, music);
+          tone(51.91, .36, .021, 'sine', 1.12, music);
         }
       }
       scheduleAmbient();
-    }, 8200 + Math.random() * 5200 - stage * 360);
+    }, 5200 + Math.random() * 3600 - stage * 220);
   }
 
   function unlock() {
@@ -259,6 +259,20 @@
       tone(730, .05, .014, 'square', .025);
       tone(520, .04, .011, 'square', .12);
       tone(910, .035, .009, 'square', .2);
+    } else if (name === 'radioStatic') {
+      noiseBurst(.62, .072, 1250);
+      noiseBurst(.3, .048, 650, .22);
+      tone(880, .045, .025, 'square', .05);
+      tone(540, .055, .02, 'square', .3);
+    } else if (name === 'radioStaticStrong') {
+      noiseBurst(.82, .095, 1180);
+      noiseBurst(.52, .068, 420, .16);
+      tone(920, .05, .03, 'square', .04);
+      tone(470, .07, .026, 'square', .38);
+    } else if (name === 'doorDread') {
+      sweep(118, 54, .9, .052, 'sine');
+      tone(73.42, .7, .036, 'triangle', .08);
+      tone(77.78, .62, .028, 'triangle', .11);
     } else if (name === 'flicker') {
       noiseBurst(.14, .018, 1500);
       tone(54, .12, .016, 'square');
@@ -283,7 +297,7 @@
     window.clearTimeout(duckTimer);
     ramp(music.gain, Math.max(.03, Number(level) || .08), .08);
     duckTimer = window.setTimeout(function () {
-      if (music) ramp(music.gain, .66, .7);
+      if (music) ramp(music.gain, .82, .7);
     }, Math.max(120, Number(duration) || 800));
   }
 
