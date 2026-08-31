@@ -14,7 +14,7 @@
 .scene-atmosphere-silhouette{position:absolute;z-index:5;left:76%;top:14%;width:20%;height:70%;opacity:0;transform:translateX(-50%);filter:blur(.35px) drop-shadow(0 0 9px #8bcde75c);mix-blend-mode:normal;transition:opacity .18s ease-out}
 .scene-atmosphere-silhouette img{width:100%;height:100%;object-fit:contain;object-position:center bottom;filter:brightness(1.22) contrast(1.08) saturate(.6);opacity:.96}
 .scene-atmosphere-silhouette.left{left:20%}.scene-atmosphere-silhouette.center{left:51%}.scene-atmosphere-silhouette.panel{left:89%;top:17%;width:12%;height:51%}
-.scene-atmosphere-silhouette.show{opacity:.78}
+.scene-atmosphere-silhouette.show{opacity:.78;transition:none}
 .scene-atmosphere-glitch{position:absolute;z-index:6;right:4%;top:17%;width:min(270px,42%);padding:8px 10px;overflow:hidden;border-left:2px solid #62e7ff8c;background:#020712df;color:#dffaff;font:800 clamp(8px,1.2vw,12px)/1.35 ui-monospace,SFMono-Regular,Consolas,monospace;letter-spacing:.04em;opacity:0;transform:translateX(8px)}
 .scene-atmosphere-glitch::before{content:"";position:absolute;inset:0;background:repeating-linear-gradient(180deg,transparent 0 3px,#c8f8ff18 4px);mix-blend-mode:screen}
 .scene-atmosphere-glitch.show{animation:atmosphereGlitch .42s steps(3,end)}
