@@ -269,8 +269,8 @@
       once(snapshot, 'scene-2-open-door-silhouette', function () {
         later(function () {
           flicker(false);
-          silhouette('doorway', { stage: snapshot.stage, attempts: 0, settled: true, duration: 980 });
-        }, 420);
+          silhouette('doorway', { stage: snapshot.stage, attempts: 0, settled: true, duration: 1380 });
+        }, 180);
       });
     }
     var scene3Recording = game.querySelector('.s3-recording-screen .s3-recording-card');

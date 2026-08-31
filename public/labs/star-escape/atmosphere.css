@@ -16,7 +16,7 @@
 .scene-atmosphere-silhouette.left{left:20%}.scene-atmosphere-silhouette.center{left:51%}.scene-atmosphere-silhouette.panel{left:89%;top:17%;width:12%;height:51%}
 .scene-atmosphere-silhouette.show{opacity:.78;transition:none}
 .scene-atmosphere-silhouette.doorway{left:51.3%;top:22%;width:8.5%;height:38%;filter:blur(.7px) drop-shadow(0 0 7px #02050df0);mix-blend-mode:multiply}
-.scene-atmosphere-silhouette.doorway.show{opacity:0;animation:atmosphereDoorway .98s steps(2,end) both}
+.scene-atmosphere-silhouette.doorway.show{opacity:0;animation:atmosphereDoorway 1.35s ease-out both}
 .scene-atmosphere.radio-active .scene-atmosphere-noise{opacity:.14;animation:atmosphereRadioNoise .08s steps(2,end) infinite}
 .scene-atmosphere.radio-active .scene-atmosphere-scan{opacity:.2}
 .scene-atmosphere.radio-active-strong .scene-atmosphere-noise{opacity:.22;animation:atmosphereRadioNoise .055s steps(2,end) infinite}
@@ -36,7 +36,7 @@
 @keyframes atmosphereGlitch{0%,100%{opacity:0;transform:translateX(8px)}16%{opacity:.72;transform:translateX(-3px)}42%{opacity:.2;transform:translateX(4px)}65%{opacity:.82;transform:none}83%{opacity:.12}}
 @keyframes atmosphereNote{0%,100%{opacity:0;transform:translate(-50%,-6px)}12%,78%{opacity:.82;transform:translate(-50%,0)}}
 @keyframes atmosphereTear{0%,100%{opacity:0;transform:translateY(-14px) skewY(-1deg)}30%{opacity:.85}58%{opacity:.12;transform:translateY(7px) skewY(-1deg)}77%{opacity:.62}}
-@keyframes atmosphereDoorway{0%,100%{opacity:0;transform:translateX(-50%) scale(.96)}12%{opacity:.9;transform:translateX(-50%) scale(1)}54%{opacity:.78}72%{opacity:.16}80%{opacity:.82}90%{opacity:.08}}
+@keyframes atmosphereDoorway{0%,100%{opacity:0;transform:translateX(-50%) scale(.96)}6%{opacity:.92;transform:translateX(-50%) scale(1)}48%{opacity:.84}58%{opacity:.28}65%{opacity:.86}74%{opacity:.38}82%{opacity:.78}92%{opacity:.12}}
 @keyframes atmosphereRadioNoise{0%{transform:translate(-8px,3px) scale(1.03)}50%{transform:translate(7px,-4px) scale(1.02)}100%{transform:translate(-2px,6px) scale(1.04)}}
 @media(max-width:600px){.scene-atmosphere-note{top:8%;max-width:82%;padding:6px 9px}.scene-atmosphere-glitch{right:3%;top:15%;width:54%;padding:6px 8px}.scene-atmosphere-silhouette{width:23%;height:56%}}
 @media(prefers-reduced-motion:reduce){.scene-atmosphere-noise{animation:none}.scene-atmosphere-flicker.show,.scene-atmosphere-panel-pulse.show,.scene-atmosphere-silhouette.show,.scene-atmosphere-glitch.show,.scene-atmosphere-tear.show{animation:none;opacity:0}.scene-atmosphere-note.show{animation:none;opacity:.82;transform:translate(-50%,0)}}
