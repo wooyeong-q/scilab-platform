@@ -40,7 +40,7 @@
   }
 
   function storageKey(snapshot, name) {
-    return 'scilab-star-escape-atmosphere-v1:' + snapshot.identity + ':' + name;
+    return 'scilab-star-escape-atmosphere-v2:' + snapshot.identity + ':' + name;
   }
 
   function once(snapshot, name, callback) {
@@ -112,7 +112,7 @@
     if (!root) return;
     var element = root.querySelector('.scene-atmosphere-flicker');
     element.classList.toggle('red', !!red);
-    replayClass(element, 'show', 520);
+    replayClass(element, 'show', 1250);
     play('flicker');
   }
 
@@ -150,20 +150,24 @@
           play('mysteryLock');
           note('추가 잠금 기록은 없습니다.');
         }, 950);
+        later(function () { silhouette('right'); }, 4200);
       } else if (snapshot.stage === 2) {
         later(function () {
           play('interference');
           note('공식 통신 장비 · 송신 기록 없음');
         }, 1150);
+        later(function () { silhouette('left'); }, 4600);
       } else if (snapshot.stage === 3) {
         later(function () {
           glitch('자동 분석 · 가장 밝게 관측되는 별 <strong>A → C → A</strong>', true);
         }, 1250);
+        later(function () { silhouette('panel'); }, 4500);
       } else if (snapshot.stage === 4) {
         later(function () {
           play('mysteryLock');
           note('잠금 기록이 일치하지 않습니다.');
         }, 800);
+        later(function () { silhouette('center'); }, 4200);
       }
     });
   }
