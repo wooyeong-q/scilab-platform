@@ -1,54 +1,55 @@
 .scene-atmosphere{position:absolute;z-index:5;inset:0;overflow:hidden;border-radius:inherit;pointer-events:none;isolation:isolate}
 .scene-atmosphere-vignette,.scene-atmosphere-noise,.scene-atmosphere-scan,.scene-atmosphere-flicker,.scene-atmosphere-panel-pulse{position:absolute;inset:0;pointer-events:none}
-.scene-atmosphere-vignette{z-index:1;background:linear-gradient(180deg,#00020a20,#00030c34),radial-gradient(ellipse at center,transparent 46%,#01030a52 75%,#01030ab8 100%)}
-.scene-atmosphere-noise{z-index:2;opacity:.008;background-image:repeating-radial-gradient(circle at 14% 23%,#d7f8ff 0 1px,transparent 1px 4px),repeating-linear-gradient(173deg,transparent 0 3px,#bceaff12 4px,transparent 5px 9px);background-size:71px 59px,100% 17px;mix-blend-mode:screen;animation:atmosphereNoise 2.8s steps(2,end) infinite}
-.scene-atmosphere[data-stage="2"] .scene-atmosphere-noise{opacity:.012}
-.scene-atmosphere[data-stage="3"] .scene-atmosphere-noise{opacity:.016}
-.scene-atmosphere[data-stage="4"] .scene-atmosphere-noise{opacity:.02}
-.scene-atmosphere-scan{z-index:3;opacity:.055;background:repeating-linear-gradient(180deg,transparent 0 4px,#62e7ff0a 5px);mix-blend-mode:screen}
-.scene-atmosphere-flicker{z-index:4;opacity:0;background:radial-gradient(circle at 52% 45%,#d8faff55,transparent 55%),#d9faff18;mix-blend-mode:screen}
+.scene-atmosphere-vignette{z-index:1;background:linear-gradient(180deg,#11010628,#08010b3d),radial-gradient(ellipse at center,transparent 44%,#16030966 75%,#080106c7 100%)}
+.scene-atmosphere-noise{z-index:2;opacity:.01;background-image:repeating-radial-gradient(circle at 14% 23%,#ffd6d6 0 1px,transparent 1px 4px),repeating-linear-gradient(173deg,transparent 0 3px,#ff9b9b12 4px,transparent 5px 9px);background-size:71px 59px,100% 17px;mix-blend-mode:screen;animation:atmosphereNoise 2.8s steps(2,end) infinite}
+.scene-atmosphere[data-stage="2"] .scene-atmosphere-noise{opacity:.014}
+.scene-atmosphere[data-stage="3"] .scene-atmosphere-noise{opacity:.018}
+.scene-atmosphere[data-stage="4"] .scene-atmosphere-noise{opacity:.022}
+.scene-atmosphere-scan{z-index:3;opacity:.05;background:repeating-linear-gradient(180deg,transparent 0 4px,#ff5f6c0a 5px);mix-blend-mode:screen}
+.scene-atmosphere-flicker{z-index:4;opacity:0;background:radial-gradient(circle at 52% 45%,#ffb0b055,transparent 55%),#ff767618;mix-blend-mode:screen}
 .scene-atmosphere-flicker.show{animation:atmosphereFlicker .34s steps(2,end)}
-.scene-atmosphere-flicker.red{background:radial-gradient(circle at 90% 33%,#ff434c75 0 2%,#ff354825 8%,transparent 23%);mix-blend-mode:screen}
+.scene-atmosphere-flicker.red{background:radial-gradient(circle at 90% 33%,#ff2c3c8c 0 2%,#9c142b32 8%,transparent 23%);mix-blend-mode:screen}
 .scene-atmosphere-panel-pulse{z-index:4;opacity:0;background:radial-gradient(circle at 91% 30%,#ff273c 0 1.1%,#ff314b72 1.4%,transparent 8%)}
 .scene-atmosphere-panel-pulse.show{animation:atmospherePanelPulse .62s ease-out}
-.scene-atmosphere-silhouette{position:absolute;z-index:5;opacity:0;pointer-events:none;transform-origin:center bottom;filter:blur(.45px) drop-shadow(0 0 5px #142a3a66)}
-.scene-atmosphere-silhouette img{width:100%;height:100%;object-fit:contain;object-position:center bottom;filter:brightness(.72) contrast(1.28) saturate(.34);opacity:.86}
-.scene-atmosphere-silhouette.show{animation:atmosphereSilhouette var(--silhouette-duration,2.4s) ease-in-out both}
-.scene-atmosphere-silhouette.s1-between-devices{left:25.5%;top:22%;width:11.2%;height:55%;clip-path:inset(0 0 43% 0);--silhouette-opacity:.66}
-.scene-atmosphere-silhouette.s1-storage-lean{right:-.1%;top:27%;width:11.2%;height:52%;clip-path:inset(0 4% 3% 0);--silhouette-opacity:.84;filter:blur(.5px) drop-shadow(0 0 5px #0c1a2499)}
-.scene-atmosphere-silhouette.s1-door-half{left:50.7%;top:25%;width:10%;height:40%;--silhouette-opacity:.84;filter:blur(.55px) drop-shadow(0 0 5px #071018b8)}
-.scene-atmosphere-silhouette.s2-crouched{left:74.5%;top:50%;width:20.5%;height:36%;--silhouette-opacity:.76;filter:blur(.48px) drop-shadow(0 0 6px #10263699)}
-.scene-atmosphere-silhouette.s2-door-edge{left:54.5%;top:27%;width:7.2%;height:34%;--silhouette-opacity:.66;filter:blur(.6px) drop-shadow(0 0 5px #061018d1)}
-.scene-atmosphere-silhouette.s3-desk-peek{left:14.7%;top:65%;width:12.5%;height:14%;--silhouette-opacity:.72;filter:blur(.45px) drop-shadow(0 0 5px #17354a88)}
-.game:has(.s1-hotspot[data-object="navigation"].required):not(:has(.s1-dialogue,.s1-puzzle,.s1-inspect))>.scene-atmosphere .scene-atmosphere-silhouette{right:-.1%;left:auto;top:27%;width:11.2%;height:52%;opacity:0;background:url('/labs/star-escape/assets/atmosphere/silhouette-s1-storage-lean.webp') center bottom/contain no-repeat;clip-path:inset(0 4% 3% 0);filter:brightness(.72) contrast(1.22) saturate(.3) blur(.45px) drop-shadow(0 0 5px #0c1a2499);animation:atmosphereStorageFallback 3s .35s ease-in-out both}
-.game:has(.s1-hotspot[data-object="navigation"].required):not(:has(.s1-dialogue,.s1-puzzle,.s1-inspect))>.scene-atmosphere .scene-atmosphere-silhouette img{opacity:0}
-.s1-puzzle,.s2-puzzle,.s3-puzzle{background:rgba(5,10,24,.90)!important;backdrop-filter:blur(1.4px)}
-.game:has(.s1-puzzle)>.scene-atmosphere .scene-atmosphere-silhouette{left:22%;right:auto;top:20%;width:14%;height:55%;clip-path:inset(0 0 38% 0);background:url('/labs/star-escape/assets/atmosphere/silhouette-s1-between-devices.webp') center bottom/contain no-repeat;filter:brightness(.58) contrast(1.32) saturate(.24) blur(.75px);animation:atmospherePuzzleGhost 4.3s 1.15s ease-in-out both}
-.game:has(.s2-puzzle)>.scene-atmosphere .scene-atmosphere-silhouette{left:74%;right:auto;top:49%;width:21%;height:37%;clip-path:none;background:url('/labs/star-escape/assets/atmosphere/silhouette-s2-crouched.webp') center bottom/contain no-repeat;filter:brightness(.58) contrast(1.32) saturate(.24) blur(.75px);animation:atmospherePuzzleGhost 4.6s 1.3s ease-in-out both}
-.game:has(.s3-puzzle)>.scene-atmosphere .scene-atmosphere-silhouette{left:13%;right:auto;top:62%;width:14%;height:16%;clip-path:none;background:url('/labs/star-escape/assets/atmosphere/silhouette-s3-desk-peek.webp') center bottom/contain no-repeat;filter:brightness(.56) contrast(1.32) saturate(.24) blur(.7px);animation:atmospherePuzzleGhost 4.8s 1.45s ease-in-out both}
+.scene-atmosphere-silhouette{position:absolute;z-index:5;opacity:0;pointer-events:none;transform-origin:center bottom;filter:blur(.6px) drop-shadow(0 0 9px #8c1b2f66)}
+.scene-atmosphere-silhouette img{width:100%;height:100%;object-fit:contain;object-position:center bottom;filter:brightness(.5) contrast(1.42) saturate(.28) sepia(.22) hue-rotate(-18deg);opacity:.93}
+.scene-atmosphere-silhouette.show{animation:atmosphereSilhouette var(--silhouette-duration,5.2s) ease-in-out both}
+.scene-atmosphere-silhouette.s1-between-devices{left:24.5%;top:19%;width:14%;height:60%;clip-path:inset(0 0 38% 0);--silhouette-opacity:.8}
+.scene-atmosphere-silhouette.s1-storage-lean{right:-.2%;top:19%;width:17%;height:66%;clip-path:none;--silhouette-opacity:.96;filter:blur(.55px) drop-shadow(0 0 12px #a31d337d)}
+.scene-atmosphere-silhouette.s1-storage-lean img{content:url('/labs/star-escape/assets/atmosphere/silhouette-s1-storage-user.webp');filter:brightness(.56) contrast(1.5) saturate(.34) sepia(.3) hue-rotate(-18deg);opacity:.98}
+.scene-atmosphere-silhouette.s1-door-half{left:50.2%;top:21%;width:12%;height:45%;--silhouette-opacity:.92;filter:blur(.6px) drop-shadow(0 0 9px #8f172b91)}
+.scene-atmosphere-silhouette.s2-crouched{left:70%;top:43%;width:27%;height:46%;--silhouette-opacity:.9;filter:blur(.58px) drop-shadow(0 0 10px #971b2e87)}
+.scene-atmosphere-silhouette.s2-door-edge{left:53.5%;top:23%;width:9.2%;height:40%;--silhouette-opacity:.84;filter:blur(.65px) drop-shadow(0 0 8px #781525a3)}
+.scene-atmosphere-silhouette.s3-desk-peek{left:13.3%;top:61%;width:15%;height:17%;--silhouette-opacity:.84;filter:blur(.5px) drop-shadow(0 0 8px #7a172b82)}
+.game:has(.s1-hotspot[data-object="navigation"].required):not(:has(.s1-dialogue,.s1-inspect))>.scene-atmosphere .scene-atmosphere-silhouette{right:-.2%;left:auto;top:19%;width:17%;height:66%;opacity:0;background:url('/labs/star-escape/assets/atmosphere/silhouette-s1-storage-user.webp') center bottom/contain no-repeat;clip-path:none;filter:brightness(.55) contrast(1.5) saturate(.34) sepia(.3) hue-rotate(-18deg) blur(.55px) drop-shadow(0 0 12px #a31d337d);animation:atmosphereStorageFallback 6.2s .35s ease-in-out both}
+.game:has(.s1-hotspot[data-object="navigation"].required):not(:has(.s1-dialogue,.s1-inspect))>.scene-atmosphere .scene-atmosphere-silhouette img{opacity:0}
+.s1-puzzle,.s2-puzzle,.s3-puzzle{background:rgba(5,7,16,.82)!important;backdrop-filter:blur(1px)}
+.game:has(.s1-puzzle)>.scene-atmosphere .scene-atmosphere-silhouette{right:-.2%;left:auto;top:19%;width:17%;height:66%;clip-path:none;background:url('/labs/star-escape/assets/atmosphere/silhouette-s1-storage-user.webp') center bottom/contain no-repeat;filter:brightness(.45) contrast(1.58) saturate(.35) sepia(.34) hue-rotate(-18deg) blur(.7px) drop-shadow(0 0 12px #a31d3370);animation:atmospherePuzzleGhost 6.8s 1s ease-in-out both}
+.game:has(.s2-puzzle)>.scene-atmosphere .scene-atmosphere-silhouette{left:69%;right:auto;top:42%;width:28%;height:47%;clip-path:none;background:url('/labs/star-escape/assets/atmosphere/silhouette-s2-crouched.webp') center bottom/contain no-repeat;filter:brightness(.46) contrast(1.5) saturate(.3) sepia(.28) hue-rotate(-18deg) blur(.75px) drop-shadow(0 0 10px #8f182c6e);animation:atmospherePuzzleGhost 6.8s 1.1s ease-in-out both}
+.game:has(.s3-puzzle)>.scene-atmosphere .scene-atmosphere-silhouette{left:12.5%;right:auto;top:59%;width:16%;height:19%;clip-path:none;background:url('/labs/star-escape/assets/atmosphere/silhouette-s3-desk-peek.webp') center bottom/contain no-repeat;filter:brightness(.46) contrast(1.5) saturate(.3) sepia(.28) hue-rotate(-18deg) blur(.72px) drop-shadow(0 0 9px #8a172b69);animation:atmospherePuzzleGhost 6.8s 1.2s ease-in-out both}
 .game:has(.s1-puzzle)>.scene-atmosphere .scene-atmosphere-silhouette img,.game:has(.s2-puzzle)>.scene-atmosphere .scene-atmosphere-silhouette img,.game:has(.s3-puzzle)>.scene-atmosphere .scene-atmosphere-silhouette img{opacity:0}
-.scene-atmosphere.radio-active .scene-atmosphere-noise{opacity:.065;animation:atmosphereRadioNoise .1s steps(2,end) infinite}
-.scene-atmosphere.radio-active .scene-atmosphere-scan{opacity:.12}
-.scene-atmosphere.radio-active-strong .scene-atmosphere-noise{opacity:.09;animation:atmosphereRadioNoise .075s steps(2,end) infinite}
-.scene-atmosphere.radio-active-strong .scene-atmosphere-scan{opacity:.16}
-.scene-atmosphere-glitch{position:absolute;z-index:6;right:4%;top:17%;width:min(270px,42%);padding:8px 10px;overflow:hidden;border-left:2px solid #62e7ff8c;background:#020712df;color:#dffaff;font:800 clamp(8px,1.2vw,12px)/1.35 ui-monospace,SFMono-Regular,Consolas,monospace;letter-spacing:.04em;opacity:0;transform:translateX(8px)}
-.scene-atmosphere-glitch::before{content:"";position:absolute;inset:0;background:repeating-linear-gradient(180deg,transparent 0 3px,#c8f8ff18 4px);mix-blend-mode:screen}
+.scene-atmosphere.radio-active .scene-atmosphere-noise{opacity:.07;animation:atmosphereRadioNoise .1s steps(2,end) infinite}
+.scene-atmosphere.radio-active .scene-atmosphere-scan{opacity:.13}
+.scene-atmosphere.radio-active-strong .scene-atmosphere-noise{opacity:.1;animation:atmosphereRadioNoise .075s steps(2,end) infinite}
+.scene-atmosphere.radio-active-strong .scene-atmosphere-scan{opacity:.18}
+.scene-atmosphere-glitch{position:absolute;z-index:6;right:4%;top:17%;width:min(270px,42%);padding:8px 10px;overflow:hidden;border-left:2px solid #ff556a8c;background:#10040cdf;color:#ffe4e8;font:800 clamp(8px,1.2vw,12px)/1.35 ui-monospace,SFMono-Regular,Consolas,monospace;letter-spacing:.04em;opacity:0;transform:translateX(8px)}
+.scene-atmosphere-glitch::before{content:"";position:absolute;inset:0;background:repeating-linear-gradient(180deg,transparent 0 3px,#ffb9c018 4px);mix-blend-mode:screen}
 .scene-atmosphere-glitch.show{animation:atmosphereGlitch .42s steps(3,end)}
-.scene-atmosphere-glitch strong{color:#ffcf6c}.scene-atmosphere-glitch.error strong{color:#ff7b8f}
-.scene-atmosphere-note{position:absolute;z-index:7;left:50%;top:9%;max-width:min(540px,72%);padding:8px 12px;border:1px solid #89a9ce5c;border-radius:8px;background:#030915e8;color:#bdc9da;font-size:clamp(8px,1.15vw,12px);font-weight:750;letter-spacing:.035em;text-align:center;opacity:0;transform:translate(-50%,-6px);box-shadow:0 8px 30px #000b}
-.scene-atmosphere-note::before{content:"SYSTEM · ";color:#6fdff2;font-size:.8em;letter-spacing:.12em}
+.scene-atmosphere-glitch strong{color:#ffd28a}.scene-atmosphere-glitch.error strong{color:#ff7b8f}
+.scene-atmosphere-note{position:absolute;z-index:7;left:50%;top:9%;max-width:min(540px,72%);padding:8px 12px;border:1px solid #9b65705c;border-radius:8px;background:#0c0309e8;color:#d6c4ca;font-size:clamp(8px,1.15vw,12px);font-weight:750;letter-spacing:.035em;text-align:center;opacity:0;transform:translate(-50%,-6px);box-shadow:0 8px 30px #000b}
+.scene-atmosphere-note::before{content:"SYSTEM · ";color:#ff7188;font-size:.8em;letter-spacing:.12em}
 .scene-atmosphere-note.show{animation:atmosphereNote 2.2s ease both}
-.scene-atmosphere-tear{position:absolute;z-index:6;left:0;right:0;top:46%;height:2px;opacity:0;background:linear-gradient(90deg,transparent,#c3f8ff77 18%,#fff 49%,#7ae7ff88 70%,transparent);box-shadow:0 0 12px #62e7ff;transform:skewY(-1deg)}
+.scene-atmosphere-tear{position:absolute;z-index:6;left:0;right:0;top:46%;height:2px;opacity:0;background:linear-gradient(90deg,transparent,#ff7b8f77 18%,#fff 49%,#ff4d6888 70%,transparent);box-shadow:0 0 12px #ff4661;transform:skewY(-1deg)}
 .scene-atmosphere-tear.show{animation:atmosphereTear .3s steps(2,end)}
 @keyframes atmosphereNoise{0%{transform:translate(0)}33%{transform:translate(-3px,2px)}66%{transform:translate(2px,-2px)}100%{transform:translate(0)}}
-@keyframes atmosphereFlicker{0%,100%{opacity:0}22%{opacity:.58}38%{opacity:.05}58%{opacity:.38}74%{opacity:.08}}
-@keyframes atmospherePanelPulse{0%,100%{opacity:0}35%{opacity:.85}52%{opacity:.12}70%{opacity:.56}}
-@keyframes atmosphereGlitch{0%,100%{opacity:0;transform:translateX(8px)}16%{opacity:.72;transform:translateX(-3px)}42%{opacity:.2;transform:translateX(4px)}65%{opacity:.82;transform:none}83%{opacity:.12}}
-@keyframes atmosphereNote{0%,100%{opacity:0;transform:translate(-50%,-6px)}12%,78%{opacity:.82;transform:translate(-50%,0)}}
-@keyframes atmosphereTear{0%,100%{opacity:0;transform:translateY(-14px) skewY(-1deg)}30%{opacity:.85}58%{opacity:.12;transform:translateY(7px) skewY(-1deg)}77%{opacity:.62}}
-@keyframes atmosphereSilhouette{0%,100%{opacity:0;transform:translateY(3px) scale(.985)}8%{opacity:.22}17%{opacity:var(--silhouette-opacity,.72);transform:translateY(0) scale(1)}67%{opacity:var(--silhouette-opacity,.72)}76%{opacity:.14}82%{opacity:.5}91%{opacity:.08}}
-@keyframes atmosphereStorageFallback{0%,100%{opacity:0;transform:translateY(3px) scale(.985)}10%{opacity:.22}20%,68%{opacity:.78;transform:translateY(0) scale(1)}78%{opacity:.16}86%{opacity:.5}94%{opacity:.08}}
-@keyframes atmospherePuzzleGhost{0%,100%{opacity:0;transform:translateY(4px) scale(.985)}14%{opacity:.06}24%,64%{opacity:.24;transform:translateY(0) scale(1)}72%{opacity:.05}80%{opacity:.18}91%{opacity:.03}}
+@keyframes atmosphereFlicker{0%,100%{opacity:0}22%{opacity:.62}38%{opacity:.06}58%{opacity:.42}74%{opacity:.09}}
+@keyframes atmospherePanelPulse{0%,100%{opacity:0}35%{opacity:.9}52%{opacity:.13}70%{opacity:.6}}
+@keyframes atmosphereGlitch{0%,100%{opacity:0;transform:translateX(8px)}16%{opacity:.76;transform:translateX(-3px)}42%{opacity:.2;transform:translateX(4px)}65%{opacity:.86;transform:none}83%{opacity:.13}}
+@keyframes atmosphereNote{0%,100%{opacity:0;transform:translate(-50%,-6px)}12%,78%{opacity:.84;transform:translate(-50%,0)}}
+@keyframes atmosphereTear{0%,100%{opacity:0;transform:translateY(-14px) skewY(-1deg)}30%{opacity:.88}58%{opacity:.14;transform:translateY(7px) skewY(-1deg)}77%{opacity:.66}}
+@keyframes atmosphereSilhouette{0%{opacity:0;transform:translateY(5px) scale(.985)}10%{opacity:.12}24%{opacity:var(--silhouette-opacity,.9);transform:translateY(0) scale(1)}55%{opacity:var(--silhouette-opacity,.9)}68%{opacity:.34}79%{opacity:calc(var(--silhouette-opacity,.9) * .82)}91%{opacity:.15}100%{opacity:0;transform:translateY(2px) scale(.995)}}
+@keyframes atmosphereStorageFallback{0%{opacity:0;transform:translateY(5px) scale(.985)}10%{opacity:.16}24%,58%{opacity:.92;transform:translateY(0) scale(1)}69%{opacity:.38}80%{opacity:.78}92%{opacity:.16}100%{opacity:0;transform:translateY(2px) scale(.995)}}
+@keyframes atmospherePuzzleGhost{0%,100%{opacity:0;transform:translateY(4px) scale(.985)}12%{opacity:.08}25%,58%{opacity:.38;transform:translateY(0) scale(1)}70%{opacity:.12}82%{opacity:.32}93%{opacity:.06}}
 @keyframes atmosphereRadioNoise{0%{transform:translate(-8px,3px) scale(1.03)}50%{transform:translate(7px,-4px) scale(1.02)}100%{transform:translate(-2px,6px) scale(1.04)}}
-@media(max-width:600px){.scene-atmosphere-note{top:8%;max-width:82%;padding:6px 9px}.scene-atmosphere-glitch{right:3%;top:15%;width:54%;padding:6px 8px}.scene-atmosphere-silhouette.s2-crouched{left:71%;top:47%;width:25%;height:40%}.scene-atmosphere-silhouette.s1-storage-lean{right:-1%;width:13%;height:54%}.s1-puzzle,.s2-puzzle,.s3-puzzle{background:rgba(5,10,24,.92)!important}}
-@media(prefers-reduced-motion:reduce){.scene-atmosphere-noise{animation:none}.scene-atmosphere-flicker.show,.scene-atmosphere-panel-pulse.show,.scene-atmosphere-silhouette.show,.scene-atmosphere-glitch.show,.scene-atmosphere-tear.show{animation:none;opacity:0}.scene-atmosphere-note.show{animation:none;opacity:.82;transform:translate(-50%,0)}}
+@media(max-width:600px){.scene-atmosphere-note{top:8%;max-width:82%;padding:6px 9px}.scene-atmosphere-glitch{right:3%;top:15%;width:54%;padding:6px 8px}.scene-atmosphere-silhouette.s2-crouched{left:66%;top:40%;width:32%;height:50%}.scene-atmosphere-silhouette.s1-storage-lean{right:-1%;top:17%;width:21%;height:70%}.s1-puzzle,.s2-puzzle,.s3-puzzle{background:rgba(5,7,16,.86)!important}}
+@media(prefers-reduced-motion:reduce){.scene-atmosphere-noise{animation:none}.scene-atmosphere-flicker.show,.scene-atmosphere-panel-pulse.show,.scene-atmosphere-silhouette.show,.scene-atmosphere-glitch.show,.scene-atmosphere-tear.show{animation:none;opacity:0}.scene-atmosphere-note.show{animation:none;opacity:.84;transform:translate(-50%,0)}}
