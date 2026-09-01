@@ -7,14 +7,22 @@
   var master = null;
   var music = null;
   var effects = null;
-  var atmosphere = null;
-  var drones = [];
   var active = false;
   var muted = false;
   var stage = 1;
-  var ambientTimer = 0;
   var duckTimer = 0;
+  var mysteryTimer = 0;
+  var duckScale = 1;
+  var mysteryLevel = 0;
+  var tracks = null;
+  var trackFades = {};
   var button = null;
+  var AUDIO_ROOT = '/labs/star-escape/assets/audio/';
+  var TRACK_CONFIG = {
+    selpan: { src: AUDIO_ROOT + 'bgm-selpan.mp3', volume: .27 },
+    goats: { src: AUDIO_ROOT + 'bgm-goats.mp3', volume: .95 },
+    delirium: { src: AUDIO_ROOT + 'bgm-delirium.mp3', volume: .17 },
+  };
 
   try {
     muted = window.localStorage.getItem(STORAGE_KEY) === '1';
@@ -34,43 +42,6 @@
     parameter.exponentialRampToValueAtTime(Math.max(.0001, value), now + (duration || .08));
   }
 
-  function createNoise() {
-    var length = audio.sampleRate * 2;
-    var buffer = audio.createBuffer(1, length, audio.sampleRate);
-    var data = buffer.getChannelData(0);
-    for (var index = 0; index < length; index += 1) data[index] = Math.random() * 2 - 1;
-
-    var source = audio.createBufferSource();
-    var filter = audio.createBiquadFilter();
-    var gain = makeGain(.0001);
-    source.buffer = buffer;
-    source.loop = true;
-    filter.type = 'bandpass';
-    filter.frequency.value = 175;
-    filter.Q.value = .72;
-    source.connect(filter);
-    filter.connect(gain);
-    gain.connect(music);
-    source.start();
-    atmosphere = { source: source, filter: filter, gain: gain };
-  }
-
-  function createDrone(frequency, type) {
-    var oscillator = audio.createOscillator();
-    var filter = audio.createBiquadFilter();
-    var gain = makeGain(.0001);
-    oscillator.type = type;
-    oscillator.frequency.value = frequency;
-    filter.type = 'lowpass';
-    filter.frequency.value = 240;
-    filter.Q.value = 2.4;
-    oscillator.connect(filter);
-    filter.connect(gain);
-    gain.connect(music);
-    oscillator.start();
-    drones.push({ oscillator: oscillator, filter: filter, gain: gain });
-  }
-
   function ensureAudio() {
     if (audio || !AudioEngine) return !!audio;
     try {
@@ -81,10 +52,6 @@
       music.connect(master);
       effects.connect(master);
       master.connect(audio.destination);
-      createDrone(73.42, 'sine');
-      createDrone(77.78, 'triangle');
-      createDrone(110, 'sine');
-      createNoise();
       return true;
     } catch (error) {
       audio = null;
@@ -96,15 +63,54 @@
     if (audio && audio.state === 'suspended') audio.resume().catch(function () {});
   }
 
+  function ensureTracks() {
+    if (tracks) return tracks;
+    tracks = {};
+    Object.keys(TRACK_CONFIG).forEach(function (name) {
+      var element = new Audio(TRACK_CONFIG[name].src);
+      element.loop = true;
+      element.preload = 'auto';
+      element.volume = 0;
+      element.setAttribute('aria-hidden', 'true');
+      tracks[name] = element;
+    });
+    return tracks;
+  }
+
+  function startTracks() {
+    ensureTracks();
+    Object.keys(tracks).forEach(function (name) {
+      if (tracks[name].paused) tracks[name].play().catch(function () {});
+    });
+  }
+
+  function fadeTrack(name, target, duration) {
+    if (!tracks || !tracks[name]) return;
+    var element = tracks[name];
+    var start = element.volume;
+    var finish = Math.max(0, Math.min(1, Number(target) || 0));
+    var startedAt = performance.now();
+    if (trackFades[name]) window.cancelAnimationFrame(trackFades[name]);
+    function step(now) {
+      var progress = Math.min(1, (now - startedAt) / Math.max(1, duration || 500));
+      var eased = 1 - Math.pow(1 - progress, 3);
+      element.volume = Math.max(0, Math.min(1, start + (finish - start) * eased));
+      if (progress < 1) trackFades[name] = window.requestAnimationFrame(step);
+      else delete trackFades[name];
+    }
+    trackFades[name] = window.requestAnimationFrame(step);
+  }
+
   function applyMix() {
-    if (!audio) return;
     var audible = active && !muted && !document.hidden;
-    ramp(master.gain, audible ? .58 : .0001, audible ? .7 : .16);
-    ramp(drones[0].gain.gain, audible ? .055 : .0001, .8);
-    ramp(drones[1].gain.gain, audible ? (.018 + stage * .002) : .0001, .8);
-    ramp(drones[2].gain.gain, audible ? (stage === 1 ? .009 : stage === 2 ? .012 : stage === 3 ? .015 : .018) : .0001, .8);
-    ramp(atmosphere.gain.gain, .0001, .8);
-    atmosphere.filter.frequency.setTargetAtTime(120 + stage * 28, audio.currentTime, .8);
+    var base = stage === 3 ? 'goats' : 'selpan';
+    var mix = audible ? duckScale : 0;
+    var baseScale = 1 - mysteryLevel * .78;
+    ensureTracks();
+    fadeTrack('selpan', base === 'selpan' ? TRACK_CONFIG.selpan.volume * mix * baseScale : 0, audible ? 900 : 160);
+    fadeTrack('goats', base === 'goats' ? TRACK_CONFIG.goats.volume * mix * baseScale : 0, audible ? 900 : 160);
+    fadeTrack('delirium', TRACK_CONFIG.delirium.volume * mix * mysteryLevel, audible ? 720 : 160);
+    if (audio && master) ramp(master.gain, audible ? .58 : .0001, audible ? .35 : .12);
   }
 
   function tone(frequency, duration, volume, type, delay, destination) {
@@ -163,44 +169,29 @@
     source.start(start);
   }
 
-  function scheduleAmbient() {
-    window.clearTimeout(ambientTimer);
-    if (!active) return;
-    ambientTimer = window.setTimeout(function () {
-      if (active && !muted && !document.hidden && audio) {
-        var notes = stage === 1 ? [98, 103.83] : stage === 2 ? [92.5, 103.83, 110] : stage === 3 ? [87.31, 98, 110] : [82.41, 92.5, 103.83];
-        var note = notes[Math.floor(Math.random() * notes.length)];
-        tone(note, 5.2, .021 + stage * .0014, 'sine', 0, music);
-        tone(note * 1.05946, 4.4, .013, 'triangle', .32, music);
-        sweep(note * 1.5, note * .72, 4.8, .011 + stage * .0008, 'sine', music);
-        if (stage >= 2) {
-          tone(55, .3, .028, 'sine', .7, music);
-          tone(51.91, .36, .021, 'sine', 1.12, music);
-        }
-      }
-      scheduleAmbient();
-    }, 5200 + Math.random() * 3600 - stage * 220);
-  }
-
   function unlock() {
-    if (!ensureAudio()) return;
+    ensureAudio();
+    startTracks();
     resume();
+    applyMix();
   }
 
   function activate(nextStage) {
     stage = Math.max(1, Math.min(4, Number(nextStage) || stage));
     active = true;
-    if (!ensureAudio()) return;
+    ensureAudio();
+    startTracks();
     resume();
     applyMix();
-    scheduleAmbient();
     updateButton();
   }
 
   function deactivate() {
     active = false;
-    window.clearTimeout(ambientTimer);
     window.clearTimeout(duckTimer);
+    window.clearTimeout(mysteryTimer);
+    duckScale = 1;
+    mysteryLevel = 0;
     applyMix();
   }
 
@@ -208,8 +199,9 @@
     var next = Math.max(1, Math.min(4, Number(nextStage) || 1));
     if (stage === next) return;
     stage = next;
+    window.clearTimeout(mysteryTimer);
+    mysteryLevel = 0;
     applyMix();
-    scheduleAmbient();
   }
 
   function play(name) {
@@ -293,12 +285,30 @@
   }
 
   function duck(duration, level) {
-    if (!active || muted || !ensureAudio()) return;
+    if (!active || muted) return;
     window.clearTimeout(duckTimer);
-    ramp(music.gain, Math.max(.03, Number(level) || .08), .08);
+    duckScale = Math.max(.12, Math.min(.72, (Number(level) || .08) * 3));
+    applyMix();
     duckTimer = window.setTimeout(function () {
-      if (music) ramp(music.gain, .82, .7);
+      duckScale = 1;
+      applyMix();
     }, Math.max(120, Number(duration) || 800));
+  }
+
+  function mystery(duration, strength) {
+    if (!active) return;
+    ensureTracks();
+    startTracks();
+    window.clearTimeout(mysteryTimer);
+    if (tracks.delirium && mysteryLevel < .1) {
+      try { tracks.delirium.currentTime = 0; } catch (error) {}
+    }
+    mysteryLevel = Math.max(.35, Math.min(1, Number(strength) || .78));
+    applyMix();
+    mysteryTimer = window.setTimeout(function () {
+      mysteryLevel = 0;
+      applyMix();
+    }, Math.max(1500, Number(duration) || 8000));
   }
 
   function updateButton() {
@@ -363,6 +373,7 @@
     duck: duck,
     isMuted: function () { return muted; },
     play: play,
+    mystery: mystery,
     setStage: setStage,
     toggle: toggle,
     unlock: unlock,

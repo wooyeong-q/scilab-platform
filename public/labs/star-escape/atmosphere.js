@@ -11,7 +11,14 @@
   var previous = null;
   var timers = [];
   var reducedMotion = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-  var silhouetteImage = '/labs/star-escape/assets/atmosphere/silhouette-uncanny.webp';
+  var silhouetteImages = {
+    's1-between-devices': '/labs/star-escape/assets/atmosphere/silhouette-s1-between-devices.webp',
+    's1-storage-lean': '/labs/star-escape/assets/atmosphere/silhouette-s1-storage-lean.webp',
+    's1-door-half': '/labs/star-escape/assets/atmosphere/silhouette-s1-door-half.webp',
+    's2-crouched': '/labs/star-escape/assets/atmosphere/silhouette-s2-crouched.webp',
+    's2-door-edge': '/labs/star-escape/assets/atmosphere/silhouette-s2-door-edge.webp',
+    's3-desk-peek': '/labs/star-escape/assets/atmosphere/silhouette-s3-desk-peek.webp',
+  };
 
   function later(callback, delay) {
     var timer = window.setTimeout(function () {
@@ -63,7 +70,7 @@
       '<div class="scene-atmosphere-scan"></div>' +
       '<div class="scene-atmosphere-flicker"></div>' +
       '<div class="scene-atmosphere-panel-pulse"></div>' +
-      '<div class="scene-atmosphere-silhouette"><img src="' + silhouetteImage + '" alt=""></div>' +
+      '<div class="scene-atmosphere-silhouette"><img alt=""></div>' +
       '<div class="scene-atmosphere-glitch"></div>' +
       '<div class="scene-atmosphere-note"></div>' +
       '<div class="scene-atmosphere-tear"></div>';
@@ -99,6 +106,10 @@
     if (sound && typeof sound.duck === 'function') sound.duck(duration, level);
   }
 
+  function mystery(duration, strength) {
+    if (sound && typeof sound.mystery === 'function') sound.mystery(duration, strength);
+  }
+
   function note(text) {
     ensureRoot(previous || stateSnapshot());
     if (!root) return;
@@ -128,7 +139,7 @@
     return !game.querySelector('.s1-dialogue,.s1-puzzle,.s1-inspect,.s2-dialogue,.s2-ending-dialogue,.s2-puzzle,.s2-inspect,.s3-dialogue,.s3-puzzle,.s3-result-overlay,.dialog,[role="dialog"]');
   }
 
-  function silhouette(position, context) {
+  function silhouette(kind, context) {
     var snapshot = stateSnapshot();
     context = context || { stage: snapshot && snapshot.stage, attempts: 0, settled: false, duration: 900 };
     if (!snapshot || snapshot.stage !== context.stage || reducedMotion) return;
@@ -136,20 +147,25 @@
     if (!root) return;
     if (!roomIsClear()) {
       if (context.attempts < 180) later(function () {
-        silhouette(position, { stage: context.stage, attempts: context.attempts + 1, settled: false, duration: context.duration });
+        silhouette(kind, { stage: context.stage, attempts: context.attempts + 1, settled: false, duration: context.duration, mystery: context.mystery });
       }, 400);
       return;
     }
     if (context.attempts > 0 && !context.settled) {
       later(function () {
-        silhouette(position, { stage: context.stage, attempts: context.attempts, settled: true, duration: context.duration });
+        silhouette(kind, { stage: context.stage, attempts: context.attempts, settled: true, duration: context.duration, mystery: context.mystery });
       }, 480);
       return;
     }
     var element = root.querySelector('.scene-atmosphere-silhouette');
-    element.className = 'scene-atmosphere-silhouette ' + (position || 'right');
+    var image = element.querySelector('img');
+    if (!silhouetteImages[kind]) return;
+    image.src = silhouetteImages[kind];
+    element.className = 'scene-atmosphere-silhouette ' + kind;
+    element.style.setProperty('--silhouette-duration', ((context.duration || 900) / 1000) + 's');
     replayClass(element, 'show', context.duration || 900);
-    play(position === 'doorway' ? 'doorDread' : 'anomaly');
+    if (context.mystery) mystery(context.mystery.duration, context.mystery.strength);
+    play(/door/.test(kind) ? 'doorDread' : 'anomaly');
   }
 
   function radioInterference(strong) {
@@ -217,10 +233,12 @@
       });
       if (!oldState.q2Complete && newState.q2Complete) once(snapshot, 'scene-3-q2-reversal', function () {
         duck(1150, .06);
+        mystery(7200, .68);
         later(function () { flicker(false); play('breath'); }, 150);
       });
       if (!oldState.p3Aligned && newState.p3Aligned) once(snapshot, 'scene-3-ten-pc-silence', function () {
         duck(950, .025);
+        mystery(8800, .76);
         later(function () { play('reveal'); }, 780);
       });
       if (!oldState.q3Complete && newState.q3Complete) once(snapshot, 'scene-3-reference-read-error', function () {
@@ -235,6 +253,7 @@
       });
       if (!oldState.recordingComplete && newState.recordingComplete) once(snapshot, 'scene-3-recording-cut', function () {
         duck(1200, .04);
+        mystery(15000, .98);
         later(function () { play('recordCut'); }, 520);
       });
     }
@@ -246,11 +265,30 @@
         later(function () { glitch('기록 수정 · <strong>17분 전</strong>', false); }, 700);
       });
     }
+    if (snapshot.stage === 1 && snapshot.question === 2 && game.querySelector('.s1-room.restored')) {
+      once(snapshot, 'scene-1-between-devices-silhouette', function () {
+        later(function () {
+          silhouette('s1-between-devices', { stage: 1, attempts: 0, settled: false, duration: 2600, mystery: { duration: 6200, strength: .48 } });
+        }, 1100);
+      });
+    }
+    if (snapshot.stage === 1 && snapshot.question === 3 && game.querySelector('.s1-room.restored')) {
+      once(snapshot, 'scene-1-storage-silhouette', function () {
+        later(function () {
+          flicker(false);
+          silhouette('s1-storage-lean', { stage: 1, attempts: 0, settled: false, duration: 2350, mystery: { duration: 7600, strength: .62 } });
+        }, 620);
+      });
+    }
     if (game.querySelector('.s1-ending')) {
-      once(snapshot, 'scene-1-ending-signal', function () {
+      once(snapshot, 'scene-1-ending-signal-v2', function () {
         duck(1500, .14);
+        mystery(18000, .96);
         later(function () { radioInterference(true); }, 220);
         later(function () { play('breath'); }, 880);
+        later(function () {
+          silhouette('s1-door-half', { stage: snapshot.stage, attempts: 0, settled: true, duration: 2850 });
+        }, 1280);
       });
     }
     var scene2Signal = game.querySelector('.s2-panel-signal-stage .s2-ending-dialogue');
@@ -261,16 +299,32 @@
         var scene2VoiceKey = (scene2Line && scene2Line.textContent || 'unknown').replace(/\s+/g, ' ').trim().slice(0, 36);
         once(snapshot, 'scene-2-transmitter-voice-' + scene2VoiceKey, function () {
           duck(1750, .16);
+          mystery(9200, .8);
           later(function () { radioInterference(false); }, 40);
         });
       }
     }
+    if (snapshot.stage === 2 && snapshot.question === 3 && game.querySelector('.s2-room-stage3')) {
+      once(snapshot, 'scene-2-distance-crouched-silhouette', function () {
+        later(function () {
+          silhouette('s2-crouched', { stage: 2, attempts: 0, settled: false, duration: 2700, mystery: { duration: 7600, strength: .58 } });
+        }, 900);
+      });
+    }
     if (game.querySelector('.s2-door-open-notice')) {
-      once(snapshot, 'scene-2-open-door-silhouette', function () {
+      once(snapshot, 'scene-2-open-door-silhouette-v2', function () {
+        mystery(15000, .94);
         later(function () {
           flicker(false);
-          silhouette('doorway', { stage: snapshot.stage, attempts: 0, settled: true, duration: 1380 });
-        }, 180);
+          silhouette('s2-door-edge', { stage: snapshot.stage, attempts: 0, settled: true, duration: 2400 });
+        }, 520);
+      });
+    }
+    if (snapshot.stage === 3 && snapshot.question === 1 && game.querySelector('.s3-room-base')) {
+      once(snapshot, 'scene-3-desk-peek-silhouette', function () {
+        later(function () {
+          silhouette('s3-desk-peek', { stage: 3, attempts: 0, settled: false, duration: 3600, mystery: { duration: 8200, strength: .66 } });
+        }, 1350);
       });
     }
     var scene3Recording = game.querySelector('.s3-recording-screen .s3-recording-card');
@@ -282,6 +336,7 @@
         var scene3VoiceKey = (scene3Line && scene3Line.textContent || speakerName).replace(/\s+/g, ' ').trim().slice(0, 36);
         once(snapshot, 'scene-3-recorder-voice-' + scene3VoiceKey, function () {
           duck(speakerName === '잡음' ? 1100 : 1650, .16);
+          mystery(speakerName === '잡음' ? 6200 : 10500, speakerName === '잡음' ? .64 : .86);
           later(function () { radioInterference(speakerName === '잡음'); }, 35);
         });
       }
