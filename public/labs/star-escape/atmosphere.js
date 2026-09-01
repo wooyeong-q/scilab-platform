@@ -13,7 +13,7 @@
   var reducedMotion = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
   var silhouetteImages = {
     's1-between-devices': '/labs/star-escape/assets/atmosphere/silhouette-s1-between-devices.webp',
-    's1-storage-lean': '/labs/star-escape/assets/atmosphere/silhouette-s1-storage-lean.webp',
+    's1-storage-lean': '/labs/star-escape/assets/atmosphere/silhouette-s1-storage-user.webp',
     's1-door-half': '/labs/star-escape/assets/atmosphere/silhouette-s1-door-half.webp',
     's2-crouched': '/labs/star-escape/assets/atmosphere/silhouette-s2-crouched.webp',
     's2-door-edge': '/labs/star-escape/assets/atmosphere/silhouette-s2-door-edge.webp',
@@ -47,7 +47,7 @@
   }
 
   function storageKey(snapshot, name) {
-    return 'scilab-star-escape-atmosphere-v3:' + snapshot.identity + ':' + name;
+    return 'scilab-star-escape-atmosphere-v4:' + snapshot.identity + ':' + name;
   }
 
   function once(snapshot, name, callback) {
@@ -136,12 +136,12 @@
 
   function roomIsClear() {
     if (!game || !game.querySelector('.s1-room,.s2-room,.s3-room,.scene-transition-to-4')) return false;
-    return !game.querySelector('.s1-dialogue,.s1-puzzle,.s1-inspect,.s2-dialogue,.s2-ending-dialogue,.s2-puzzle,.s2-inspect,.s3-dialogue,.s3-puzzle,.s3-result-overlay,.dialog,[role="dialog"]');
+    return !game.querySelector('.s1-dialogue,.s1-inspect,.s2-dialogue,.s2-ending-dialogue,.s2-inspect,.s3-dialogue,.s3-result-overlay,.dialog,[role="dialog"]');
   }
 
   function silhouette(kind, context) {
     var snapshot = stateSnapshot();
-    context = context || { stage: snapshot && snapshot.stage, attempts: 0, settled: false, duration: 900 };
+    context = context || { stage: snapshot && snapshot.stage, attempts: 0, settled: false, duration: 5200 };
     if (!snapshot || snapshot.stage !== context.stage || reducedMotion) return;
     ensureRoot(snapshot);
     if (!root) return;
@@ -162,8 +162,8 @@
     if (!silhouetteImages[kind]) return;
     image.src = silhouetteImages[kind];
     element.className = 'scene-atmosphere-silhouette ' + kind;
-    element.style.setProperty('--silhouette-duration', ((context.duration || 900) / 1000) + 's');
-    replayClass(element, 'show', context.duration || 900);
+    element.style.setProperty('--silhouette-duration', ((context.duration || 5200) / 1000) + 's');
+    replayClass(element, 'show', context.duration || 5200);
     if (context.mystery) mystery(context.mystery.duration, context.mystery.strength);
     play(/door/.test(kind) ? 'doorDread' : 'anomaly');
   }
@@ -190,24 +190,13 @@
   function sceneEntry(snapshot) {
     once(snapshot, 'scene-' + snapshot.stage + '-entry', function () {
       if (snapshot.stage === 1) {
-        later(function () {
-          play('mysteryLock');
-          note('추가 잠금 기록은 없습니다.');
-        }, 950);
+        later(function () { play('mysteryLock'); note('추가 잠금 기록은 없습니다.'); }, 950);
       } else if (snapshot.stage === 2) {
-        later(function () {
-          play('interference');
-          note('공식 통신 장비 · 송신 기록 없음');
-        }, 1150);
+        later(function () { play('interference'); note('공식 통신 장비 · 송신 기록 없음'); }, 1150);
       } else if (snapshot.stage === 3) {
-        later(function () {
-          glitch('자동 분석 · 가장 밝게 관측되는 별 <strong>A → C → A</strong>', true);
-        }, 1250);
+        later(function () { glitch('자동 분석 · 가장 밝게 관측되는 별 <strong>A → C → A</strong>', true); }, 1250);
       } else if (snapshot.stage === 4) {
-        later(function () {
-          play('mysteryLock');
-          note('잠금 기록이 일치하지 않습니다.');
-        }, 800);
+        later(function () { play('mysteryLock'); note('잠금 기록이 일치하지 않습니다.'); }, 800);
       }
     });
   }
@@ -215,80 +204,41 @@
   function stateEvents(snapshot) {
     var before = previous;
     if (!before || before.identity !== snapshot.identity) return;
-
     if (snapshot.stage === 2 && before.stage === 2 && before.question !== snapshot.question) {
-      if (snapshot.question === 2) once(snapshot, 'scene-2-calibration-step', function () {
-        later(function () { play('metalStep'); note('감지된 금속 진동 · 기록 없음'); }, 650);
-      });
-      if (snapshot.question === 3) once(snapshot, 'scene-2-panel-prelight', function () {
-        later(panelPulse, 500);
-      });
+      if (snapshot.question === 2) once(snapshot, 'scene-2-calibration-step', function () { later(function () { play('metalStep'); note('감지된 금속 진동 · 기록 없음'); }, 650); });
+      if (snapshot.question === 3) once(snapshot, 'scene-2-panel-prelight', function () { later(panelPulse, 500); });
     }
-
     if (snapshot.stage === 3 && before.stage === 3) {
       var oldState = before.sceneState || {};
       var newState = snapshot.sceneState || {};
-      if (!oldState.p1Complete && newState.p1Complete) once(snapshot, 'scene-3-p1-complete', function () {
-        later(function () { play('metalStep'); note('복구 명령 외 장치 반응 감지'); }, 420);
-      });
-      if (!oldState.q2Complete && newState.q2Complete) once(snapshot, 'scene-3-q2-reversal', function () {
-        duck(1150, .06);
-        mystery(7200, .68);
-        later(function () { flicker(false); play('breath'); }, 150);
-      });
-      if (!oldState.p3Aligned && newState.p3Aligned) once(snapshot, 'scene-3-ten-pc-silence', function () {
-        duck(950, .025);
-        mystery(8800, .76);
-        later(function () { play('reveal'); }, 780);
-      });
-      if (!oldState.q3Complete && newState.q3Complete) once(snapshot, 'scene-3-reference-read-error', function () {
-        later(function () { glitch('기준 별 C · <strong>읽기 오류</strong> · 재인식 완료', true); }, 80);
-      });
-      if (!oldState.p4Complete && newState.p4Complete) once(snapshot, 'scene-3-panel-prelight', function () {
-        later(function () { panelPulse(); flicker(true); }, 380);
-      });
-      if (!oldState.recordingStarted && newState.recordingStarted) once(snapshot, 'scene-3-recording-breath', function () {
-        duck(900, .08);
-        play('breath');
-      });
-      if (!oldState.recordingComplete && newState.recordingComplete) once(snapshot, 'scene-3-recording-cut', function () {
-        duck(1200, .04);
-        mystery(15000, .98);
-        later(function () { play('recordCut'); }, 520);
-      });
+      if (!oldState.p1Complete && newState.p1Complete) once(snapshot, 'scene-3-p1-complete', function () { later(function () { play('metalStep'); note('복구 명령 외 장치 반응 감지'); }, 420); });
+      if (!oldState.q2Complete && newState.q2Complete) once(snapshot, 'scene-3-q2-reversal', function () { duck(1150, .06); mystery(7200, .68); later(function () { flicker(false); play('breath'); }, 150); });
+      if (!oldState.p3Aligned && newState.p3Aligned) once(snapshot, 'scene-3-ten-pc-silence', function () { duck(950, .025); mystery(8800, .76); later(function () { play('reveal'); }, 780); });
+      if (!oldState.q3Complete && newState.q3Complete) once(snapshot, 'scene-3-reference-read-error', function () { later(function () { glitch('기준 별 C · <strong>읽기 오류</strong> · 재인식 완료', true); }, 80); });
+      if (!oldState.p4Complete && newState.p4Complete) once(snapshot, 'scene-3-panel-prelight', function () { later(function () { panelPulse(); flicker(true); }, 380); });
+      if (!oldState.recordingStarted && newState.recordingStarted) once(snapshot, 'scene-3-recording-breath', function () { duck(900, .08); play('breath'); });
+      if (!oldState.recordingComplete && newState.recordingComplete) once(snapshot, 'scene-3-recording-cut', function () { duck(1200, .04); mystery(15000, .98); later(function () { play('recordCut'); }, 520); });
     }
   }
 
   function domEvents(snapshot) {
     if (snapshot.stage === 1 && snapshot.question <= 2 && game.querySelector('.s1-puzzle')) {
-      once(snapshot, 'scene-1-record-glitch-q' + snapshot.question, function () {
-        later(function () { glitch('기록 수정 · <strong>17분 전</strong>', false); }, 700);
-      });
+      once(snapshot, 'scene-1-record-glitch-q' + snapshot.question, function () { later(function () { glitch('기록 수정 · <strong>17분 전</strong>', false); }, 700); });
     }
     if (snapshot.stage === 1 && snapshot.question === 2 && game.querySelector('.s1-room.restored')) {
       once(snapshot, 'scene-1-between-devices-silhouette', function () {
-        later(function () {
-          silhouette('s1-between-devices', { stage: 1, attempts: 0, settled: false, duration: 2600, mystery: { duration: 6200, strength: .48 } });
-        }, 1100);
+        later(function () { silhouette('s1-between-devices', { stage: 1, attempts: 0, settled: false, duration: 5000, mystery: { duration: 7600, strength: .62 } }); }, 1100);
       });
     }
     if (snapshot.stage === 1 && snapshot.question === 3 && game.querySelector('.s1-room.restored')) {
       once(snapshot, 'scene-1-storage-silhouette', function () {
-        later(function () {
-          flicker(false);
-          silhouette('s1-storage-lean', { stage: 1, attempts: 0, settled: false, duration: 2350, mystery: { duration: 7600, strength: .62 } });
-        }, 620);
+        later(function () { flicker(true); silhouette('s1-storage-lean', { stage: 1, attempts: 0, settled: false, duration: 6200, mystery: { duration: 10000, strength: .84 } }); }, 620);
       });
     }
     if (game.querySelector('.s1-ending')) {
-      once(snapshot, 'scene-1-ending-signal-v2', function () {
-        duck(1500, .14);
-        mystery(18000, .96);
-        later(function () { radioInterference(true); }, 220);
-        later(function () { play('breath'); }, 880);
-        later(function () {
-          silhouette('s1-door-half', { stage: snapshot.stage, attempts: 0, settled: true, duration: 2850 });
-        }, 1280);
+      once(snapshot, 'scene-1-ending-signal-v3', function () {
+        duck(1500, .14); mystery(18000, .96); later(function () { radioInterference(true); }, 220); later(function () { play('breath'); }, 880);
+        later(function () { silhouette('s1-door-half', { stage: snapshot.stage, attempts: 0, settled: true, duration: 5600 }); }, 1280);
       });
     }
     var scene2Signal = game.querySelector('.s2-panel-signal-stage .s2-ending-dialogue');
@@ -297,34 +247,22 @@
       var scene2Line = scene2Signal.querySelector('p');
       if (scene2Speaker && scene2Speaker.textContent.trim() === '미확인 음성') {
         var scene2VoiceKey = (scene2Line && scene2Line.textContent || 'unknown').replace(/\s+/g, ' ').trim().slice(0, 36);
-        once(snapshot, 'scene-2-transmitter-voice-' + scene2VoiceKey, function () {
-          duck(1750, .16);
-          mystery(9200, .8);
-          later(function () { radioInterference(false); }, 40);
-        });
+        once(snapshot, 'scene-2-transmitter-voice-' + scene2VoiceKey, function () { duck(1750, .16); mystery(9200, .8); later(function () { radioInterference(false); }, 40); });
       }
     }
     if (snapshot.stage === 2 && snapshot.question === 3 && game.querySelector('.s2-room-stage3')) {
-      once(snapshot, 'scene-2-distance-crouched-silhouette', function () {
-        later(function () {
-          silhouette('s2-crouched', { stage: 2, attempts: 0, settled: false, duration: 2700, mystery: { duration: 7600, strength: .58 } });
-        }, 900);
+      once(snapshot, 'scene-2-distance-crouched-silhouette-v2', function () {
+        later(function () { silhouette('s2-crouched', { stage: 2, attempts: 0, settled: false, duration: 6200, mystery: { duration: 9800, strength: .8 } }); }, 900);
       });
     }
     if (game.querySelector('.s2-door-open-notice')) {
-      once(snapshot, 'scene-2-open-door-silhouette-v2', function () {
-        mystery(15000, .94);
-        later(function () {
-          flicker(false);
-          silhouette('s2-door-edge', { stage: snapshot.stage, attempts: 0, settled: true, duration: 2400 });
-        }, 520);
+      once(snapshot, 'scene-2-open-door-silhouette-v3', function () {
+        mystery(15000, .94); later(function () { flicker(true); silhouette('s2-door-edge', { stage: snapshot.stage, attempts: 0, settled: true, duration: 5400 }); }, 520);
       });
     }
     if (snapshot.stage === 3 && snapshot.question === 1 && game.querySelector('.s3-room-base')) {
-      once(snapshot, 'scene-3-desk-peek-silhouette', function () {
-        later(function () {
-          silhouette('s3-desk-peek', { stage: 3, attempts: 0, settled: false, duration: 3600, mystery: { duration: 8200, strength: .66 } });
-        }, 1350);
+      once(snapshot, 'scene-3-desk-peek-silhouette-v2', function () {
+        later(function () { silhouette('s3-desk-peek', { stage: 3, attempts: 0, settled: false, duration: 6000, mystery: { duration: 9000, strength: .72 } }); }, 1350);
       });
     }
     var scene3Recording = game.querySelector('.s3-recording-screen .s3-recording-card');
@@ -334,24 +272,14 @@
       var speakerName = scene3Speaker && scene3Speaker.textContent.trim();
       if (speakerName === '미확인 음성' || speakerName === '잡음') {
         var scene3VoiceKey = (scene3Line && scene3Line.textContent || speakerName).replace(/\s+/g, ' ').trim().slice(0, 36);
-        once(snapshot, 'scene-3-recorder-voice-' + scene3VoiceKey, function () {
-          duck(speakerName === '잡음' ? 1100 : 1650, .16);
-          mystery(speakerName === '잡음' ? 6200 : 10500, speakerName === '잡음' ? .64 : .86);
-          later(function () { radioInterference(speakerName === '잡음'); }, 35);
-        });
+        once(snapshot, 'scene-3-recorder-voice-' + scene3VoiceKey, function () { duck(speakerName === '잡음' ? 1100 : 1650, .16); mystery(speakerName === '잡음' ? 6200 : 10500, speakerName === '잡음' ? .64 : .86); later(function () { radioInterference(speakerName === '잡음'); }, 35); });
       }
     }
     if (snapshot.stage === 3 && game.querySelector('.s3-result-overlay') && /가장 밝게 보이는 별 A/.test(game.textContent)) {
-      once(snapshot, 'scene-3-result-a-anomaly', function () {
-        duck(1150, .04);
-        later(function () { play('interference'); flicker(false); }, 120);
-      });
+      once(snapshot, 'scene-3-result-a-anomaly', function () { duck(1150, .04); later(function () { play('interference'); flicker(true); }, 120); });
     }
     if (snapshot.stage >= 4 && game.querySelector('.scene-transition-to-4')) {
-      once(snapshot, 'scene-4-connection-noise', function () {
-        duck(700, .12);
-        later(function () { play('metalStep'); }, 300);
-      });
+      once(snapshot, 'scene-4-connection-noise', function () { duck(700, .12); later(function () { play('metalStep'); }, 300); });
     }
   }
 
@@ -379,11 +307,8 @@
     if (!snapshot) return;
     var target = event.target.closest && event.target.closest('button');
     if (!target) return;
-
     if (snapshot.stage === 2 && snapshot.question === 2 && snapshot.role === 4 && target.matches('[data-s2-clue-open],#s2ClueTab')) {
-      once(snapshot, 'scene-2-route-check', function () {
-        later(function () { glitch('전송 경로 확인 불가 · <strong>우회 수신 완료</strong>', true); }, 120);
-      });
+      once(snapshot, 'scene-2-route-check', function () { later(function () { glitch('전송 경로 확인 불가 · <strong>우회 수신 완료</strong>', true); }, 120); });
     }
     scheduleSync();
   }
@@ -398,24 +323,8 @@
     document.addEventListener('click', handleClick, true);
   }
 
-  function activate() {
-    active = true;
-    scheduleSync();
-  }
+  function activate() { active = true; scheduleSync(); }
+  function deactivate() { active = false; scheduled = false; previous = null; clearTimers(); if (root && root.isConnected) root.remove(); root = null; }
 
-  function deactivate() {
-    active = false;
-    scheduled = false;
-    previous = null;
-    clearTimers();
-    if (root && root.isConnected) root.remove();
-    root = null;
-  }
-
-  window.StarEscapeAtmosphere = {
-    activate: activate,
-    bind: bind,
-    deactivate: deactivate,
-    refresh: scheduleSync,
-  };
+  window.StarEscapeAtmosphere = { activate: activate, bind: bind, deactivate: deactivate, refresh: scheduleSync };
 })();
