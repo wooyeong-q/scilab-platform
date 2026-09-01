@@ -11,15 +11,17 @@
 .scene-atmosphere-flicker.red{background:radial-gradient(circle at 90% 33%,#ff434c75 0 2%,#ff354825 8%,transparent 23%);mix-blend-mode:screen}
 .scene-atmosphere-panel-pulse{z-index:4;opacity:0;background:radial-gradient(circle at 91% 30%,#ff273c 0 1.1%,#ff314b72 1.4%,transparent 8%)}
 .scene-atmosphere-panel-pulse.show{animation:atmospherePanelPulse .62s ease-out}
-.scene-atmosphere-silhouette{position:absolute;z-index:5;opacity:0;pointer-events:none;transform-origin:center bottom;filter:blur(.25px) drop-shadow(0 0 8px #4e799765)}
-.scene-atmosphere-silhouette img{width:100%;height:100%;object-fit:contain;object-position:center bottom;filter:brightness(1.18) contrast(1.12) saturate(.58);opacity:.96}
+.scene-atmosphere-silhouette{position:absolute;z-index:5;opacity:0;pointer-events:none;transform-origin:center bottom;filter:blur(.45px) drop-shadow(0 0 5px #142a3a66)}
+.scene-atmosphere-silhouette img{width:100%;height:100%;object-fit:contain;object-position:center bottom;filter:brightness(.72) contrast(1.28) saturate(.34);opacity:.86}
 .scene-atmosphere-silhouette.show{animation:atmosphereSilhouette var(--silhouette-duration,2.4s) ease-in-out both}
-.scene-atmosphere-silhouette.s1-between-devices{left:25.5%;top:22%;width:11.2%;height:55%;clip-path:inset(0 0 43% 0);--silhouette-opacity:.7}
-.scene-atmosphere-silhouette.s1-storage-lean{right:1.5%;top:31%;width:8.2%;height:48%;clip-path:inset(0 5% 4% 0);--silhouette-opacity:.78;filter:blur(.3px) drop-shadow(0 0 7px #2137488c)}
-.scene-atmosphere-silhouette.s1-door-half{left:50.7%;top:25%;width:10%;height:40%;--silhouette-opacity:.88;filter:blur(.42px) drop-shadow(0 0 7px #111d28a8)}
-.scene-atmosphere-silhouette.s2-crouched{left:81.5%;top:61%;width:12.5%;height:22%;--silhouette-opacity:.66;filter:blur(.35px) drop-shadow(0 0 8px #18354994)}
-.scene-atmosphere-silhouette.s2-door-edge{left:54.5%;top:27%;width:7.2%;height:34%;--silhouette-opacity:.68;filter:blur(.5px) drop-shadow(0 0 6px #07121bd1)}
-.scene-atmosphere-silhouette.s3-desk-peek{left:14.7%;top:67%;width:10.5%;height:11.5%;--silhouette-opacity:.76;filter:blur(.22px) drop-shadow(0 0 7px #244e678a)}
+.scene-atmosphere-silhouette.s1-between-devices{left:25.5%;top:22%;width:11.2%;height:55%;clip-path:inset(0 0 43% 0);--silhouette-opacity:.66}
+.scene-atmosphere-silhouette.s1-storage-lean{right:-.1%;top:27%;width:11.2%;height:52%;clip-path:inset(0 4% 3% 0);--silhouette-opacity:.84;filter:blur(.5px) drop-shadow(0 0 5px #0c1a2499)}
+.scene-atmosphere-silhouette.s1-door-half{left:50.7%;top:25%;width:10%;height:40%;--silhouette-opacity:.84;filter:blur(.55px) drop-shadow(0 0 5px #071018b8)}
+.scene-atmosphere-silhouette.s2-crouched{left:74.5%;top:50%;width:20.5%;height:36%;--silhouette-opacity:.76;filter:blur(.48px) drop-shadow(0 0 6px #10263699)}
+.scene-atmosphere-silhouette.s2-door-edge{left:54.5%;top:27%;width:7.2%;height:34%;--silhouette-opacity:.66;filter:blur(.6px) drop-shadow(0 0 5px #061018d1)}
+.scene-atmosphere-silhouette.s3-desk-peek{left:14.7%;top:65%;width:12.5%;height:14%;--silhouette-opacity:.72;filter:blur(.45px) drop-shadow(0 0 5px #17354a88)}
+.game:has(.s1-hotspot[data-object="navigation"].required):not(:has(.s1-dialogue,.s1-puzzle,.s1-inspect))>.scene-atmosphere .scene-atmosphere-silhouette{right:-.1%;left:auto;top:27%;width:11.2%;height:52%;opacity:0;background:url('/labs/star-escape/assets/atmosphere/silhouette-s1-storage-lean.webp') center bottom/contain no-repeat;clip-path:inset(0 4% 3% 0);filter:brightness(.72) contrast(1.22) saturate(.3) blur(.45px) drop-shadow(0 0 5px #0c1a2499);animation:atmosphereStorageFallback 3s .35s ease-in-out both}
+.game:has(.s1-hotspot[data-object="navigation"].required):not(:has(.s1-dialogue,.s1-puzzle,.s1-inspect))>.scene-atmosphere .scene-atmosphere-silhouette img{opacity:0}
 .scene-atmosphere.radio-active .scene-atmosphere-noise{opacity:.065;animation:atmosphereRadioNoise .1s steps(2,end) infinite}
 .scene-atmosphere.radio-active .scene-atmosphere-scan{opacity:.12}
 .scene-atmosphere.radio-active-strong .scene-atmosphere-noise{opacity:.09;animation:atmosphereRadioNoise .075s steps(2,end) infinite}
@@ -39,7 +41,8 @@
 @keyframes atmosphereGlitch{0%,100%{opacity:0;transform:translateX(8px)}16%{opacity:.72;transform:translateX(-3px)}42%{opacity:.2;transform:translateX(4px)}65%{opacity:.82;transform:none}83%{opacity:.12}}
 @keyframes atmosphereNote{0%,100%{opacity:0;transform:translate(-50%,-6px)}12%,78%{opacity:.82;transform:translate(-50%,0)}}
 @keyframes atmosphereTear{0%,100%{opacity:0;transform:translateY(-14px) skewY(-1deg)}30%{opacity:.85}58%{opacity:.12;transform:translateY(7px) skewY(-1deg)}77%{opacity:.62}}
-@keyframes atmosphereSilhouette{0%,100%{opacity:0;transform:translateY(3px) scale(.985)}8%{opacity:.28}17%{opacity:var(--silhouette-opacity,.76);transform:translateY(0) scale(1)}67%{opacity:var(--silhouette-opacity,.76)}76%{opacity:.17}82%{opacity:.58}91%{opacity:.1}}
+@keyframes atmosphereSilhouette{0%,100%{opacity:0;transform:translateY(3px) scale(.985)}8%{opacity:.22}17%{opacity:var(--silhouette-opacity,.72);transform:translateY(0) scale(1)}67%{opacity:var(--silhouette-opacity,.72)}76%{opacity:.14}82%{opacity:.5}91%{opacity:.08}}
+@keyframes atmosphereStorageFallback{0%,100%{opacity:0;transform:translateY(3px) scale(.985)}10%{opacity:.22}20%,68%{opacity:.78;transform:translateY(0) scale(1)}78%{opacity:.16}86%{opacity:.5}94%{opacity:.08}}
 @keyframes atmosphereRadioNoise{0%{transform:translate(-8px,3px) scale(1.03)}50%{transform:translate(7px,-4px) scale(1.02)}100%{transform:translate(-2px,6px) scale(1.04)}}
-@media(max-width:600px){.scene-atmosphere-note{top:8%;max-width:82%;padding:6px 9px}.scene-atmosphere-glitch{right:3%;top:15%;width:54%;padding:6px 8px}}
+@media(max-width:600px){.scene-atmosphere-note{top:8%;max-width:82%;padding:6px 9px}.scene-atmosphere-glitch{right:3%;top:15%;width:54%;padding:6px 8px}.scene-atmosphere-silhouette.s2-crouched{left:71%;top:47%;width:25%;height:40%}.scene-atmosphere-silhouette.s1-storage-lean{right:-1%;width:13%;height:54%}}
 @media(prefers-reduced-motion:reduce){.scene-atmosphere-noise{animation:none}.scene-atmosphere-flicker.show,.scene-atmosphere-panel-pulse.show,.scene-atmosphere-silhouette.show,.scene-atmosphere-glitch.show,.scene-atmosphere-tear.show{animation:none;opacity:0}.scene-atmosphere-note.show{animation:none;opacity:.82;transform:translate(-50%,0)}}
