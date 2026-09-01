@@ -47,7 +47,7 @@
   }
 
   function storageKey(snapshot, name) {
-    return 'scilab-star-escape-atmosphere-v4:' + snapshot.identity + ':' + name;
+    return 'scilab-star-escape-atmosphere-v5:' + snapshot.identity + ':' + name;
   }
 
   function once(snapshot, name, callback) {
@@ -256,8 +256,11 @@
       });
     }
     if (game.querySelector('.s2-door-open-notice')) {
-      once(snapshot, 'scene-2-open-door-silhouette-v3', function () {
-        mystery(15000, .94); later(function () { flicker(true); silhouette('s2-door-edge', { stage: snapshot.stage, attempts: 0, settled: true, duration: 5400 }); }, 520);
+      once(snapshot, 'scene-2-open-door-silhouette-v4', function () {
+        mystery(15000, .94); later(function () {
+          silhouette('s2-door-edge', { stage: snapshot.stage, attempts: 0, settled: true, duration: 5400 });
+          later(function () { flicker(true); }, 4650);
+        }, 520);
       });
     }
     if (snapshot.stage === 3 && snapshot.question === 1 && game.querySelector('.s3-room-base')) {
