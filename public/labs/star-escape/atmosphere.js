@@ -16,9 +16,14 @@
     's1-storage-lean': '/labs/star-escape/assets/atmosphere/silhouette-s1-storage-user.webp',
     's1-door-half': '/labs/star-escape/assets/atmosphere/silhouette-s1-door-half.webp',
     's2-crouched': '/labs/star-escape/assets/atmosphere/silhouette-s2-crouched.webp',
-    's2-door-edge': '/labs/star-escape/assets/atmosphere/silhouette-s2-door-edge.webp',
+    's2-door-edge': '/labs/star-escape/assets/atmosphere/silhouette-s2-approach-stand.webp',
     's3-desk-peek': '/labs/star-escape/assets/atmosphere/silhouette-s3-desk-peek.webp',
   };
+  var scene2ApproachFrames = [
+    '/labs/star-escape/assets/atmosphere/silhouette-s2-approach-stand.webp',
+    '/labs/star-escape/assets/atmosphere/silhouette-s2-approach-right.webp',
+    '/labs/star-escape/assets/atmosphere/silhouette-s2-approach-left.webp',
+  ];
 
   function later(callback, delay) {
     var timer = window.setTimeout(function () {
@@ -47,7 +52,7 @@
   }
 
   function storageKey(snapshot, name) {
-    return 'scilab-star-escape-atmosphere-v5:' + snapshot.identity + ':' + name;
+    return 'scilab-star-escape-atmosphere-v6:' + snapshot.identity + ':' + name;
   }
 
   function once(snapshot, name, callback) {
@@ -164,6 +169,17 @@
     element.className = 'scene-atmosphere-silhouette ' + kind;
     element.style.setProperty('--silhouette-duration', ((context.duration || 5200) / 1000) + 's');
     replayClass(element, 'show', context.duration || 5200);
+    if (kind === 's2-door-edge') {
+      var frameCount = Math.max(1, Math.floor(((context.duration || 5400) - 900) / 460));
+      for (var frame = 0; frame < frameCount; frame += 1) {
+        (function (frameIndex) {
+          later(function () {
+            if (!image.isConnected || !element.classList.contains('s2-door-edge')) return;
+            image.src = scene2ApproachFrames[1 + (frameIndex % 2)];
+          }, 900 + frameIndex * 460);
+        })(frame);
+      }
+    }
     if (context.mystery) mystery(context.mystery.duration, context.mystery.strength);
     play(/door/.test(kind) ? 'doorDread' : 'anomaly');
   }
@@ -256,7 +272,7 @@
       });
     }
     if (game.querySelector('.s2-door-open-notice')) {
-      once(snapshot, 'scene-2-open-door-silhouette-v4', function () {
+      once(snapshot, 'scene-2-open-door-silhouette-v5', function () {
         mystery(15000, .94); later(function () {
           silhouette('s2-door-edge', { stage: snapshot.stage, attempts: 0, settled: true, duration: 5400 });
           later(function () { flicker(true); }, 4650);
@@ -264,7 +280,7 @@
       });
     }
     if (snapshot.stage === 3 && snapshot.question === 1 && game.querySelector('.s3-room-base')) {
-      once(snapshot, 'scene-3-desk-peek-silhouette-v2', function () {
+      once(snapshot, 'scene-3-desk-peek-silhouette-v3', function () {
         later(function () { silhouette('s3-desk-peek', { stage: 3, attempts: 0, settled: false, duration: 6000, mystery: { duration: 9000, strength: .72 } }); }, 1350);
       });
     }
