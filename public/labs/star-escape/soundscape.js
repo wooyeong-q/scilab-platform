@@ -47,17 +47,29 @@
     scene4_cctv_noise: 'radioStaticStrong',
     scene4_exit: 'doorDread',
   };
-  // Source files have very different loudness. These gains target a consistently quiet background level.
+  // Source files have very different loudness. These gains keep the score present without masking dialogue.
   var TRACK_CONFIG = {
-    selpan: { src: AUDIO_ROOT + 'bgm-selpan.mp3', volume: .008 },
-    goats: { src: AUDIO_ROOT + 'bgm-goats.mp3', volume: .025 },
-    delirium: { src: AUDIO_ROOT + 'bgm-delirium.mp3', volume: .0055 },
+    selpan: { src: AUDIO_ROOT + 'bgm-selpan.mp3', volume: .013 },
+    goats: { src: AUDIO_ROOT + 'bgm-goats.mp3', volume: .040 },
+    delirium: { src: AUDIO_ROOT + 'bgm-delirium.mp3', volume: .0085 },
   };
   var STAGE_TRACK = {
     1: 'selpan',
     2: 'goats',
     3: 'delirium',
     4: 'returnSignal',
+  };
+  var SCENE_DREAD = {
+    1: .34,
+    2: .52,
+    3: 0,
+    4: .78,
+  };
+  var DREAD_RATE = {
+    1: .82,
+    2: .72,
+    3: 1,
+    4: .58,
   };
 
   try {
@@ -139,6 +151,8 @@
       element.loop = true;
       element.preload = 'auto';
       element.volume = 0;
+      element.preservesPitch = false;
+      element.webkitPreservesPitch = false;
       element.setAttribute('aria-hidden', 'true');
       tracks[name] = element;
     });
@@ -165,7 +179,8 @@
       if (!attempt || !attempt.then) return;
       attempt.then(function () {
         var selected = STAGE_TRACK[stage] || STAGE_TRACK[1];
-        if ((name !== selected || stageSwitching) && element.volume <= .0001) element.pause();
+        var needed = name === selected || (name === 'delirium' && (SCENE_DREAD[stage] || 0) > 0);
+        if ((!needed || stageSwitching) && element.volume <= .0001) element.pause();
       }).catch(function (error) {
         tracksPrimed = false;
         rememberPlayError(name, error);
@@ -221,16 +236,18 @@
     var current = STAGE_TRACK[stage] || STAGE_TRACK[1];
     var mix = audible ? duckScale : 0;
     var baseScale = 1 - mysteryLevel * .68;
+    var dreadLevel = SCENE_DREAD[stage] || 0;
     ensureTracks();
+    if (tracks.delirium) tracks.delirium.playbackRate = DREAD_RATE[stage] || 1;
     Object.keys(TRACK_CONFIG).forEach(function (name) {
       var target = name === current ? TRACK_CONFIG[name].volume * mix * baseScale : 0;
+      if (name === 'delirium' && current !== 'delirium') {
+        target = TRACK_CONFIG.delirium.volume * mix * Math.max(dreadLevel * baseScale, mysteryLevel * .72);
+      }
       fadeTrack(name, target, audible ? 520 : 120);
     });
-    if (mysteryLevel > 0 && current !== 'delirium') {
-      fadeTrack('delirium', TRACK_CONFIG.delirium.volume * mix * mysteryLevel * .72, audible ? 380 : 120);
-    }
     if (current === 'returnSignal') ensureReturnBed();
-    if (returnBed) ramp(returnBed.gain, audible && current === 'returnSignal' ? .06 * mix * baseScale : .0001, audible ? .52 : .12);
+    if (returnBed) ramp(returnBed.gain, audible && current === 'returnSignal' ? .085 * mix * baseScale : .0001, audible ? .52 : .12);
     if (audio && master) ramp(master.gain, audible ? .24 : .0001, audible ? .3 : .1);
   }
 
@@ -516,7 +533,7 @@
     debugState: function () {
       var state = { stage: stage, track: STAGE_TRACK[stage], switching: stageSwitching, lastPlayError: lastPlayError, tracks: {} };
       if (tracks) Object.keys(tracks).forEach(function (name) {
-        state.tracks[name] = { paused: tracks[name].paused, volume: tracks[name].volume, currentTime: tracks[name].currentTime };
+        state.tracks[name] = { paused: tracks[name].paused, volume: tracks[name].volume, currentTime: tracks[name].currentTime, playbackRate: tracks[name].playbackRate };
       });
       state.tracks.returnSignal = { paused: !returnBed || returnBed.gain.value <= .0001, volume: returnBed ? returnBed.gain.value : 0, currentTime: audio ? audio.currentTime : 0 };
       return state;
