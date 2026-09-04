@@ -103,6 +103,7 @@
       { frequency: 65.41, level: .22, type: 'sine', detune: 4 },
       { frequency: 98, level: .10, type: 'triangle', detune: -7 },
     ];
+    var pulseTarget = null;
     output.connect(music);
     voices.forEach(function (voice) {
       var oscillator = audio.createOscillator();
@@ -113,13 +114,14 @@
       oscillator.connect(gain);
       gain.connect(output);
       oscillator.start();
+      if (!pulseTarget) pulseTarget = gain;
     });
     var pulse = audio.createOscillator();
     var pulseDepth = makeGain(.009);
     pulse.type = 'sine';
     pulse.frequency.value = .11;
     pulse.connect(pulseDepth);
-    pulseDepth.connect(output.gain);
+    pulseDepth.connect(pulseTarget.gain);
     pulse.start();
     returnBed = output;
     return returnBed;
