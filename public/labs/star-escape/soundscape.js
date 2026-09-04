@@ -43,15 +43,16 @@
     scene4_exit: 'doorDread',
   };
   var TRACK_CONFIG = {
-    selpan: { src: AUDIO_ROOT + 'bgm-selpan.mp3', volume: .11 },
-    goats: { src: AUDIO_ROOT + 'bgm-goats.mp3', volume: .10 },
-    delirium: { src: AUDIO_ROOT + 'bgm-delirium.mp3', volume: .09 },
+    selpan: { src: AUDIO_ROOT + 'bgm-selpan.mp3', volume: .026 },
+    goats: { src: AUDIO_ROOT + 'bgm-goats.mp3', volume: .022 },
+    delirium: { src: AUDIO_ROOT + 'bgm-delirium.mp3', volume: .024 },
+    returnSignal: { src: AUDIO_ROOT + 'bgm-return-signal.mp3', volume: .021 },
   };
-  var STAGE_MIX = {
-    1: { selpan: 1, goats: 0, delirium: 0 },
-    2: { selpan: 0, goats: 1, delirium: 0 },
-    3: { selpan: .72, goats: 0, delirium: .34 },
-    4: { selpan: 0, goats: .22, delirium: .9 },
+  var STAGE_TRACK = {
+    1: 'selpan',
+    2: 'goats',
+    3: 'delirium',
+    4: 'returnSignal',
   };
 
   try {
@@ -78,7 +79,7 @@
       audio = new AudioEngine();
       master = makeGain(.0001);
       music = makeGain(.58);
-      effects = makeGain(.46);
+      effects = makeGain(.30);
       music.connect(master);
       effects.connect(master);
       master.connect(audio.destination);
@@ -109,9 +110,8 @@
 
   function startTracks() {
     ensureTracks();
-    Object.keys(tracks).forEach(function (name) {
-      if (tracks[name].paused) tracks[name].play().catch(function () {});
-    });
+    var current = STAGE_TRACK[stage] || STAGE_TRACK[1];
+    if (tracks[current] && tracks[current].paused) tracks[current].play().catch(function () {});
   }
 
   function fadeTrack(name, target, duration) {
@@ -120,27 +120,35 @@
     var start = element.volume;
     var finish = Math.max(0, Math.min(1, Number(target) || 0));
     var startedAt = performance.now();
+    if (finish > 0 && element.paused) element.play().catch(function () {});
     if (trackFades[name]) window.cancelAnimationFrame(trackFades[name]);
     function step(now) {
       var progress = Math.min(1, (now - startedAt) / Math.max(1, duration || 500));
       var eased = 1 - Math.pow(1 - progress, 3);
       element.volume = Math.max(0, Math.min(1, start + (finish - start) * eased));
       if (progress < 1) trackFades[name] = window.requestAnimationFrame(step);
-      else delete trackFades[name];
+      else {
+        delete trackFades[name];
+        if (finish <= .0001) element.pause();
+      }
     }
     trackFades[name] = window.requestAnimationFrame(step);
   }
 
   function applyMix() {
     var audible = active && !muted && !document.hidden;
-    var sceneMix = STAGE_MIX[stage] || STAGE_MIX[1];
+    var current = STAGE_TRACK[stage] || STAGE_TRACK[1];
     var mix = audible ? duckScale : 0;
     var baseScale = 1 - mysteryLevel * .68;
     ensureTracks();
-    fadeTrack('selpan', TRACK_CONFIG.selpan.volume * mix * sceneMix.selpan * baseScale, audible ? 1100 : 160);
-    fadeTrack('goats', TRACK_CONFIG.goats.volume * mix * sceneMix.goats * baseScale, audible ? 1100 : 160);
-    fadeTrack('delirium', TRACK_CONFIG.delirium.volume * mix * Math.max(sceneMix.delirium * baseScale, mysteryLevel), audible ? 900 : 160);
-    if (audio && master) ramp(master.gain, audible ? .42 : .0001, audible ? .35 : .12);
+    Object.keys(TRACK_CONFIG).forEach(function (name) {
+      var target = name === current ? TRACK_CONFIG[name].volume * mix * baseScale : 0;
+      fadeTrack(name, target, audible ? 520 : 120);
+    });
+    if (mysteryLevel > 0 && current !== 'delirium') {
+      fadeTrack('delirium', TRACK_CONFIG.delirium.volume * mix * mysteryLevel * .72, audible ? 380 : 120);
+    }
+    if (audio && master) ramp(master.gain, audible ? .24 : .0001, audible ? .3 : .1);
   }
 
   function tone(frequency, duration, volume, type, delay, destination) {
@@ -231,6 +239,11 @@
     stage = next;
     window.clearTimeout(mysteryTimer);
     mysteryLevel = 0;
+    ensureTracks();
+    var current = STAGE_TRACK[stage] || STAGE_TRACK[1];
+    if (tracks[current]) {
+      try { tracks[current].currentTime = 0; } catch (error) {}
+    }
     applyMix();
   }
 

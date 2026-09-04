@@ -17,6 +17,6 @@
   <rect x="8" y="8" width="884" height="504" rx="18" fill="#020811" stroke="#8beaff" stroke-width="3"/>
   <rect x="28" y="28" width="844" height="464" rx="10" fill="url(#paper)"/>
   <rect x="42" y="42" width="816" height="436" rx="6" fill="url(#grid)"/>
-  <text x="450" y="315" text-anchor="middle" font-family="Noto Sans KR, Apple SD Gothic Neo, sans-serif" font-size="126" font-weight="900" letter-spacing="6" fill="#c9f8ff" stroke="#c9f8ff" stroke-width="3" paint-order="stroke" mask="url(#fragmentMaskA)">반사판 뒤</text>
+  <rect x="42" y="42" width="816" height="388" rx="6" fill="#8cecff" fill-opacity=".48" mask="url(#fragmentMaskA)"/>
   <path d="M52 444h796" stroke="#8cecff" stroke-opacity=".28"/><circle cx="66" cy="462" r="5" fill="#ffdf79"/><circle cx="82" cy="462" r="5" fill="#8cecff"/>
 </svg>
