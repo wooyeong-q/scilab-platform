@@ -5,7 +5,7 @@ const SESSION_DAYS = 14;
 const MAX_PLAYERS = 45;
 const MAX_TEAMS = 12;
 const CODE_ALPHABET = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
-const STAGE_QUESTION_COUNTS = [3, 3, 4, 3] as const;
+const STAGE_QUESTION_COUNTS = [3, 3, 4, 4] as const;
 const QUESTIONS = [
   [
     { answer: '7139', label: '비상 전력 암호', hint: '각 대원의 별 색과 숫자를 모은 뒤, 별의 표면 온도가 높은 순서대로 숫자를 배열하세요.' },
@@ -24,9 +24,22 @@ const QUESTIONS = [
     { answer: 'XYZ', label: '겉보기등급·절대등급 거리 판정', hint: '겉보기등급은 지구에서 보이는 밝기입니다.', hints: ['겉보기등급은 지구에서 보이는 밝기입니다.', '절대등급은 10 pc에서의 밝기입니다.', '실제보다 밝게 보이면 가까운 쪽, 어둡게 보이면 먼 쪽입니다.'] },
   ],
   [
-    { answer: 'BARREDSPIRAL', label: '우리은하 모양', hint: '우리은하는 중심에 막대 구조가 있는 나선은하입니다.' },
-    { answer: 'DISK', label: '태양계 위치', hint: '태양계는 중심이나 헤일로가 아니라 우리은하 원반의 나선팔에 있습니다.' },
-    { answer: '4826', label: '지구 귀환 좌표', hint: '범위를 우주 → 우리은하 → 태양계 → 지구 순으로 줄여 숫자를 읽으세요.' },
+    {
+      answer: '반사판뒤', label: '두 조각의 숨은 문구', hint: '두 조각을 겹치면 숨은 문구를 읽을 수 있습니다.',
+      hints: ['두 조각을 겹치면 숨은 문구를 읽을 수 있습니다.', '한 장은 고정하고, 다른 한 장의 위치를 조금씩 맞춰 보세요.', '겹쳤을 때 위치를 알려주는 짧은 문구가 나타납니다.'],
+    },
+    {
+      answer: '성운분류완료', label: '성운 관측 명판', hint: '흑백 사진을 모두 복원한 뒤 공통점과 차이를 비교하세요.',
+      hints: ['흑백 사진을 모두 복원한 뒤 공통점과 차이를 비교하세요.', '붉게 빛나는 성운, 푸르게 보이는 성운, 배경을 가리는 어두운 성운을 구분해 보세요.', 'A는 붉은빛, B는 푸른빛, C는 어두운 가림 현상이 핵심입니다.'],
+    },
+    {
+      answer: '성단분류완료', label: '성단 관측 보관함', hint: '성단의 모양과 별의 분포를 먼저 비교해 보세요.',
+      hints: ['성단의 모양과 별의 분포를 먼저 비교해 보세요.', '성기고 불규칙한 무리는 산개성단, 둥글고 중심이 촘촘한 무리는 구상성단입니다.', 'X는 산개성단, Y는 구상성단입니다.'],
+    },
+    {
+      answer: 'RETURN', label: '최종 귀환 인증', hint: 'UV로 확인한 다섯 개 분류 순서를 떠올려 보세요.',
+      hints: ['UV로 확인한 다섯 개 분류 순서를 떠올려 보세요.', '시작 표시 `▲`부터 시계방향으로 배치해야 합니다.', '방출성운 → 산개성단 → 암흑성운 → 구상성단 → 반사성운'],
+    },
   ],
 ] as const;
 
@@ -393,7 +406,7 @@ function sceneSlots(value: unknown, size: number, allowed: readonly string[]) {
   return new Set(placed).size === placed.length ? slots : null;
 }
 
-function normalizeSceneState(value: unknown) {
+function normalizeScene03State(value: unknown) {
   if (!value || typeof value !== 'object' || Array.isArray(value)) return null;
   const input = value as Record<string, unknown>;
   const p1Slots = sceneSlots(input.p1Slots, 6, ['1', '2', '3', '4', '5', '6']);
@@ -450,14 +463,103 @@ function normalizeSceneState(value: unknown) {
   };
 }
 
+function normalizeScene04State(value: unknown) {
+  if (!value || typeof value !== 'object' || Array.isArray(value)) return null;
+  const input = value as Record<string, unknown>;
+  const nebulaSlots = sceneSlots(input.nebulaSlots, 3, ['emission', 'reflection', 'dark']);
+  const clusterSlots = sceneSlots(input.clusterSlots, 2, ['open', 'globular']);
+  const finalSlots = sceneSlots(input.finalSlots, 5, ['emission', 'open', 'dark', 'globular', 'reflection']);
+  if (!nebulaSlots || !clusterSlots || !finalSlots) return null;
+
+  const patternA = input.patternA === true;
+  const filmB = input.filmB === true;
+  const overlayComplete = patternA && filmB && input.overlayComplete === true;
+  const lensAcquired = overlayComplete && input.lensAcquired === true;
+  const restoredInput = input.photosRestored && typeof input.photosRestored === 'object' && !Array.isArray(input.photosRestored)
+    ? input.photosRestored as Record<string, unknown>
+    : {};
+  const photosRestored = {
+    A: lensAcquired && restoredInput.A === true,
+    B: lensAcquired && restoredInput.B === true,
+    C: lensAcquired && restoredInput.C === true,
+  };
+  const allPhotosRestored = photosRestored.A && photosRestored.B && photosRestored.C;
+  const nebulaComplete = allPhotosRestored
+    && nebulaSlots.join(',') === 'emission,reflection,dark'
+    && input.nebulaComplete === true;
+  const lockerActive = nebulaComplete && input.lockerActive === true;
+  const dataSent = lockerActive && input.dataSent === true;
+  const clusterComplete = dataSent
+    && clusterSlots.join(',') === 'open,globular'
+    && input.clusterComplete === true;
+  const handleUnlocked = clusterComplete && input.handleUnlocked === true;
+  const lockerOpen = handleUnlocked && input.lockerOpen === true;
+  const uvAcquired = lockerOpen && input.uvAcquired === true;
+  const uvRevealed = uvAcquired && input.uvRevealed === true;
+  const authComplete = uvRevealed
+    && finalSlots.join(',') === 'emission,open,dark,globular,reflection'
+    && input.authComplete === true;
+  const horrorSeen = authComplete && input.horrorSeen === true;
+  const maintenanceOpen = horrorSeen && input.maintenanceOpen === true;
+  const recordingStarted = maintenanceOpen && input.recordingStarted === true;
+  const requestedRecordingLine = Number(input.recordingLine);
+  const recordingLine = recordingStarted && Number.isInteger(requestedRecordingLine)
+    ? Math.max(0, Math.min(4, requestedRecordingLine))
+    : 0;
+  const recordingComplete = recordingStarted && recordingLine === 4 && input.recordingComplete === true;
+  const logSeen = recordingComplete && input.logSeen === true;
+  const cctvStarted = logSeen && input.cctvStarted === true;
+  const requestedCctvFrame = Number(input.cctvFrame);
+  const cctvFrame = cctvStarted && Number.isInteger(requestedCctvFrame)
+    ? Math.max(0, Math.min(6, requestedCctvFrame))
+    : 0;
+  const cctvComplete = cctvStarted && cctvFrame === 6 && input.cctvComplete === true;
+  const exitOpen = cctvComplete && input.exitOpen === true;
+
+  return {
+    patternA,
+    filmB,
+    overlayComplete,
+    lensAcquired,
+    photosRestored,
+    nebulaSlots,
+    nebulaComplete,
+    lockerActive,
+    dataSent,
+    clusterSlots,
+    clusterComplete,
+    handleUnlocked,
+    lockerOpen,
+    uvAcquired,
+    uvRevealed,
+    finalSlots,
+    authComplete,
+    horrorSeen,
+    maintenanceOpen,
+    recordingStarted,
+    recordingLine,
+    recordingComplete,
+    logSeen,
+    cctvStarted,
+    cctvFrame,
+    cctvComplete,
+    exitOpen,
+  };
+}
+
 export async function updateStarEscapeSceneState(code: string, playerId: string, playerKey: string, stageValue: unknown, questionValue: unknown, stateValue: unknown) {
   await ensureStarEscapeDatabase();
   const player = await verifiedPlayer(code, playerId, playerKey);
   if (!player) return { status: 'unauthorized' as const };
   const stage = Number(stageValue);
   const question = Number(questionValue);
-  const sceneState = normalizeSceneState(stateValue);
-  if (stage !== 3 || !Number.isInteger(question) || question < 1 || question > STAGE_QUESTION_COUNTS[2] || !sceneState) {
+  const sceneState = stage === 3
+    ? normalizeScene03State(stateValue)
+    : stage === 4
+      ? normalizeScene04State(stateValue)
+      : null;
+  const questionCount = stage === 3 ? STAGE_QUESTION_COUNTS[2] : stage === 4 ? STAGE_QUESTION_COUNTS[3] : 0;
+  if (!questionCount || !Number.isInteger(question) || question < 1 || question > questionCount || !sceneState) {
     return { status: 'invalid' as const };
   }
   const serialized = JSON.stringify(sceneState);
