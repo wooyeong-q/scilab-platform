@@ -1,34 +1,22 @@
 <svg xmlns="http://www.w3.org/2000/svg" width="900" height="520" viewBox="0 0 900 520" fill="none">
   <defs>
-    <linearGradient id="film" x1="0" y1="0" x2="1" y2="1">
-      <stop stop-color="#72eaff" stop-opacity=".10"/>
-      <stop offset="1" stop-color="#ffd866" stop-opacity=".07"/>
-    </linearGradient>
-    <pattern id="noiseDots" x="9" y="9" width="18" height="18" patternUnits="userSpaceOnUse">
-      <rect x="6" y="6" width="6" height="6" rx="1" fill="#ffdf79" fill-opacity=".23"/>
+    <linearGradient id="film" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#72eaff" stop-opacity=".08"/><stop offset="1" stop-color="#ffd866" stop-opacity=".06"/></linearGradient>
+    <pattern id="grid" width="24" height="24" patternUnits="userSpaceOnUse"><path d="M24 0H0V24" stroke="#ffdf79" stroke-opacity=".17"/><circle cx="12" cy="12" r="2" fill="#ffdf79" fill-opacity=".16"/></pattern>
+    <pattern id="fragmentPatternB" width="96" height="96" patternUnits="userSpaceOnUse">
+      <rect width="96" height="96" fill="white"/>
+      <rect x="0" y="0" width="12" height="12" fill="black"/><rect x="24" y="0" width="12" height="12" fill="black"/><rect x="60" y="0" width="12" height="12" fill="black"/><rect x="84" y="0" width="12" height="12" fill="black"/>
+      <rect x="12" y="12" width="12" height="12" fill="black"/><rect x="36" y="12" width="12" height="12" fill="black"/><rect x="48" y="12" width="12" height="12" fill="black"/><rect x="72" y="12" width="12" height="12" fill="black"/>
+      <rect x="0" y="24" width="12" height="12" fill="black"/><rect x="12" y="24" width="12" height="12" fill="black"/><rect x="48" y="24" width="12" height="12" fill="black"/><rect x="84" y="24" width="12" height="12" fill="black"/>
+      <rect x="24" y="36" width="12" height="12" fill="black"/><rect x="36" y="36" width="12" height="12" fill="black"/><rect x="60" y="36" width="12" height="12" fill="black"/><rect x="72" y="36" width="12" height="12" fill="black"/>
+      <rect x="0" y="48" width="12" height="12" fill="black"/><rect x="36" y="48" width="12" height="12" fill="black"/><rect x="60" y="48" width="12" height="12" fill="black"/><rect x="84" y="48" width="12" height="12" fill="black"/>
+      <rect x="12" y="60" width="12" height="12" fill="black"/><rect x="24" y="60" width="12" height="12" fill="black"/><rect x="48" y="60" width="12" height="12" fill="black"/><rect x="72" y="60" width="12" height="12" fill="black"/>
+      <rect x="0" y="72" width="12" height="12" fill="black"/><rect x="24" y="72" width="12" height="12" fill="black"/><rect x="48" y="72" width="12" height="12" fill="black"/><rect x="60" y="72" width="12" height="12" fill="black"/>
+      <rect x="12" y="84" width="12" height="12" fill="black"/><rect x="36" y="84" width="12" height="12" fill="black"/><rect x="72" y="84" width="12" height="12" fill="black"/><rect x="84" y="84" width="12" height="12" fill="black"/>
     </pattern>
-    <pattern id="phraseDots" width="18" height="18" patternUnits="userSpaceOnUse">
-      <rect x="6" y="6" width="6" height="6" rx="1" fill="#dffbff" fill-opacity=".28"/>
-    </pattern>
-    <mask id="phraseMask">
-      <rect width="900" height="520" fill="black"/>
-      <text x="450" y="312" text-anchor="middle" font-family="Noto Sans KR, Apple SD Gothic Neo, sans-serif" font-size="118" font-weight="900" letter-spacing="8" fill="white">반사판 뒤</text>
-    </mask>
-    <mask id="outsidePhraseMask">
-      <rect width="900" height="520" fill="white"/>
-      <text x="450" y="312" text-anchor="middle" font-family="Noto Sans KR, Apple SD Gothic Neo, sans-serif" font-size="118" font-weight="900" letter-spacing="8" fill="black">반사판 뒤</text>
-    </mask>
+    <mask id="fragmentMaskB"><rect width="900" height="520" fill="url(#fragmentPatternB)"/></mask>
   </defs>
   <rect x="8" y="8" width="884" height="504" rx="18" fill="url(#film)" stroke="#ffdc75" stroke-width="3"/>
-  <rect x="28" y="28" width="844" height="464" rx="10" fill="url(#noiseDots)" mask="url(#outsidePhraseMask)"/>
-  <rect x="42" y="42" width="816" height="436" fill="url(#phraseDots)" mask="url(#phraseMask)"/>
-  <g fill="#ffd86b" opacity=".28">
-    <rect x="133" y="114" width="7" height="7"/><rect x="205" y="366" width="7" height="7"/><rect x="277" y="132" width="7" height="7"/>
-    <rect x="349" y="348" width="7" height="7"/><rect x="421" y="114" width="7" height="7"/><rect x="493" y="366" width="7" height="7"/>
-    <rect x="565" y="150" width="7" height="7"/><rect x="637" y="330" width="7" height="7"/><rect x="709" y="96" width="7" height="7"/>
-    <rect x="781" y="312" width="7" height="7"/><rect x="187" y="222" width="7" height="7"/><rect x="727" y="240" width="7" height="7"/>
-  </g>
-  <path d="M52 444h796" stroke="#ffdf79" stroke-opacity=".3"/>
-  <circle cx="66" cy="462" r="5" fill="#ffdf79"/>
-  <circle cx="82" cy="462" r="5" fill="#8cecff"/>
+  <rect x="28" y="28" width="844" height="464" rx="10" fill="url(#grid)"/>
+  <text x="450" y="315" text-anchor="middle" font-family="Noto Sans KR, Apple SD Gothic Neo, sans-serif" font-size="126" font-weight="900" letter-spacing="6" fill="#fff0a8" stroke="#fff0a8" stroke-width="3" paint-order="stroke" mask="url(#fragmentMaskB)">반사판 뒤</text>
+  <path d="M52 444h796" stroke="#ffdf79" stroke-opacity=".3"/><circle cx="66" cy="462" r="5" fill="#ffdf79"/><circle cx="82" cy="462" r="5" fill="#8cecff"/>
 </svg>

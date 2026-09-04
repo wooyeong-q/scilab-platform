@@ -310,7 +310,9 @@
 
   function distancePoint(letter, position) {
     var angle = distanceAngles[letter] * Math.PI / 180;
-    var radius = 15 + Number(position) * .1;
+    // Keep 10 pc at the target ring while giving each star a much longer,
+    // easier-to-control radial travel path (roughly twice the old range).
+    var radius = 5 + Number(position) * .22;
     return {
       x: (50 + Math.cos(angle) * radius).toFixed(2),
       y: (49 + Math.sin(angle) * radius * 21 / 10).toFixed(2),
@@ -629,7 +631,7 @@
           var centerX = rect.left + rect.width * .5;
           var centerY = rect.top + rect.height * .49;
           var projection = (moveEvent.clientX - centerX) * Math.cos(angle) + (moveEvent.clientY - centerY) * Math.sin(angle);
-          var position = (projection / rect.width - .15) / .001;
+          var position = (projection / rect.width - .05) / .0022;
           distanceDraft[letter] = Math.round(Math.max(10, Math.min(90, position)) * 10) / 10;
           var point = distancePoint(letter, distanceDraft[letter]);
           element.style.setProperty('--sx', point.x + '%');

@@ -43,9 +43,15 @@
     scene4_exit: 'doorDread',
   };
   var TRACK_CONFIG = {
-    selpan: { src: AUDIO_ROOT + 'bgm-selpan.mp3', volume: .27 },
-    goats: { src: AUDIO_ROOT + 'bgm-goats.mp3', volume: .95 },
-    delirium: { src: AUDIO_ROOT + 'bgm-delirium.mp3', volume: .17 },
+    selpan: { src: AUDIO_ROOT + 'bgm-selpan.mp3', volume: .11 },
+    goats: { src: AUDIO_ROOT + 'bgm-goats.mp3', volume: .10 },
+    delirium: { src: AUDIO_ROOT + 'bgm-delirium.mp3', volume: .09 },
+  };
+  var STAGE_MIX = {
+    1: { selpan: 1, goats: 0, delirium: 0 },
+    2: { selpan: 0, goats: 1, delirium: 0 },
+    3: { selpan: .72, goats: 0, delirium: .34 },
+    4: { selpan: 0, goats: .22, delirium: .9 },
   };
 
   try {
@@ -71,8 +77,8 @@
     try {
       audio = new AudioEngine();
       master = makeGain(.0001);
-      music = makeGain(.82);
-      effects = makeGain(.6);
+      music = makeGain(.58);
+      effects = makeGain(.46);
       music.connect(master);
       effects.connect(master);
       master.connect(audio.destination);
@@ -127,14 +133,14 @@
 
   function applyMix() {
     var audible = active && !muted && !document.hidden;
-    var base = stage === 3 ? 'goats' : 'selpan';
+    var sceneMix = STAGE_MIX[stage] || STAGE_MIX[1];
     var mix = audible ? duckScale : 0;
-    var baseScale = 1 - mysteryLevel * .78;
+    var baseScale = 1 - mysteryLevel * .68;
     ensureTracks();
-    fadeTrack('selpan', base === 'selpan' ? TRACK_CONFIG.selpan.volume * mix * baseScale : 0, audible ? 900 : 160);
-    fadeTrack('goats', base === 'goats' ? TRACK_CONFIG.goats.volume * mix * baseScale : 0, audible ? 900 : 160);
-    fadeTrack('delirium', TRACK_CONFIG.delirium.volume * mix * mysteryLevel, audible ? 720 : 160);
-    if (audio && master) ramp(master.gain, audible ? .58 : .0001, audible ? .35 : .12);
+    fadeTrack('selpan', TRACK_CONFIG.selpan.volume * mix * sceneMix.selpan * baseScale, audible ? 1100 : 160);
+    fadeTrack('goats', TRACK_CONFIG.goats.volume * mix * sceneMix.goats * baseScale, audible ? 1100 : 160);
+    fadeTrack('delirium', TRACK_CONFIG.delirium.volume * mix * Math.max(sceneMix.delirium * baseScale, mysteryLevel), audible ? 900 : 160);
+    if (audio && master) ramp(master.gain, audible ? .42 : .0001, audible ? .35 : .12);
   }
 
   function tone(frequency, duration, volume, type, delay, destination) {
