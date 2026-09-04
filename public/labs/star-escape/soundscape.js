@@ -7,6 +7,7 @@
   var master = null;
   var music = null;
   var effects = null;
+  var returnBed = null;
   var active = false;
   var muted = false;
   var stage = 1;
@@ -16,6 +17,10 @@
   var mysteryLevel = 0;
   var tracks = null;
   var trackFades = {};
+  var tracksPrimed = false;
+  var stageSwitching = false;
+  var stageSwitchTimer = 0;
+  var lastPlayError = '';
   var button = null;
   var AUDIO_ROOT = '/labs/star-escape/assets/audio/';
   var EFFECT_ALIASES = {
@@ -42,11 +47,11 @@
     scene4_cctv_noise: 'radioStaticStrong',
     scene4_exit: 'doorDread',
   };
+  // Source files have very different loudness. These gains target a consistently quiet background level.
   var TRACK_CONFIG = {
-    selpan: { src: AUDIO_ROOT + 'bgm-selpan.mp3', volume: .026 },
-    goats: { src: AUDIO_ROOT + 'bgm-goats.mp3', volume: .022 },
-    delirium: { src: AUDIO_ROOT + 'bgm-delirium.mp3', volume: .024 },
-    returnSignal: { src: AUDIO_ROOT + 'bgm-return-signal.mp3', volume: .021 },
+    selpan: { src: AUDIO_ROOT + 'bgm-selpan.mp3', volume: .008 },
+    goats: { src: AUDIO_ROOT + 'bgm-goats.mp3', volume: .025 },
+    delirium: { src: AUDIO_ROOT + 'bgm-delirium.mp3', volume: .0055 },
   };
   var STAGE_TRACK = {
     1: 'selpan',
@@ -90,6 +95,36 @@
     }
   }
 
+  function ensureReturnBed() {
+    if (returnBed || !ensureAudio()) return returnBed;
+    var output = makeGain(.0001);
+    var voices = [
+      { frequency: 49, level: .34, type: 'sine', detune: -3 },
+      { frequency: 65.41, level: .22, type: 'sine', detune: 4 },
+      { frequency: 98, level: .10, type: 'triangle', detune: -7 },
+    ];
+    output.connect(music);
+    voices.forEach(function (voice) {
+      var oscillator = audio.createOscillator();
+      var gain = makeGain(voice.level);
+      oscillator.type = voice.type;
+      oscillator.frequency.value = voice.frequency;
+      oscillator.detune.value = voice.detune;
+      oscillator.connect(gain);
+      gain.connect(output);
+      oscillator.start();
+    });
+    var pulse = audio.createOscillator();
+    var pulseDepth = makeGain(.009);
+    pulse.type = 'sine';
+    pulse.frequency.value = .11;
+    pulse.connect(pulseDepth);
+    pulseDepth.connect(output.gain);
+    pulse.start();
+    returnBed = output;
+    return returnBed;
+  }
+
   function resume() {
     if (audio && audio.state === 'suspended') audio.resume().catch(function () {});
   }
@@ -108,10 +143,54 @@
     return tracks;
   }
 
+  function rememberPlayError(name, error) {
+    lastPlayError = name + ': ' + (error && error.name ? error.name : 'play failed');
+  }
+
+  function tryPlay(name) {
+    if (!tracks || !tracks[name] || !tracks[name].paused) return;
+    var attempt = tracks[name].play();
+    if (attempt && attempt.catch) attempt.catch(function (error) { rememberPlayError(name, error); });
+  }
+
+  function primeTracks() {
+    ensureTracks();
+    if (tracksPrimed) return;
+    tracksPrimed = true;
+    var current = STAGE_TRACK[stage] || STAGE_TRACK[1];
+    Object.keys(tracks).forEach(function (name) {
+      var element = tracks[name];
+      var attempt = element.play();
+      if (!attempt || !attempt.then) return;
+      attempt.then(function () {
+        if (name !== current && element.volume <= .0001) element.pause();
+      }).catch(function (error) {
+        tracksPrimed = false;
+        rememberPlayError(name, error);
+      });
+    });
+  }
+
+  function stopTrack(name, reset) {
+    if (!tracks || !tracks[name]) return;
+    if (trackFades[name]) window.cancelAnimationFrame(trackFades[name]);
+    delete trackFades[name];
+    tracks[name].volume = 0;
+    tracks[name].pause();
+    if (reset) {
+      try { tracks[name].currentTime = 0; } catch (error) {}
+    }
+  }
+
+  function stopAllTracks(reset) {
+    if (!tracks) return;
+    Object.keys(tracks).forEach(function (name) { stopTrack(name, reset); });
+  }
+
   function startTracks() {
     ensureTracks();
     var current = STAGE_TRACK[stage] || STAGE_TRACK[1];
-    if (tracks[current] && tracks[current].paused) tracks[current].play().catch(function () {});
+    tryPlay(current);
   }
 
   function fadeTrack(name, target, duration) {
@@ -120,7 +199,7 @@
     var start = element.volume;
     var finish = Math.max(0, Math.min(1, Number(target) || 0));
     var startedAt = performance.now();
-    if (finish > 0 && element.paused) element.play().catch(function () {});
+    if (finish > 0 && element.paused) tryPlay(name);
     if (trackFades[name]) window.cancelAnimationFrame(trackFades[name]);
     function step(now) {
       var progress = Math.min(1, (now - startedAt) / Math.max(1, duration || 500));
@@ -136,7 +215,7 @@
   }
 
   function applyMix() {
-    var audible = active && !muted && !document.hidden;
+    var audible = active && !muted && !document.hidden && !stageSwitching;
     var current = STAGE_TRACK[stage] || STAGE_TRACK[1];
     var mix = audible ? duckScale : 0;
     var baseScale = 1 - mysteryLevel * .68;
@@ -148,6 +227,8 @@
     if (mysteryLevel > 0 && current !== 'delirium') {
       fadeTrack('delirium', TRACK_CONFIG.delirium.volume * mix * mysteryLevel * .72, audible ? 380 : 120);
     }
+    if (current === 'returnSignal') ensureReturnBed();
+    if (returnBed) ramp(returnBed.gain, audible && current === 'returnSignal' ? .06 * mix * baseScale : .0001, audible ? .52 : .12);
     if (audio && master) ramp(master.gain, audible ? .24 : .0001, audible ? .3 : .1);
   }
 
@@ -209,7 +290,8 @@
 
   function unlock() {
     ensureAudio();
-    startTracks();
+    primeTracks();
+    if (!stageSwitching) startTracks();
     resume();
     applyMix();
   }
@@ -218,6 +300,7 @@
     stage = Math.max(1, Math.min(4, Number(nextStage) || stage));
     active = true;
     ensureAudio();
+    primeTracks();
     startTracks();
     resume();
     applyMix();
@@ -230,21 +313,27 @@
     window.clearTimeout(mysteryTimer);
     duckScale = 1;
     mysteryLevel = 0;
+    window.clearTimeout(stageSwitchTimer);
+    stageSwitching = false;
     applyMix();
   }
 
   function setStage(nextStage) {
     var next = Math.max(1, Math.min(4, Number(nextStage) || 1));
     if (stage === next) return;
+    window.clearTimeout(stageSwitchTimer);
+    ensureTracks();
+    stopAllTracks(true);
     stage = next;
     window.clearTimeout(mysteryTimer);
     mysteryLevel = 0;
-    ensureTracks();
-    var current = STAGE_TRACK[stage] || STAGE_TRACK[1];
-    if (tracks[current]) {
-      try { tracks[current].currentTime = 0; } catch (error) {}
-    }
+    stageSwitching = true;
     applyMix();
+    stageSwitchTimer = window.setTimeout(function () {
+      stageSwitching = false;
+      if (active && !muted && !document.hidden) startTracks();
+      applyMix();
+    }, 700);
   }
 
   function play(name) {
@@ -422,5 +511,13 @@
     toggle: toggle,
     unlock: unlock,
     updateButton: updateButton,
+    debugState: function () {
+      var state = { stage: stage, track: STAGE_TRACK[stage], switching: stageSwitching, lastPlayError: lastPlayError, tracks: {} };
+      if (tracks) Object.keys(tracks).forEach(function (name) {
+        state.tracks[name] = { paused: tracks[name].paused, volume: tracks[name].volume, currentTime: tracks[name].currentTime };
+      });
+      state.tracks.returnSignal = { paused: !returnBed || returnBed.gain.value <= .0001, volume: returnBed ? returnBed.gain.value : 0, currentTime: audio ? audio.currentTime : 0 };
+      return state;
+    },
   };
 })();
