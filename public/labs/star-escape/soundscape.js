@@ -157,13 +157,13 @@
     ensureTracks();
     if (tracksPrimed) return;
     tracksPrimed = true;
-    var current = STAGE_TRACK[stage] || STAGE_TRACK[1];
     Object.keys(tracks).forEach(function (name) {
       var element = tracks[name];
       var attempt = element.play();
       if (!attempt || !attempt.then) return;
       attempt.then(function () {
-        if (name !== current && element.volume <= .0001) element.pause();
+        var selected = STAGE_TRACK[stage] || STAGE_TRACK[1];
+        if ((name !== selected || stageSwitching) && element.volume <= .0001) element.pause();
       }).catch(function (error) {
         tracksPrimed = false;
         rememberPlayError(name, error);
