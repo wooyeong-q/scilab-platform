@@ -6,12 +6,15 @@
   var identity = '';
   var introStep = 0;
   var modal = '';
+  var inspect = null;
   var selectedItem = '';
   var selectedToken = null;
   var overlayPicks = { pattern: false, film: false };
   var filmPosition = { x: 76, y: 48 };
   var photoPreview = '';
   var photoRestored = false;
+  var photoScanHits = new Set();
+  var photoLensPosition = { x: 50, y: 50 };
   var reflectorScare = false;
   var receptionPhase = 0;
   var uvHits = new Set();
@@ -19,7 +22,6 @@
   var horrorVisible = false;
   var recordingLocal = 0;
   var cctvLocal = 0;
-  var restoreTimer = 0;
   var receptionTimer = 0;
   var horrorTimer = 0;
   var recordingTimer = 0;
@@ -47,6 +49,7 @@
   var clusterNames = { open: '산개성단', globular: '구상성단' };
   var chipNames = Object.assign({}, nebulaNames, clusterNames);
   var finalOrder = ['emission', 'open', 'dark', 'globular', 'reflection'];
+  var chipBankOrder = ['reflection', 'globular', 'emission', 'dark', 'open'];
   var recordingLines = ['분류값까지 바뀌었다.', '이건 센서 오류가 아니야.', '누군가 직접 접근하고 있어.', '…잠깐.', '누구야?'];
 
   function esc(value) {
@@ -56,6 +59,22 @@
   }
 
   function img(name) { return ROOT + name; }
+
+  function speakerPortrait(name) {
+    if (/루멘|시스템/.test(name)) return '/labs/star-escape/assets/scene01/characters/ui_lumen_ai_icon.webp';
+    if (/미확인/.test(name)) return img('scene04_silhouette_master.webp');
+    var role = Math.max(1, Math.min(4, Number(ctx && ctx.state.player.role || 1)));
+    return '/labs/star-escape/assets/scene01/characters/char_student_0' + role + '_' + ['female_bob', 'male_tablet', 'female_ponytail', 'male_glasses'][role - 1] + '.webp';
+  }
+
+  function dialogueMarkup(entry, id) {
+    var name = entry[0];
+    var speakerClass = name === '대원' ? 'speaker-crew' : /루멘|시스템/.test(name) ? 'speaker-ai' : 'speaker-device';
+    return '<button class="s4-dialogue ' + speakerClass + '" id="' + id + '">' +
+      '<img src="' + speakerPortrait(name) + '" alt="' + esc(name) + '">' +
+      '<span><small>' + esc(name) + '</small><p>' + esc(entry[1]) + '</p></span>' +
+      '<i>터치하여 계속 ▼</i></button>';
+  }
 
   function baseState() {
     return {
@@ -176,9 +195,9 @@
   }
 
   function itemImage(kind) {
-    if (kind === 'lens') return img('scene04_item_color_restore_lens.png');
-    if (kind === 'uv') return img('scene04_item_uv_light.png');
-    if (kind.indexOf('chip:') === 0) return img('scene04_chip_base.png');
+    if (kind === 'lens') return img('scene04_item_color_restore_lens.webp');
+    if (kind === 'uv') return img('scene04_item_uv_light.webp');
+    if (kind.indexOf('chip:') === 0) return img('scene04_chip_base.webp');
     return '';
   }
 
@@ -211,30 +230,39 @@
     return '<section class="s4-modal ' + (className || '') + '" role="dialog" aria-modal="true"><div class="s4-modal-card"><header><small>04 · 최종 관측 통제실</small><h2>' + esc(title) + '</h2><button class="s4-close" id="s4Close" aria-label="닫기">×</button></header><div class="s4-modal-body">' + body + '</div></div></section>';
   }
 
+  function inspectMarkup(state) {
+    if (!inspect) return '';
+    var image = inspect.image || img(roomStateFile(state));
+    return '<section class="s4-inspect" role="dialog" aria-modal="true">' +
+      '<div class="s4-inspect-media' + (inspect.focus ? ' focus-' + esc(inspect.focus) : '') + '"><img src="' + esc(image) + '" alt=""></div>' +
+      '<div><small>장치 조사</small><b>' + esc(inspect.title) + '</b><p>' + esc(inspect.text) + '</p>' + (inspect.state ? '<span>' + esc(inspect.state) + '</span>' : '') + '</div>' +
+      '<button class="s4-close" id="s4InspectClose" aria-label="조사 화면 닫기">×</button></section>';
+  }
+
   function roomMarkup(state) {
     var photosReady = state.photosRestored.A && state.photosRestored.B && state.photosRestored.C;
     return '<section class="s4-shell"><div class="s4-room">' +
       '<img class="s4-room-image" src="' + img(roomStateFile(state)) + '" alt="최종 관측 통제실">' +
       '<div class="s4-title"><small>04 — 최종 관측 통제실</small><b>마지막 인증</b></div>' +
       '<div class="s4-objective"><b>현재 목표</b><span>' + esc(objective(state)) + '</span></div>' +
-      '<button class="s4-hotspot desk' + (state.patternA ? ' done' : '') + '" data-s4-object="desk" aria-label="기록철과 서류 더미"><span>기록철</span></button>' +
-      '<button class="s4-hotspot case' + (state.filmB ? ' done' : '') + '" data-s4-object="case" aria-label="관측도구 케이스"><span>관측도구 케이스</span></button>' +
+      '<button class="s4-hotspot desk' + (state.patternA ? ' done' : '') + '" data-s4-object="desk" data-label="기록철" aria-label="기록철과 서류 더미"></button>' +
+      '<button class="s4-hotspot case' + (state.filmB ? ' done' : '') + '" data-s4-object="case" data-label="관측도구 케이스" aria-label="관측도구 케이스"></button>' +
       ['A', 'B', 'C'].map(function (letter) {
         var file = { A: 'scene04_p02_nebula_a_color.webp', B: 'scene04_p02_nebula_b_color.webp', C: 'scene04_p02_nebula_c_color.webp' }[letter];
-        return '<button class="s4-hotspot photo p' + letter.toLowerCase() + (state.photosRestored[letter] ? ' done' : '') + '" data-s4-object="photo" data-letter="' + letter + '" aria-label="' + letter + ' 천체사진">' + (state.photosRestored[letter] && !state.nebulaComplete ? '<img class="s4-photo-overlay" src="' + img(file) + '" alt="">' : '') + '<span>' + letter + ' 천체사진</span></button>';
+        return '<button class="s4-hotspot photo p' + letter.toLowerCase() + (state.photosRestored[letter] ? ' done' : '') + '" data-s4-object="photo" data-letter="' + letter + '" data-label="' + letter + ' 천체사진" aria-label="' + letter + ' 천체사진">' + (state.photosRestored[letter] && !state.nebulaComplete ? '<img class="s4-photo-overlay" src="' + img(file) + '" alt="">' : '') + '</button>';
       }).join('') +
       (photosReady && !state.nebulaComplete ? '<button class="s4-room-action nebula" data-s4-object="nebula-sort">성운 명판 배치</button>' : '') +
-      '<button class="s4-hotspot reflector' + (state.overlayComplete ? ' active' : '') + '" data-s4-object="reflector" aria-label="반사판"><span>반사판</span></button>' +
-      '<button class="s4-hotspot locker' + (state.lockerActive ? ' active' : '') + (state.lockerOpen ? ' done' : '') + '" data-s4-object="locker" aria-label="성단 관측 보관함"><span>성단 관측 보관함</span></button>' +
-      '<button class="s4-hotspot starmap' + (state.uvAcquired ? ' active' : '') + '" data-s4-object="starmap" aria-label="오래된 별지도"><span>오래된 별지도</span></button>' +
-      '<button class="s4-hotspot core' + (state.uvRevealed ? ' active' : '') + (state.authComplete ? ' done' : '') + '" data-s4-object="core" aria-label="중앙 귀환 인증 장치"><span>중앙 귀환 장치</span></button>' +
-      (state.horrorSeen ? '<button class="s4-hotspot maintenance active" data-s4-object="maintenance" aria-label="작은 정비 패널"><span>작은 정비 패널</span></button>' : '') +
+      '<button class="s4-hotspot reflector' + (state.overlayComplete ? ' active' : '') + '" data-s4-object="reflector" data-label="반사판" aria-label="반사판"></button>' +
+      '<button class="s4-hotspot locker' + (state.lockerActive ? ' active' : '') + (state.lockerOpen ? ' done' : '') + '" data-s4-object="locker" data-label="성단 관측 보관함" aria-label="성단 관측 보관함"></button>' +
+      '<button class="s4-hotspot starmap' + (state.uvAcquired ? ' active' : '') + '" data-s4-object="starmap" data-label="오래된 별지도" aria-label="오래된 별지도"></button>' +
+      '<button class="s4-hotspot core' + (state.uvRevealed ? ' active' : '') + (state.authComplete ? ' done' : '') + '" data-s4-object="core" data-label="중앙 귀환 장치" aria-label="중앙 귀환 인증 장치"></button>' +
+      (state.horrorSeen ? '<button class="s4-hotspot maintenance active" data-s4-object="maintenance" data-label="작은 정비 패널" aria-label="작은 정비 패널"></button>' : '') +
       (state.recordingComplete && !state.logSeen ? '<button class="s4-room-action log" data-s4-object="log">조작 로그 확인</button>' : '') +
       (state.logSeen && !state.cctvComplete ? '<button class="s4-room-action cctv" data-s4-object="cctv">CCTV 감시 기록</button>' : '') +
       (state.exitOpen ? '<button class="s4-room-action exit" data-s4-object="exit">귀환 통로</button>' : '') +
       '<button class="s4-room-hint" id="hintBtn">힌트 · ' + Math.min(Number(ctx.state.progress.hintCount || 0), 3) + '/3</button><div class="s4-room-hintbox" id="hintbox"></div>' +
       '<button class="s4-inventory-button" id="s4Inventory"><span>단서 탭</span><b>' + inventoryCount(state) + '</b></button>' +
-      '</div>' + modalMarkup(state) + introMarkup() + horrorMarkup() + '</section>';
+      '</div>' + inspectMarkup(state) + modalMarkup(state) + introMarkup() + horrorMarkup() + '</section>';
   }
 
   function inventoryCount(state) {
@@ -247,13 +275,12 @@
 
   function introMarkup() {
     if (introStep >= intro.length) return '';
-    var entry = intro[introStep];
-    return '<button class="s4-dialogue" id="s4Intro"><span><small>' + esc(entry[0]) + '</small><p>' + esc(entry[1]) + '</p></span><i>터치하여 계속 ▼</i></button>';
+    return dialogueMarkup(intro[introStep], 's4Intro');
   }
 
   function horrorMarkup() {
     if (!horrorVisible && !reflectorScare) return '';
-    return '<div class="s4-horror' + (reflectorScare ? ' reflector-scare' : '') + '" aria-hidden="true"><img src="' + img('scene04_silhouette_master.png') + '" alt=""><i></i></div>';
+    return '<div class="s4-horror' + (reflectorScare ? ' reflector-scare' : '') + '" aria-hidden="true"><img src="' + img('scene04_silhouette_master.webp') + '" alt=""><i></i></div>';
   }
 
   function modalMarkup(state) {
@@ -279,11 +306,56 @@
 
   function overlapMarkup(state) {
     var complete = state.overlayComplete;
-    return modalShell('조각 두 개를 겹쳐 숨은 문구 찾기', '<div class="s4-overlap-board" id="s4OverlapBoard">' +
-      '<div class="s4-pattern-base"><i></i><i></i><i></i><i></i><span>패턴 조각 A · 고정</span></div>' +
-      '<div class="s4-film' + (complete ? ' snapped' : '') + '" id="s4Film" style="--film-x:' + filmPosition.x + 'px;--film-y:' + filmPosition.y + 'px"><i></i><i></i><i></i><i></i><span>투명 필름 B · 드래그</span></div>' +
-      '<strong class="s4-hidden-phrase' + (complete ? ' revealed' : '') + '">반사판 뒤</strong></div>' +
-      '<p class="s4-help">A는 고정되어 있습니다. B를 직접 드래그해 패턴이 이어지도록 맞춰 보세요.</p>' + puzzleFooter('투명 필름 B의 위치를 조금씩 맞춰 보세요.'), 'overlap');
+    return modalShell('조각 두 개를 겹쳐 숨은 문구 찾기', '<div class="s4-overlap-board' + (complete ? ' complete' : '') + '" id="s4OverlapBoard">' +
+      '<div class="s4-overlap-card s4-pattern-base"><canvas data-s4-dot-layer="a"></canvas><span>패턴 조각 A · 고정</span></div>' +
+      '<div class="s4-overlap-card s4-film' + (complete ? ' snapped' : '') + '" id="s4Film" style="--film-x:' + filmPosition.x + 'px;--film-y:' + filmPosition.y + 'px"><canvas data-s4-dot-layer="b"></canvas><span>투명 필름 B · 드래그</span></div>' +
+      '<div class="s4-align-mark tl"></div><div class="s4-align-mark tr"></div><div class="s4-align-mark bl"></div><div class="s4-align-mark br"></div></div>' +
+      '<p class="s4-overlap-status">' + (complete ? '정렬 완료 · 겹쳐진 밝은 사각 도트가 위치 단서를 이룹니다.' : '두 장은 각각 무작위 사각 도트처럼 보입니다. B를 A의 모서리에 정확히 맞추세요.') + '</p>' +
+      '<p class="s4-help">A는 고정되어 있습니다. 투명 필름 B를 직접 드래그해 네 모서리를 맞춰 보세요.</p>' + puzzleFooter('두 조각의 같은 위치에 겹친 밝은 도트만 읽어 보세요.'), 'overlap');
+  }
+
+  function renderOverlapDots() {
+    var canvases = document.querySelectorAll('[data-s4-dot-layer]');
+    if (!canvases.length) return;
+    var width = 480;
+    var height = 360;
+    var cell = 6;
+    var cols = width / cell;
+    var rows = height / cell;
+    var mask = document.createElement('canvas');
+    mask.width = width;
+    mask.height = height;
+    var maskContext = mask.getContext('2d');
+    maskContext.clearRect(0, 0, width, height);
+    maskContext.fillStyle = '#fff';
+    maskContext.textAlign = 'center';
+    maskContext.textBaseline = 'middle';
+    maskContext.font = '900 92px "Noto Sans KR", "Apple SD Gothic Neo", "Malgun Gothic", sans-serif';
+    maskContext.fillText('반사판', width / 2, height * .37);
+    maskContext.font = '900 104px "Noto Sans KR", "Apple SD Gothic Neo", "Malgun Gothic", sans-serif';
+    maskContext.fillText('뒤', width / 2, height * .70);
+    var pixels = maskContext.getImageData(0, 0, width, height).data;
+    Array.from(canvases).forEach(function (canvas) {
+      var layer = canvas.getAttribute('data-s4-dot-layer');
+      canvas.width = width;
+      canvas.height = height;
+      var context = canvas.getContext('2d');
+      context.clearRect(0, 0, width, height);
+      context.fillStyle = layer === 'a' ? 'rgba(72,225,255,.62)' : 'rgba(255,216,102,.64)';
+      for (var row = 1; row < rows - 1; row += 1) {
+        for (var col = 1; col < cols - 1; col += 1) {
+          var centerX = col * cell + Math.floor(cell / 2);
+          var centerY = row * cell + Math.floor(cell / 2);
+          var alpha = pixels[(centerY * width + centerX) * 4 + 3];
+          var inLetter = alpha > 34;
+          var seed = (row * 92821 + col * 68917 + 137) % 101;
+          var bitA = seed < 50;
+          var visible = layer === 'a' ? bitA : inLetter ? bitA : !bitA;
+          if (!visible) continue;
+          context.fillRect(col * cell + 1, row * cell + 1, cell - 2, cell - 2);
+        }
+      }
+    });
   }
 
   function reflectorMarkup(state) {
@@ -296,9 +368,17 @@
     var restored = state.photosRestored[letter] || photoRestored;
     var file = { A: 'scene04_p02_nebula_a_color.webp', B: 'scene04_p02_nebula_b_color.webp', C: 'scene04_p02_nebula_c_color.webp' }[letter];
     var note = { A: '붉은빛이 도는 성운', B: '푸른빛이 도는 성운', C: '배경을 가리는 어두운 구름 모양' }[letter];
-    return modalShell(letter + ' 천체사진 · 색 정보 복원', '<div class="s4-photo-view' + (restored ? ' restored' : '') + '"><img src="' + img(file) + '" alt="' + esc(note) + '"><div class="s4-restore-scan"></div></div>' +
-      '<p>' + (restored ? esc(note) + '이 관측된다.' : '흑백 관측 기록에서 색상 정보를 복원하고 있습니다…') + '</p>' +
-      (restored && !state.photosRestored[letter] ? '<button class="s4-primary" id="s4SavePhoto" data-letter="' + letter + '">복원된 관측 기록 저장</button>' : ''));
+    var zones = [
+      { x: 26, y: 33 }, { x: 69, y: 38 }, { x: 50, y: 72 },
+    ].map(function (zone, index) {
+      return '<i class="s4-scan-zone' + (photoScanHits.has(index) ? ' done' : '') + '" data-scan-zone="' + index + '" style="left:' + zone.x + '%;top:' + zone.y + '%"></i>';
+    }).join('');
+    return modalShell(letter + ' 천체사진 · 색 정보 복원', '<div class="s4-photo-view' + (restored ? ' restored' : '') + '" id="s4PhotoView" style="--lens-x:' + photoLensPosition.x + '%;--lens-y:' + photoLensPosition.y + '%">' +
+      '<img class="s4-photo-gray" src="' + img(file) + '" alt="' + esc(note) + '">' +
+      '<img class="s4-photo-color" src="' + img(file) + '" alt="" aria-hidden="true">' +
+      (!restored ? zones + '<div class="s4-lens-cursor"><img src="' + img('scene04_item_color_restore_lens.webp') + '" alt=""></div>' : '') + '</div>' +
+      '<div class="s4-scan-progress"><b>' + (restored ? '색 정보 복원 완료' : '렌즈 조사 지점 · ' + photoScanHits.size + '/3') + '</b><span>' + (restored ? esc(note) + '이 관측된다.' : '사진 위에서 렌즈를 누른 채 움직여 세 지점을 조사하세요.') + '</span></div>' +
+      (!state.photosRestored[letter] ? '<button class="s4-primary" id="s4SavePhoto" data-letter="' + letter + '" ' + (photoScanHits.size >= 3 ? '' : 'disabled') + '>복원된 관측 기록 저장</button>' : ''));
   }
 
   function tokenButton(kind, label, placed) {
@@ -347,42 +427,53 @@
 
   function uvMarkup(state) {
     var symbols = [
-      ['scene04_p04_uv_symbol_01_emission_nebula.png', '방출성운'],
-      ['scene04_p04_uv_symbol_02_open_cluster.png', '산개성단'],
-      ['scene04_p04_uv_symbol_03_dark_nebula.png', '암흑성운'],
-      ['scene04_p04_uv_symbol_04_globular_cluster.png', '구상성단'],
-      ['scene04_p04_uv_symbol_05_reflection_nebula.png', '반사성운'],
+      ['scene04_p04_uv_symbol_01_emission_nebula.webp', '방출성운'],
+      ['scene04_p04_uv_symbol_02_open_cluster.webp', '산개성단'],
+      ['scene04_p04_uv_symbol_03_dark_nebula.webp', '암흑성운'],
+      ['scene04_p04_uv_symbol_04_globular_cluster.webp', '구상성단'],
+      ['scene04_p04_uv_symbol_05_reflection_nebula.webp', '반사성운'],
     ];
     var positions = [
-      { left: '39%', top: '16%' }, { left: '54%', top: '29%' },
-      { left: '51%', top: '59%' }, { left: '27%', top: '62%' },
-      { left: '20%', top: '31%' },
+      { left: '17%', top: '30%' }, { left: '37%', top: '20%' },
+      { left: '57%', top: '34%' }, { left: '46%', top: '68%' },
+      { left: '76%', top: '68%' },
     ];
-    var overlay = '<svg class="s4-uv-route" viewBox="0 0 100 100" aria-hidden="true">' +
-      '<path d="M39 9 C45 12 50 19 54 29"/><path class="arrow" d="M54 29 l-5-3 l1 6 z"/>' +
-      '<path d="M54 29 C58 38 56 50 51 59"/><path class="arrow" d="M51 59 l-4-5 l6 1 z"/>' +
-      '<path d="M51 59 C44 65 35 66 27 62"/><path class="arrow" d="M27 62 l5-4 l-1 6 z"/>' +
-      '<path d="M27 62 C20 55 17 42 20 31"/><path class="arrow" d="M20 31 l-4 5 l6-1 z"/>' +
-      '<path class="start-line" d="M39 4 L39 12"/><path class="start" d="M39 4 l-3 5 h6 z"/>' +
+    var complete = state.uvRevealed || uvHits.size >= 5;
+    var overlay = '<svg class="s4-uv-route" viewBox="0 0 100 100" aria-hidden="true"><defs><marker id="s4ArrowHead" markerWidth="7" markerHeight="7" refX="5" refY="3.5" orient="auto"><path d="M0 0 L7 3.5 L0 7 Z"/></marker></defs>' +
+      '<path class="s4-route-segment" d="M7 30 L10 30" marker-end="url(#s4ArrowHead)"/>' +
+      '<path class="s4-route-segment" d="M24 27 C28 24 31 22 32 22" marker-end="url(#s4ArrowHead)"/>' +
+      '<path class="s4-route-segment" d="M43 22 C48 24 50 27 52 30" marker-end="url(#s4ArrowHead)"/>' +
+      '<path class="s4-route-segment" d="M55 42 C53 50 50 57 48 60" marker-end="url(#s4ArrowHead)"/>' +
+      '<path class="s4-route-segment" d="M53 68 C60 68 66 68 69 68" marker-end="url(#s4ArrowHead)"/>' +
+      '<path class="s4-route-start" d="M4 24 L8 30 L0 30 Z"/>' +
       '</svg>' + symbols.map(function (entry, index) {
       var pos = positions[index];
-      return '<div class="s4-uv-symbol u' + (index + 1) + '" data-uv-hit="' + index + '" style="left:' + pos.left + ';top:' + pos.top + '"><img src="' + img(entry[0]) + '" alt="' + entry[1] + ' 숨은 기호"></div>';
+      var found = complete || uvHits.has(index);
+      return '<div class="s4-uv-symbol u' + (index + 1) + (found ? ' found' : '') + '" data-uv-hit="' + index + '" style="left:' + pos.left + ';top:' + pos.top + '"><span><img src="' + img(entry[0]) + '" alt="' + entry[1] + ' 숨은 기호"></span><b>' + entry[1] + '</b></div>';
     }).join('');
-    return modalShell('UV 검사 · 오래된 별지도', '<div class="s4-uv-board" id="s4UvBoard"><img src="' + img('scene04_p04_starmap_base.webp') + '" alt="오래된 별지도"><div class="s4-uv-overlay" id="s4UvOverlay">' + overlay + '</div><div class="s4-uv-lamp"></div></div><p class="s4-help">UV 검사등을 움직여 별지도 곳곳에 숨은 다섯 개 기호를 찾으세요. <b>▲ 시작점에서 화살표 방향으로</b> 기호의 순서를 읽으면 중앙 귀환장치의 칩 순서가 됩니다.</p>' +
+    return modalShell('UV 검사 · 오래된 별지도', '<div class="s4-uv-board' + (complete ? ' complete' : '') + '" id="s4UvBoard"><img src="' + img('scene04_p04_starmap_base.webp') + '" alt="오래된 별지도"><div class="s4-uv-overlay" id="s4UvOverlay">' + overlay + '</div><div class="s4-uv-lamp"><img src="' + img('scene04_item_uv_light.webp') + '" alt=""></div></div><div class="s4-uv-progress"><b>숨은 기호 · ' + (complete ? 5 : uvHits.size) + '/5</b><span>▲에서 시작해 굵은 보라색 화살표를 따라 읽으세요.</span></div><p class="s4-help">다섯 기호는 각각 앞에서 분류한 천체를 뜻합니다. 화살표가 연결하는 순서가 중앙 귀환장치에 넣을 인증칩 순서입니다.</p>' +
       '<button class="s4-primary" id="s4SaveUv" ' + (uvHits.size >= 5 || state.uvRevealed ? '' : 'disabled') + '>숨은 순서 기록</button>' + puzzleFooter('지도 위에 숨겨진 기호를 모두 찾아 방향을 따라 순서를 읽으세요.'), 'uv');
   }
 
   function chipButton(kind, placed) {
-    return '<button class="s4-chip' + (placed ? ' placed' : '') + (selectedToken && selectedToken.value === kind ? ' selected' : '') + '" data-s4-drag="' + kind + '" ' + (placed ? 'disabled' : '') + '><img src="' + img('scene04_chip_base.png') + '" alt=""><span>' + chipNames[kind] + '</span></button>';
+    return '<button class="s4-chip chip-' + kind + (placed ? ' placed' : '') + (selectedToken && selectedToken.value === kind ? ' selected' : '') + '" data-s4-drag="' + kind + '" ' + (placed ? 'disabled' : '') + '><img src="' + img('scene04_chip_base.webp') + '" alt=""><span>' + chipNames[kind] + '</span></button>';
   }
 
   function coreMarkup(state) {
     if (modal === 'auth-success') return modalShell('귀환 인증 완료', '<div class="s4-auth-success"><b>중앙 귀환 시스템 복구</b><p>루멘: “최종 인증이 완료되었습니다.”<br>“귀환 시스템을 복구합니다.”</p><button class="s4-primary" id="s4AuthReturn">방으로 돌아가기</button></div>');
     var owned = state.nebulaComplete && state.lockerOpen;
+    var unlocked = owned && state.uvRevealed;
     var placed = new Set(state.finalSlots.filter(Boolean));
-    var slots = state.finalSlots.map(function (value, index) { return '<div class="s4-core-slot slot-' + (index + 1) + (value ? ' filled' : '') + '" data-s4-drop="final" data-slot="' + index + '"><small>' + (index === 0 ? '▲' : String(index + 1)) + '</small>' + (value ? '<span>' + chipNames[value] + '</span>' : '') + '</div>'; }).join('');
-    var chips = owned ? finalOrder.filter(function (kind) { return !placed.has(kind); }).map(function (kind) { return chipButton(kind, false); }).join('') : '';
-    return modalShell('중앙 귀환 인증 장치', '<div class="s4-core-layout"><div class="s4-core-device"><img src="' + img('scene04_p04_return_console.webp') + '" alt="원형 슬롯 5개가 있는 귀환 인증 장치">' + slots + '<i class="s4-clockwise">↻</i></div><aside><h3>보유 인증칩</h3><div class="s4-chip-bank">' + (chips || '<p>아직 인증칩 5개가 모두 없습니다.</p>') + '</div><p>시작 표시 ▲부터 시계방향으로 배치하세요.</p></aside></div>' + (owned ? puzzleFooter() : ''), 'puzzle core-modal');
+    var slots = state.finalSlots.map(function (value, index) {
+      return '<button class="s4-core-slot slot-' + (index + 1) + (value ? ' filled' : '') + '" data-s4-drop="final" data-slot="' + index + '" data-value="' + esc(value) + '" ' + (unlocked ? '' : 'disabled') + '>' +
+        (index === 0 ? '<small>▲ 시작</small>' : '') +
+        (value ? '<img src="' + img('scene04_chip_base.webp') + '" alt=""><span>' + chipNames[value] + '</span>' : '<i></i>') + '</button>';
+    }).join('');
+    var chips = unlocked ? chipBankOrder.filter(function (kind) { return !placed.has(kind); }).map(function (kind) { return chipButton(kind, false); }).join('') : '';
+    var bankMessage = !owned ? '아직 인증칩 5개가 모두 없습니다.' : !state.uvRevealed ? 'UV로 별지도의 숨은 순서를 먼저 확인해야 합니다.' : !chips ? '칩 5개가 모두 장치에 들어갔습니다.' : '';
+    var filled = state.finalSlots.filter(Boolean).length;
+    var controls = unlocked ? '<div class="s4-auth-controls"><button class="s4-secondary" id="s4AuthReset" ' + (filled ? '' : 'disabled') + '>칩 모두 빼기</button><button class="s4-primary" id="s4AuthSubmit" ' + (filled === 5 ? '' : 'disabled') + '>귀환 인증 확인</button></div>' + puzzleFooter('칩을 모두 배치한 뒤 한 번에 인증합니다. 개별 슬롯은 정답 여부를 알려주지 않습니다.') : '';
+    return modalShell('중앙 귀환 인증 장치', '<div class="s4-core-layout"><div class="s4-core-device">' + slots + '<div class="s4-start-guide">▲ 시작 · 시계방향</div></div><aside><h3>보유 인증칩</h3><div class="s4-chip-bank">' + chips + (bankMessage ? '<p>' + bankMessage + '</p>' : '') + '</div><p>별지도에서 읽은 순서를 ▲부터 시계방향으로 배치하세요. 넣은 칩은 다시 눌러 뺄 수 있습니다.</p></aside></div>' + controls, 'puzzle core-modal');
   }
 
   function recorderMarkup(state) {
@@ -398,7 +489,7 @@
   function cctvMarkup(state) {
     var frame = state.cctvComplete ? 6 : cctvLocal;
     var labels = ['빈 방', '검은 사람 실루엣 등장', '중앙 장치 쪽으로 접근', '장치를 조작하는 듯한 자세', 'CCTV 쪽을 돌아보는 순간', '노이즈', '다시 빈 방'];
-    return modalShell('CCTV 감시 기록', '<div class="s4-cctv frame-' + frame + '"><img src="' + img('scene04_room_state04_auth_complete.webp') + '" alt="감시 카메라에 기록된 통제실"><img class="s4-cctv-silhouette" src="' + img('scene04_silhouette_master.png') + '" alt="검은 사람 실루엣"><i></i><span>CAM 04 · ' + esc(labels[frame]) + '</span></div>' +
+    return modalShell('CCTV 감시 기록', '<div class="s4-cctv frame-' + frame + '"><img src="' + img('scene04_room_state04_auth_complete.webp') + '" alt="감시 카메라에 기록된 통제실"><img class="s4-cctv-silhouette" src="' + img('scene04_silhouette_master.webp') + '" alt="검은 사람 실루엣"><i></i><span>CAM 04 · ' + esc(labels[frame]) + '</span></div>' +
       (state.cctvComplete ? '<div class="s4-cctv-result"><b>퇴실 기록이 존재하지 않습니다.</b><p>루멘: “접근 기록은 있으나, 퇴실 기록은 존재하지 않습니다.”</p></div>' : '<p class="s4-help">감시 기록 복원 중…</p>'), 'cctv-modal');
   }
 
@@ -407,24 +498,33 @@
   }
 
   function openPhoto(letter, state) {
-    if (!state.lensAcquired || selectedItem !== 'lens') {
-      ctx.toast('흑백 천체사진이다. 이 상태로는 특징을 구분하기 어렵다.', true);
+    if (!state.photosRestored[letter] && (!state.lensAcquired || selectedItem !== 'lens')) {
+      inspect = {
+        title: letter + ' 천체사진',
+        text: '흑백 관측 기록이다. 이 상태로는 성운의 색과 특징을 구분하기 어렵다.',
+        state: state.lensAcquired ? '단서 탭에서 색 복원 렌즈를 선택한 뒤 다시 조사하세요.' : '색 정보를 복원할 수 있는 도구가 필요합니다.',
+        image: img({ A: 'scene04_p02_nebula_a_color.webp', B: 'scene04_p02_nebula_b_color.webp', C: 'scene04_p02_nebula_c_color.webp' }[letter]),
+        focus: 'photo-gray',
+      };
+      modal = '';
+      draw();
       return;
     }
+    inspect = null;
     modal = 'photo:' + letter;
     photoPreview = letter;
     photoRestored = Boolean(state.photosRestored[letter]);
+    photoScanHits = new Set();
+    photoLensPosition = { x: 50, y: 50 };
     draw();
-    if (!photoRestored) {
-      clearTimeout(restoreTimer);
-      restoreTimer = setTimeout(function () { photoRestored = true; play('restore'); draw(); }, 700);
-    }
   }
 
   async function savePhoto(letter) {
+    if (!sceneState().photosRestored[letter] && photoScanHits.size < 3) return;
     var state = sceneState();
     var restored = Object.assign({}, state.photosRestored);
     restored[letter] = true;
+    photoRestored = true;
     await sync({ photosRestored: restored });
     ctx.toast(letter + ' 천체사진의 색상 정보를 복원했습니다.');
   }
@@ -452,7 +552,24 @@
     var slots;
     if (kind === 'nebula') { expected = ['emission', 'reflection', 'dark']; slots = state.nebulaSlots.slice(); }
     else if (kind === 'cluster') { expected = ['open', 'globular']; slots = state.clusterSlots.slice(); }
-    else { expected = finalOrder; slots = state.finalSlots.slice(); }
+    else {
+      if (!state.uvRevealed) {
+        feedback = 'UV로 별지도의 숨은 순서를 먼저 확인하세요.';
+        feedbackBad = true;
+        play('error');
+        draw();
+        return;
+      }
+      slots = state.finalSlots.slice();
+      if (slots[slotIndex] || slots.indexOf(value) >= 0) return;
+      slots[slotIndex] = value;
+      selectedToken = null;
+      feedback = '';
+      feedbackBad = false;
+      await sync({ finalSlots: slots, authComplete: false });
+      play('insert');
+      return;
+    }
     if (expected[slotIndex] !== value) {
       feedback = kind === 'nebula' ? '복원된 색과 특징을 다시 확인하세요.' : kind === 'cluster' ? '성단의 분포와 색을 다시 비교하세요.' : '별지도에 드러난 순서를 다시 확인하세요.';
       feedbackBad = true;
@@ -477,12 +594,46 @@
       var clusterDone = slots.join(',') === expected.join(',');
       await sync({ clusterSlots: slots, clusterComplete: clusterDone, handleUnlocked: clusterDone });
       if (clusterDone) { play('unlock'); ctx.toast('보관함 잠금 해제 · 손잡이를 당겨 여세요.'); }
-    } else {
-      var authDone = slots.join(',') === expected.join(',');
-      if (authDone) modal = 'auth-success';
-      await sync({ finalSlots: slots, authComplete: authDone });
-      if (authDone) { play('complete'); draw(); }
     }
+  }
+
+  async function removeFinalToken(slotIndex) {
+    var state = sceneState();
+    var slots = state.finalSlots.slice();
+    if (!slots[slotIndex] || state.authComplete) return;
+    slots[slotIndex] = '';
+    selectedToken = null;
+    feedback = '';
+    feedbackBad = false;
+    await sync({ finalSlots: slots, authComplete: false });
+  }
+
+  async function resetFinalTokens() {
+    selectedToken = null;
+    feedback = '';
+    feedbackBad = false;
+    await sync({ finalSlots: ['', '', '', '', ''], authComplete: false });
+  }
+
+  async function verifyFinalOrder() {
+    var state = sceneState();
+    if (!state.uvRevealed || state.finalSlots.some(function (value) { return !value; })) return;
+    selectedToken = null;
+    if (state.finalSlots.join(',') !== finalOrder.join(',')) {
+      feedback = '인증 불일치 · 다섯 칩이 함께 튕겨 나왔습니다. 별지도의 전체 화살표 순서를 다시 확인하세요.';
+      feedbackBad = true;
+      play('error');
+      await sync({ finalSlots: ['', '', '', '', ''], authComplete: false }, false);
+      modal = 'core';
+      draw();
+      return;
+    }
+    feedback = '';
+    feedbackBad = false;
+    await sync({ finalSlots: finalOrder.slice(), authComplete: true }, false);
+    modal = 'auth-success';
+    play('complete');
+    draw();
   }
 
   function startReception() {
@@ -577,38 +728,49 @@
     }, 700);
   }
 
+  function showInspect(title, text, stateText, image, focus) {
+    modal = '';
+    inspect = { title: title, text: text, state: stateText || '', image: image || '', focus: focus || '' };
+    draw();
+  }
+
   function objectClick(button) {
     var state = sceneState();
     var object = button.dataset.s4Object;
     if (object === 'desk') {
-      if (state.patternA) ctx.toast('기록철 아래에는 더 이상 특별한 것이 없다.');
-      else sync({ patternA: true }).then(function () { play('item'); ctx.toast('패턴 조각 A 획득'); });
+      if (state.patternA) showInspect('낡은 기록철', '기록철 아래에는 더 이상 특별한 것이 없다.', '조사 완료', img(roomStateFile(state)), 'desk');
+      else sync({ patternA: true }, false).then(function () { play('item'); showInspect('낡은 기록철', '두꺼운 기록철 아래에 사각 도트가 흩어진 얇은 조각이 끼워져 있다.', '패턴 조각 A 획득', img(roomStateFile(sceneState())), 'desk'); });
     } else if (object === 'case') {
-      if (state.filmB) ctx.toast('관측 보조 도구다. 지금은 직접 쓸 수 없어 보인다.');
-      else sync({ filmB: true }).then(function () { play('item'); ctx.toast('투명 필름 B 획득'); });
+      if (state.filmB) showInspect('관측도구 케이스', '빈 보조 도구 케이스다. 남아 있는 장비는 없다.', '조사 완료', img(roomStateFile(state)), 'case');
+      else sync({ filmB: true }, false).then(function () { play('item'); showInspect('관측도구 케이스', '케이스 안쪽에서 또 다른 사각 도트 무늬의 투명 필름을 찾았다.', '투명 필름 B 획득', img(roomStateFile(sceneState())), 'case'); });
     } else if (object === 'photo') openPhoto(button.dataset.letter, state);
-    else if (object === 'nebula-sort') { modal = 'nebula'; draw(); }
+    else if (object === 'nebula-sort') { inspect = null; modal = 'nebula'; draw(); }
     else if (object === 'reflector') {
-      if (!state.overlayComplete) { modal = 'reflector'; draw(); return; }
+      if (!state.overlayComplete) { showInspect('반사판', '투명한 반사판이다. 겉보기에는 특별한 장치가 보이지 않는다.', '숨은 위치 단서가 필요합니다.', img('scene04_p01_reflector_closed.webp')); return; }
+      inspect = null;
       if (!state.lensAcquired && stored('reflector-scare') !== 'yes') {
         saveStored('reflector-scare', 'yes'); reflectorScare = true; eventHook('reflector-silhouette'); draw();
         setTimeout(function () { reflectorScare = false; modal = 'reflector'; draw(); }, 520);
       } else { modal = 'reflector'; draw(); }
     } else if (object === 'locker') {
-      if (!state.lockerActive) { ctx.toast('잠겨 있다. 다른 단계가 필요하다.', true); return; }
+      if (!state.lockerActive) { showInspect('성단 관측 보관함', '전원이 들어오지 않은 채 단단히 잠겨 있다.', '성운 분류 인증이 먼저 필요합니다.', img('scene04_p03_cluster_box_closed.webp')); return; }
+      inspect = null;
       modal = state.lockerOpen ? 'loot' : 'locker'; draw();
     } else if (object === 'starmap') {
-      if (selectedItem !== 'uv' || !state.uvAcquired) { ctx.toast('오래된 별지도다. 겉보기에는 특별한 표시가 없다.', true); return; }
+      if (selectedItem !== 'uv' || !state.uvAcquired) { showInspect('오래된 별지도', '오래된 별지도다. 겉보기에는 특별한 표시가 없다.', state.uvAcquired ? '단서 탭에서 UV 검사등을 선택한 뒤 다시 조사하세요.' : '숨은 표시를 확인할 검사 도구가 필요합니다.', img('scene04_p04_starmap_base.webp')); return; }
+      inspect = null;
       modal = 'uv'; draw();
     } else if (object === 'core') {
+      inspect = null;
       modal = state.authComplete ? 'auth-success' : 'core'; draw();
     } else if (object === 'maintenance') {
+      inspect = null;
       if (state.maintenanceOpen) { modal = state.recordingComplete ? 'log' : state.recordingStarted ? 'recording' : 'recorder-found'; draw(); return; }
       if (panelTaps === 0) { panelTaps = 1; modal = 'panel-knock'; play('knock'); draw(); }
       else sync({ maintenanceOpen: true }).then(function () { modal = 'recorder-found'; play('open'); draw(); });
-    } else if (object === 'log') { modal = 'log'; draw(); }
-    else if (object === 'cctv') startCctv();
-    else if (object === 'exit') { modal = 'exit'; draw(); }
+    } else if (object === 'log') { inspect = null; modal = 'log'; draw(); }
+    else if (object === 'cctv') { inspect = null; startCctv(); }
+    else if (object === 'exit') { inspect = null; modal = 'exit'; draw(); }
   }
 
   function bindOverlayDrag() {
@@ -665,6 +827,10 @@
     });
     Array.from(document.querySelectorAll('[data-s4-drop]')).forEach(function (drop) {
       drop.onclick = function () {
+        if (drop.dataset.s4Drop === 'final' && drop.dataset.value && !selectedToken) {
+          removeFinalToken(Number(drop.dataset.slot));
+          return;
+        }
         if (selectedToken) placeToken(drop.dataset.s4Drop, selectedToken.value, Number(drop.dataset.slot));
       };
     });
@@ -686,6 +852,46 @@
     };
   }
 
+  function bindPhotoScan() {
+    var view = document.getElementById('s4PhotoView');
+    if (!view || view.classList.contains('restored')) return;
+    function scan(event) {
+      var rect = view.getBoundingClientRect();
+      var x = Math.max(0, Math.min(rect.width, event.clientX - rect.left));
+      var y = Math.max(0, Math.min(rect.height, event.clientY - rect.top));
+      var percentX = x / rect.width * 100;
+      var percentY = y / rect.height * 100;
+      photoLensPosition = { x: percentX, y: percentY };
+      view.style.setProperty('--lens-x', percentX + '%');
+      view.style.setProperty('--lens-y', percentY + '%');
+      var before = photoScanHits.size;
+      view.querySelectorAll('[data-scan-zone]').forEach(function (zone) {
+        var zoneX = parseFloat(zone.style.left);
+        var zoneY = parseFloat(zone.style.top);
+        if (Math.hypot(percentX - zoneX, percentY - zoneY) < 13) {
+          var index = Number(zone.getAttribute('data-scan-zone'));
+          photoScanHits.add(index);
+          zone.classList.add('done');
+        }
+      });
+      var progress = document.querySelector('.s4-scan-progress b');
+      if (progress) progress.textContent = '렌즈 조사 지점 · ' + photoScanHits.size + '/3';
+      if (photoScanHits.size >= 3) {
+        var button = document.getElementById('s4SavePhoto');
+        if (button) button.disabled = false;
+        if (before < 3) play('restore');
+      }
+    }
+    view.onpointerdown = function (event) {
+      event.preventDefault();
+      view.setPointerCapture(event.pointerId);
+      scan(event);
+      view.onpointermove = scan;
+    };
+    view.onpointerup = function () { view.onpointermove = null; };
+    view.onpointercancel = function () { view.onpointermove = null; };
+  }
+
   function bindUv() {
     var board = document.getElementById('s4UvBoard');
     if (!board) return;
@@ -701,18 +907,27 @@
         var markerRect = marker.getBoundingClientRect();
         var markerX = (markerRect.left + markerRect.width / 2 - rect.left) / rect.width;
         var markerY = (markerRect.top + markerRect.height / 2 - rect.top) / rect.height;
-        if (Math.hypot(normalizedX - markerX, normalizedY - markerY) < .105) uvHits.add(Number(marker.getAttribute('data-uv-hit')));
+        if (Math.hypot(normalizedX - markerX, normalizedY - markerY) < .105) {
+          uvHits.add(Number(marker.getAttribute('data-uv-hit')));
+          marker.classList.add('found');
+        }
       });
+      var progress = document.querySelector('.s4-uv-progress b');
+      if (progress) progress.textContent = '숨은 기호 · ' + uvHits.size + '/5';
       if (uvHits.size >= 5) {
+        board.classList.add('complete');
         var button = document.getElementById('s4SaveUv');
         if (button) button.disabled = false;
       }
     }
     board.onpointerdown = function (event) { board.setPointerCapture(event.pointerId); scan(event); board.onpointermove = scan; };
     board.onpointerup = function () { board.onpointermove = null; };
+    board.onpointercancel = function () { board.onpointermove = null; };
   }
 
   function bindModal(state) {
+    var inspectClose = document.getElementById('s4InspectClose');
+    if (inspectClose) inspectClose.onclick = function () { inspect = null; draw(); };
     var close = document.getElementById('s4Close');
     if (close) close.onclick = function () {
       if (modal === 'recording' && !state.recordingComplete) { ctx.toast('기록이 끝날 때까지 확인하세요.', true); return; }
@@ -734,6 +949,8 @@
     var transmit = document.getElementById('s4Transmit'); if (transmit) transmit.onclick = transmitRecords;
     var personal = document.getElementById('s4Personal'); if (personal) personal.onclick = function () { modal = 'personal'; draw(); };
     var saveUv = document.getElementById('s4SaveUv'); if (saveUv) saveUv.onclick = function () { sync({ uvRevealed: true }).then(function () { modal = ''; ctx.toast('별지도의 숨은 분류 순서를 확인했습니다.'); draw(); }); };
+    var authReset = document.getElementById('s4AuthReset'); if (authReset) authReset.onclick = resetFinalTokens;
+    var authSubmit = document.getElementById('s4AuthSubmit'); if (authSubmit) authSubmit.onclick = verifyFinalOrder;
     var authReturn = document.getElementById('s4AuthReturn'); if (authReturn) authReturn.onclick = startHorror;
     var playRecording = document.getElementById('s4PlayRecording'); if (playRecording) playRecording.onclick = startRecording;
     var saveLog = document.getElementById('s4SaveLog'); if (saveLog) saveLog.onclick = function () { sync({ logSeen: true }).then(function () { modal = ''; ctx.toast('수동 조작 흔적을 확인했습니다.'); draw(); }); };
@@ -745,12 +962,13 @@
     bindOverlayDrag();
     bindTokenPlacement();
     bindHandle();
+    bindPhotoScan();
     bindUv();
   }
 
   function bindRoom(state) {
     var inventory = document.getElementById('s4Inventory');
-    if (inventory) inventory.onclick = function () { modal = 'inventory'; draw(); };
+    if (inventory) inventory.onclick = function () { inspect = null; modal = 'inventory'; draw(); };
     var roomHint = document.getElementById('hintBtn');
     if (roomHint) roomHint.onclick = ctx.hint;
     document.querySelectorAll('[data-s4-object]').forEach(function (button) { button.onclick = function () { objectClick(button); }; });
@@ -768,6 +986,7 @@
     if (!ctx || !ctx.game) return;
     var state = sceneState();
     ctx.game.innerHTML = roomMarkup(state);
+    renderOverlapDots();
     bindRoom(state);
     setTimeout(function () { maybeStartSharedMoments(sceneState()); }, 0);
   }
@@ -775,16 +994,18 @@
   function resetForIdentity(nextIdentity) {
     if (identity === nextIdentity) return;
     identity = nextIdentity;
-    clearTimeout(restoreTimer);
     clearTimeout(receptionTimer);
     clearTimeout(horrorTimer);
     clearInterval(recordingTimer);
     clearInterval(cctvTimer);
     modal = '';
+    inspect = null;
     selectedItem = '';
     selectedToken = null;
     overlayPicks = { pattern: false, film: false };
     filmPosition = { x: 76, y: 48 };
+    photoScanHits = new Set();
+    photoLensPosition = { x: 50, y: 50 };
     uvHits = new Set();
     panelTaps = 0;
     horrorVisible = false;
