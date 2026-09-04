@@ -10,6 +10,7 @@
   var scheduled = false;
   var previous = null;
   var timers = [];
+  var mirroredBannerKey = '';
   var reducedMotion = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
   var silhouetteImages = {
     's1-between-devices': '/labs/star-escape/assets/atmosphere/silhouette-s1-between-devices.webp',
@@ -70,6 +71,53 @@
     return true;
   }
 
+  function installVisualFixes() {
+    if (document.getElementById('star-escape-visual-fixes')) return;
+    var style = document.createElement('style');
+    style.id = 'star-escape-visual-fixes';
+    style.textContent = [
+      '.scene-atmosphere-note{top:6%!important;max-width:min(760px,88%)!important;padding:14px 20px!important;border:1px solid #ff718899!important;border-radius:14px!important;background:#15050df5!important;color:#fff1f4!important;font-size:clamp(14px,1.7vw,20px)!important;font-weight:850!important;line-height:1.45!important;box-shadow:0 12px 38px #000d,0 0 24px #ff718833!important}',
+      '.scene-atmosphere-note::before{font-size:.82em!important;font-weight:950!important}',
+      '.scene-atmosphere-note.show{animation:atmosphereNote 5.4s ease both!important}',
+      '.s1-system,.s2-system,.s3-system,.s4-system{font-size:clamp(14px,1.55vw,19px)!important;line-height:1.45!important;padding:12px 18px!important;border-radius:13px!important;max-width:min(760px,88%)!important;box-shadow:0 10px 32px #000c!important}',
+      '.toast{font-size:15px!important;line-height:1.45!important;padding:13px 18px!important;border-radius:13px!important;max-width:min(700px,90vw)!important}',
+      '.s1-title small,.s2-title small,.s3-title small,.s4-title small{font-size:10px!important}',
+      '.s1-title b,.s2-title b,.s3-title b,.s4-title b{font-size:clamp(15px,1.7vw,20px)!important}',
+      '.s1-objective,.s2-objective,.s3-objective,.s4-objective{font-size:clamp(12px,1.25vw,16px)!important;line-height:1.5!important}',
+      '.s1-dialogue p,.s2-dialogue p,.s3-dialogue p,.s4-dialogue p{font-size:clamp(16px,1.8vw,21px)!important;line-height:1.6!important}',
+      '.s1-dialogue small,.s2-dialogue small,.s3-dialogue small,.s4-dialogue small{font-size:14px!important}',
+      '.s1-dialogue .advance,.s2-dialogue .advance,.s3-dialogue i,.s4-dialogue i{font-size:11px!important}',
+      '.s1-inspect small,.s2-inspect small,.s3-inspect small,.s4-inspect small{font-size:11px!important}',
+      '.s1-inspect b,.s2-inspect b,.s3-inspect b,.s4-inspect b{font-size:clamp(16px,1.8vw,21px)!important}',
+      '.s1-inspect p,.s2-inspect p,.s3-inspect p,.s4-inspect p,.s4-modal-body>p,.s4-help{font-size:clamp(13px,1.3vw,16px)!important;line-height:1.6!important}',
+      '.s4-modal-card>header small{font-size:11px!important}.s4-modal-card>header h2{font-size:clamp(20px,2.4vw,29px)!important}',
+      '.s4-primary,.s4-secondary,.s4-room-action,.s4-room-hint,.s4-inventory-button{font-size:13px!important}',
+      '.s4-item b{font-size:12px!important}.s4-item small{font-size:10px!important;line-height:1.35!important}',
+      '.prompt{font-size:16px!important}.intel b{font-size:12px!important}.intel p,.choice{font-size:15px!important}.hintbox,.feedback{font-size:14px!important}',
+      '.s4-loot-cabinet{width:min(520px,82%)!important;max-height:27vh!important}',
+      '.s4-loot{grid-template-columns:repeat(3,minmax(0,1fr))!important;align-items:stretch!important;gap:12px!important}',
+      '.s4-loot .s4-item{min-height:145px!important;grid-template-rows:92px auto auto!important;padding:10px!important;overflow:hidden!important}',
+      '.s4-loot .s4-item-visual{height:92px!important}',
+      '.s4-loot .s4-item-visual>img{width:100%!important;height:100%!important;max-width:125px!important;max-height:90px!important;object-fit:contain!important}',
+      '.s4-hotspot.maintenance{left:20.5%!important;top:24%!important;width:4.4%!important;height:26%!important}',
+      '.s1-hotspot[data-object="window"]{left:6%!important;top:8%!important;width:29%!important;height:36%!important}',
+      '.s1-hotspot[data-object="monitor"]{left:9%!important;top:48%!important;width:25%!important;height:26%!important}',
+      '.s1-hotspot[data-object="door"]{left:44.5%!important;top:14%!important;width:16%!important;height:55%!important}',
+      '.s1-hotspot[data-object="communicator"]{left:61.5%!important;top:27%!important;width:8%!important;height:22%!important}',
+      '.s1-hotspot[data-object="navigation"]{left:69%!important;top:45%!important;width:25%!important;height:28%!important}',
+      '.s1-hotspot[data-object="storage"]{left:89%!important;top:28%!important;width:9%!important;height:47%!important}',
+      '.s1-hotspot[data-object="warning"]{left:83%!important;top:2%!important;width:8%!important;height:13%!important}',
+      '.s1-dialogue.speaker-crew .portrait,.s1-dialogue.speaker-crew>img{content:url("/labs/star-escape/assets/scene01/characters/char_student_01_female_bob.webp")!important}',
+      '.s2-dialogue.speaker-crew>img{content:url("/labs/star-escape/assets/scene01/characters/char_student_02_male_tablet.webp")!important}',
+      '.s3-dialogue.speaker-crew>img{content:url("/labs/star-escape/assets/scene01/characters/char_student_03_female_ponytail.webp")!important}',
+      '.s4-dialogue.speaker-crew>img{content:url("/labs/star-escape/assets/scene01/characters/char_student_04_male_glasses.webp")!important}',
+      '.s4-hidden-phrase{display:none!important}',
+      '.s4-overlay-piece.film{mix-blend-mode:screen!important;opacity:.96!important}',
+      '@media(max-width:650px){.scene-atmosphere-note{font-size:14px!important;padding:11px 14px!important;max-width:92%!important}.s1-objective,.s2-objective,.s3-objective,.s4-objective{font-size:12px!important}.s1-dialogue p,.s2-dialogue p,.s3-dialogue p,.s4-dialogue p{font-size:15px!important}.s4-loot .s4-item{min-height:118px!important;grid-template-rows:72px auto auto!important}.s4-loot .s4-item-visual{height:72px!important}.s4-loot .s4-item-visual>img{max-height:70px!important}}'
+    ].join('');
+    document.head.appendChild(style);
+  }
+
   function markup() {
     return '<div class="scene-atmosphere-vignette"></div>' +
       '<div class="scene-atmosphere-noise"></div>' +
@@ -121,7 +169,21 @@
     if (!root) return;
     var element = root.querySelector('.scene-atmosphere-note');
     element.textContent = text;
-    replayClass(element, 'show', 2300);
+    replayClass(element, 'show', 5500);
+  }
+
+  function mirrorActionBanner() {
+    if (!game) return;
+    var element = game.querySelector('.s1-system,.s2-system,.s3-system,.s4-system');
+    if (!element) {
+      mirroredBannerKey = '';
+      return;
+    }
+    var text = (element.textContent || '').replace(/\s+/g, ' ').trim();
+    if (text && text !== mirroredBannerKey) {
+      mirroredBannerKey = text;
+      note(text);
+    }
   }
 
   function flicker(red) {
@@ -270,7 +332,7 @@
     }
     if (snapshot.stage === 1 && game.querySelector('.s1-room') && !game.querySelector('.s1-ending,.s1-dialogue,.s1-puzzle,.s1-inspect')) {
       once(snapshot, 'scene-1-free-exploration-silhouette', function () {
-        later(function () { silhouette('s1-between-devices', { stage: 1, attempts: 0, settled: false, duration: 700, mystery: { duration: 4200, strength: .42 } }); }, 1150);
+        later(function () { silhouette('s1-between-devices', { stage: 1, attempts: 0, settled: false, duration: 4200, mystery: { duration: 6200, strength: .48 } }); }, 1150);
       });
     }
     if (game.querySelector('.s1-ending')) {
@@ -334,6 +396,7 @@
     var snapshot = stateSnapshot();
     if (!snapshot) return;
     ensureRoot(snapshot);
+    mirrorActionBanner();
     sceneEntry(snapshot);
     stateEvents(snapshot);
     domEvents(snapshot);
@@ -362,6 +425,7 @@
     game = options && options.game || document.getElementById('game');
     sound = options && options.sound || null;
     getState = options && options.getState || null;
+    installVisualFixes();
     if (!game || observer) return;
     observer = new MutationObserver(scheduleSync);
     observer.observe(game, { childList: true, subtree: true });
@@ -369,7 +433,7 @@
   }
 
   function activate() { active = true; scheduleSync(); }
-  function deactivate() { active = false; scheduled = false; previous = null; clearTimers(); if (root && root.isConnected) root.remove(); root = null; }
+  function deactivate() { active = false; scheduled = false; previous = null; mirroredBannerKey = ''; clearTimers(); if (root && root.isConnected) root.remove(); root = null; }
 
   window.StarEscapeAtmosphere = { activate: activate, bind: bind, deactivate: deactivate, refresh: scheduleSync };
 })();
