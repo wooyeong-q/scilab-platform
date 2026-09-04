@@ -36,16 +36,16 @@
   ];
 
   var objects = [
-    { id: 'window', name: '우주정거장 창문', box: [4, 8, 29, 36] },
-    { id: 'monitor', name: '별 관측 화면', box: [7, 49, 24, 27] },
+    { id: 'window', name: '우주정거장 창문', box: [6, 8, 29, 36] },
+    { id: 'monitor', name: '별 관측 화면', box: [9, 48, 25, 26] },
     { id: 'terminal', name: '비상 기록 단말', box: [31, 47, 11, 26] },
-    { id: 'door', name: '중앙 통로', box: [43, 14, 16, 55] },
-    { id: 'communicator', name: '통신기', box: [60, 27, 8, 22] },
-    { id: 'navigation', name: '고장 난 항법장치', box: [68, 45, 25, 28] },
-    { id: 'storage', name: '수납함', box: [88, 28, 10, 47] },
+    { id: 'door', name: '중앙 통로', box: [44.5, 14, 16, 55] },
+    { id: 'communicator', name: '통신기', box: [61.5, 27, 8, 22] },
+    { id: 'navigation', name: '고장 난 항법장치', box: [69, 45, 25, 28] },
+    { id: 'storage', name: '수납함', box: [89, 28, 9, 47] },
     { id: 'tools', name: '정비 도구', box: [4, 78, 19, 15] },
     { id: 'trash', name: '우주식량 포장지', box: [27, 84, 10, 10] },
-    { id: 'warning', name: '경고등', box: [82, 3, 8, 13] },
+    { id: 'warning', name: '경고등', box: [83, 2, 8, 13] },
     { id: 'torn', name: '찢어진 기록지', box: [76, 80, 20, 15] },
   ];
 
@@ -634,7 +634,7 @@
       var element = document.querySelector('.s1-system');
       if (element) element.remove();
       banner = '';
-    }, 2600);
+    }, 6000);
   }
 
   function render(options) {

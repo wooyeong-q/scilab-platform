@@ -67,7 +67,10 @@
     });
   }
 
-  function img(name) { return ROOT + name; }
+  function img(name) {
+    var version = /scene04_clue_(pattern_a|film_b)\.svg$/.test(name) ? '?v=20260904-5' : '';
+    return ROOT + name + version;
+  }
 
   function speakerPortrait(name) {
     if (/루멘|시스템/.test(name)) return '/labs/star-escape/assets/scene01/characters/ui_lumen_ai_icon.webp';
@@ -343,8 +346,7 @@
     var complete = state.overlayComplete;
     return modalShell('도트카드의 숨은 신호', '<div class="s4-overlap-board" id="s4OverlapBoard">' +
       '<img class="s4-overlay-piece pattern" id="s4PatternA" src="' + img('scene04_clue_pattern_a.svg') + '" alt="패턴 조각 A" style="--piece-x:' + patternPosition.x + 'px;--piece-y:' + patternPosition.y + 'px">' +
-      '<img class="s4-overlay-piece film' + (complete ? ' snapped' : '') + '" id="s4Film" src="' + img('scene04_clue_film_b.svg') + '" alt="투명 필름 B" style="--piece-x:' + filmPosition.x + 'px;--piece-y:' + filmPosition.y + 'px">' +
-      '<strong class="s4-hidden-phrase' + (complete ? ' revealed' : '') + '">반사판 뒤</strong></div>' +
+      '<img class="s4-overlay-piece film' + (complete ? ' snapped' : '') + '" id="s4Film" src="' + img('scene04_clue_film_b.svg') + '" alt="투명 필름 B" style="--piece-x:' + filmPosition.x + 'px;--piece-y:' + filmPosition.y + 'px"></div>' +
       '<p class="s4-help">획득한 두 도트카드를 자유롭게 움직여 나타나는 변화를 관찰하세요.</p>' + puzzleFooter('카드의 위치를 바꾸며 무늬의 변화를 살펴보세요.'), 'overlap');
   }
 

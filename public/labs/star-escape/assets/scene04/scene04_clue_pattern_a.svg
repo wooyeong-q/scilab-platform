@@ -7,18 +7,10 @@
     <pattern id="baseDots" width="18" height="18" patternUnits="userSpaceOnUse">
       <rect x="6" y="6" width="6" height="6" rx="1" fill="#8cecff" fill-opacity=".34"/>
     </pattern>
-    <pattern id="phraseDots" width="18" height="18" patternUnits="userSpaceOnUse">
-      <rect x="6" y="6" width="7" height="7" rx="1" fill="#ffe584" fill-opacity=".34"/>
-    </pattern>
-    <mask id="phraseMask">
-      <rect width="900" height="520" fill="black"/>
-      <text x="450" y="312" text-anchor="middle" font-family="Noto Sans KR, Apple SD Gothic Neo, sans-serif" font-size="118" font-weight="900" letter-spacing="8" fill="white">반사판 뒤</text>
-    </mask>
   </defs>
   <rect x="8" y="8" width="884" height="504" rx="18" fill="#020811" stroke="#8beaff" stroke-width="3"/>
   <rect x="28" y="28" width="844" height="464" rx="10" fill="url(#paper)"/>
   <rect x="42" y="42" width="816" height="436" rx="6" fill="url(#baseDots)"/>
-  <rect x="42" y="42" width="816" height="436" fill="url(#phraseDots)" mask="url(#phraseMask)"/>
   <g fill="#7fcfe0" opacity=".34">
     <rect x="115" y="96" width="7" height="7"/><rect x="169" y="150" width="7" height="7"/><rect x="241" y="114" width="7" height="7"/>
     <rect x="313" y="366" width="7" height="7"/><rect x="385" y="96" width="7" height="7"/><rect x="457" y="384" width="7" height="7"/>

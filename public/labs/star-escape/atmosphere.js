@@ -78,9 +78,9 @@
     style.textContent = [
       '.scene-atmosphere-note{top:6%!important;max-width:min(760px,88%)!important;padding:14px 20px!important;border:1px solid #ff718899!important;border-radius:14px!important;background:#15050df5!important;color:#fff1f4!important;font-size:clamp(14px,1.7vw,20px)!important;font-weight:850!important;line-height:1.45!important;box-shadow:0 12px 38px #000d,0 0 24px #ff718833!important}',
       '.scene-atmosphere-note::before{font-size:.82em!important;font-weight:950!important}',
-      '.scene-atmosphere-note.show{animation:atmosphereNote 5.4s ease both!important}',
+      '.scene-atmosphere-note.show{animation:atmosphereNote 6.4s ease both!important}',
       '.s1-system,.s2-system,.s3-system,.s4-system{font-size:clamp(14px,1.55vw,19px)!important;line-height:1.45!important;padding:12px 18px!important;border-radius:13px!important;max-width:min(760px,88%)!important;box-shadow:0 10px 32px #000c!important}',
-      '.toast{font-size:15px!important;line-height:1.45!important;padding:13px 18px!important;border-radius:13px!important;max-width:min(700px,90vw)!important}',
+      '.toast{min-width:min(420px,88vw)!important;font-size:16px!important;line-height:1.5!important;padding:14px 20px!important;border-radius:14px!important;max-width:min(760px,92vw)!important;text-align:center!important;box-shadow:0 12px 38px #000d,0 0 22px #ff71882d!important}',
       '.s1-title small,.s2-title small,.s3-title small,.s4-title small{font-size:10px!important}',
       '.s1-title b,.s2-title b,.s3-title b,.s4-title b{font-size:clamp(15px,1.7vw,20px)!important}',
       '.s1-objective,.s2-objective,.s3-objective,.s4-objective{font-size:clamp(12px,1.25vw,16px)!important;line-height:1.5!important}',
@@ -90,9 +90,19 @@
       '.s1-inspect small,.s2-inspect small,.s3-inspect small,.s4-inspect small{font-size:11px!important}',
       '.s1-inspect b,.s2-inspect b,.s3-inspect b,.s4-inspect b{font-size:clamp(16px,1.8vw,21px)!important}',
       '.s1-inspect p,.s2-inspect p,.s3-inspect p,.s4-inspect p,.s4-modal-body>p,.s4-help{font-size:clamp(13px,1.3vw,16px)!important;line-height:1.6!important}',
+      '.s1-puzzle-head small,.s2-puzzle-head small,.s3-puzzle-head small{font-size:10px!important}.s1-puzzle-head h2,.s2-puzzle-head h2,.s3-puzzle-head h2{font-size:clamp(20px,2.2vw,27px)!important}',
+      '.s1-lock-panel p,.s1-wire-guide p,.s1-record p,.s1-feedback,.s1-hintbox{font-size:clamp(13px,1.25vw,16px)!important;line-height:1.55!important}',
+      '.s1-wire-guide b,.s1-record b,.s1-star-card b{font-size:clamp(14px,1.4vw,17px)!important}',
+      '.s2-guide small,.s2-inspect small,.s2-role-tabs button{font-size:10px!important}.s2-guide>b,.s2-inspect>b{font-size:clamp(17px,1.8vw,21px)!important}',
+      '.s2-guide p,.s2-coop-note,.s2-selection-note,.s2-feedback,.s2-clue-help,.s2-clue-empty,.s2-inspect p{font-size:clamp(13px,1.3vw,16px)!important;line-height:1.55!important}',
+      '.s2-device-state,.s2-observation-card header,.s2-observation-card footer,.s2-card b,.s2-slot-label{font-size:clamp(11px,1.15vw,14px)!important}',
+      '.s3-puzzle-head small,.s3-inspect small,.s3-clue-record small{font-size:11px!important}.s3-puzzle-head h2,.s3-inspect b,.s3-clue-record h3{font-size:clamp(19px,2vw,25px)!important}',
+      '.s3-feedback,.s3-hintbox,.s3-selection-help,.s3-console-brief,.s3-clue-record p,.s3-clue-note{font-size:clamp(13px,1.3vw,16px)!important;line-height:1.55!important}',
       '.s4-modal-card>header small{font-size:11px!important}.s4-modal-card>header h2{font-size:clamp(20px,2.4vw,29px)!important}',
       '.s4-primary,.s4-secondary,.s4-room-action,.s4-room-hint,.s4-inventory-button{font-size:13px!important}',
       '.s4-item b{font-size:12px!important}.s4-item small{font-size:10px!important;line-height:1.35!important}',
+      '.s4-sort-layout h3{font-size:17px!important}.s4-sort-layout aside>p,.s4-core-layout aside>p,.s4-personal-record p,.s4-scan-progress span{font-size:clamp(13px,1.3vw,16px)!important;line-height:1.55!important}',
+      '.s4-token,.s4-feedback,.s4-drop span,.s4-drop.filled b{font-size:clamp(12px,1.2vw,15px)!important}.s4-drop small{font-size:10px!important}',
       '.prompt{font-size:16px!important}.intel b{font-size:12px!important}.intel p,.choice{font-size:15px!important}.hintbox,.feedback{font-size:14px!important}',
       '.s4-loot-cabinet{width:min(520px,82%)!important;max-height:27vh!important}',
       '.s4-loot{grid-template-columns:repeat(3,minmax(0,1fr))!important;align-items:stretch!important;gap:12px!important}',
@@ -113,7 +123,7 @@
       '.s4-dialogue.speaker-crew>img{content:url("/labs/star-escape/assets/scene01/characters/char_student_04_male_glasses.webp")!important}',
       '.s4-hidden-phrase{display:none!important}',
       '.s4-overlay-piece.film{mix-blend-mode:screen!important;opacity:.96!important}',
-      '@media(max-width:650px){.scene-atmosphere-note{font-size:14px!important;padding:11px 14px!important;max-width:92%!important}.s1-objective,.s2-objective,.s3-objective,.s4-objective{font-size:12px!important}.s1-dialogue p,.s2-dialogue p,.s3-dialogue p,.s4-dialogue p{font-size:15px!important}.s4-loot .s4-item{min-height:118px!important;grid-template-rows:72px auto auto!important}.s4-loot .s4-item-visual{height:72px!important}.s4-loot .s4-item-visual>img{max-height:70px!important}}'
+      '@media(max-width:650px){.scene-atmosphere-note{font-size:15px!important;padding:12px 15px!important;max-width:94%!important}.toast{min-width:88vw!important;font-size:15px!important}.s1-title small,.s2-title small,.s3-title small,.s4-title small{font-size:8px!important}.s1-title b,.s2-title b,.s3-title b,.s4-title b{font-size:14px!important}.s1-objective,.s2-objective,.s3-objective,.s4-objective{font-size:12px!important}.s1-dialogue p,.s2-dialogue p,.s3-dialogue p,.s4-dialogue p{font-size:15px!important}.s1-inspect p,.s2-inspect p,.s3-inspect p,.s4-inspect p,.s4-modal-body>p,.s4-help{font-size:13px!important}.s2-guide p,.s2-coop-note,.s2-selection-note,.s2-feedback,.s2-clue-help,.s3-feedback,.s3-selection-help,.s4-feedback{font-size:13px!important}.s4-token,.s4-drop span,.s4-drop.filled b{font-size:12px!important}.s4-loot .s4-item{min-height:118px!important;grid-template-rows:72px auto auto!important}.s4-loot .s4-item-visual{height:72px!important}.s4-loot .s4-item-visual>img{max-height:70px!important}}'
     ].join('');
     document.head.appendChild(style);
   }
@@ -169,7 +179,7 @@
     if (!root) return;
     var element = root.querySelector('.scene-atmosphere-note');
     element.textContent = text;
-    replayClass(element, 'show', 5500);
+    replayClass(element, 'show', 6500);
   }
 
   function mirrorActionBanner() {
@@ -332,7 +342,7 @@
     }
     if (snapshot.stage === 1 && game.querySelector('.s1-room') && !game.querySelector('.s1-ending,.s1-dialogue,.s1-puzzle,.s1-inspect')) {
       once(snapshot, 'scene-1-free-exploration-silhouette', function () {
-        later(function () { silhouette('s1-between-devices', { stage: 1, attempts: 0, settled: false, duration: 4200, mystery: { duration: 6200, strength: .48 } }); }, 1150);
+        later(function () { silhouette('s1-between-devices', { stage: 1, attempts: 0, settled: false, duration: 6500, mystery: { duration: 8200, strength: .5 } }); }, 1150);
       });
     }
     if (game.querySelector('.s1-ending')) {
