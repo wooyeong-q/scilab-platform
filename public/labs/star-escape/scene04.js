@@ -32,6 +32,7 @@
   var cctvTimer = 0;
   var feedback = '';
   var feedbackBad = false;
+  var clueCardImages = null;
 
   var intro = [
     ['루멘', '4번 구획 진입.'],
@@ -68,8 +69,76 @@
   }
 
   function img(name) {
-    var version = /scene04_clue_(pattern_a|film_b)\.svg$/.test(name) ? '?v=20260904-7' : '';
-    return ROOT + name + version;
+    return ROOT + name;
+  }
+
+  function drawCardFrame(drawing, film) {
+    var gradient = drawing.createLinearGradient(0, 0, 900, 520);
+    gradient.addColorStop(0, film ? 'rgba(114,234,255,.08)' : '#17293a');
+    gradient.addColorStop(1, film ? 'rgba(255,216,102,.06)' : '#07111d');
+    drawing.fillStyle = gradient;
+    drawing.fillRect(8, 8, 884, 504);
+    drawing.strokeStyle = film ? '#ffdc75' : '#8beaff';
+    drawing.lineWidth = 4;
+    drawing.strokeRect(10, 10, 880, 500);
+    drawing.strokeStyle = film ? 'rgba(255,223,121,.18)' : 'rgba(140,236,255,.16)';
+    drawing.lineWidth = 1;
+    for (var x = 42; x <= 858; x += 24) {
+      drawing.beginPath(); drawing.moveTo(x, 42); drawing.lineTo(x, 430); drawing.stroke();
+    }
+    for (var y = 42; y <= 430; y += 24) {
+      drawing.beginPath(); drawing.moveTo(42, y); drawing.lineTo(858, y); drawing.stroke();
+    }
+  }
+
+  function buildClueCardImages() {
+    if (clueCardImages) return clueCardImages;
+    var width = 900;
+    var height = 520;
+    var cell = 8;
+    var patternCanvas = document.createElement('canvas');
+    var filmCanvas = document.createElement('canvas');
+    var maskCanvas = document.createElement('canvas');
+    [patternCanvas, filmCanvas, maskCanvas].forEach(function (canvas) { canvas.width = width; canvas.height = height; });
+    var patternDrawing = patternCanvas.getContext('2d');
+    var filmDrawing = filmCanvas.getContext('2d');
+    var maskDrawing = maskCanvas.getContext('2d');
+    drawCardFrame(patternDrawing, false);
+    drawCardFrame(filmDrawing, true);
+    maskDrawing.fillStyle = '#fff';
+    maskDrawing.font = '900 126px "Apple SD Gothic Neo", "Noto Sans KR", system-ui, sans-serif';
+    maskDrawing.textAlign = 'center';
+    maskDrawing.textBaseline = 'alphabetic';
+    maskDrawing.fillText('반사판 뒤', 450, 315);
+    var mask = maskDrawing.getImageData(0, 0, width, height).data;
+    var seed = 0x4d595df4;
+    function randomBit() {
+      seed = (Math.imul(seed, 1664525) + 1013904223) >>> 0;
+      return (seed >>> 31) === 1;
+    }
+    patternDrawing.fillStyle = 'rgba(140,236,255,.52)';
+    filmDrawing.fillStyle = 'rgba(255,223,121,.48)';
+    for (var y = 42; y < 430; y += cell) {
+      for (var x = 42; x < 858; x += cell) {
+        var patternOn = randomBit();
+        var sampleX = Math.min(width - 1, x + Math.floor(cell / 2));
+        var sampleY = Math.min(height - 1, y + Math.floor(cell / 2));
+        var inPhrase = mask[(sampleY * width + sampleX) * 4 + 3] > 40;
+        var filmOn = inPhrase ? !patternOn : patternOn;
+        if (patternOn) patternDrawing.fillRect(x, y, cell - 1, cell - 1);
+        if (filmOn) filmDrawing.fillRect(x, y, cell - 1, cell - 1);
+      }
+    }
+    patternDrawing.strokeStyle = 'rgba(140,236,255,.3)';
+    filmDrawing.strokeStyle = 'rgba(255,223,121,.3)';
+    patternDrawing.beginPath(); patternDrawing.moveTo(52, 444); patternDrawing.lineTo(848, 444); patternDrawing.stroke();
+    filmDrawing.beginPath(); filmDrawing.moveTo(52, 444); filmDrawing.lineTo(848, 444); filmDrawing.stroke();
+    clueCardImages = { pattern: patternCanvas.toDataURL('image/png'), film: filmCanvas.toDataURL('image/png') };
+    return clueCardImages;
+  }
+
+  function clueCardImage(kind) {
+    return buildClueCardImages()[kind];
   }
 
   function speakerPortrait(name) {
@@ -207,8 +276,7 @@
   }
 
   function itemImage(kind) {
-    if (kind === 'pattern') return img('scene04_clue_pattern_a.svg');
-    if (kind === 'film') return img('scene04_clue_film_b.svg');
+    if (kind === 'pattern' || kind === 'film') return clueCardImage(kind);
     if (kind === 'lens') return img('scene04_item_color_restore_lens.webp');
     if (kind === 'uv') return img('scene04_item_uv_light.webp');
     if (kind.indexOf('chip:') === 0) return img('scene04_chip_base.webp');
@@ -345,8 +413,8 @@
   function overlapMarkup(state) {
     var complete = state.overlayComplete;
     return modalShell('두 격자 카드의 숨은 신호', '<div class="s4-overlap-board" id="s4OverlapBoard">' +
-      '<img class="s4-overlay-piece pattern" id="s4PatternA" src="' + img('scene04_clue_pattern_a.svg') + '" alt="패턴 조각 A" style="--piece-x:' + patternPosition.x + 'px;--piece-y:' + patternPosition.y + 'px">' +
-      '<img class="s4-overlay-piece film' + (complete ? ' snapped' : '') + '" id="s4Film" src="' + img('scene04_clue_film_b.svg') + '" alt="투명 필름 B" style="--piece-x:' + filmPosition.x + 'px;--piece-y:' + filmPosition.y + 'px"></div>' +
+      '<img class="s4-overlay-piece pattern" id="s4PatternA" src="' + clueCardImage('pattern') + '" alt="패턴 조각 A" style="--piece-x:' + patternPosition.x + 'px;--piece-y:' + patternPosition.y + 'px">' +
+      '<img class="s4-overlay-piece film' + (complete ? ' snapped' : '') + '" id="s4Film" src="' + clueCardImage('film') + '" alt="투명 필름 B" style="--piece-x:' + filmPosition.x + 'px;--piece-y:' + filmPosition.y + 'px"></div>' +
       '<p class="s4-help">두 카드에는 서로 다른 격자 무늬가 남아 있습니다. 자유롭게 움직이며 변화를 관찰하세요.</p>' + puzzleFooter('카드의 위치를 바꾸며 격자 무늬의 변화를 살펴보세요.'), 'overlap');
   }
 
