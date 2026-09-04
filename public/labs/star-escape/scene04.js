@@ -10,7 +10,9 @@
   var selectedItem = '';
   var selectedToken = null;
   var overlayPicks = { pattern: false, film: false };
+  var patternPosition = { x: -76, y: -48 };
   var filmPosition = { x: 76, y: 48 };
+  var lastAcquired = '';
   var photoPreview = '';
   var photoRestored = false;
   var photoScanHits = new Set();
@@ -20,10 +22,12 @@
   var uvHits = new Set();
   var panelTaps = 0;
   var horrorVisible = false;
+  var signalIntrusionVisible = false;
   var recordingLocal = 0;
   var cctvLocal = 0;
   var receptionTimer = 0;
   var horrorTimer = 0;
+  var signalIntrusionTimer = 0;
   var recordingTimer = 0;
   var cctvTimer = 0;
   var feedback = '';
@@ -39,13 +43,18 @@
   ];
 
   var personalRecords = {
-    1: { title: 'X의 공간 분포', text: 'X의 별들은 한곳에 빽빽하게 몰려 있지 않고, 비교적 성기고 불규칙하게 퍼져 있다.' },
-    2: { title: 'X의 색', text: 'X에서는 푸른빛 또는 흰빛으로 보이는 별들이 비교적 눈에 띠다.' },
-    3: { title: 'Y의 공간 분포', text: 'Y의 별들은 둥근 모양으로 모여 있으며, 중심으로 갈수록 매우 촘촘하다.' },
-    4: { title: 'Y의 색', text: 'Y에서는 노란빛이나 붉은빛으로 보이는 별들이 많이 보인다.' },
+    1: { title: 'X의 공간 분포', text: 'X의 별들은 한곳에 빽빽하게 몰려 있지 않고, 비교적 성기고 불규칙하게 퍼져 있다.', image: 'scene04_p03_cluster_x_master.webp' },
+    2: { title: 'X의 색', text: 'X에서는 푸른빛 또는 흰빛으로 보이는 별들이 비교적 눈에 띤다.', image: 'scene04_personal_x_color.svg' },
+    3: { title: 'Y의 공간 분포', text: 'Y의 별들은 둥근 모양으로 모여 있으며, 중심으로 갈수록 매우 촘촘하다.', image: 'scene04_p03_cluster_y_master.webp' },
+    4: { title: 'Y의 색', text: 'Y에서는 노란빛이나 붉은빛으로 보이는 별들이 많이 보인다.', image: 'scene04_personal_y_color.svg' },
   };
 
   var nebulaNames = { emission: '방출성운', reflection: '반사성운', dark: '암흑성운' };
+  var nebulaPlacards = {
+    emission: 'scene04_nebula_placard_set.svg',
+    reflection: 'scene04_nebula_placard_set.svg',
+    dark: 'scene04_nebula_placard_set.svg',
+  };
   var clusterNames = { open: '산개성단', globular: '구상성단' };
   var chipNames = Object.assign({}, nebulaNames, clusterNames);
   var finalOrder = ['emission', 'open', 'dark', 'globular', 'reflection'];
@@ -176,11 +185,11 @@
   }
 
   function objective(state) {
-    if (!state.patternA || !state.filmB) return '책상과 관측도구 케이스에서 분리된 두 조각을 찾으세요.';
-    if (!state.overlayComplete) return '단서 탭에서 패턴 조각 A와 투명 필름 B를 겹쳐 보세요.';
+    if (!state.patternA || !state.filmB) return '책상과 관측도구 케이스에서 단서를 찾아보세요.';
+    if (!state.overlayComplete) return '획득한 두 도트카드의 무늬를 자유롭게 관찰하세요.';
     if (!state.lensAcquired) return '겹친 문구가 가리킨 물체를 조사하세요.';
     if (!state.photosRestored.A || !state.photosRestored.B || !state.photosRestored.C) return '색 복원 렌즈를 선택해 A·B·C 천체사진에 사용하세요.';
-    if (!state.nebulaComplete) return '복원한 색과 특징을 비교해 성운 명판을 배치하세요.';
+    if (!state.nebulaComplete) return '복원된 성운 사진과 빈 명찰판을 살펴보세요.';
     if (!state.dataSent) return '활성화된 성단 관측 보관함을 조사하세요.';
     if (!state.clusterComplete) return '각 대원의 자료를 공유해 X와 Y 성단을 분류하세요.';
     if (!state.lockerOpen) return '잠금 해제된 보관함의 손잡이를 아래로 당기세요.';
@@ -195,23 +204,29 @@
   }
 
   function itemImage(kind) {
+    if (kind === 'pattern') return img('scene04_clue_pattern_a.svg');
+    if (kind === 'film') return img('scene04_clue_film_b.svg');
     if (kind === 'lens') return img('scene04_item_color_restore_lens.webp');
     if (kind === 'uv') return img('scene04_item_uv_light.webp');
     if (kind.indexOf('chip:') === 0) return img('scene04_chip_base.webp');
+    if (kind.indexOf('record:') === 0) {
+      var role = Number(kind.split(':')[1]);
+      return personalRecords[role] && personalRecords[role].image ? img(personalRecords[role].image) : '';
+    }
     return '';
   }
 
-  function itemCard(kind, title, note, active) {
+  function itemCard(kind, title, note, active, isNew) {
     var image = itemImage(kind);
-    return '<button class="s4-item' + (active ? ' selected' : '') + '" data-s4-item="' + esc(kind) + '">' +
-      (image ? '<img src="' + image + '" alt="">' : '<span class="s4-paper-icon" aria-hidden="true">◇</span>') +
+    return '<button class="s4-item' + (active ? ' selected' : '') + (isNew ? ' new' : '') + '" data-s4-item="' + esc(kind) + '">' +
+      '<span class="s4-item-visual">' + (image ? '<img src="' + image + '" alt="' + esc(title) + '">' : '<span class="s4-paper-icon" aria-hidden="true">◇</span>') + (isNew ? '<em>새 단서</em>' : '') + '</span>' +
       '<b>' + esc(title) + '</b><small>' + esc(note || '') + '</small></button>';
   }
 
   function inventoryMarkup(state) {
     var items = [];
-    if (state.patternA) items.push(itemCard('pattern', '패턴 조각 A', '기록철 아래에서 발견', overlayPicks.pattern));
-    if (state.filmB) items.push(itemCard('film', '투명 필름 B', '관측도구 케이스에서 발견', overlayPicks.film));
+    if (state.patternA) items.push(itemCard('pattern', '패턴 조각 A', '기록철 아래에서 발견', overlayPicks.pattern, lastAcquired === 'pattern'));
+    if (state.filmB) items.push(itemCard('film', '투명 필름 B', '관측도구 케이스에서 발견', overlayPicks.film, lastAcquired === 'film'));
     if (state.lensAcquired) items.push(itemCard('lens', '색 복원 렌즈', '기록 보정용 도구', selectedItem === 'lens'));
     if (state.dataSent) availableRoles().forEach(function (role) {
       var record = personalRecords[role];
@@ -220,10 +235,10 @@
     if (state.uvAcquired) items.push(itemCard('uv', 'UV 검사등', '숨은 표시 검사용', selectedItem === 'uv'));
     if (state.nebulaComplete) ['emission', 'reflection', 'dark'].forEach(function (kind) { items.push(itemCard('chip:' + kind, chipNames[kind] + ' 인증칩', '성운 분류 인증', false)); });
     if (state.lockerOpen) ['open', 'globular'].forEach(function (kind) { items.push(itemCard('chip:' + kind, chipNames[kind] + ' 인증칩', '성단 분류 인증', false)); });
-    var canOverlap = state.patternA && state.filmB && overlayPicks.pattern && overlayPicks.film && !state.overlayComplete;
+    var canOverlap = state.patternA && state.filmB && !state.overlayComplete;
     return modalShell('단서 탭 · 인벤토리', '<div class="s4-inventory-grid">' + (items.join('') || '<p>아직 획득한 단서가 없습니다.</p>') + '</div>' +
-      (state.patternA && state.filmB && !state.overlayComplete ? '<button class="s4-primary" id="s4OverlapOpen" ' + (canOverlap ? '' : 'disabled') + '>선택한 두 조각 겹쳐 보기</button>' : '') +
-      '<p class="s4-help">색 복원 렌즈와 UV 검사등은 선택한 뒤 방의 물체에 사용합니다.</p>');
+      (state.patternA && state.filmB && !state.overlayComplete ? '<button class="s4-primary" id="s4OverlapOpen" ' + (canOverlap ? '' : 'disabled') + '>두 도트카드 관찰하기</button>' : '') +
+      '<p class="s4-help">획득한 도트카드를 눌러 확인하세요. 색 복원 렌즈와 UV 검사등은 선택한 뒤 방의 물체에 사용합니다.</p>');
   }
 
   function modalShell(title, body, className) {
@@ -251,7 +266,7 @@
         var file = { A: 'scene04_p02_nebula_a_color.webp', B: 'scene04_p02_nebula_b_color.webp', C: 'scene04_p02_nebula_c_color.webp' }[letter];
         return '<button class="s4-hotspot photo p' + letter.toLowerCase() + (state.photosRestored[letter] ? ' done' : '') + '" data-s4-object="photo" data-letter="' + letter + '" data-label="' + letter + ' 천체사진" aria-label="' + letter + ' 천체사진">' + (state.photosRestored[letter] && !state.nebulaComplete ? '<img class="s4-photo-overlay" src="' + img(file) + '" alt="">' : '') + '</button>';
       }).join('') +
-      (photosReady && !state.nebulaComplete ? '<button class="s4-room-action nebula" data-s4-object="nebula-sort">성운 명판 배치</button>' : '') +
+      (photosReady && !state.nebulaComplete ? '<button class="s4-room-action nebula" data-s4-object="nebula-sort">성운 관측판 조사</button>' : '') +
       '<button class="s4-hotspot reflector' + (state.overlayComplete ? ' active' : '') + '" data-s4-object="reflector" data-label="반사판" aria-label="반사판"></button>' +
       '<button class="s4-hotspot locker' + (state.lockerActive ? ' active' : '') + (state.lockerOpen ? ' done' : '') + '" data-s4-object="locker" data-label="성단 관측 보관함" aria-label="성단 관측 보관함"></button>' +
       '<button class="s4-hotspot starmap' + (state.uvAcquired ? ' active' : '') + '" data-s4-object="starmap" data-label="오래된 별지도" aria-label="오래된 별지도"></button>' +
@@ -279,6 +294,7 @@
   }
 
   function horrorMarkup() {
+    if (signalIntrusionVisible) return '<div class="s4-horror signal-intrusion" aria-hidden="true"><div class="s4-signal-feed"><img src="/labs/star-escape/assets/scene02/scene2_corridor3_inside.png" alt="복도 CCTV 화면"><img class="s4-signal-silhouette" src="' + img('scene04_silhouette_master.webp') + '" alt="복도 끝 사람 실루엣"><b>수신 신호 불명</b><span>CAM 04 · 복도 끝</span></div></div>';
     if (!horrorVisible && !reflectorScare) return '';
     return '<div class="s4-horror' + (reflectorScare ? ' reflector-scare' : '') + '" aria-hidden="true"><img src="' + img('scene04_silhouette_master.webp') + '" alt=""><i></i></div>';
   }
@@ -287,6 +303,7 @@
     if (!modal) return '';
     if (modal === 'inventory') return inventoryMarkup(state);
     if (modal === 'overlap') return overlapMarkup(state);
+    if (modal === 'desk' || modal === 'case') return clueMarkup(modal, state);
     if (modal === 'reflector') return reflectorMarkup(state);
     if (modal.indexOf('photo:') === 0) return photoMarkup(state, modal.split(':')[1]);
     if (modal === 'nebula') return nebulaMarkup(state);
@@ -294,7 +311,7 @@
     if (modal === 'locker' || modal === 'reception' || modal === 'personal' || modal === 'loot') return clusterMarkup(state);
     if (modal === 'uv') return uvMarkup(state);
     if (modal === 'core' || modal === 'auth-success') return coreMarkup(state);
-    if (modal === 'horror-dialog') return modalShell('이상 영상 신호', '<div class="s4-dialog-copy"><b>대원</b><p>“방금 그림자가 지나갔다.”</p><b>루멘</b><p>“…영상 이상 신호를 감지했습니다.”<br>“원인을 확인할 수 없습니다.”</p></div>');
+    if (modal === 'horror-dialog') return modalShell('이상 영상 신호', '<div class="s4-dialog-copy"><b>루멘</b><p>“…움직임을 감지했습니다.”</p></div>');
     if (modal === 'panel-knock') return modalShell('작은 정비 패널', '<div class="s4-knock"><b>덜컹—</b><p>안쪽에서 작은 소리가 들린다.</p><em>톡. 톡.</em><p>한 번 더 조사해야 할 것 같다.</p></div>');
     if (modal === 'recorder-found' || modal === 'recording') return recorderMarkup(state);
     if (modal === 'log') return logMarkup(state);
@@ -304,58 +321,31 @@
     return '';
   }
 
-  function overlapMarkup(state) {
-    var complete = state.overlayComplete;
-    return modalShell('조각 두 개를 겹쳐 숨은 문구 찾기', '<div class="s4-overlap-board' + (complete ? ' complete' : '') + '" id="s4OverlapBoard">' +
-      '<div class="s4-overlap-card s4-pattern-base"><canvas data-s4-dot-layer="a"></canvas><span>패턴 조각 A · 고정</span></div>' +
-      '<div class="s4-overlap-card s4-film' + (complete ? ' snapped' : '') + '" id="s4Film" style="--film-x:' + filmPosition.x + 'px;--film-y:' + filmPosition.y + 'px"><canvas data-s4-dot-layer="b"></canvas><span>투명 필름 B · 드래그</span></div>' +
-      '<div class="s4-align-mark tl"></div><div class="s4-align-mark tr"></div><div class="s4-align-mark bl"></div><div class="s4-align-mark br"></div></div>' +
-      '<p class="s4-overlap-status">' + (complete ? '정렬 완료 · 겹쳐진 밝은 사각 도트가 위치 단서를 이룹니다.' : '두 장은 각각 무작위 사각 도트처럼 보입니다. B를 A의 모서리에 정확히 맞추세요.') + '</p>' +
-      '<p class="s4-help">A는 고정되어 있습니다. 투명 필름 B를 직접 드래그해 네 모서리를 맞춰 보세요.</p>' + puzzleFooter('두 조각의 같은 위치에 겹친 밝은 도트만 읽어 보세요.'), 'overlap');
+  function clueMarkup(kind, state) {
+    var isDesk = kind === 'desk';
+    var found = isDesk ? state.patternA : state.filmB;
+    var itemKind = isDesk ? 'pattern' : 'film';
+    var title = isDesk ? '기록철 조사' : '관측도구 케이스';
+    var itemTitle = isDesk ? '패턴 조각 A' : '투명 필름 B';
+    var file = isDesk ? 'scene04_p00_record_folder_open.webp' : 'scene04_p00_observation_case_open.webp';
+    var description = isDesk
+      ? '노트 아래에서 사각 도트 무늬가 인쇄된 종이 조각을 발견했다.'
+      : '케이스 안쪽에서 사각 도트 무늬가 있는 투명 필름을 발견했다.';
+    var body = '<div class="s4-clue-inspect"><div class="s4-clue-image"><img src="' + img(file) + '" alt="' + esc(title) + ' 확대 이미지"></div><div class="s4-clue-copy"><small>발견한 물체</small><h3>' + esc(itemTitle) + '</h3><p>' + esc(description) + '</p>' +
+      (found
+        ? '<div class="s4-acquisition-card"><b>' + esc(itemTitle) + ' 획득</b><p>단서 탭에 실제 이미지로 저장되어 있다.</p></div>'
+        : '<button class="s4-primary" id="s4AcquireClue" data-clue-kind="' + esc(itemKind) + '">' + esc(itemTitle) + ' 획득</button>') +
+      '</div></div>';
+    return modalShell(title, body, 'clue-modal');
   }
 
-  function renderOverlapDots() {
-    var canvases = document.querySelectorAll('[data-s4-dot-layer]');
-    if (!canvases.length) return;
-    var width = 480;
-    var height = 360;
-    var cell = 6;
-    var cols = width / cell;
-    var rows = height / cell;
-    var mask = document.createElement('canvas');
-    mask.width = width;
-    mask.height = height;
-    var maskContext = mask.getContext('2d');
-    maskContext.clearRect(0, 0, width, height);
-    maskContext.fillStyle = '#fff';
-    maskContext.textAlign = 'center';
-    maskContext.textBaseline = 'middle';
-    maskContext.font = '900 92px "Noto Sans KR", "Apple SD Gothic Neo", "Malgun Gothic", sans-serif';
-    maskContext.fillText('반사판', width / 2, height * .37);
-    maskContext.font = '900 104px "Noto Sans KR", "Apple SD Gothic Neo", "Malgun Gothic", sans-serif';
-    maskContext.fillText('뒤', width / 2, height * .70);
-    var pixels = maskContext.getImageData(0, 0, width, height).data;
-    Array.from(canvases).forEach(function (canvas) {
-      var layer = canvas.getAttribute('data-s4-dot-layer');
-      canvas.width = width;
-      canvas.height = height;
-      var context = canvas.getContext('2d');
-      context.clearRect(0, 0, width, height);
-      context.fillStyle = layer === 'a' ? 'rgba(72,225,255,.62)' : 'rgba(255,216,102,.64)';
-      for (var row = 1; row < rows - 1; row += 1) {
-        for (var col = 1; col < cols - 1; col += 1) {
-          var centerX = col * cell + Math.floor(cell / 2);
-          var centerY = row * cell + Math.floor(cell / 2);
-          var alpha = pixels[(centerY * width + centerX) * 4 + 3];
-          var inLetter = alpha > 34;
-          var seed = (row * 92821 + col * 68917 + 137) % 101;
-          var bitA = seed < 50;
-          var visible = layer === 'a' ? bitA : inLetter ? bitA : !bitA;
-          if (!visible) continue;
-          context.fillRect(col * cell + 1, row * cell + 1, cell - 2, cell - 2);
-        }
-      }
-    });
+  function overlapMarkup(state) {
+    var complete = state.overlayComplete;
+    return modalShell('도트카드의 숨은 신호', '<div class="s4-overlap-board" id="s4OverlapBoard">' +
+      '<img class="s4-overlay-piece pattern" id="s4PatternA" src="' + img('scene04_clue_pattern_a.svg') + '" alt="패턴 조각 A" style="--piece-x:' + patternPosition.x + 'px;--piece-y:' + patternPosition.y + 'px">' +
+      '<img class="s4-overlay-piece film' + (complete ? ' snapped' : '') + '" id="s4Film" src="' + img('scene04_clue_film_b.svg') + '" alt="투명 필름 B" style="--piece-x:' + filmPosition.x + 'px;--piece-y:' + filmPosition.y + 'px">' +
+      '<strong class="s4-hidden-phrase' + (complete ? ' revealed' : '') + '">반사판 뒤</strong></div>' +
+      '<p class="s4-help">획득한 두 도트카드를 자유롭게 움직여 나타나는 변화를 관찰하세요.</p>' + puzzleFooter('카드의 위치를 바꾸며 무늬의 변화를 살펴보세요.'), 'overlap');
   }
 
   function reflectorMarkup(state) {
@@ -386,7 +376,7 @@
   }
 
   function dropSlot(kind, index, label, value, names) {
-    return '<div class="s4-drop' + (value ? ' filled' : '') + '" data-s4-drop="' + kind + '" data-slot="' + index + '"><small>' + esc(label) + '</small>' + (value ? '<b>' + esc(names[value]) + '</b>' : '<span>명판을 드래그</span>') + '</div>';
+    return '<div class="s4-drop' + (value ? ' filled' : '') + '" data-s4-drop="' + kind + '" data-slot="' + index + '"><small>' + esc(label) + '</small>' + (value ? '<b>' + esc(names[value]) + '</b>' : '<span>빈 판</span>') + '</div>';
   }
 
   function puzzleFooter(defaultText) {
@@ -396,9 +386,10 @@
   function nebulaMarkup(state) {
     var files = ['scene04_p02_nebula_a_color.webp', 'scene04_p02_nebula_b_color.webp', 'scene04_p02_nebula_c_color.webp'];
     var placed = new Set(state.nebulaSlots.filter(Boolean));
-    var photos = ['A', 'B', 'C'].map(function (letter, index) { return '<div class="s4-observation"><img src="' + img(files[index]) + '" alt="' + letter + ' 복원 사진"><b>' + letter + '</b>' + dropSlot('nebula', index, letter + ' 아래 홈', state.nebulaSlots[index], nebulaNames) + '</div>'; }).join('');
+    var photos = ['A', 'B', 'C'].map(function (letter, index) { return '<div class="s4-observation"><div class="s4-observation-image"><img src="' + img(files[index]) + '" alt="' + letter + ' 복원 사진"></div><b>' + letter + '</b>' + dropSlot('nebula', index, letter + ' 아래 명찰판', state.nebulaSlots[index], nebulaNames) + '</div>'; }).join('');
     var bank = Object.keys(nebulaNames).filter(function (kind) { return !placed.has(kind); }).map(function (kind) { return tokenButton(kind, nebulaNames[kind], false); }).join('');
-    return modalShell('복원된 천체사진 · 성운 분류', '<div class="s4-sort-layout"><div class="s4-observation-grid nebula-grid">' + photos + '</div><aside><h3>성운 명판</h3><div class="s4-token-bank">' + bank + '</div><p>붉은빛, 푸른빛, 배경을 가리는 어두운 구름을 비교하세요.</p></aside></div>' + puzzleFooter(), 'puzzle');
+    var notice = '<div class="s4-nebula-acquisition"><div><b>성운 명찰을 획득했다.</b><p>성운 아래의 명찰판이 비어 있다.</p></div><img src="' + img(nebulaPlacards.emission) + '" alt="방출성운·반사성운·암흑성운 명찰"></div>';
+    return modalShell('복원된 천체사진 · 성운 분류', notice + '<div class="s4-sort-layout"><div class="s4-observation-grid nebula-grid">' + photos + '</div><aside><h3>획득한 성운 명찰</h3><div class="s4-token-bank">' + bank + '</div><p>복원된 사진의 특징과 명찰을 비교해 보세요.</p></aside></div>' + puzzleFooter(), 'puzzle');
   }
 
   function nebulaLootMarkup() {
@@ -407,7 +398,8 @@
 
   function personalMarkup(role) {
     var record = personalRecords[role];
-    return modalShell('R' + role + ' · ' + record.title, '<div class="s4-personal-record"><small>개인 단말 관측 자료</small><p>“' + esc(record.text) + '”</p></div><p class="s4-help">이 자료는 단서 탭에 자동 저장되었습니다.</p>');
+    var recordImage = record.image ? '<div class="s4-record-image"><img src="' + img(record.image) + '" alt="' + esc(record.title) + '"></div>' : '';
+    return modalShell('R' + role + ' · ' + record.title, '<div class="s4-personal-record">' + recordImage + '<div><small>개인 단말 관측 자료</small><p>“' + esc(record.text) + '”</p></div></div><p class="s4-help">이 자료는 단서 탭에 실제 이미지로 자동 저장되었습니다.</p>');
   }
 
   function clusterMarkup(state) {
@@ -466,14 +458,13 @@
     var placed = new Set(state.finalSlots.filter(Boolean));
     var slots = state.finalSlots.map(function (value, index) {
       return '<button class="s4-core-slot slot-' + (index + 1) + (value ? ' filled' : '') + '" data-s4-drop="final" data-slot="' + index + '" data-value="' + esc(value) + '" ' + (unlocked ? '' : 'disabled') + '>' +
-        (index === 0 ? '<small>▲ 시작</small>' : '') +
         (value ? '<img src="' + img('scene04_chip_base.webp') + '" alt=""><span>' + chipNames[value] + '</span>' : '<i></i>') + '</button>';
     }).join('');
     var chips = unlocked ? chipBankOrder.filter(function (kind) { return !placed.has(kind); }).map(function (kind) { return chipButton(kind, false); }).join('') : '';
     var bankMessage = !owned ? '아직 인증칩 5개가 모두 없습니다.' : !state.uvRevealed ? 'UV로 별지도의 숨은 순서를 먼저 확인해야 합니다.' : !chips ? '칩 5개가 모두 장치에 들어갔습니다.' : '';
     var filled = state.finalSlots.filter(Boolean).length;
     var controls = unlocked ? '<div class="s4-auth-controls"><button class="s4-secondary" id="s4AuthReset" ' + (filled ? '' : 'disabled') + '>칩 모두 빼기</button><button class="s4-primary" id="s4AuthSubmit" ' + (filled === 5 ? '' : 'disabled') + '>귀환 인증 확인</button></div>' + puzzleFooter('칩을 모두 배치한 뒤 한 번에 인증합니다. 개별 슬롯은 정답 여부를 알려주지 않습니다.') : '';
-    return modalShell('중앙 귀환 인증 장치', '<div class="s4-core-layout"><div class="s4-core-device">' + slots + '<div class="s4-start-guide">▲ 시작 · 시계방향</div></div><aside><h3>보유 인증칩</h3><div class="s4-chip-bank">' + chips + (bankMessage ? '<p>' + bankMessage + '</p>' : '') + '</div><p>별지도에서 읽은 순서를 ▲부터 시계방향으로 배치하세요. 넣은 칩은 다시 눌러 뺄 수 있습니다.</p></aside></div>' + controls, 'puzzle core-modal');
+    return modalShell('중앙 귀환 인증 장치', '<div class="s4-core-layout"><div class="s4-core-device">' + slots + '</div><aside><h3>보유 인증칩</h3><div class="s4-chip-bank">' + chips + (bankMessage ? '<p>' + bankMessage + '</p>' : '') + '</div><p>별지도에서 읽은 순서를 ▲부터 시계방향으로 배치하세요. 넣은 칩은 다시 눌러 뺄 수 있습니다.</p></aside></div>' + controls, 'puzzle core-modal');
   }
 
   function recorderMarkup(state) {
@@ -483,18 +474,18 @@
   }
 
   function logMarkup(state) {
-    return modalShell('조작 로그 복원', '<div class="s4-log"><small>RECOVERED MANUAL ACCESS LOG</small><ul><li>기준값 변경 기록 존재</li><li>분류값 변경 기록 존재</li><li>수동 접근 기록 존재</li></ul><p>자동 보정이 아닌 수동 조작이며, 사고 이전에 발생했습니다. 접근자의 신원은 확인되지 않습니다.</p></div>' + (!state.logSeen ? '<button class="s4-primary" id="s4SaveLog">조작 로그 확인</button>' : ''));
+    return modalShell('조작 로그 복원', '<div class="s4-log"><small>관측 자료 변경 기록</small><ul><li><b>변경 방식</b><span>수동</span></li><li><b>자동 수정</b><span>없음</span></li><li><b>변경 시각</b><span>사고 발생 전</span></li><li><b>접근자 정보</b><span>확인 불가</span></li></ul><p>루멘: “장면 3에서 발견한 기준값 변경과 동일한 시간대입니다.”<br>“관측 시스템은 고장 난 것이 아닙니다.”<br><strong>“누군가 직접 변경했습니다.”</strong></p></div>' + (!state.logSeen ? '<button class="s4-primary" id="s4SaveLog">조작 로그 확인</button>' : ''));
   }
 
   function cctvMarkup(state) {
-    var frame = state.cctvComplete ? 6 : cctvLocal;
-    var labels = ['빈 방', '검은 사람 실루엣 등장', '중앙 장치 쪽으로 접근', '장치를 조작하는 듯한 자세', 'CCTV 쪽을 돌아보는 순간', '노이즈', '다시 빈 방'];
+    var frame = state.cctvComplete ? 10 : Math.max(0, Math.min(10, cctvLocal));
+    var labels = ['사고 전 장면 4 방', '빈 방', '사람 형체 입장', '중앙 관측 장치로 이동', '장치 조작', '움직임 정지', 'CCTV 쪽으로 천천히 고개 회전', '얼굴 부분 노이즈', '영상 끊김', '한 프레임 복원', '다시 빈 방'];
     return modalShell('CCTV 감시 기록', '<div class="s4-cctv frame-' + frame + '"><img src="' + img('scene04_room_state04_auth_complete.webp') + '" alt="감시 카메라에 기록된 통제실"><img class="s4-cctv-silhouette" src="' + img('scene04_silhouette_master.webp') + '" alt="검은 사람 실루엣"><i></i><span>CAM 04 · ' + esc(labels[frame]) + '</span></div>' +
       (state.cctvComplete ? '<div class="s4-cctv-result"><b>퇴실 기록이 존재하지 않습니다.</b><p>루멘: “접근 기록은 있으나, 퇴실 기록은 존재하지 않습니다.”</p></div>' : '<p class="s4-help">감시 기록 복원 중…</p>'), 'cctv-modal');
   }
 
   function exitMarkup() {
-    return modalShell('귀환 통로 개방', '<div class="s4-exit-copy"><b>지구 귀환 절차를 시작할 수 있습니다.</b><p>루멘: “귀환 경로가 확보되었습니다.”<br>“이 구역에서 즉시 이탈하십시오.”</p><button class="s4-primary" id="s4Leave">귀환 통로로 이동</button></div>');
+    return modalShell('귀환 통로 개방', '<div class="s4-exit-copy"><b>귀환 통로 개방</b><p>루멘: “귀환 경로가 확보되었습니다.”<br>“…이 구획을 떠나는 것을 권장합니다.”</p><button class="s4-primary" id="s4Leave">귀환 통로로 이동</button></div>');
   }
 
   function openPhoto(letter, state) {
@@ -529,6 +520,15 @@
     ctx.toast(letter + ' 천체사진의 색상 정보를 복원했습니다.');
   }
 
+  async function acquireClue(kind) {
+    var patch = kind === 'pattern' ? { patternA: true } : { filmB: true };
+    await sync(patch, false);
+    lastAcquired = kind;
+    play('item');
+    modal = kind === 'pattern' ? 'desk' : 'case';
+    draw();
+  }
+
   async function acquireLens() {
     await sync({ lensAcquired: true });
     selectedItem = 'lens';
@@ -540,6 +540,7 @@
   async function finishOverlay() {
     var state = sceneState();
     if (state.overlayComplete) return;
+    patternPosition = { x: 0, y: 0 };
     filmPosition = { x: 0, y: 0 };
     await sync({ overlayComplete: true });
     play('reveal');
@@ -654,9 +655,22 @@
     }, 650);
   }
 
+  function startSignalIntrusion() {
+    if (signalIntrusionVisible || stored('signal-intrusion-seen') === 'yes') return;
+    saveStored('signal-intrusion-seen', 'yes');
+    signalIntrusionVisible = true;
+    play('scene4_signal_intrusion');
+    draw();
+    clearTimeout(signalIntrusionTimer);
+    signalIntrusionTimer = setTimeout(function () {
+      signalIntrusionVisible = false;
+      draw();
+    }, 850);
+  }
+
   async function transmitRecords() {
     await sync({ dataSent: true });
-    eventHook('receive-target-5');
+    play('scene4_receiver_five');
     startReception();
   }
 
@@ -675,23 +689,23 @@
     modal = '';
     horrorVisible = true;
     saveStored('horror-seen', 'yes');
-    eventHook('blackout');
+    play('scene4_blackout');
     draw();
     clearTimeout(horrorTimer);
     horrorTimer = setTimeout(async function () {
       horrorVisible = false;
       await sync({ horrorSeen: true }, false);
       modal = 'horror-dialog';
-      eventHook('silhouette');
+      play('scene4_corridor_presence');
       draw();
-    }, 900);
+    }, 1150);
   }
 
   function startRecording() {
     recordingLocal = 0;
     modal = 'recording';
     sync({ recordingStarted: true, recordingLine: 0 }, false);
-    play('recording');
+    play('scene4_final_record');
     draw();
     clearInterval(recordingTimer);
     recordingTimer = setInterval(function () {
@@ -709,20 +723,21 @@
   function startCctv() {
     var state = sceneState();
     modal = 'cctv';
-    cctvLocal = state.cctvComplete ? 6 : 0;
+    cctvLocal = state.cctvComplete ? 10 : 0;
     sync({ cctvStarted: true, cctvFrame: cctvLocal }, false);
     eventHook('cctv-start');
     draw();
     if (state.cctvComplete) return;
     clearInterval(cctvTimer);
     cctvTimer = setInterval(function () {
-      if (cctvLocal < 6) {
+      if (cctvLocal < 10) {
         cctvLocal += 1;
+        if (cctvLocal === 8) play('scene4_cctv_noise');
         setLocalState({ cctvFrame: cctvLocal });
         draw();
       } else {
         clearInterval(cctvTimer);
-        sync({ cctvFrame: 6, cctvComplete: true, exitOpen: true });
+        sync({ cctvFrame: 10, cctvComplete: true, exitOpen: true });
         eventHook('exit-open');
       }
     }, 700);
@@ -738,18 +753,18 @@
     var state = sceneState();
     var object = button.dataset.s4Object;
     if (object === 'desk') {
-      if (state.patternA) showInspect('낡은 기록철', '기록철 아래에는 더 이상 특별한 것이 없다.', '조사 완료', img(roomStateFile(state)), 'desk');
-      else sync({ patternA: true }, false).then(function () { play('item'); showInspect('낡은 기록철', '두꺼운 기록철 아래에 사각 도트가 흩어진 얇은 조각이 끼워져 있다.', '패턴 조각 A 획득', img(roomStateFile(sceneState())), 'desk'); });
+      inspect = null;
+      modal = 'desk'; draw();
     } else if (object === 'case') {
-      if (state.filmB) showInspect('관측도구 케이스', '빈 보조 도구 케이스다. 남아 있는 장비는 없다.', '조사 완료', img(roomStateFile(state)), 'case');
-      else sync({ filmB: true }, false).then(function () { play('item'); showInspect('관측도구 케이스', '케이스 안쪽에서 또 다른 사각 도트 무늬의 투명 필름을 찾았다.', '투명 필름 B 획득', img(roomStateFile(sceneState())), 'case'); });
+      inspect = null;
+      modal = 'case'; draw();
     } else if (object === 'photo') openPhoto(button.dataset.letter, state);
     else if (object === 'nebula-sort') { inspect = null; modal = 'nebula'; draw(); }
     else if (object === 'reflector') {
       if (!state.overlayComplete) { showInspect('반사판', '투명한 반사판이다. 겉보기에는 특별한 장치가 보이지 않는다.', '숨은 위치 단서가 필요합니다.', img('scene04_p01_reflector_closed.webp')); return; }
       inspect = null;
       if (!state.lensAcquired && stored('reflector-scare') !== 'yes') {
-        saveStored('reflector-scare', 'yes'); reflectorScare = true; eventHook('reflector-silhouette'); draw();
+        saveStored('reflector-scare', 'yes'); reflectorScare = true; play('scene4_reflection_silhouette'); draw();
         setTimeout(function () { reflectorScare = false; modal = 'reflector'; draw(); }, 520);
       } else { modal = 'reflector'; draw(); }
     } else if (object === 'locker') {
@@ -766,7 +781,7 @@
     } else if (object === 'maintenance') {
       inspect = null;
       if (state.maintenanceOpen) { modal = state.recordingComplete ? 'log' : state.recordingStarted ? 'recording' : 'recorder-found'; draw(); return; }
-      if (panelTaps === 0) { panelTaps = 1; modal = 'panel-knock'; play('knock'); draw(); }
+      if (panelTaps === 0) { panelTaps = 1; modal = 'panel-knock'; play('scene4_panel_knock'); draw(); }
       else sync({ maintenanceOpen: true }).then(function () { modal = 'recorder-found'; play('open'); draw(); });
     } else if (object === 'log') { inspect = null; modal = 'log'; draw(); }
     else if (object === 'cctv') { inspect = null; startCctv(); }
@@ -774,26 +789,41 @@
   }
 
   function bindOverlayDrag() {
-    var film = document.getElementById('s4Film');
-    if (!film || sceneState().overlayComplete) return;
-    film.onpointerdown = function (event) {
-      event.preventDefault();
-      var startX = event.clientX;
-      var startY = event.clientY;
-      var originX = filmPosition.x;
-      var originY = filmPosition.y;
-      film.setPointerCapture(event.pointerId);
-      film.onpointermove = function (move) {
-        filmPosition.x = Math.max(-120, Math.min(140, originX + move.clientX - startX));
-        filmPosition.y = Math.max(-90, Math.min(110, originY + move.clientY - startY));
-        film.style.setProperty('--film-x', filmPosition.x + 'px');
-        film.style.setProperty('--film-y', filmPosition.y + 'px');
+    var board = document.getElementById('s4OverlapBoard');
+    if (!board || sceneState().overlayComplete) return;
+    var pieces = [
+      { element: document.getElementById('s4PatternA'), position: patternPosition },
+      { element: document.getElementById('s4Film'), position: filmPosition },
+    ];
+    function aligned() {
+      return Math.hypot(patternPosition.x - filmPosition.x, patternPosition.y - filmPosition.y) < 28;
+    }
+    pieces.forEach(function (piece) {
+      if (!piece.element) return;
+      piece.element.onpointerdown = function (event) {
+        event.preventDefault();
+        var startX = event.clientX;
+        var startY = event.clientY;
+        var originX = piece.position.x;
+        var originY = piece.position.y;
+        var rect = board.getBoundingClientRect();
+        var limitX = Math.max(90, rect.width * .28);
+        var limitY = Math.max(70, rect.height * .28);
+        piece.element.setPointerCapture(event.pointerId);
+        piece.element.onpointermove = function (move) {
+          event.preventDefault();
+          piece.position.x = Math.max(-limitX, Math.min(limitX, originX + move.clientX - startX));
+          piece.position.y = Math.max(-limitY, Math.min(limitY, originY + move.clientY - startY));
+          piece.element.style.setProperty('--piece-x', piece.position.x + 'px');
+          piece.element.style.setProperty('--piece-y', piece.position.y + 'px');
+        };
+        piece.element.onpointerup = function () {
+          piece.element.onpointermove = null;
+          if (aligned()) finishOverlay();
+        };
+        piece.element.onpointercancel = function () { piece.element.onpointermove = null; };
       };
-      film.onpointerup = function () {
-        film.onpointermove = null;
-        if (Math.hypot(filmPosition.x, filmPosition.y) < 28) finishOverlay();
-      };
-    };
+    });
   }
 
   function bindTokenPlacement() {
@@ -936,6 +966,8 @@
     };
     var overlap = document.getElementById('s4OverlapOpen');
     if (overlap) overlap.onclick = function () { modal = 'overlap'; draw(); };
+    var acquireClueButton = document.getElementById('s4AcquireClue');
+    if (acquireClueButton) acquireClueButton.onclick = function () { acquireClue(acquireClueButton.dataset.clueKind); };
     document.querySelectorAll('[data-s4-item]').forEach(function (item) {
       item.onclick = function () {
         var kind = item.dataset.s4Item;
@@ -955,7 +987,7 @@
     var playRecording = document.getElementById('s4PlayRecording'); if (playRecording) playRecording.onclick = startRecording;
     var saveLog = document.getElementById('s4SaveLog'); if (saveLog) saveLog.onclick = function () { sync({ logSeen: true }).then(function () { modal = ''; ctx.toast('수동 조작 흔적을 확인했습니다.'); draw(); }); };
     var leave = document.getElementById('s4Leave'); if (leave) leave.onclick = function () {
-      modal = ''; horrorVisible = true; eventHook('final-silhouette'); draw();
+      modal = ''; horrorVisible = true; play('scene4_exit'); draw();
       setTimeout(function () { horrorVisible = false; ctx.submit('RETURN'); }, 400);
     };
     document.querySelectorAll('[data-s4-hint]').forEach(function (hint) { hint.onclick = ctx.hint; });
@@ -973,11 +1005,12 @@
     if (roomHint) roomHint.onclick = ctx.hint;
     document.querySelectorAll('[data-s4-object]').forEach(function (button) { button.onclick = function () { objectClick(button); }; });
     var introButton = document.getElementById('s4Intro');
-    if (introButton) introButton.onclick = function () { introStep += 1; saveStored('intro-step', introStep); draw(); };
+    if (introButton) introButton.onclick = function () { introStep += 1; saveStored('intro-step-v2', introStep); draw(); };
     bindModal(state);
   }
 
   function maybeStartSharedMoments(state) {
+    if (state.photosRestored.A && state.photosRestored.B && state.photosRestored.C && !state.nebulaComplete) startSignalIntrusion();
     if (state.dataSent && stored('reception-seen') !== 'yes' && introStep >= intro.length && !modal) startReception();
     if (state.authComplete && stored('horror-seen') !== 'yes' && modal !== 'auth-success' && !horrorVisible) startHorror();
   }
@@ -986,7 +1019,6 @@
     if (!ctx || !ctx.game) return;
     var state = sceneState();
     ctx.game.innerHTML = roomMarkup(state);
-    renderOverlapDots();
     bindRoom(state);
     setTimeout(function () { maybeStartSharedMoments(sceneState()); }, 0);
   }
@@ -996,6 +1028,7 @@
     identity = nextIdentity;
     clearTimeout(receptionTimer);
     clearTimeout(horrorTimer);
+    clearTimeout(signalIntrusionTimer);
     clearInterval(recordingTimer);
     clearInterval(cctvTimer);
     modal = '';
@@ -1003,15 +1036,18 @@
     selectedItem = '';
     selectedToken = null;
     overlayPicks = { pattern: false, film: false };
+    patternPosition = { x: -76, y: -48 };
     filmPosition = { x: 76, y: 48 };
     photoScanHits = new Set();
     photoLensPosition = { x: 50, y: 50 };
+    lastAcquired = '';
     uvHits = new Set();
     panelTaps = 0;
     horrorVisible = false;
+    signalIntrusionVisible = false;
     recordingLocal = 0;
     cctvLocal = 0;
-    introStep = Math.max(0, Math.min(intro.length, Number(stored('intro-step') || 0)));
+    introStep = Math.max(0, Math.min(intro.length, Number(stored('intro-step-v2') || 0)));
   }
 
   function render(options) {

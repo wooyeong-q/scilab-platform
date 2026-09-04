@@ -24,8 +24,10 @@
   var intro = [
     ['루멘', '3번 구획 진입.'],
     ['루멘', '별빛 분석 구획입니다.'],
-    ['자동 분석', '가장 밝게 관측되는 별 A'],
+    ['시스템', '가장 밝게 관측되는 별 A'],
+    ['대원', '분석 결과를 직접 확인해야겠다.'],
     ['미확인 음성', '…별이 얼마나 밝게 보이는지만 믿지 마.'],
+    ['루멘', '직접 검증을 권장합니다.'],
   ];
 
   var personalRecords = {
@@ -176,7 +178,7 @@
   }
 
   function speakerPortrait(name) {
-    if (name.indexOf('루멘') === 0) return '/labs/star-escape/assets/scene01/characters/ui_lumen_ai_icon.webp';
+    if (name.indexOf('루멘') === 0 || name.indexOf('시스템') === 0) return '/labs/star-escape/assets/scene01/characters/ui_lumen_ai_icon.webp';
     if (name.indexOf('미확인') === 0 || name.indexOf('자동 분석') === 0) return img('scene03_obj_manual_recorder.png');
     var role = Math.max(1, Math.min(4, Number(ctx && ctx.state.player.role || 1)));
     return '/labs/star-escape/assets/scene01/characters/char_student_0' + role + '_' + ['female_bob', 'male_tablet', 'female_ponytail', 'male_glasses'][role - 1] + '.webp';
@@ -184,7 +186,7 @@
 
   function dialogueMarkup(entry, id) {
     var name = entry[0];
-    var speakerClass = name === '대원' ? 'speaker-crew' : name.indexOf('루멘') === 0 ? 'speaker-ai' : 'speaker-device';
+    var speakerClass = name === '대원' ? 'speaker-crew' : name.indexOf('루멘') === 0 || name.indexOf('시스템') === 0 ? 'speaker-ai' : 'speaker-device';
     return '<button class="s3-dialogue ' + speakerClass + '" id="' + id + '">' +
       '<img src="' + speakerPortrait(name) + '" alt="' + esc(name) + '">' +
       '<span><small>' + esc(name) + '</small><p>' + esc(entry[1]) + '</p></span>' +
@@ -429,7 +431,7 @@
       return '<div class="s3-result-overlay"><article class="s3-result-card"><header><small>찰칵 · 전원 신호 감지</small><h2>별의 등급 표시 복구 완료</h2></header><div class="s3-result-body"><p><strong>등급 숫자가 작을수록 밝다.</strong></p><p>여섯 표시가 제자리를 찾자 중앙 분석 장치에 전원이 들어옵니다.</p></div><button class="primary" id="s3ResultContinue">방의 변화 확인</button></article></div>';
     }
     if (mode === 'q2') {
-      return '<div class="s3-result-overlay"><article class="s3-result-card"><header><small>관측 결과 확인</small><h2>가장 밝게 보이는 별 A</h2></header><div class="s3-result-body"><div class="s3-result-alert"><b>실제 밝기는 아직 판단할 수 없습니다.</b><span>별들의 거리가 서로 다릅니다.</span></div><p>루멘이 분석을 멈추자 중앙 장치 아래에서 거리 비교 장치가 펼쳐집니다.</p></div><button class="primary" id="s3ResultContinue">방의 변화 확인</button></article></div>';
+      return '<div class="s3-result-overlay"><article class="s3-result-card"><header><small>관측 결과 확인</small><h2>가장 밝게 보이는 별 A</h2></header><div class="s3-result-body"><div class="s3-result-alert"><b>실제 밝기는 아직 판단할 수 없습니다.</b><span>별들의 거리가 서로 다릅니다.</span></div><p>대원: “가장 밝게 보이는 별은 맞지만 실제 밝기는 아직 알 수 없다.”</p><p>루멘: “거리 비교 장치를 사용할 수 있습니다.”</p><p class="s3-unknown-line">미확인 음성: “…보이는 것만 믿지 마.”</p></div><button class="primary" id="s3ResultContinue">방의 변화 확인</button></article></div>';
     }
     if (mode === 'q3') {
       return '<div class="s3-result-overlay"><article class="s3-result-card"><header><small>기준 별 삽입 완료</small><h2>실제로 가장 밝은 별 C</h2></header><div class="s3-result-body"><p>기준 별이 고정되자 중앙 분석 화면이 마지막 거리 판정 모드로 전환됩니다.</p></div><button class="primary" id="s3ResultContinue">방의 변화 확인</button></article></div>';
@@ -444,7 +446,7 @@
       return '<section class="s3-recording-screen" role="dialog" aria-modal="true"><article class="s3-recording-card"><div class="s3-wave"></div><small>' + esc(line.speaker) + '</small><h2>비인가 수동 기록</h2><p class="s3-recording-line' + (line.speaker === '잡음' ? ' s3-static-noise' : '') + '">“' + esc(line.text) + '”</p>' +
         '<button class="primary" id="s3RecordingNext">' + (index === recordingLines.length - 1 ? '통신 종료 확인' : '다음 기록 듣기') + '</button></article></section>';
     }
-    return '<section class="s3-recording-screen" role="dialog" aria-modal="true"><article class="s3-recording-card"><div class="s3-wave"></div><small>통신 종료</small><h2>장면 3 완료</h2><p class="s3-recording-line">“누군가 기준값을 바꿨어.”</p><div class="s3-scene-complete"><b>03 — 별빛 분석 구획 완료</b><span>장면 4 연결 상태가 준비되었습니다.</span></div><button class="primary" id="s3Proceed">다음 구획으로 이동</button></article></section>';
+    return '<section class="s3-recording-screen" role="dialog" aria-modal="true"><article class="s3-recording-card"><div class="s3-wave"></div><small>통신 종료</small><h2>장면 3 완료</h2><p class="s3-recording-line">“누군가 기준값을 바꿨어.”</p><div class="s3-recording-followup"><p><b>루멘</b> “…기록 종료.”</p><p><b>대원</b> “기준값을 바꾼 존재가 따로 있다는 뜻이다.”</p><p><b>루멘</b> “현재까지 확보한 기록은 그 가능성을 나타냅니다.”<br>“4번 구획 접근 권한이 복구되었습니다.”</p><p><b>대원</b> “남은 기록을 확인하자.”</p><p><b>루멘</b> “…진행하십시오.”</p></div><div class="s3-scene-complete"><b>03 — 별빛 분석 구획 완료</b><span>장면 4 연결 상태가 준비되었습니다.</span></div><button class="primary" id="s3Proceed">다음 구획으로 이동</button></article></section>';
   }
 
   function puzzleMarkup(state, q) {
@@ -787,7 +789,7 @@
     var introButton = document.getElementById('s3Intro');
     if (introButton) introButton.onclick = function () {
       introStep += 1;
-      if (introStep >= intro.length) setStored('intro', 'done');
+      if (introStep >= intro.length) setStored('intro-v2', 'done');
       draw();
     };
     var maintenanceDialogue = document.getElementById('s3MaintenanceDialogue');
@@ -892,8 +894,8 @@
     if (q === 1 && introStep < intro.length) extra += dialogueMarkup(intro[introStep], 's3Intro');
     else if (state.maintenanceOpen && Number(state.maintenanceDialogue) < 2) {
       var maintenanceEntries = [
-        ['대원', '또 이 장치야.'],
-        ['루멘', '동일한 형태의 비인가 기록 장치입니다.'],
+        ['대원', '또 같은 형태의 기록 장치다.'],
+        ['루멘', '장면 2에서 발견한 장치와 동일한 계열입니다.'],
       ];
       extra += dialogueMarkup(maintenanceEntries[Math.max(0, Number(state.maintenanceDialogue))], 's3MaintenanceDialogue');
     }
@@ -914,7 +916,7 @@
     var nextIdentity = options.state.session.code + ':' + options.state.player.team + ':' + options.state.player.role + ':' + (options.state.session.startedAt || 'waiting');
     if (identity !== nextIdentity) {
       identity = nextIdentity;
-      introStep = getStored('intro', '') === 'done' ? intro.length : 0;
+      introStep = getStored('intro-v2', '') === 'done' ? intro.length : 0;
       lastQuestion = 0;
       puzzle = '';
       inspect = null;

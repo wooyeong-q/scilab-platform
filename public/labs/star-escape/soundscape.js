@@ -18,6 +18,30 @@
   var trackFades = {};
   var button = null;
   var AUDIO_ROOT = '/labs/star-escape/assets/audio/';
+  var EFFECT_ALIASES = {
+    item: 'select',
+    open: 'lock',
+    recording: 'radioStatic',
+    restore: 'reveal',
+    knock: 'metalStep',
+    insert: 'lock',
+    scene1_extra_lock: 'mysteryLock',
+    scene1_unknown_signal: 'radioStatic',
+    scene2_footstep: 'metalStep',
+    scene2_recorder: 'radioStatic',
+    scene3_screen_glitch: 'interference',
+    scene3_shadow_event: 'anomaly',
+    scene3_final_record: 'recordCut',
+    scene4_reflection_silhouette: 'anomaly',
+    scene4_signal_intrusion: 'interference',
+    scene4_receiver_five: 'radioStatic',
+    scene4_blackout: 'mysteryLock',
+    scene4_corridor_presence: 'breath',
+    scene4_panel_knock: 'metalStep',
+    scene4_final_record: 'recordCut',
+    scene4_cctv_noise: 'radioStaticStrong',
+    scene4_exit: 'doorDread',
+  };
   var TRACK_CONFIG = {
     selpan: { src: AUDIO_ROOT + 'bgm-selpan.mp3', volume: .27 },
     goats: { src: AUDIO_ROOT + 'bgm-goats.mp3', volume: .95 },
@@ -206,6 +230,7 @@
 
   function play(name) {
     if (!active || muted || document.hidden || !ensureAudio()) return;
+    name = EFFECT_ALIASES[name] || name;
     resume();
     if (name === 'ui') {
       tone(620, .055, .018, 'sine');

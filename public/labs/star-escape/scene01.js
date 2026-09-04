@@ -16,15 +16,23 @@
   var introStep = 0;
   var banner = '';
   var lastQuestion = 0;
+  var endingStep = 0;
+  var endingIdentity = '';
 
   var intro = [
-    ['루멘', '…대원 여러분, 응답할 수 있습니까?'],
-    ['대원', '응답 가능. 상황을 보고해.'],
-    ['루멘', '주 전력이 완전히 차단됐습니다. 중앙 통로도 봉쇄되었습니다.'],
-    ['루멘', '관측실 어딘가에 수동 복구 장치가 있지만 위치와 암호 기록이 손상됐습니다.'],
-    ['대원', '방 안을 조사해서 장치와 암호를 모두 찾아야겠군.'],
+    ['시스템', '쾅—'],
+    ['루멘', '비상 전력으로 전환합니다.'],
+    ['시스템', '주 전력 차단.'],
+    ['루멘', '지구 귀환 절차 중단.'],
+    ['루멘', '현재 위치는 관측실 01입니다.'],
+    ['시스템', '중앙 통로 잠금.'],
+    ['루멘', '중앙 통로가 자동 봉쇄되었습니다.'],
+    ['대원', '통로를 열 방법은?'],
+    ['루멘', '관측 시스템 복구가 필요합니다.'],
+    ['시스템', '추가 잠금 신호 감지.'],
+    ['루멘', '해당 작동 기록이 없습니다.'],
+    ['시스템', '현재 목표 · 관측실을 조사하라.'],
     ['루멘', '각 대원의 수신 자료가 서로 다릅니다. 찾은 단서를 반드시 공유하세요.'],
-    ['루멘', '파란 조사 지점을 눌러 비상 전력을 복구해 주세요.'],
   ];
 
   var objects = [
@@ -102,7 +110,7 @@
   function restoreLocal() {
     try {
       visited = new Set(JSON.parse(localStorage.getItem(storageKey('visited')) || '[]'));
-      introStep = localStorage.getItem(storageKey('intro')) === 'done' ? intro.length : 0;
+      introStep = localStorage.getItem(storageKey('intro-v2')) === 'done' ? intro.length : 0;
       nextGuideSeen = localStorage.getItem(storageKey('q3-guide')) === 'seen';
     } catch (_error) {
       visited = new Set();
@@ -224,11 +232,14 @@
   }
 
   function dialogueMarkup() {
-    var item = intro[Math.min(introStep, intro.length - 1)];
-    var isLumen = item[0].indexOf('루멘') === 0;
+    var item = arguments[0] || intro[Math.min(introStep, intro.length - 1)];
+    var id = arguments[1] || 's1Dialogue';
+    var isAi = /루멘|시스템/.test(item[0]);
+    var isUnknown = /미확인/.test(item[0]);
     var role = Math.max(1, Math.min(4, Number(context.state.player.role || 1)));
-    var portrait = isLumen ? 'ui_lumen_ai_icon.webp' : 'char_student_0' + role + '_' + ['female_bob', 'male_tablet', 'female_ponytail', 'male_glasses'][role - 1] + '.webp';
-    return '<button class="s1-dialogue ' + (isLumen ? 'speaker-ai' : 'speaker-crew') + '" id="s1Dialogue">' +
+    var portrait = isAi ? 'ui_lumen_ai_icon.webp' : isUnknown ? '../scene04/scene04_silhouette_master.webp' : 'char_student_0' + role + '_' + ['female_bob', 'male_tablet', 'female_ponytail', 'male_glasses'][role - 1] + '.webp';
+    var speakerClass = isAi ? 'speaker-ai' : isUnknown ? 'speaker-device' : 'speaker-crew';
+    return '<button class="s1-dialogue ' + speakerClass + '" id="' + id + '">' +
       '<img class="portrait" src="' + image('characters/' + portrait) + '" alt="' + esc(item[0]) + '">' +
       '<span><small>' + esc(item[0]) + '</small><p>' + esc(item[1]) + '</p></span>' +
       '<span class="advance">터치하여 계속 ▼</span></button>';
@@ -451,7 +462,7 @@
     if (dialogue) dialogue.addEventListener('click', function () {
       introStep += 1;
       if (introStep >= intro.length) {
-        try { localStorage.setItem(storageKey('intro'), 'done'); } catch (_error) {}
+        try { localStorage.setItem(storageKey('intro-v2'), 'done'); } catch (_error) {}
       }
       draw();
     });
@@ -639,6 +650,8 @@
       inspect = null;
       puzzleOpen = false;
       lastQuestion = 0;
+      endingStep = 0;
+      endingIdentity = '';
     }
     var question = currentQuestion();
     if (lastQuestion && question !== lastQuestion) {
@@ -648,15 +661,43 @@
       activeWire = question === 2 ? 'R1' : null;
       wireMapping = {};
       nextGuideOpen = false;
-      banner = question === 2 ? '비상 전력 복구 완료 · 관측 수납함 전자 잠금 활성화' : '수납함 개방 완료 · 검증 기록 4개 전송';
+      banner = question === 2 ? '비상 전력 복구' : '관측 자료 복원 · 검증 기록 4개 전송';
     }
     lastQuestion = question;
     draw();
   }
 
   function renderEnding(game, onContinue) {
-    game.innerHTML = '<div class="s1-shell"><div class="s1-room opened"><div class="s1-ending"><div class="s1-ending-card"><small>OBSERVATION ROOM 01 · COMPLETE</small><h2>전력 복구 · 중앙 통로 개방</h2><p>세 개의 잠금장치가 해제되고 항법장치가 다시 작동합니다.</p><div class="signal">치직— “관측 기록을 믿지 마.”<br><br>송신 위치 · 2번 구획</div><p>정체불명의 신호가 열린 통로 너머에서 반복되고 있습니다.</p><button class="primary action" id="s1Continue">2번 구획으로 이동</button></div></div></div></div>';
-    document.getElementById('s1Continue').addEventListener('click', onContinue);
+    if (endingIdentity !== identity) {
+      endingIdentity = identity;
+      endingStep = 0;
+    }
+    var endingLines = [
+      ['시스템', '관측 기록 검증 완료.'],
+      ['시스템', '중앙 통로 잠금 해제.'],
+      ['루멘', '손상되었던 수정 시각을 복원했습니다.'],
+      ['시스템', '기록 변경 시각 · 사고 발생 17분 전'],
+      ['대원', '사고가 발생하기 전에 기록이 변경됐다.'],
+      ['루멘', '그렇습니다.'],
+      ['대원', '그럼 단순한 사고로 생긴 오류가 아니군.'],
+      ['루멘', '…현재 자료는 그 가능성을 지지합니다.'],
+      ['미확인 음성', '…들린다면…'],
+      ['미확인 음성', '…관측 기록을…'],
+      ['미확인 음성', '관측 기록을 믿지 마.'],
+      ['시스템', '송신 위치 · 2번 구획'],
+      ['루멘', '2번 구획으로 이동할 수 있습니다.'],
+      ['루멘', '…주의하십시오.'],
+    ];
+    var line = endingLines[Math.min(endingStep, endingLines.length - 1)];
+    game.innerHTML = '<div class="s1-shell"><div class="s1-room opened"><div class="s1-ending"><div class="s1-ending-card"><small>OBSERVATION ROOM 01 · COMPLETE</small><h2>전력 복구 · 중앙 통로 개방</h2><p>사고 발생 전 기록 변경 흔적이 확인되었습니다.</p></div>' + dialogueMarkup(line, 's1EndingDialogue') + '</div></div></div>';
+    document.getElementById('s1EndingDialogue').addEventListener('click', function () {
+      if (endingStep < endingLines.length - 1) {
+        endingStep += 1;
+        renderEnding(game, onContinue);
+      } else {
+        onContinue();
+      }
+    });
   }
 
   window.StarEscapeScene01 = { render: render, renderEnding: renderEnding };

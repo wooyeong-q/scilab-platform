@@ -1,0 +1,16 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="900" height="520" viewBox="0 0 900 520" fill="none">
+  <rect x="8" y="8" width="884" height="504" rx="18" fill="#07111d" stroke="#ffda75" stroke-width="3"/>
+  <rect x="32" y="32" width="836" height="456" rx="11" fill="#02060e" stroke="#765d2c"/>
+  <g fill="#ffd878">
+    <circle cx="445" cy="154" r="9"/><circle cx="408" cy="194" r="8"/><circle cx="486" cy="202" r="12"/>
+    <circle cx="370" cy="240" r="6"/><circle cx="522" cy="248" r="7"/><circle cx="396" cy="298" r="11"/>
+    <circle cx="470" cy="306" r="8"/><circle cx="436" cy="354" r="7"/>
+  </g>
+  <g fill="#ff967a">
+    <circle cx="446" cy="242" r="13"/><circle cx="356" cy="284" r="7"/><circle cx="556" cy="286" r="9"/>
+    <circle cx="420" cy="386" r="8"/><circle cx="500" cy="372" r="10"/>
+  </g>
+  <circle cx="446" cy="242" r="128" stroke="#ffda75" stroke-opacity=".18" stroke-width="2"/>
+  <circle cx="446" cy="242" r="82" stroke="#ff967a" stroke-opacity=".2" stroke-width="2"/>
+  <path d="M58 444h784" stroke="#ffda75" stroke-opacity=".28" stroke-dasharray="8 12"/>
+</svg>

@@ -4,17 +4,20 @@ var ROOT='/labs/star-escape/assets/scene02/';
 var ctx=null,identity='',introStep=0,inspect=null,puzzleOpen=false,clueTabOpen=false,banner='',lastQuestion=0,viewRole=1,transitionNotice=null,endingStep=0,endingLine=0,endingIdentity='';
 var visited=new Set(),foundCards=new Set(),selectedCard='',selectionKind='',slotValue='',definitionFound=false,distanceSlots=['','','',''];
 var intro=[
-['루멘','2번 구획 진입. 거리 보정실입니다. 귀환 항법 장치가 별까지의 거리 자료를 잃었습니다.'],
-['루멘','거리 자료가 복구되지 않으면 3번 구획과 지구 귀환 항로를 열 수 없습니다.'],
-['루멘','각 요원에게 별 하나가 배정되었습니다. 방 안에서 그 별의 3월·9월 관측 카드 두 장을 찾아야 합니다.'],
-['루멘','발견한 카드는 단서 탭에 자동 저장됩니다. 문제 화면에서도 언제든 다시 꺼내 비교할 수 있습니다.'],
-['루멘','복구 절차는 관측 카드 수집 → 연주시차 비교 → 별 거리 순서 복원입니다.'],
-['미확인 음성','…들린다면 자동 기록부터 믿지 마.'],
-['대원','또 그 신호야.'],
+['루멘','2번 구획 진입.'],
+['루멘','거리 보정실입니다.'],
+['대원','미확인 신호가 발생한 곳이다.'],
+['루멘','마지막 신호 좌표와 일치합니다.'],
+['루멘','공식 통신 기록을 조회합니다.'],
+['루멘','…기록 없음.'],
+['대원','통신 장치를 거치지 않은 신호라는 건가?'],
+['루멘','가능성이 있습니다.'],
+['미확인 음성','…자동 기록부터…'],
+['미확인 음성','…믿지 마.'],
 ['미확인 음성','…위치가 달라 보이는 이유부터 확인해.'],
-['루멘','송신 위치를 확인했습니다. …이 방 내부입니다.'],
-['대원','통신기에서 나온 거야?'],
-['루멘','아닙니다. 공식 통신 장비에는 송신 기록이 없습니다.'],
+['루멘','신호 발생 위치를 특정할 수 없습니다.'],
+['루멘','각 요원에게 별 하나가 배정되었습니다. 방 안에서 그 별의 3월·9월 관측 카드 두 장을 찾아야 합니다.'],
+['루멘','발견한 카드는 단서 탭에 자동 저장됩니다. 문제 화면에서도 다시 꺼내 비교할 수 있습니다.'],
 ['루멘','거리 보정실을 조사해 주세요. 관측 센서 점검 장치는 이미 작동 중입니다.']
 ];
 var objects=[
@@ -42,14 +45,15 @@ var observationSets=[
 function esc(v){return String(v==null?'':v).replace(/[&<>"']/g,function(c){return{'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]})}
 function img(n){return ROOT+n}
 function speakerPortrait(name){
-if(name.indexOf('루멘')===0)return'/labs/star-escape/assets/scene01/characters/ui_lumen_ai_icon.webp';
+if(name.indexOf('루멘')===0||name.indexOf('시스템')===0)return'/labs/star-escape/assets/scene01/characters/ui_lumen_ai_icon.webp';
 if(name.indexOf('미확인')===0)return img('scene2_hidden_transmitter_on.png');
 var role=Math.max(1,Math.min(4,Number(ctx&&ctx.state.player.role||1)));
 return'/labs/star-escape/assets/scene01/characters/char_student_0'+role+'_'+['female_bob','male_tablet','female_ponytail','male_glasses'][role-1]+'.webp'
 }
 function question(){return Number(ctx.state.progress.question||1)}
+function eventHook(name,detail){try{window.dispatchEvent(new CustomEvent('star-escape:scene02',{detail:Object.assign({event:name},detail||{})}))}catch(e){}}
 function storeKey(s){return'scilab-star-escape-scene02-v1:'+identity+':'+s}
-function restore(){try{visited=new Set(JSON.parse(localStorage.getItem(storeKey('visited'))||'[]'));foundCards=new Set(JSON.parse(localStorage.getItem(storeKey('cards'))||'[]'));definitionFound=localStorage.getItem(storeKey('definition-pencil'))==='found';introStep=localStorage.getItem(storeKey('intro'))==='done'?intro.length:0}catch(e){visited=new Set();foundCards=new Set();definitionFound=false;introStep=0}}
+function restore(){try{visited=new Set(JSON.parse(localStorage.getItem(storeKey('visited'))||'[]'));foundCards=new Set(JSON.parse(localStorage.getItem(storeKey('cards'))||'[]'));definitionFound=localStorage.getItem(storeKey('definition-pencil'))==='found';introStep=localStorage.getItem(storeKey('intro-v2'))==='done'?intro.length:0}catch(e){visited=new Set();foundCards=new Set();definitionFound=false;introStep=0}}
 function save(){try{localStorage.setItem(storeKey('visited'),JSON.stringify(Array.from(visited)));localStorage.setItem(storeKey('cards'),JSON.stringify(Array.from(foundCards)));if(definitionFound)localStorage.setItem(storeKey('definition-pencil'),'found')}catch(e){}}
 function availableRoles(){var occupied=new Set((ctx.state.members||[]).map(function(m){return m.role}));return[1,2,3,4].filter(function(r){return r===ctx.state.player.role||!occupied.has(r)})}
 function setForRole(role){return observationSets[Number(role)-1]}
@@ -80,7 +84,7 @@ function powerStateMarkup(){return''}
 function roomMarkup(q){var required=q===1?'calibration':q===2?'orbit':'distance',stage=q===1?(puzzleOpen?1:0):q===2?2:3;var hotspots=objects.map(function(o){if(o.id==='pencil'&&q!==2)return'';var found=cardForObject(o.id),done=found&&foundCards.has(found.card.id),isSecret=o.id==='pencil';var cls='s2-hotspot s2-object-'+o.id+(done?' visited':'')+(!done&&found?' card-clue':'')+(isSecret?' secret-clue':'')+(o.id===required?' required':'');var label=o.name;return'<button class="'+cls+'" data-s2-object="'+o.id+'" data-label="'+esc(label)+'" aria-label="'+esc(label)+'" style="left:'+o.box[0]+'%;top:'+o.box[1]+'%;width:'+o.box[2]+'%;height:'+o.box[3]+'%"></button>'}).join('');
 return'<div class="s2-shell"><div class="s2-room s2-room-stage'+stage+'"><div class="s2-title"><small>DISTANCE CALIBRATION ROOM 02</small><b>어긋난 별의 위치</b></div><div class="s2-objective">현재 목표 · '+objective(q)+'</div>'+hotspots+(!puzzleOpen?clueTabButton():'')+(banner?'<div class="s2-system">'+esc(banner)+'</div>':'')+(transitionNotice?transitionMarkup():'')+(inspect?inspectMarkup():'')+(introStep<intro.length?dialogueMarkup():'')+(puzzleOpen?puzzleMarkup(q):'')+(clueTabOpen?clueTabMarkup(q):'')+'</div></div>'}
 function transitionMarkup(){return'<section class="s2-transition" role="dialog" aria-modal="true"><div><small>MISSION LINK UPDATED</small><h2>'+esc(transitionNotice.title)+'</h2><p>'+esc(transitionNotice.text)+'</p><button class="primary" id="s2TransitionContinue">다음 장치 확인</button></div></section>'}
-function dialogueMarkup(){var d=intro[Math.min(introStep,intro.length-1)],speakerClass=d[0]==='대원'?'speaker-crew':d[0].indexOf('루멘')===0?'speaker-ai':'speaker-device';return'<button class="s2-dialogue '+speakerClass+'" id="s2Dialogue"><img src="'+speakerPortrait(d[0])+'" alt="'+esc(d[0])+'"><span><small>'+esc(d[0])+'</small><p>'+esc(d[1])+'</p></span><i class="advance">터치하여 계속 ▼</i></button>'}
+function dialogueMarkup(){var d=intro[Math.min(introStep,intro.length-1)],speakerClass=d[0]==='대원'?'speaker-crew':d[0].indexOf('루멘')===0||d[0].indexOf('시스템')===0?'speaker-ai':'speaker-device';return'<button class="s2-dialogue '+speakerClass+'" id="s2Dialogue"><img src="'+speakerPortrait(d[0])+'" alt="'+esc(d[0])+'"><span><small>'+esc(d[0])+'</small><p>'+esc(d[1])+'</p></span><i class="advance">터치하여 계속 ▼</i></button>'}
 function observationCard(set,card,size){var first=card.id.indexOf('-mar')>0,pos=50+(first?-set.shift/2:set.shift/2);return'<article class="s2-observation-card '+(size||'')+'" style="--target:'+pos+'%" aria-label="별 '+set.star+' '+card.epoch+' 관측 카드"><header><b>별 '+set.star+'</b><span>'+esc(card.epoch)+'</span></header><div class="s2-photo-field"><i class="s2-photo-target"></i></div><footer>'+esc(card.source)+'</footer></article>'}
 function pairMarkup(set,size){return'<div class="s2-observation-pair '+(size||'')+'">'+set.cards.map(function(card){return foundCards.has(card.id)?observationCard(set,card,size):'<div class="s2-missing-card"><b>'+esc(card.epoch)+'</b><span>아직 발견하지 못함</span></div>'}).join('')+'</div>'}
 function overlapEvidence(set){var left=50-set.shift/2,right=50+set.shift/2;return'<article class="s2-evidence-overlap" aria-label="별 '+set.star+'의 3월과 9월 관측 사진을 겹친 화면"><header><b>별 '+set.star+' · 두 사진 겹쳐 보기</b><span>배경별 기준 정렬</span></header><div class="s2-evidence-field"><i class="s2-evidence-target march" style="left:'+left+'%"><em>3월 18일</em></i><i class="s2-evidence-target september" style="left:'+right+'%"><em>9월 18일</em></i></div><footer>두 표시는 같은 별입니다. 날짜가 달라도 별의 색·밝기·크기는 같습니다.</footer></article>'}
@@ -116,21 +120,28 @@ if(q===2){var input=document.getElementById('s2Password'),answer=String(input&&i
 if(distanceSlots.some(function(x){return!x}))return bad('A, B, C, D를 네 슬롯에 모두 배치하세요.');if(distanceSlots.join('')!=='ACDB'){var a=distanceSlots.indexOf('A'),b=distanceSlots.indexOf('B');if(a>1)return bad('위치 변화가 가장 큰 별 A는 더 가까운 곳에 있어야 합니다.');if(b<2)return bad('위치 변화가 가장 작은 별 B는 더 먼 곳에 있어야 합니다.');return bad('각 요원의 3월·9월 카드에서 위치 변화가 큰 순서부터 다시 비교하세요.')}await ctx.submit('ACDB',this)}
 }
 function bindClueControls(){var tab=document.getElementById('s2ClueTab');function open(){clueTabOpen=true;viewRole=ctx.state.player.role;draw()}if(tab)tab.onclick=open;var close=document.getElementById('s2ClueClose');if(close)close.onclick=function(){clueTabOpen=false;draw()};document.querySelectorAll('[data-s2-role]').forEach(function(b){b.onclick=function(){viewRole=Number(b.dataset.s2Role);draw()}})}
-function bindRoom(){var d=document.getElementById('s2Dialogue');if(d)d.onclick=function(){introStep++;if(introStep>=intro.length){try{localStorage.setItem(storeKey('intro'),'done')}catch(e){}}draw()};var transition=document.getElementById('s2TransitionContinue');if(transition)transition.onclick=function(){transitionNotice=null;draw()};document.querySelectorAll('[data-s2-object]').forEach(function(b){b.onclick=function(){inspectObject(b.dataset.s2Object)}});var c=document.getElementById('s2InspectClose');if(c)c.onclick=function(){inspect=null;draw()};bindClueControls()}
+function bindRoom(){var d=document.getElementById('s2Dialogue');if(d)d.onclick=function(){introStep++;if(introStep>=intro.length){try{localStorage.setItem(storeKey('intro-v2'),'done')}catch(e){}}draw()};var transition=document.getElementById('s2TransitionContinue');if(transition)transition.onclick=function(){transitionNotice=null;draw()};document.querySelectorAll('[data-s2-object]').forEach(function(b){b.onclick=function(){inspectObject(b.dataset.s2Object)}});var c=document.getElementById('s2InspectClose');if(c)c.onclick=function(){inspect=null;draw()};bindClueControls()}
 function draw(){if(!ctx||!ctx.game)return;var q=question();ctx.game.innerHTML=roomMarkup(q);bindRoom();if(puzzleOpen)bindPuzzle(q);if(banner)setTimeout(function(){banner='';var e=document.querySelector('.s2-system');if(e)e.remove()},2500)}
 function render(options){ctx=options;var next=options.state.session.code+':'+options.state.player.team+':'+options.state.player.role+':'+(options.state.session.startedAt||'waiting');if(identity!==next){identity=next;restore();inspect=null;puzzleOpen=false;clueTabOpen=false;lastQuestion=0;transitionNotice=null;viewRole=options.state.player.role;endingStep=0;endingLine=0;endingIdentity=''}var q=question();if(lastQuestion&&q!==lastQuestion){inspect=null;puzzleOpen=false;clueTabOpen=false;clearSelection();slotValue='';distanceSlots=['','','',''];if(q===2){banner='관측 센서 보정 완료 · 연주시차 분석 장치 활성화';transitionNotice={title:'관측 센서 보정 완료',text:'별 A를 기준별로 설정해 중앙 연주시차 분석 장치가 켜졌습니다. 장치를 눌러 수수께끼를 확인하고 방 안에 숨은 정의 기록을 찾으세요.'}}else if(q===3){banner='분석 장치 암호 해제 · 거리 자료 장치 활성화';transitionNotice={title:'연주시차 정의 복구 완료',text:'6개월 간격으로 관측한 두 방향 사이 각의 1/2이 연주시차임을 복구했습니다. 이제 네 별의 위치 변화 크기로 가까운 순서를 완성하세요.'}}}lastQuestion=q;draw()}
 function renderEnding(game,onContinue){var runIdentity=identity||'ending';if(endingIdentity!==runIdentity){endingIdentity=runIdentity;endingStep=0;endingLine=0}var signal=[
-['미확인 음성','치직— “…여기까지 왔다면 거리 자료는 복구했겠지.”'],
+['미확인 음성','…여기까지 왔다면…'],
+['미확인 음성','거리 자료는 복구했겠지.'],
 ['루멘','실시간 통신이 아닙니다. 저장된 음성 기록입니다.'],
-['미확인 음성','“자동 관측값이 계속 바뀌고 있다. 그래서 수동 채널에 기록을 남긴다.”'],
-['미확인 음성','“다음은 3번 구획. 별이 얼마나 밝게 보이는지만 믿지 마.”'],
-['대원','누가 남긴 거지?'],
-['루멘','송신자 정보가 삭제되어 있습니다. …한 가지 기록을 복구했습니다. 수동 송신 예약 시각은 사고 발생 이전입니다.'],
-['대원','사고가 나기 전부터 알고 있었다는 거야?'],
-['루멘','…가능성이 있습니다. 거리 보정 시스템 정상화. 3번 구획 진입이 가능합니다.']
+['미확인 음성','자동 관측값이 계속 바뀌고 있다.'],
+['미확인 음성','처음에는 장비 문제라고 생각했다.'],
+['미확인 음성','그래서 수동 채널에 기록을 남긴다.'],
+['미확인 음성','다음은 3번 구획.'],
+['미확인 음성','별이 얼마나 밝게 보이는지만 믿지 마.'],
+['대원','누가 남긴 기록이지?'],
+['루멘','송신자 정보가 삭제되어 있습니다.'],
+['시스템','수동 기록 생성 시각 · 사고 발생 이전'],
+['대원','이 기록을 남긴 사람은 사고 전에 이미 이상을 알고 있었어.'],
+['루멘','그렇게 판단할 수 있습니다.'],
+['루멘','3번 구획 접근 가능.'],
+['루멘','별빛 분석 기록을 직접 확인하십시오.']
 ];function paint(){if(endingStep===0){game.innerHTML='<div class="s2-shell"><div class="s2-room s2-room-stage-panel-open s2-room-recovered"><div class="s2-title"><small>DISTANCE CALIBRATION ROOM 02</small><b>별 거리 자료 복구 완료</b></div><div class="s2-recovery-flash"><small>SYSTEM RECOVERY COMPLETE</small><b>거리표 복구 · 벽면 패널 개방</b><span>오른쪽 벽면 패널이 열렸습니다. 안쪽 장치를 조사하세요.</span></div><div class="s2-objective">현재 목표 · 열린 <b>벽면 패널</b> 안쪽을 조사하세요.</div><button class="s2-hotspot required s2-ending-panel-hotspot" id="s2EndPanel" data-label="열린 벽면 패널" aria-label="열린 벽면 패널" style="left:88%;top:8%;width:12%;height:39%"></button></div></div>';document.getElementById('s2EndPanel').onclick=function(){endingStep=1;paint()};return}
-if(endingStep===1){game.innerHTML='<div class="s2-shell"><div class="s2-room s2-room-stage-panel-open s2-room-recovered"><div class="s2-title"><small>HIDDEN CHANNEL FOUND</small><b>벽면 패널 개방</b></div><div class="s2-panel-open-notice"><div><small>UNREGISTERED TRANSMITTER</small><b>숨겨진 수동 송신기 발견</b><span>열린 벽면 안쪽에서 정거장의 공식 장비와 다른 송신기가 켜졌습니다.</span></div><button class="primary" id="s2PlaySignal">송신 기록 재생</button></div></div></div>';document.getElementById('s2PlaySignal').onclick=function(){endingStep=2;endingLine=0;paint()};return}
-if(endingStep===2){var d=signal[endingLine],speakerClass=d[0]==='대원'?'speaker-crew':d[0].indexOf('루멘')===0?'speaker-ai':'speaker-device';game.innerHTML='<div class="s2-shell"><div class="s2-room s2-room-stage-panel-open s2-room-recovered"><div class="s2-ending s2-panel-signal-stage"><button class="s2-ending-dialogue '+speakerClass+'" id="s2SignalNext"><img src="'+speakerPortrait(d[0])+'" alt="'+esc(d[0])+'"><span><small>'+esc(d[0])+'</small><p>'+esc(d[1])+'</p></span><i>'+(endingLine===signal.length-1?'3번 구획 확인':'터치하여 계속')+' ▼</i></button></div></div></div>';document.getElementById('s2SignalNext').onclick=function(){endingLine++;if(endingLine>=signal.length){endingStep=3;endingLine=0}paint()};return}
+if(endingStep===1){game.innerHTML='<div class="s2-shell"><div class="s2-room s2-room-stage-panel-open s2-room-recovered"><div class="s2-title"><small>HIDDEN CHANNEL FOUND</small><b>벽면 패널 개방</b></div><div class="s2-panel-open-notice"><div><small>UNREGISTERED TRANSMITTER</small><b>숨겨진 수동 기록 장치 발견</b><span>열린 벽면 안쪽에서 정거장의 공식 장비와 다른 기록 장치가 켜졌습니다.</span></div><button class="primary" id="s2PlaySignal">송신 기록 재생</button></div></div></div>';document.getElementById('s2PlaySignal').onclick=function(){endingStep=2;endingLine=0;eventHook('scene2_recorder');paint()};return}
+if(endingStep===2){var d=signal[endingLine],speakerClass=d[0]==='대원'?'speaker-crew':d[0].indexOf('루멘')===0||d[0].indexOf('시스템')===0?'speaker-ai':'speaker-device';game.innerHTML='<div class="s2-shell"><div class="s2-room s2-room-stage-panel-open s2-room-recovered"><div class="s2-ending s2-panel-signal-stage"><button class="s2-ending-dialogue '+speakerClass+'" id="s2SignalNext"><img src="'+speakerPortrait(d[0])+'" alt="'+esc(d[0])+'"><span><small>'+esc(d[0])+'</small><p>'+esc(d[1])+'</p></span><i>'+(endingLine===signal.length-1?'3번 구획 확인':'터치하여 계속')+' ▼</i></button></div></div></div>';document.getElementById('s2SignalNext').onclick=function(){endingLine++;if(endingLine>=signal.length){endingStep=3;endingLine=0}paint()};return}
 game.innerHTML='<div class="s2-shell"><div class="s2-room s2-room-stage4 s2-room-recovered"><div class="s2-title"><small>SCENE 02 · COMPLETE</small><b>3번 구획 문 개방</b></div><div class="s2-door-open-notice"><div><small>DOOR OPEN</small><b>03 — 별빛 분석 구획</b><span>열린 문으로 이동할 수 있습니다.</span></div><button class="primary" id="s2Continue">3번 구획으로 이동</button></div></div></div>';document.getElementById('s2Continue').onclick=function(){endingStep=0;endingLine=0;onContinue()}}paint()}
 window.StarEscapeScene02={render:render,renderEnding:renderEnding};
 })();
