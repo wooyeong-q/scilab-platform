@@ -304,7 +304,7 @@
     if (current === 'returnSignal') ensureReturnBed();
     if (returnBed) ramp(returnBed.gain, audible && current === 'returnSignal' ? .085 * mix * baseScale : .0001, audible ? .52 : .12);
     if (audio && master) ramp(master.gain, audible ? .24 : .0001, audible ? .3 : .1);
-    if (audio && sampleOutput) ramp(sampleOutput.gain, active && !muted && !document.hidden ? .14 : .0001, .08);
+    if (audio && sampleOutput) ramp(sampleOutput.gain, active && !muted && !document.hidden ? .18 : .0001, .08);
   }
 
   function tone(frequency, duration, volume, type, delay, destination) {
