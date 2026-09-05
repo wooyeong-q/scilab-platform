@@ -652,6 +652,7 @@
     feedback = '';
     feedbackBad = false;
     selectedToken = null;
+    play('insert');
     if (kind === 'nebula') {
       var nebulaDone = slots.join(',') === expected.join(',');
       await sync({ nebulaSlots: slots, nebulaComplete: nebulaDone, lockerActive: nebulaDone });
@@ -664,7 +665,7 @@
     } else if (kind === 'cluster') {
       var clusterDone = slots.join(',') === expected.join(',');
       await sync({ clusterSlots: slots, clusterComplete: clusterDone, handleUnlocked: clusterDone });
-      if (clusterDone) { play('unlock'); ctx.toast('보관함 잠금 해제 · 손잡이를 당겨 여세요.'); }
+      if (clusterDone) ctx.toast('보관함 잠금 해제 · 손잡이를 당겨 여세요.');
     }
   }
 
@@ -750,7 +751,7 @@
     modal = 'loot';
     await sync({ lockerOpen: true, uvAcquired: true });
     selectedItem = 'uv';
-    play('open');
+    play('storageOpen34');
     await ctx.submit('성단분류완료');
   }
 
@@ -809,7 +810,7 @@
         clearInterval(cctvTimer);
         sync({ cctvFrame: 10, cctvComplete: true, exitOpen: true });
         eventHook('exit-open');
-        play('exitUnlock');
+        play('doorOpen');
       }
     }, 700);
   }
@@ -853,7 +854,7 @@
       inspect = null;
       if (state.maintenanceOpen) { modal = state.recordingComplete ? 'log' : state.recordingStarted ? 'recording' : 'recorder-found'; draw(); return; }
       if (panelTaps === 0) { panelTaps = 1; modal = 'panel-knock'; play('scene4_panel_knock'); draw(); }
-      else sync({ maintenanceOpen: true }).then(function () { modal = 'recorder-found'; play('open'); draw(); });
+      else sync({ maintenanceOpen: true }).then(function () { modal = 'recorder-found'; play('storageOpen34'); draw(); });
     } else if (object === 'log') { inspect = null; modal = 'log'; draw(); }
     else if (object === 'cctv') { inspect = null; startCctv(); }
     else if (object === 'exit') { inspect = null; modal = 'exit'; draw(); }

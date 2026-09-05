@@ -20,6 +20,7 @@
   var transmissionTimer = 0;
   var recordingVisible = false;
   var distanceDraft = null;
+  var endingDoorPlayed = false;
 
   var intro = [
     ['루멘', '3번 구획 진입.'],
@@ -563,7 +564,10 @@
     slots = slots.map(function (entry) { return entry === value ? '' : entry; });
     if (slot !== 'bank') {
       var index = Number(slot);
-      if (index >= 0 && index < count) slots[index] = value;
+      if (index >= 0 && index < count) {
+        slots[index] = value;
+        playDistanceSound('insert');
+      }
     }
     clearSelection();
     feedback = '';
@@ -696,6 +700,7 @@
       return;
     }
     await syncScene({ referenceCard: value });
+    playDistanceSound('insert');
     if (value !== 'C') {
       setFeedback('기준 거리에서 비교한 실제 밝기를 다시 확인하세요.', true);
       return;
@@ -769,6 +774,7 @@
         return;
       }
       if (!state.maintenanceOpen) {
+        playDistanceSound('storageOpen34');
         syncScene({ maintenanceOpen: true, maintenanceDialogue: 0 });
         return;
       }
@@ -934,6 +940,7 @@
       transmissionTimer = 0;
       recordingVisible = false;
       distanceDraft = null;
+      endingDoorPlayed = false;
     }
     var state = sceneState();
     ensurePersonalClues(state);
@@ -955,6 +962,10 @@
   }
 
   function renderEnding(game, onContinue) {
+    if (!endingDoorPlayed) {
+      endingDoorPlayed = true;
+      playDistanceSound('doorOpen');
+    }
     game.innerHTML = '<div class="s3-shell"><div class="s3-room s3-room-complete"><div class="s3-title"><small>03 — 별빛 분석 구획</small><b>장면 완료</b></div><div class="s3-status"><b>다음 구획 연결 준비 완료</b><span>기준값 변경 기록을 보존하고 있습니다.</span></div></div></div>';
     setTimeout(onContinue, 120);
   }

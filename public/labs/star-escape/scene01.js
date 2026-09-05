@@ -655,6 +655,7 @@
     }
     var question = currentQuestion();
     if (lastQuestion && question !== lastQuestion) {
+      if (lastQuestion === 2 && question === 3 && context.sound && typeof context.sound.play === 'function') context.sound.play('cabinetOpen12');
       inspect = null;
       puzzleOpen = false;
       codeValue = '';
@@ -671,6 +672,7 @@
     if (endingIdentity !== identity) {
       endingIdentity = identity;
       endingStep = 0;
+      if (context.sound && typeof context.sound.play === 'function') context.sound.play('doorOpen');
     }
     var endingLines = [
       ['시스템', '관측 기록 검증 완료.'],

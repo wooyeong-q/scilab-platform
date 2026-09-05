@@ -7,6 +7,7 @@
   var master = null;
   var music = null;
   var effects = null;
+  var sampleOutput = null;
   var returnBed = null;
   var active = false;
   var muted = false;
@@ -16,6 +17,8 @@
   var duckScale = 1;
   var mysteryLevel = 0;
   var tracks = null;
+  var sampleBuffers = {};
+  var sampleLoads = {};
   var trackFades = {};
   var tracksPrimed = false;
   var stageSwitching = false;
@@ -30,7 +33,7 @@
     recording: 'radioStatic',
     restore: 'reveal',
     knock: 'metalStep',
-    insert: 'mechanicalLatch',
+    insert: 'cardInsert',
     scene1_extra_lock: 'mysteryLock',
     scene1_unknown_signal: 'radioStatic',
     scene2_footstep: 'metalStep',
@@ -47,6 +50,12 @@
     scene4_final_record: 'recordCut',
     scene4_cctv_noise: 'radioStaticStrong',
     scene4_exit: 'doorDread',
+  };
+  var SAMPLE_CONFIG = {
+    cardInsert: { src: AUDIO_ROOT + 'sfx-card-insert.mp3', gain: .72 },
+    cabinetOpen12: { src: AUDIO_ROOT + 'sfx-cabinet-open-scenes-1-2.mp3', gain: .42 },
+    storageOpen34: { src: AUDIO_ROOT + 'sfx-storage-open-scenes-3-4.mp3', gain: .64 },
+    doorOpen: { src: AUDIO_ROOT + 'sfx-door-open.mp3', gain: .66 },
   };
   // Source files have very different loudness. These gains keep the score present without masking dialogue.
   var TRACK_CONFIG = {
@@ -98,9 +107,11 @@
       master = makeGain(.0001);
       music = makeGain(.58);
       effects = makeGain(.48);
+      sampleOutput = makeGain(.0001);
       music.connect(master);
       effects.connect(master);
       master.connect(audio.destination);
+      sampleOutput.connect(audio.destination);
       return true;
     } catch (error) {
       audio = null;
@@ -138,6 +149,49 @@
     pulse.start();
     returnBed = output;
     return returnBed;
+  }
+
+  function loadSample(name) {
+    if (!SAMPLE_CONFIG[name] || !ensureAudio()) return Promise.resolve(null);
+    if (sampleBuffers[name]) return Promise.resolve(sampleBuffers[name]);
+    if (sampleLoads[name]) return sampleLoads[name];
+    sampleLoads[name] = window.fetch(SAMPLE_CONFIG[name].src)
+      .then(function (response) {
+        if (!response.ok) throw new Error('HTTP ' + response.status);
+        return response.arrayBuffer();
+      })
+      .then(function (data) { return audio.decodeAudioData(data); })
+      .then(function (buffer) {
+        sampleBuffers[name] = buffer;
+        return buffer;
+      })
+      .catch(function (error) {
+        delete sampleLoads[name];
+        rememberPlayError(name, error);
+        return null;
+      });
+    return sampleLoads[name];
+  }
+
+  function primeSamples() {
+    Object.keys(SAMPLE_CONFIG).forEach(function (name) { loadSample(name); });
+  }
+
+  function playSample(name) {
+    var config = SAMPLE_CONFIG[name];
+    if (!config) return false;
+    function start(buffer) {
+      if (!buffer || !active || muted || document.hidden || !audio) return;
+      var source = audio.createBufferSource();
+      var gain = makeGain(config.gain);
+      source.buffer = buffer;
+      source.connect(gain);
+      gain.connect(sampleOutput);
+      source.start();
+    }
+    if (sampleBuffers[name]) start(sampleBuffers[name]);
+    else loadSample(name).then(start);
+    return true;
   }
 
   function resume() {
@@ -250,6 +304,7 @@
     if (current === 'returnSignal') ensureReturnBed();
     if (returnBed) ramp(returnBed.gain, audible && current === 'returnSignal' ? .085 * mix * baseScale : .0001, audible ? .52 : .12);
     if (audio && master) ramp(master.gain, audible ? .24 : .0001, audible ? .3 : .1);
+    if (audio && sampleOutput) ramp(sampleOutput.gain, active && !muted && !document.hidden ? .14 : .0001, .08);
   }
 
   function tone(frequency, duration, volume, type, delay, destination) {
@@ -310,6 +365,7 @@
 
   function unlock() {
     ensureAudio();
+    primeSamples();
     primeTracks();
     if (!stageSwitching) startTracks();
     resume();
@@ -320,6 +376,7 @@
     stage = Math.max(1, Math.min(4, Number(nextStage) || stage));
     active = true;
     ensureAudio();
+    primeSamples();
     primeTracks();
     startTracks();
     resume();
@@ -360,6 +417,7 @@
     if (!active || muted || document.hidden || !ensureAudio()) return;
     name = EFFECT_ALIASES[name] || name;
     resume();
+    if (playSample(name)) return;
     if (name === 'ui') {
       tone(620, .055, .018, 'sine');
     } else if (name === 'scan') {
