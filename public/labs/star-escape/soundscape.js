@@ -25,11 +25,12 @@
   var AUDIO_ROOT = '/labs/star-escape/assets/audio/';
   var EFFECT_ALIASES = {
     item: 'select',
-    open: 'lock',
+    open: 'mechanicalOpen',
+    unlock: 'mechanicalUnlock',
     recording: 'radioStatic',
     restore: 'reveal',
     knock: 'metalStep',
-    insert: 'lock',
+    insert: 'mechanicalLatch',
     scene1_extra_lock: 'mysteryLock',
     scene1_unknown_signal: 'radioStatic',
     scene2_footstep: 'metalStep',
@@ -40,7 +41,7 @@
     scene4_reflection_silhouette: 'anomaly',
     scene4_signal_intrusion: 'interference',
     scene4_receiver_five: 'radioStatic',
-    scene4_blackout: 'mysteryLock',
+    scene4_blackout: 'powerCut',
     scene4_corridor_presence: 'breath',
     scene4_panel_knock: 'metalStep',
     scene4_final_record: 'recordCut',
@@ -96,7 +97,7 @@
       audio = new AudioEngine();
       master = makeGain(.0001);
       music = makeGain(.58);
-      effects = makeGain(.30);
+      effects = makeGain(.48);
       music.connect(master);
       effects.connect(master);
       master.connect(audio.destination);
@@ -299,7 +300,7 @@
     filter.frequency.value = centerFrequency || 620;
     filter.Q.value = .8;
     gain.gain.setValueAtTime(.0001, start);
-    gain.gain.exponentialRampToValueAtTime((volume || .02) * .38, start + .018);
+    gain.gain.exponentialRampToValueAtTime((volume || .02) * .55, start + .018);
     gain.gain.exponentialRampToValueAtTime(.0001, start + duration);
     source.connect(filter);
     filter.connect(gain);
@@ -369,9 +370,21 @@
       tone(570, .1, .014, 'square', .085);
     } else if (name === 'select') {
       tone(440, .09, .025, 'sine');
-    } else if (name === 'lock') {
-      tone(392, .13, .038, 'triangle');
-      tone(659.25, .16, .04, 'triangle', .035);
+    } else if (name === 'lock' || name === 'mechanicalLatch') {
+      noiseBurst(.055, .052, 880);
+      tone(176, .08, .058, 'square');
+      tone(92, .13, .052, 'triangle', .055);
+      noiseBurst(.04, .034, 430, .085);
+    } else if (name === 'mechanicalUnlock') {
+      noiseBurst(.06, .062, 760);
+      tone(126, .12, .065, 'square');
+      noiseBurst(.05, .050, 520, .12);
+      tone(238, .20, .046, 'triangle', .13);
+    } else if (name === 'mechanicalOpen') {
+      noiseBurst(.075, .056, 620);
+      tone(148, .12, .058, 'square');
+      sweep(112, 58, .32, .052, 'triangle');
+      noiseBurst(.10, .035, 240, .16);
     } else if (name === 'success') {
       tone(392, .15, .034, 'triangle');
       tone(523.25, .18, .042, 'triangle', .08);
@@ -391,28 +404,42 @@
       sweep(90, 360, .65, .035, 'sine');
       tone(523.25, .5, .028, 'sine', .34);
     } else if (name === 'mysteryLock') {
-      tone(96, .24, .028, 'triangle');
-      noiseBurst(.18, .018, 210, .08);
-      tone(71, .18, .022, 'sine', .22);
+      noiseBurst(.07, .058, 640);
+      tone(104, .24, .048, 'triangle');
+      noiseBurst(.20, .032, 210, .08);
+      tone(67, .30, .038, 'sine', .18);
     } else if (name === 'metalStep') {
-      noiseBurst(.3, .025, 175);
-      tone(68, .28, .029, 'sine', .035);
-      tone(214, .09, .012, 'triangle', .04);
+      noiseBurst(.34, .045, 175);
+      tone(62, .34, .048, 'sine', .035);
+      tone(214, .12, .026, 'triangle', .04);
+      noiseBurst(.12, .028, 390, .06);
     } else if (name === 'interference') {
       noiseBurst(.3, .026, 980);
       tone(730, .05, .014, 'square', .025);
       tone(520, .04, .011, 'square', .12);
       tone(910, .035, .009, 'square', .2);
     } else if (name === 'radioStatic') {
-      noiseBurst(.62, .072, 1250);
-      noiseBurst(.3, .048, 650, .22);
-      tone(880, .045, .025, 'square', .05);
-      tone(540, .055, .02, 'square', .3);
+      noiseBurst(.68, .086, 1450);
+      noiseBurst(.38, .064, 720, .18);
+      tone(960, .04, .034, 'square', .04);
+      tone(520, .06, .030, 'square', .29);
+      noiseBurst(.09, .050, 2100, .48);
     } else if (name === 'radioStaticStrong') {
-      noiseBurst(.82, .095, 1180);
-      noiseBurst(.52, .068, 420, .16);
-      tone(920, .05, .03, 'square', .04);
-      tone(470, .07, .026, 'square', .38);
+      noiseBurst(.92, .12, 1320);
+      noiseBurst(.62, .085, 430, .12);
+      tone(1020, .05, .042, 'square', .03);
+      tone(430, .08, .036, 'square', .35);
+      noiseBurst(.16, .072, 2300, .62);
+    } else if (name === 'exitUnlock') {
+      noiseBurst(.08, .075, 580);
+      tone(118, .18, .075, 'square');
+      noiseBurst(.075, .060, 420, .16);
+      tone(72, .42, .064, 'triangle', .17);
+      sweep(260, 92, .38, .038, 'triangle');
+    } else if (name === 'powerCut') {
+      noiseBurst(.12, .080, 1100);
+      tone(86, .16, .060, 'square');
+      sweep(132, 43, .62, .062, 'sawtooth');
     } else if (name === 'doorDread') {
       sweep(118, 54, .9, .052, 'sine');
       tone(73.42, .7, .036, 'triangle', .08);

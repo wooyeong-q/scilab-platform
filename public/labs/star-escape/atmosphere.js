@@ -298,7 +298,7 @@
       } else if (snapshot.stage === 2) {
         later(function () { play('interference'); note('공식 통신 기록 없음'); }, 1150);
       } else if (snapshot.stage === 3) {
-        later(function () { play('scene3_screen_glitch'); glitch('자동 분석 · 가장 밝게 관측되는 별 <strong>A → C → A</strong>', true); }, 1250);
+        later(function () { glitch('자동 분석 · 가장 밝게 관측되는 별 <strong>A → C → A</strong>', true); }, 1250);
       } else if (snapshot.stage === 4) {
         later(function () { play('mysteryLock'); note('잠금 기록 불일치'); }, 800);
       }
@@ -329,7 +329,7 @@
       if (!oldState.p1Complete && newState.p1Complete) once(snapshot, 'scene-3-p1-complete', function () { later(function () { play('scene3_screen_glitch'); note('등급 기준 복구 완료'); }, 420); later(function () { note('복구 명령 외 장치 작동 감지'); }, 920); });
       if (!oldState.q2Complete && newState.q2Complete) once(snapshot, 'scene-3-q2-reversal', function () { duck(1150, .04); mystery(7200, .68); later(function () { play('scene3_shadow_event'); note('실제 밝기 판단 불가 · 거리 조건 불일치'); }, 150); later(function () { note('거리 비교 장치를 사용할 수 있습니다.'); }, 900); });
       if (!oldState.p3Aligned && newState.p3Aligned) once(snapshot, 'scene-3-ten-pc-silence', function () { duck(950, .025); mystery(8800, .76); later(function () { play('reveal'); }, 780); });
-      if (!oldState.q3Complete && newState.q3Complete) once(snapshot, 'scene-3-reference-read-error', function () { later(function () { play('scene3_screen_glitch'); glitch('기준값 불일치', true); }, 80); later(function () { note('기준 별 C · 실제 밝기 확인 완료'); }, 700); });
+      if (!oldState.q3Complete && newState.q3Complete) once(snapshot, 'scene-3-reference-read-error', function () { later(function () { glitch('기준값 불일치', true); }, 80); later(function () { note('기준 별 C · 실제 밝기 확인 완료'); }, 700); });
       if (!oldState.p4Complete && newState.p4Complete) once(snapshot, 'scene-3-panel-prelight', function () { later(function () { panelPulse(); flicker(true); }, 380); });
       if (!oldState.recordingStarted && newState.recordingStarted) once(snapshot, 'scene-3-recording-breath', function () { duck(900, .08); play('breath'); });
       if (!oldState.recordingComplete && newState.recordingComplete) once(snapshot, 'scene-3-recording-cut', function () { duck(1200, .04); mystery(15000, .98); later(function () { play('scene3_final_record'); }, 520); later(function () { note('기록 종료 · 4번 구획 접근 권한 복구'); }, 1000); });

@@ -809,6 +809,7 @@
         clearInterval(cctvTimer);
         sync({ cctvFrame: 10, cctvComplete: true, exitOpen: true });
         eventHook('exit-open');
+        play('exitUnlock');
       }
     }, 700);
   }
