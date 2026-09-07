@@ -328,13 +328,14 @@
         <div class="solarInfo"><p><b>우리은하 안 위치</b><br>태양계는 중심에서 약 2만 6천 광년 떨어진 오리온자리 팔 부근에 있습니다.</p><p><b>지구의 위치</b><br>태양에서 세 번째 행성 · 평균 거리 약 1 AU입니다.</p><small>행성의 현재 위치·크기·궤도 간격은 실제 비율이 아닌 학습용 모식도입니다. 명왕성은 왜행성으로 분류됩니다.</small></div>
       </section>
       <div class="mapScale" id="mapScale">3D 좌표 X 0 · Y 0 · Z 0</div>
-      <div class="navZoomControls" id="navZoomControls" aria-label="3D 전후 이동">
+      <div class="navZoomControls" id="navZoomControls" aria-label="3D 이동 및 속도 설정">
         <button class="navZoomButton" id="moveForwardButton" type="button" aria-label="카메라를 앞으로 이동해 은하를 확대하기">＋ 가까이</button>
         <button class="navZoomButton" id="moveBackButton" type="button" aria-label="카메라를 뒤로 이동해 은하를 축소하기">− 멀리</button>
+        <label class="turnSpeedControl" for="moveSpeed"><span>이동 속도 <output id="moveSpeedReadout">보통</output></span><input id="moveSpeed" type="range" min="0.5" max="1.5" step="0.5" value="1" aria-label="이동 속도"></label>
         <label class="turnSpeedControl" for="turnSpeed"><span>시점 회전 <output id="turnSpeedReadout">보통</output></span><input id="turnSpeed" type="range" min="0.45" max="1.75" step="0.65" value="1.1" aria-label="시점 회전 속도"></label>
       </div>
       <div class="mobileJoysticks" id="mobileJoysticks" aria-label="모바일 터치 조이스틱">
-        <div class="touchJoystick"><div class="joystickPad" id="moveJoystick" role="group" aria-label="전후 좌우 이동 조이스틱"><span class="joystickKnob" id="moveJoystickKnob"></span></div><span class="joystickLabel">이동</span></div>
+        <div class="touchJoystick"><div class="joystickPad" id="moveJoystick" role="group" aria-label="전후 좌우 이동 조이스틱"><span class="joystickKnob" id="moveJoystickKnob"></span></div><button class="touchSpeedButton" id="touchMoveSpeedButton" type="button" aria-label="이동 속도 변경">이동 · <span id="mobileMoveSpeedReadout">보통</span></button></div>
         <div class="touchJoystick"><div class="joystickPad" id="lookJoystick" role="group" aria-label="시점 회전 조이스틱"><span class="joystickKnob" id="lookJoystickKnob"></span></div><button class="touchSpeedButton" id="touchSpeedButton" type="button" aria-label="시점 회전 속도 변경">시점 · <span id="mobileTurnSpeedReadout">보통</span></button></div>
       </div>
       <div class="navGuide" id="navGuide"><span class="desktopOnly"><kbd>WASD</kbd> 3D 이동</span><span>드래그로 둘러보기 · 핀치로 전후 이동</span><span class="desktopOnly">휠로 전후 이동</span></div>
@@ -597,8 +598,8 @@
         reticle:el('reticle'),scanLine:el('scanLine'),beacons:el('galaxyBeacons'),landmarks:el('spaceLandmarks'),visitors:el('spaceVisitors'),toast:el('toast'),panel:el('missionPanel'),handle:el('missionHandle'),
         warpFlash:el('warpFlash'),navGuide:el('navGuide'),mapScale:el('mapScale'),radar:el('navRadar'),radarDots:el('radarDots'),radarProgress:el('radarProgress'),radarNearest:el('radarNearest'),zoomControls:el('navZoomControls'),mapStatus:el('mapStatus'),observeStatus:el('observeStatus'),classStatus:el('classStatus'),
         observedPhoto:el('observedGalaxyPhoto'),observedImage:el('observedGalaxyImage'),imageCredit:el('imageCredit'),imageSource:el('imageSource'),
-        solarMarker:el('solarSystemMarker'),solarOverlay:el('solarSystemOverlay'),sideGuide:el('milkyWaySideGuide'),turnSpeed:el('turnSpeed'),turnSpeedReadout:el('turnSpeedReadout'),
-        joysticks:el('mobileJoysticks'),moveJoystick:el('moveJoystick'),moveKnob:el('moveJoystickKnob'),lookJoystick:el('lookJoystick'),lookKnob:el('lookJoystickKnob'),touchSpeed:el('touchSpeedButton'),mobileTurnSpeedReadout:el('mobileTurnSpeedReadout'),
+        solarMarker:el('solarSystemMarker'),solarOverlay:el('solarSystemOverlay'),sideGuide:el('milkyWaySideGuide'),moveSpeed:el('moveSpeed'),moveSpeedReadout:el('moveSpeedReadout'),turnSpeed:el('turnSpeed'),turnSpeedReadout:el('turnSpeedReadout'),
+        joysticks:el('mobileJoysticks'),moveJoystick:el('moveJoystick'),moveKnob:el('moveJoystickKnob'),lookJoystick:el('lookJoystick'),lookKnob:el('lookJoystickKnob'),touchMoveSpeed:el('touchMoveSpeedButton'),mobileMoveSpeedReadout:el('mobileMoveSpeedReadout'),touchSpeed:el('touchSpeedButton'),mobileTurnSpeedReadout:el('mobileTurnSpeedReadout'),
         scoreButton:el('scoreButton'),scorePanel:el('scorePanel'),scorePanelValue:el('scorePanelValue'),scorePlayerName:el('scorePlayerName'),scoreRank:el('scoreRank'),scoreLeaders:el('scoreLeaders')
       };
 
@@ -618,7 +619,7 @@
       let mode='map',selectedKey=null,observingKey=null,viewMode='face',solarView=false,scanning=false,warping=false,reduced=false,started=false;
       let visited=new Set(),look={x:0,y:0},targetLook={x:0,y:0},warpPower=0,toastTimer=0;
       let width=0,height=0,viewWidth=0,viewHeight=0,dpr=1,lastFrame=0,galaxySets={};
-      let camera={x:0,y:0,z:0,yaw:0,pitch:0},pinchDistance=0,keys=new Set(),turnSpeed=1.1,discoveryRenderPending=false,autoDockPending=false;
+      let camera={x:0,y:0,z:0,yaw:0,pitch:0},pinchDistance=0,keys=new Set(),moveSpeed=1,turnSpeed=1.1,discoveryRenderPending=false,autoDockPending=false;
       const navPointers=new Map(),touchInput={moveX:0,moveY:0,lookX:0,lookY:0};
       let selectedSample=null,assigned=new Map(),classAttempts=0,classificationComplete=false,expeditionScore=0,visitorEncounters=0,visitedLandmarks=new Set();
       let classroom=null,scoreSince=new Date().toISOString(),scoreboardTimer=0,scoreboardLoading=false,notificationSeen=new Set();
@@ -799,7 +800,7 @@
 
       function drawScene(time){
         const delta=Math.min(40,time-(lastFrame||time));lastFrame=time;ctx.clearRect(0,0,width,height);
-        if(mode==='map'&&!warping){const move=delta*.19,turn=delta*.0015*turnSpeed;if(keys.has('w'))moveCamera(move,false);if(keys.has('s'))moveCamera(-move,false);if(keys.has('a'))strafeCamera(-move,false);if(keys.has('d'))strafeCamera(move,false);if(keys.has('q'))moveVertical(move,false);if(keys.has('e'))moveVertical(-move,false);if(keys.has('arrowleft'))camera.yaw-=turn;if(keys.has('arrowright'))camera.yaw+=turn;if(keys.has('arrowup'))camera.pitch=clamp(camera.pitch+turn,-1.05,1.05);if(keys.has('arrowdown'))camera.pitch=clamp(camera.pitch-turn,-1.05,1.05);if(Math.abs(touchInput.moveY)>.06)moveCamera(-touchInput.moveY*move*.92,false);if(Math.abs(touchInput.moveX)>.06)strafeCamera(touchInput.moveX*move*.92,false);if(Math.abs(touchInput.lookX)>.06)camera.yaw+=touchInput.lookX*turn*1.8;if(Math.abs(touchInput.lookY)>.06)camera.pitch=clamp(camera.pitch-touchInput.lookY*turn*1.65,-1.05,1.05)}
+        if(mode==='map'&&!warping){const move=delta*.19*moveSpeed,turn=delta*.0015*turnSpeed;if(keys.has('w'))moveCamera(move,false);if(keys.has('s'))moveCamera(-move,false);if(keys.has('a'))strafeCamera(-move,false);if(keys.has('d'))strafeCamera(move,false);if(keys.has('q'))moveVertical(move,false);if(keys.has('e'))moveVertical(-move,false);if(keys.has('arrowleft'))camera.yaw-=turn;if(keys.has('arrowright'))camera.yaw+=turn;if(keys.has('arrowup'))camera.pitch=clamp(camera.pitch+turn,-1.05,1.05);if(keys.has('arrowdown'))camera.pitch=clamp(camera.pitch-turn,-1.05,1.05);if(Math.abs(touchInput.moveY)>.06)moveCamera(-touchInput.moveY*move*.92,false);if(Math.abs(touchInput.moveX)>.06)strafeCamera(touchInput.moveX*move*.92,false);if(Math.abs(touchInput.lookX)>.06)camera.yaw+=touchInput.lookX*turn*1.8;if(Math.abs(touchInput.lookY)>.06)camera.pitch=clamp(camera.pitch-touchInput.lookY*turn*1.65,-1.05,1.05)}
         look.x+=(targetLook.x-look.x)*.045;look.y+=(targetLook.y-look.y)*.045;warpPower*=.94;drawStars();
         if(mode==='map'){drawNavigationStars();drawSpaceLandmarks(time);drawMapGlows();updateLandmarks();updateRadar();updateSpaceVisitors(time);updateBeacons()}else if(observingKey){const galaxy=galaxyByKey(observingKey);ui.observedPhoto.style.left=`calc(50% + ${look.x*18}px)`;ui.observedPhoto.style.top=`calc(${width<700?46:51}% + ${look.y*12}px)`;if(galaxy.key==='milkyway'&&viewMode==='side')drawEdgeGalaxy();else if(!solarView&&ui.observedPhoto.hidden)drawParticleGalaxy(galaxy,time)}
         requestAnimationFrame(drawScene);
@@ -936,7 +937,7 @@
 
       function handleView(){if(mode==='map')resetMap();else if(solarView)closeSolarSystem();else if(observingKey==='milkyway')toggleMilkyWayView();else returnToMap()}
       function handleScan(){if(mode==='map')openClassification()}
-      function handleWarp(){if(mode==='map'){moveCamera(180);showToast('현재 바라보는 방향으로 전진합니다.')}else returnToMap()}
+      function handleWarp(){if(mode==='map'){moveCamera(180*moveSpeed);showToast('현재 바라보는 방향으로 전진합니다.')}else returnToMap()}
 
       function buildClassification(){
         syncClassSamples();const grid=el('sampleGrid'),bins=el('classBins');grid.innerHTML='';bins.innerHTML='';
@@ -975,12 +976,12 @@
       function bindNavigation(){
         const distance=()=>{const points=[...navPointers.values()];return points.length<2?0:Math.hypot(points[0].x-points[1].x,points[0].y-points[1].y)};
         viewport.addEventListener('pointerdown',event=>{if(mode!=='map'||warping||event.target.closest('button,a,input,label'))return;navPointers.set(event.pointerId,{x:event.clientX,y:event.clientY});viewport.classList.add('dragging');if(navPointers.size===2)pinchDistance=distance();try{viewport.setPointerCapture(event.pointerId)}catch{}});
-        viewport.addEventListener('pointermove',event=>{if(mode==='observe'){const r=viewport.getBoundingClientRect();targetLook.x=((event.clientX-r.left)/r.width-.5)*2;targetLook.y=((event.clientY-r.top)/r.height-.5)*2;return}const previous=navPointers.get(event.pointerId);if(!previous)return;const dx=event.clientX-previous.x,dy=event.clientY-previous.y;navPointers.set(event.pointerId,{x:event.clientX,y:event.clientY});if(navPointers.size>=2){const nextDistance=distance();if(pinchDistance)moveCamera((nextDistance-pinchDistance)*1.9);pinchDistance=nextDistance}else{camera.yaw-=dx*.0055*turnSpeed;camera.pitch=clamp(camera.pitch+dy*.0045*turnSpeed,-1.05,1.05);updateBeacons()}event.preventDefault()});
+        viewport.addEventListener('pointermove',event=>{if(mode==='observe'){const r=viewport.getBoundingClientRect();targetLook.x=((event.clientX-r.left)/r.width-.5)*2;targetLook.y=((event.clientY-r.top)/r.height-.5)*2;return}const previous=navPointers.get(event.pointerId);if(!previous)return;const dx=event.clientX-previous.x,dy=event.clientY-previous.y;navPointers.set(event.pointerId,{x:event.clientX,y:event.clientY});if(navPointers.size>=2){const nextDistance=distance();if(pinchDistance)moveCamera((nextDistance-pinchDistance)*1.9*moveSpeed);pinchDistance=nextDistance}else{camera.yaw-=dx*.0055*turnSpeed;camera.pitch=clamp(camera.pitch+dy*.0045*turnSpeed,-1.05,1.05);updateBeacons()}event.preventDefault()});
         function endDrag(event){navPointers.delete(event.pointerId);pinchDistance=navPointers.size>=2?distance():0;if(!navPointers.size)viewport.classList.remove('dragging')}
         viewport.addEventListener('pointerup',endDrag);viewport.addEventListener('pointercancel',endDrag);viewport.addEventListener('pointerleave',()=>{if(mode==='observe'){targetLook={x:0,y:0}}});
-        viewport.addEventListener('wheel',event=>{if(mode!=='map')return;event.preventDefault();moveCamera(-event.deltaY*.48)},{passive:false});
-        el('moveForwardButton').addEventListener('click',event=>{event.stopPropagation();moveCamera(150);showToast('카메라가 바라보는 방향으로 전진했습니다.')});
-        el('moveBackButton').addEventListener('click',event=>{event.stopPropagation();moveCamera(-150);showToast('카메라가 뒤로 이동했습니다.')});
+        viewport.addEventListener('wheel',event=>{if(mode!=='map')return;event.preventDefault();moveCamera(-event.deltaY*.48*moveSpeed)},{passive:false});
+        el('moveForwardButton').addEventListener('click',event=>{event.stopPropagation();moveCamera(150*moveSpeed);showToast('카메라가 바라보는 방향으로 전진했습니다.')});
+        el('moveBackButton').addEventListener('click',event=>{event.stopPropagation();moveCamera(-150*moveSpeed);showToast('카메라가 뒤로 이동했습니다.')});
         window.addEventListener('keydown',event=>{const key=event.key.toLowerCase();if(key==='escape'&&!ui.scorePanel.hidden){ui.scorePanel.hidden=true;ui.scoreButton.setAttribute('aria-expanded','false');return}if(mode==='map'&&['w','a','s','d','q','e','arrowup','arrowdown','arrowleft','arrowright'].includes(key)){keys.add(key);event.preventDefault()}});
         window.addEventListener('keyup',event=>keys.delete(event.key.toLowerCase()));
       }
@@ -1019,6 +1020,9 @@
 
       ui.view.addEventListener('click',handleView);ui.scan.addEventListener('click',handleScan);ui.warp.addEventListener('click',handleWarp);
       ui.solarMarker.addEventListener('click',openSolarSystem);el('solarCloseButton').addEventListener('click',closeSolarSystem);
+      function updateMoveSpeed(){moveSpeed=Number(ui.moveSpeed.value);const label=moveSpeed<.8?'느림':moveSpeed>1.2?'빠름':'보통';ui.moveSpeedReadout.textContent=label;ui.mobileMoveSpeedReadout.textContent=label}
+      ui.moveSpeed.addEventListener('input',updateMoveSpeed);ui.moveSpeed.addEventListener('change',()=>showToast(`이동 속도: ${ui.moveSpeedReadout.textContent}`));updateMoveSpeed();
+      ui.touchMoveSpeed.addEventListener('click',event=>{event.stopPropagation();const speeds=[.5,1,1.5],next=speeds[(speeds.findIndex(value=>Math.abs(value-moveSpeed)<.1)+1)%speeds.length];ui.moveSpeed.value=String(next);updateMoveSpeed();showToast(`조이스틱 이동 속도: ${ui.mobileMoveSpeedReadout.textContent}`)});
       function updateTurnSpeed(){turnSpeed=Number(ui.turnSpeed.value);const label=turnSpeed<.8?'느림':turnSpeed>1.4?'빠름':'보통';ui.turnSpeedReadout.textContent=label;ui.mobileTurnSpeedReadout.textContent=label}
       ui.turnSpeed.addEventListener('input',updateTurnSpeed);ui.turnSpeed.addEventListener('change',()=>showToast(`시점 회전 속도: ${ui.turnSpeedReadout.textContent}`));updateTurnSpeed();
       ui.touchSpeed.addEventListener('click',event=>{event.stopPropagation();const speeds=[.45,1.1,1.75],next=speeds[(speeds.findIndex(value=>Math.abs(value-turnSpeed)<.1)+1)%speeds.length];ui.turnSpeed.value=String(next);updateTurnSpeed();showToast(`조이스틱 시점 속도: ${ui.mobileTurnSpeedReadout.textContent}`)});
