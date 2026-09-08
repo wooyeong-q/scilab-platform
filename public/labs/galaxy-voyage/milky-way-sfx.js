@@ -150,26 +150,78 @@
     });
   }
 
+  let pendingClassification = null;
+  let draggedClassificationId = null;
+
+  function classificationCard(id) {
+    if (!id) return null;
+    const safeId = window.CSS?.escape ? CSS.escape(id) : id.replace(/"/g, '\\"');
+    return document.querySelector(`.sampleCard[data-id="${safeId}"]`);
+  }
+
+  function resolveClassification(pending, attempt = 0) {
+    if (!pending || pendingClassification !== pending) return;
+    const card = classificationCard(pending.selectedId);
+    if (card?.classList.contains('assigned')) {
+      pendingClassification = null;
+      play('correct');
+      return;
+    }
+    if (card?.classList.contains('wrong')) {
+      pendingClassification = null;
+      play('wrong');
+      return;
+    }
+    if (attempt < 2) {
+      window.setTimeout(() => resolveClassification(pending, attempt + 1), attempt === 0 ? 50 : 100);
+    } else {
+      pendingClassification = null;
+    }
+  }
+
+  function armClassification(bin, selectedId) {
+    if (!bin || !selectedId) return;
+    const pending = {
+      selectedId,
+      binType: bin.getAttribute('data-type') || '',
+      armedAt: performance.now()
+    };
+    pendingClassification = pending;
+    window.setTimeout(() => resolveClassification(pending), 0);
+  }
+
+  document.addEventListener('dragstart', event => {
+    const target = event.target instanceof Element ? event.target : null;
+    const card = target?.closest('.sampleCard');
+    draggedClassificationId = card?.getAttribute('data-id') || null;
+  }, true);
+
+  document.addEventListener('dragend', () => {
+    window.setTimeout(() => { draggedClassificationId = null; }, 0);
+  }, true);
+
+  document.addEventListener('drop', event => {
+    const target = event.target instanceof Element ? event.target : null;
+    const bin = target?.closest('.classBin');
+    if (!bin) return;
+    const selectedId = draggedClassificationId || document.querySelector('.sampleCard.selected')?.getAttribute('data-id');
+    armClassification(bin, selectedId);
+  }, true);
+
+  document.addEventListener('click', event => {
+    const target = event.target instanceof Element ? event.target : null;
+    const bin = target?.closest('.classBin');
+    if (!bin) return;
+    const selectedId = document.querySelector('.sampleCard.selected')?.getAttribute('data-id');
+    armClassification(bin, selectedId);
+  }, true);
+
   document.addEventListener('click', event => {
     const target = event.target instanceof Element ? event.target : null;
     if (!target) return;
 
     if (target.closest('.spaceVisitor')) return;
-
-    const classBin = target.closest('.classBin');
-    if (classBin) {
-      const selected = document.querySelector('.sampleCard.selected');
-      const selectedId = selected?.getAttribute('data-id');
-      if (selectedId) {
-        window.setTimeout(() => {
-          const safeId = window.CSS?.escape ? CSS.escape(selectedId) : selectedId.replace(/"/g, '\\"');
-          const card = document.querySelector(`.sampleCard[data-id="${safeId}"]`);
-          if (card?.classList.contains('assigned')) play('correct');
-          else if (card?.classList.contains('wrong')) play('wrong');
-        }, 60);
-      }
-      return;
-    }
+    if (target.closest('.classBin')) return;
 
     const ufoChoice = target.closest('.ufoChoice');
     if (ufoChoice) {
