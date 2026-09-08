@@ -21,6 +21,9 @@
   var sampleLoads = {};
   var trackFades = {};
   var tracksPrimed = false;
+  var trackSources = {};
+  // Unlock each media element on mobile without downloading future-scene music.
+  var SILENT_TRACK = 'data:audio/wav;base64,UklGRsQAAABXQVZFZm10IBAAAAABAAEAQB8AAIA+AAACABAAZGF0YaAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA';
   var stageSwitching = false;
   var stageSwitchTimer = 0;
   var lastPlayError = '';
@@ -202,9 +205,10 @@
     if (tracks) return tracks;
     tracks = {};
     Object.keys(TRACK_CONFIG).forEach(function (name) {
-      var element = new Audio(TRACK_CONFIG[name].src);
+      var element = new Audio();
+      element.preload = 'none';
+      element.src = SILENT_TRACK;
       element.loop = true;
-      element.preload = 'auto';
       element.volume = 0;
       element.preservesPitch = false;
       element.webkitPreservesPitch = false;
@@ -218,17 +222,30 @@
     lastPlayError = name + ': ' + (error && error.name ? error.name : 'play failed');
   }
 
+  function prepareTrack(name) {
+    if (!tracks || !tracks[name] || trackSources[name]) return;
+    trackSources[name] = true;
+    tracks[name].src = TRACK_CONFIG[name].src;
+  }
+
   function tryPlay(name) {
-    if (!tracks || !tracks[name] || !tracks[name].paused) return;
+    if (!tracks || !tracks[name]) return;
+    prepareTrack(name);
+    if (!tracks[name].paused) return;
     var attempt = tracks[name].play();
     if (attempt && attempt.catch) attempt.catch(function (error) { rememberPlayError(name, error); });
   }
 
   function primeTracks() {
     ensureTracks();
-    if (tracksPrimed) return;
+    if (tracksPrimed || !active || muted || document.hidden) return;
     tracksPrimed = true;
     Object.keys(tracks).forEach(function (name) {
+      var selected = STAGE_TRACK[stage] || STAGE_TRACK[1];
+      var needed = name === selected || (name === 'delirium' && (SCENE_DREAD[stage] || 0) > 0);
+      if (needed) prepareTrack(name);
+      // Unused elements play only the inline silence; previously used tracks stay paused.
+      else if (trackSources[name]) return;
       var element = tracks[name];
       var attempt = element.play();
       if (!attempt || !attempt.then) return;
@@ -260,6 +277,7 @@
   }
 
   function startTracks() {
+    if (!active || muted || document.hidden || stageSwitching) return;
     ensureTracks();
     var current = STAGE_TRACK[stage] || STAGE_TRACK[1];
     tryPlay(current);
