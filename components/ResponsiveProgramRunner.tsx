@@ -50,6 +50,72 @@ export function ResponsiveProgramRunner({title,url,programId}:{title:string;url:
     showTemporaryMessage('이전 수업 연결을 해제했습니다. 새 수업을 만들 수 있습니다.',3200);
   }
 
+  function enhanceMilkyWayObjects(frameDocument:Document){
+    if(programId!=='milky-way-objects'||frameDocument.getElementById('scilabMilkyWayGuide'))return;
+
+    const style=frameDocument.createElement('style');
+    style.id='scilabMilkyWayRunnerPatch';
+    style.textContent=`
+      .scilabMilkyWayGuide{margin:14px 0 16px;padding:12px 13px;border:1px solid rgba(98,232,255,.24);border-radius:15px;background:rgba(98,232,255,.055);display:grid;gap:8px;text-align:left}
+      .scilabMilkyWayGuideRow{display:grid;grid-template-columns:64px 1fr;gap:10px;align-items:start;color:#cbd7f0;font-size:11px;line-height:1.45}
+      .scilabMilkyWayGuideRow strong{color:#dffaff;font-size:10px;letter-spacing:.04em}
+      .scilabMilkyWayGuideKeys{font-weight:850;color:#fff}
+      #classifyModal .modalClose{border-color:rgba(98,232,255,.55);background:rgba(98,232,255,.12);box-shadow:0 0 18px rgba(98,232,255,.12);font-size:27px;font-weight:900}
+      .scilabClassifyReturnBar{position:sticky;z-index:30;bottom:-1px;margin:16px -6px -8px;padding:12px 6px 6px;background:linear-gradient(180deg,rgba(6,10,29,0),rgba(6,10,29,.96) 28%)}
+      .scilabClassifyReturnButton{width:100%;min-height:50px;border:1px solid rgba(98,232,255,.55);border-radius:14px;background:linear-gradient(135deg,rgba(98,232,255,.22),rgba(114,135,255,.18));color:#effcff;font:inherit;font-weight:900;cursor:pointer;box-shadow:0 10px 28px rgba(0,0,0,.24)}
+      .scilabClassifyReturnButton:hover{border-color:#62e8ff;background:linear-gradient(135deg,rgba(98,232,255,.3),rgba(114,135,255,.25))}
+      #classifyModal #openReportButton{background:rgba(255,255,255,.07)!important;border:1px solid rgba(159,183,255,.3)!important;color:#dce6fb!important;box-shadow:none!important}
+      #classifyModal .classifyResult .modalActions::before{content:'탐사를 충분히 마쳤다면';display:block;margin:0 0 7px;color:#9ba9c7;font-size:10px;text-align:center}
+      @media(max-width:700px){
+        .scilabMilkyWayGuide{margin:10px 0 12px;padding:10px;gap:6px}
+        .scilabMilkyWayGuideRow{grid-template-columns:54px 1fr;gap:7px;font-size:9.5px}
+        .scilabMilkyWayGuideRow strong{font-size:9px}
+        #classifyModal .modalClose{position:sticky;top:0;z-index:40;width:48px;height:48px;flex-basis:48px;background:rgba(8,18,42,.96)}
+        .scilabClassifyReturnBar{margin-top:12px;padding-bottom:calc(7px + env(safe-area-inset-bottom,0px))}
+        .scilabClassifyReturnButton{min-height:52px;font-size:14px}
+      }
+    `;
+    frameDocument.head.appendChild(style);
+
+    const introCard=frameDocument.querySelector('#introModal .introModalCard');
+    const classroomForm=frameDocument.querySelector('#introModal .classroomForm');
+    if(introCard&&classroomForm){
+      const guide=frameDocument.createElement('div');
+      guide.id='scilabMilkyWayGuide';
+      guide.className='scilabMilkyWayGuide';
+      guide.innerHTML=`
+        <div class="scilabMilkyWayGuideRow"><strong>조작</strong><span><span class="scilabMilkyWayGuideKeys">WASD</span> 이동 · <span class="scilabMilkyWayGuideKeys">Q/E</span> 상승·하강 · 마우스/터치로 시점 변경 · 이동·시점 속도 조절 가능</span></div>
+        <div class="scilabMilkyWayGuideRow"><strong>분류</strong><span>천체를 관측한 뒤 <b>탐사 중간에도 언제든 분류</b>할 수 있습니다. 분류 후 다시 탐사로 돌아와 계속 찾을 수 있습니다.</span></div>
+        <div class="scilabMilkyWayGuideRow"><strong>UFO</strong><span>우리은하 곳곳에 정체불명의 UFO가 숨어 있습니다. 천체를 탐사하면서 함께 찾아 가까이 접근해 보세요.</span></div>
+      `;
+      introCard.insertBefore(guide,classroomForm);
+    }
+
+    const classifyDescription=frameDocument.querySelector('#classifyModal .classifyHeader p:not(.modalEyebrow)');
+    if(classifyDescription){
+      classifyDescription.textContent='탐사 중 언제든 관측한 천체를 분류할 수 있습니다. 분류를 마치지 않아도 다시 탐사로 돌아갔다가 나중에 이어서 할 수 있습니다. PC에서는 끌어 놓기, 모바일에서는 천체와 분류함을 차례로 누르세요.';
+    }
+
+    const closeClassifyButton=frameDocument.getElementById('closeClassifyButton') as HTMLButtonElement|null;
+    if(closeClassifyButton){
+      closeClassifyButton.title='분류 화면 닫기 · 탐사로 돌아가기';
+      closeClassifyButton.setAttribute('aria-label','분류 화면 닫기 · 탐사로 돌아가기');
+    }
+
+    const classifyCard=frameDocument.querySelector('#classifyModal .classifyCard');
+    if(classifyCard&&closeClassifyButton){
+      const returnBar=frameDocument.createElement('div');
+      returnBar.className='scilabClassifyReturnBar';
+      const returnButton=frameDocument.createElement('button');
+      returnButton.type='button';
+      returnButton.className='scilabClassifyReturnButton';
+      returnButton.textContent='← 탐사로 돌아가기';
+      returnButton.addEventListener('click',()=>closeClassifyButton.click());
+      returnBar.appendChild(returnButton);
+      classifyCard.appendChild(returnBar);
+    }
+  }
+
   function handleFrameLoad(){
     setLoaded(true);
     if(!classroomStorageKey)return;
@@ -62,6 +128,7 @@ export function ResponsiveProgramRunner({title,url,programId}:{title:string;url:
           event.stopPropagation();
         }
       },true);
+      enhanceMilkyWayObjects(frameDocument);
     }catch{}
   }
 
