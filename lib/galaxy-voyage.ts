@@ -149,7 +149,7 @@ export async function getGalaxyScoreboard(code: string, playerId: string, player
 function eventDelta(kind: Exclude<ScoreEventKind, 'ufo'>) {
   if (kind === 'observation') return 10;
   if (kind === 'classification_correct') return 100;
-  return -20;
+  return 0;
 }
 
 export async function applyGalaxyScoreEvent(code: string, playerId: string, playerKey: string, kind: Exclude<ScoreEventKind, 'ufo'>, referenceValue: unknown) {
