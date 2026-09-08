@@ -9,6 +9,8 @@
   var effects = null;
   var sampleOutput = null;
   var returnBed = null;
+  var returnPulse = null;
+  var narrativeActive = false;
   var active = false;
   var muted = false;
   var stage = 1;
@@ -29,6 +31,8 @@
   var lastPlayError = '';
   var button = null;
   var AUDIO_ROOT = '/labs/star-escape/assets/audio/';
+  // Raise music independently of the existing effect and sample levels.
+  var MUSIC_BOOST = 3;
   var EFFECT_ALIASES = {
     item: 'select',
     open: 'mechanicalOpen',
@@ -150,6 +154,7 @@
     pulse.connect(pulseDepth);
     pulseDepth.connect(pulseTarget.gain);
     pulse.start();
+    returnPulse = { rate: pulse.frequency, depth: pulseDepth.gain };
     returnBed = output;
     return returnBed;
   }
@@ -241,7 +246,7 @@
     if (tracksPrimed || !active || muted || document.hidden) return;
     tracksPrimed = true;
     Object.keys(tracks).forEach(function (name) {
-      var selected = STAGE_TRACK[stage] || STAGE_TRACK[1];
+      var selected = narrativeActive ? 'delirium' : STAGE_TRACK[stage] || STAGE_TRACK[1];
       var needed = name === selected || (name === 'delirium' && (SCENE_DREAD[stage] || 0) > 0);
       if (needed) prepareTrack(name);
       // Unused elements play only the inline silence; previously used tracks stay paused.
@@ -250,7 +255,7 @@
       var attempt = element.play();
       if (!attempt || !attempt.then) return;
       attempt.then(function () {
-        var selected = STAGE_TRACK[stage] || STAGE_TRACK[1];
+        var selected = narrativeActive ? 'delirium' : STAGE_TRACK[stage] || STAGE_TRACK[1];
         var needed = name === selected || (name === 'delirium' && (SCENE_DREAD[stage] || 0) > 0);
         if ((!needed || stageSwitching) && element.volume <= .0001) element.pause();
       }).catch(function (error) {
@@ -279,7 +284,7 @@
   function startTracks() {
     if (!active || muted || document.hidden || stageSwitching) return;
     ensureTracks();
-    var current = STAGE_TRACK[stage] || STAGE_TRACK[1];
+    var current = narrativeActive ? 'delirium' : STAGE_TRACK[stage] || STAGE_TRACK[1];
     tryPlay(current);
   }
 
@@ -306,21 +311,29 @@
 
   function applyMix() {
     var audible = active && !muted && !document.hidden && !stageSwitching;
-    var current = STAGE_TRACK[stage] || STAGE_TRACK[1];
-    var mix = audible ? duckScale : 0;
-    var baseScale = 1 - mysteryLevel * .68;
+    var current = narrativeActive ? 'delirium' : STAGE_TRACK[stage] || STAGE_TRACK[1];
+    var mix = audible ? (narrativeActive ? Math.max(.7, duckScale) : duckScale) : 0;
+    var baseScale = narrativeActive ? 1.5 : 1 - mysteryLevel * .68;
     var dreadLevel = SCENE_DREAD[stage] || 0;
     ensureTracks();
-    if (tracks.delirium) tracks.delirium.playbackRate = DREAD_RATE[stage] || 1;
+    if (tracks.delirium) tracks.delirium.playbackRate = narrativeActive ? .78 : DREAD_RATE[stage] || 1;
     Object.keys(TRACK_CONFIG).forEach(function (name) {
       var target = name === current ? TRACK_CONFIG[name].volume * mix * baseScale : 0;
+      if (name === 'delirium' && current === 'delirium') {
+        target = TRACK_CONFIG.delirium.volume * mix * Math.max(baseScale, mysteryLevel * 1.25);
+      }
       if (name === 'delirium' && current !== 'delirium') {
         target = TRACK_CONFIG.delirium.volume * mix * Math.max(dreadLevel * baseScale, mysteryLevel * .72);
       }
-      fadeTrack(name, target, audible ? 520 : 120);
+      fadeTrack(name, target * MUSIC_BOOST, audible ? 520 : 120);
     });
-    if (current === 'returnSignal') ensureReturnBed();
-    if (returnBed) ramp(returnBed.gain, audible && current === 'returnSignal' ? .085 * mix * baseScale : .0001, audible ? .52 : .12);
+    if (current === 'returnSignal' || narrativeActive) ensureReturnBed();
+    if (returnPulse) {
+      ramp(returnPulse.rate, narrativeActive ? 1.55 : .11, .35);
+      ramp(returnPulse.depth, narrativeActive ? .1 : .009, .35);
+    }
+    var bedLevel = narrativeActive ? .12 : current === 'returnSignal' ? .085 * baseScale : 0;
+    if (returnBed) ramp(returnBed.gain, audible && bedLevel ? bedLevel * MUSIC_BOOST * mix : .0001, audible ? .52 : .12);
     if (audio && master) ramp(master.gain, audible ? .24 : .0001, audible ? .3 : .1);
     if (audio && sampleOutput) ramp(sampleOutput.gain, active && !muted && !document.hidden ? .18 : .0001, .08);
   }
@@ -404,6 +417,7 @@
 
   function deactivate() {
     active = false;
+    narrativeActive = false;
     window.clearTimeout(duckTimer);
     window.clearTimeout(mysteryTimer);
     duckScale = 1;
@@ -420,6 +434,7 @@
     ensureTracks();
     stopAllTracks(true);
     stage = next;
+    narrativeActive = false;
     window.clearTimeout(mysteryTimer);
     mysteryLevel = 0;
     stageSwitching = true;
@@ -555,7 +570,7 @@
     ensureTracks();
     startTracks();
     window.clearTimeout(mysteryTimer);
-    if (tracks.delirium && mysteryLevel < .1) {
+    if (tracks.delirium && !narrativeActive && mysteryLevel < .1) {
       try { tracks.delirium.currentTime = 0; } catch (error) {}
     }
     mysteryLevel = Math.max(.35, Math.min(1, Number(strength) || .78));
@@ -564,6 +579,23 @@
       mysteryLevel = 0;
       applyMix();
     }, Math.max(1500, Number(duration) || 8000));
+  }
+
+  // Hold the suspense score for the entire record view, even when students read slowly.
+  function setNarrative(enabled) {
+    var next = !!enabled;
+    if (narrativeActive === next) return;
+    narrativeActive = next;
+    if (!next) {
+      window.clearTimeout(mysteryTimer);
+      mysteryLevel = 0;
+    }
+    if (active && !muted && !document.hidden) {
+      ensureAudio();
+      resume();
+      startTracks();
+    }
+    applyMix();
   }
 
   function updateButton() {
@@ -629,12 +661,13 @@
     isMuted: function () { return muted; },
     play: play,
     mystery: mystery,
+    setNarrative: setNarrative,
     setStage: setStage,
     toggle: toggle,
     unlock: unlock,
     updateButton: updateButton,
     debugState: function () {
-      var state = { stage: stage, track: STAGE_TRACK[stage], switching: stageSwitching, lastPlayError: lastPlayError, tracks: {} };
+      var state = { stage: stage, track: narrativeActive ? 'delirium' : STAGE_TRACK[stage], narrative: narrativeActive, switching: stageSwitching, lastPlayError: lastPlayError, tracks: {} };
       if (tracks) Object.keys(tracks).forEach(function (name) {
         state.tracks[name] = { paused: tracks[name].paused, volume: tracks[name].volume, currentTime: tracks[name].currentTime, playbackRate: tracks[name].playbackRate };
       });

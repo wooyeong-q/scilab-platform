@@ -489,11 +489,11 @@
 
   function uvMarkup(state) {
     var symbols = [
-      ['scene04_p04_uv_symbol_01_emission_nebula.webp', '방출성운'],
-      ['scene04_p04_uv_symbol_02_open_cluster.webp', '산개성단'],
-      ['scene04_p04_uv_symbol_03_dark_nebula.webp', '암흑성운'],
-      ['scene04_p04_uv_symbol_04_globular_cluster.webp', '구상성단'],
-      ['scene04_p04_uv_symbol_05_reflection_nebula.webp', '반사성운'],
+      'scene04_p04_uv_symbol_01_emission_nebula.webp',
+      'scene04_p04_uv_symbol_02_open_cluster.webp',
+      'scene04_p04_uv_symbol_03_dark_nebula.webp',
+      'scene04_p04_uv_symbol_04_globular_cluster.webp',
+      'scene04_p04_uv_symbol_05_reflection_nebula.webp',
     ];
     var positions = [
       { left: '17%', top: '30%' }, { left: '37%', top: '20%' },
@@ -511,7 +511,7 @@
       '</svg>' + symbols.map(function (entry, index) {
       var pos = positions[index];
       var found = complete || uvHits.has(index);
-      return '<div class="s4-uv-symbol u' + (index + 1) + (found ? ' found' : '') + '" data-uv-hit="' + index + '" style="left:' + pos.left + ';top:' + pos.top + '"><span><img src="' + img(entry[0]) + '" alt="' + entry[1] + ' 숨은 기호"></span><b>' + entry[1] + '</b></div>';
+      return '<div class="s4-uv-symbol u' + (index + 1) + (found ? ' found' : '') + '" data-uv-hit="' + index + '" style="left:' + pos.left + ';top:' + pos.top + '"><span><img src="' + img(entry) + '" alt="숨은 천체 기호"></span></div>';
     }).join('');
     return modalShell('UV 검사 · 오래된 별지도', '<div class="s4-uv-board' + (complete ? ' complete' : '') + '" id="s4UvBoard"><img src="' + img('scene04_p04_starmap_base.webp') + '" alt="오래된 별지도"><div class="s4-uv-overlay" id="s4UvOverlay">' + overlay + '</div><div class="s4-uv-lamp"><img src="' + img('scene04_item_uv_light.webp') + '" alt=""></div></div><div class="s4-uv-progress"><b>숨은 기호 · ' + (complete ? 5 : uvHits.size) + '/5</b><span>▲에서 시작해 굵은 보라색 화살표를 따라 읽으세요.</span></div><p class="s4-help">다섯 기호는 각각 앞에서 분류한 천체를 뜻합니다. 화살표가 연결하는 순서가 중앙 귀환장치에 넣을 인증칩 순서입니다.</p>' +
       '<button class="s4-primary" id="s4SaveUv" ' + (uvHits.size >= 5 || state.uvRevealed ? '' : 'disabled') + '>숨은 순서 기록</button>' + puzzleFooter('지도 위에 숨겨진 기호를 모두 찾아 방향을 따라 순서를 읽으세요.'), 'uv');

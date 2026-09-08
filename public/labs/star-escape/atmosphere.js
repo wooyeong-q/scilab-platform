@@ -257,13 +257,13 @@
     }
     replayClass(element, 'show', context.duration || 5200);
     if (kind === 's2-door-edge') {
-      var frameCount = Math.max(1, Math.floor(((context.duration || 6800) - 900) / 500));
+      var frameCount = Math.max(1, Math.floor(((context.duration || 1600) - 180) / 120));
       for (var frame = 0; frame < frameCount; frame += 1) {
         (function (frameIndex) {
           later(function () {
             if (!image.isConnected || !element.classList.contains('s2-door-edge')) return;
             image.src = scene2ApproachFrames[1 + (frameIndex % 2)];
-          }, 900 + frameIndex * 500);
+          }, 180 + frameIndex * 120);
         })(frame);
       }
     }
@@ -337,6 +337,10 @@
   }
 
   function domEvents(snapshot) {
+    if (sound && typeof sound.setNarrative === 'function') {
+      var unknownSpeaker = game.querySelector('.s1-dialogue small,.s2-dialogue small,.s3-dialogue small,.s4-dialogue small,.dialog .speaker');
+      sound.setNarrative(!!game.querySelector('.s1-ending,.s2-panel-open-notice,.s2-panel-signal-stage,.s3-maintenance,.s3-recording-screen,.s4-recorder,.s4-recording,.s4-log,.s4-cctv') || !!(unknownSpeaker && /미확인|잡음/.test(unknownSpeaker.textContent)));
+    }
     if (snapshot.stage === 1 && snapshot.question <= 2 && game.querySelector('.s1-puzzle')) {
       once(snapshot, 'scene-1-record-glitch-q' + snapshot.question, function () { later(function () { glitch('기록 수정 · <strong>17분 전</strong>', false); }, 700); });
     }
@@ -367,9 +371,9 @@
     if (game.querySelector('.s2-door-open-notice')) {
       once(snapshot, 'scene-2-open-door-silhouette-v6', function () {
         mystery(15000, .94); later(function () {
-          silhouette('s2-door-edge', { stage: snapshot.stage, attempts: 0, settled: true, duration: 6800 });
-          later(function () { flicker(true); }, 5800);
-        }, 520);
+          silhouette('s2-door-edge', { stage: snapshot.stage, attempts: 0, settled: true, duration: 1600 });
+          later(function () { flicker(true); }, 1280);
+        }, 180);
       });
     }
     if (snapshot.stage === 3 && snapshot.question === 1 && game.querySelector('.s3-room-base')) {
