@@ -4,6 +4,7 @@
   window.__scilabMilkyWaySfxLoaded = true;
 
   const storageKey = 'scilab-milky-way-sfx-muted';
+  const classroomStorageKey = 'scilab-milky-way-objects-classroom';
   let muted = false;
   try { muted = window.localStorage.getItem(storageKey) === '1'; } catch {}
 
@@ -73,6 +74,11 @@
     shipMeta.insertBefore(soundButton, motionButton);
   }
 
+  function hasClassroomSession() {
+    try { return Boolean(window.localStorage.getItem(classroomStorageKey)); }
+    catch { return false; }
+  }
+
   const beaconContainer = document.getElementById('galaxyBeacons');
   if (beaconContainer) {
     const visitedKeys = new Set(
@@ -105,23 +111,55 @@
 
   const scoreElement = document.getElementById('expeditionScore');
   let pendingUfo = null;
-  let lastScore = Number(scoreElement?.textContent || 0);
+  let rawScore = Number(scoreElement?.textContent || 0);
+  let soloWrongOffset = 0;
+  let patchingScore = false;
+  let pendingClassificationScore = null;
+
+  function displayedScore() {
+    return rawScore + (hasClassroomSession() ? 0 : soloWrongOffset);
+  }
+
+  function patchScoreDisplays() {
+    const display = displayedScore();
+    if (scoreElement && Number(scoreElement.textContent || 0) !== display) {
+      patchingScore = true;
+      scoreElement.textContent = String(display);
+    }
+    const panelScore = document.getElementById('scorePanelValue');
+    if (panelScore) panelScore.textContent = String(display);
+    const reportScore = document.getElementById('reportScore');
+    if (reportScore) reportScore.textContent = String(display);
+    const attempts = document.getElementById('classifyAttempts');
+    if (attempts) attempts.textContent = attempts.textContent.replace(/점수\s+\d+/, `점수 ${display}`);
+  }
+
+  function currentRawScoreFromDisplay() {
+    const shown = Number(scoreElement?.textContent || rawScore);
+    return shown - (hasClassroomSession() ? 0 : soloWrongOffset);
+  }
+
+  function armClassificationScore() {
+    pendingClassificationScore = currentRawScoreFromDisplay();
+  }
+
+  document.addEventListener('click', event => {
+    const target = event.target instanceof Element ? event.target : null;
+    if (target?.closest('.classBin')) armClassificationScore();
+  }, true);
+  document.addEventListener('drop', event => {
+    const target = event.target instanceof Element ? event.target : null;
+    if (target?.closest('.classBin')) armClassificationScore();
+  }, true);
 
   document.addEventListener('click', event => {
     const target = event.target instanceof Element ? event.target : null;
     const visitor = target?.closest('.spaceVisitor');
     if (!visitor) return;
-
-    pendingUfo = {
-      visitor,
-      scoreBefore: Number(scoreElement?.textContent || 0),
-      armedAt: performance.now()
-    };
-
+    pendingUfo = { visitor, armedAt: performance.now() };
     window.setTimeout(() => {
       if (pendingUfo?.visitor === visitor && !visitor.classList.contains('cooldown')) pendingUfo = null;
     }, 120);
-
     window.setTimeout(() => {
       if (pendingUfo?.visitor === visitor) pendingUfo = null;
     }, 8000);
@@ -129,8 +167,12 @@
 
   if (scoreElement) {
     new MutationObserver(() => {
-      const nextScore = Number(scoreElement.textContent || 0);
-      const changed = Number.isFinite(nextScore) && nextScore !== lastScore;
+      if (patchingScore) {
+        patchingScore = false;
+        return;
+      }
+      const nextRawScore = Number(scoreElement.textContent || 0);
+      const changed = Number.isFinite(nextRawScore) && nextRawScore !== rawScore;
 
       if (
         changed &&
@@ -142,7 +184,8 @@
         pendingUfo = null;
       }
 
-      if (Number.isFinite(nextScore)) lastScore = nextScore;
+      if (Number.isFinite(nextRawScore)) rawScore = nextRawScore;
+      if (!hasClassroomSession() && soloWrongOffset) patchScoreDisplays();
     }).observe(scoreElement, {
       childList: true,
       characterData: true,
@@ -150,71 +193,45 @@
     });
   }
 
-  let pendingClassification = null;
-  let draggedClassificationId = null;
+  const toast = document.querySelector('.toast');
+  if (toast) {
+    let handledToast = '';
+    new MutationObserver(() => {
+      if (!toast.classList.contains('show')) {
+        handledToast = '';
+        return;
+      }
+      const text = (toast.textContent || '').trim();
+      if (!text || text === handledToast) return;
 
-  function classificationCard(id) {
-    if (!id) return null;
-    const safeId = window.CSS?.escape ? CSS.escape(id) : id.replace(/"/g, '\\"');
-    return document.querySelector(`.sampleCard[data-id="${safeId}"]`);
+      if (text.includes('+100점') && text.includes('정확히 분류했습니다')) {
+        handledToast = text;
+        pendingClassificationScore = null;
+        play('correct');
+        patchScoreDisplays();
+        return;
+      }
+
+      if (text.includes('-20점') && text.includes('다시 비교해 보세요')) {
+        handledToast = text;
+        if (!hasClassroomSession() && pendingClassificationScore !== null) {
+          const afterRaw = currentRawScoreFromDisplay();
+          soloWrongOffset += Math.max(0, pendingClassificationScore - afterRaw);
+        }
+        pendingClassificationScore = null;
+        play('wrong');
+        toast.textContent = text.replace(/^-20점\s*·\s*/, '오답 · ');
+        patchScoreDisplays();
+        return;
+      }
+    }).observe(toast, {
+      attributes: true,
+      attributeFilter: ['class'],
+      childList: true,
+      characterData: true,
+      subtree: true
+    });
   }
-
-  function resolveClassification(pending, attempt = 0) {
-    if (!pending || pendingClassification !== pending) return;
-    const card = classificationCard(pending.selectedId);
-    if (card?.classList.contains('assigned')) {
-      pendingClassification = null;
-      play('correct');
-      return;
-    }
-    if (card?.classList.contains('wrong')) {
-      pendingClassification = null;
-      play('wrong');
-      return;
-    }
-    if (attempt < 2) {
-      window.setTimeout(() => resolveClassification(pending, attempt + 1), attempt === 0 ? 50 : 100);
-    } else {
-      pendingClassification = null;
-    }
-  }
-
-  function armClassification(bin, selectedId) {
-    if (!bin || !selectedId) return;
-    const pending = {
-      selectedId,
-      binType: bin.getAttribute('data-type') || '',
-      armedAt: performance.now()
-    };
-    pendingClassification = pending;
-    window.setTimeout(() => resolveClassification(pending), 0);
-  }
-
-  document.addEventListener('dragstart', event => {
-    const target = event.target instanceof Element ? event.target : null;
-    const card = target?.closest('.sampleCard');
-    draggedClassificationId = card?.getAttribute('data-id') || null;
-  }, true);
-
-  document.addEventListener('dragend', () => {
-    window.setTimeout(() => { draggedClassificationId = null; }, 0);
-  }, true);
-
-  document.addEventListener('drop', event => {
-    const target = event.target instanceof Element ? event.target : null;
-    const bin = target?.closest('.classBin');
-    if (!bin) return;
-    const selectedId = draggedClassificationId || document.querySelector('.sampleCard.selected')?.getAttribute('data-id');
-    armClassification(bin, selectedId);
-  }, true);
-
-  document.addEventListener('click', event => {
-    const target = event.target instanceof Element ? event.target : null;
-    const bin = target?.closest('.classBin');
-    if (!bin) return;
-    const selectedId = document.querySelector('.sampleCard.selected')?.getAttribute('data-id');
-    armClassification(bin, selectedId);
-  }, true);
 
   document.addEventListener('click', event => {
     const target = event.target instanceof Element ? event.target : null;
@@ -235,5 +252,9 @@
     const clickable = target.closest('button, a');
     if (!clickable || clickable.id === 'scilabSoundButton') return;
     play('click');
+
+    if (clickable.id === 'scorePill' || clickable.id === 'openReportButton') {
+      window.setTimeout(patchScoreDisplays, 0);
+    }
   });
 })();
