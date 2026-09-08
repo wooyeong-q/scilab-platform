@@ -84,7 +84,7 @@ export function ResponsiveProgramRunner({title,url,programId}:{title:string;url:
       guide.id='scilabMilkyWayGuide';
       guide.className='scilabMilkyWayGuide';
       guide.innerHTML=`
-        <div class="scilabMilkyWayGuideRow"><strong>조작</strong><span><span class="scilabMilkyWayGuideKeys">WASD</span> 이동 · <span class="scilabMilkyWayGuideKeys">Q/E</span> 상승·하강 · 마우스/터치로 시점 변경 · 이동·시점 속도 조절 가능</span></div>
+        <div class="scilabMilkyWayGuideRow"><strong>조작</strong><span><span class="scilabMilkyWayGuideKeys">WASD</span> 이동 · <span class="scilabMilkyWayGuideKeys">Q/E</span> 상승·하강 · <span class="scilabMilkyWayGuideKeys">← ↑ ↓ →</span> 방향키로 시점 변경 · 마우스/터치로도 시점 변경 · 이동·시점 속도 조절 가능</span></div>
         <div class="scilabMilkyWayGuideRow"><strong>분류</strong><span>천체를 관측한 뒤 <b>탐사 중간에도 언제든 분류</b>할 수 있습니다. 분류 후 다시 탐사로 돌아와 계속 찾을 수 있습니다.</span></div>
         <div class="scilabMilkyWayGuideRow"><strong>UFO</strong><span>우리은하 곳곳에 정체불명의 UFO가 숨어 있습니다. 천체를 탐사하면서 함께 찾아 가까이 접근해 보세요.</span></div>
       `;
