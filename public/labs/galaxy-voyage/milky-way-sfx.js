@@ -73,17 +73,88 @@
     shipMeta.insertBefore(soundButton, motionButton);
   }
 
+  const beaconContainer = document.getElementById('galaxyBeacons');
+  if (beaconContainer) {
+    const visitedKeys = new Set(
+      [...beaconContainer.querySelectorAll('.galaxyBeacon.visited')]
+        .map(beacon => beacon.getAttribute('data-key'))
+        .filter(Boolean)
+    );
+
+    new MutationObserver(mutations => {
+      for (const mutation of mutations) {
+        if (mutation.type !== 'attributes' || mutation.attributeName !== 'class') continue;
+        const beacon = mutation.target instanceof Element ? mutation.target.closest('.galaxyBeacon') : null;
+        if (!beacon) continue;
+        const key = beacon.getAttribute('data-key');
+        if (!key) continue;
+        const isVisited = beacon.classList.contains('visited');
+        if (isVisited && !visitedKeys.has(key)) {
+          visitedKeys.add(key);
+          play('discovery');
+        } else if (!isVisited) {
+          visitedKeys.delete(key);
+        }
+      }
+    }).observe(beaconContainer, {
+      attributes: true,
+      attributeFilter: ['class'],
+      subtree: true
+    });
+  }
+
+  const scoreElement = document.getElementById('expeditionScore');
+  let pendingUfo = null;
+  let lastScore = Number(scoreElement?.textContent || 0);
+
+  document.addEventListener('click', event => {
+    const target = event.target instanceof Element ? event.target : null;
+    const visitor = target?.closest('.spaceVisitor');
+    if (!visitor) return;
+
+    pendingUfo = {
+      visitor,
+      scoreBefore: Number(scoreElement?.textContent || 0),
+      armedAt: performance.now()
+    };
+
+    window.setTimeout(() => {
+      if (pendingUfo?.visitor === visitor && !visitor.classList.contains('cooldown')) pendingUfo = null;
+    }, 120);
+
+    window.setTimeout(() => {
+      if (pendingUfo?.visitor === visitor) pendingUfo = null;
+    }, 8000);
+  }, true);
+
+  if (scoreElement) {
+    new MutationObserver(() => {
+      const nextScore = Number(scoreElement.textContent || 0);
+      const changed = Number.isFinite(nextScore) && nextScore !== lastScore;
+
+      if (
+        changed &&
+        pendingUfo &&
+        pendingUfo.visitor?.classList.contains('cooldown') &&
+        performance.now() - pendingUfo.armedAt < 8000
+      ) {
+        play('ufo');
+        pendingUfo = null;
+      }
+
+      if (Number.isFinite(nextScore)) lastScore = nextScore;
+    }).observe(scoreElement, {
+      childList: true,
+      characterData: true,
+      subtree: true
+    });
+  }
+
   document.addEventListener('click', event => {
     const target = event.target instanceof Element ? event.target : null;
     if (!target) return;
 
-    const visitor = target.closest('.spaceVisitor');
-    if (visitor) {
-      window.setTimeout(() => {
-        if (visitor.classList.contains('cooldown')) play('ufo');
-      }, 0);
-      return;
-    }
+    if (target.closest('.spaceVisitor')) return;
 
     const classBin = target.closest('.classBin');
     if (classBin) {
@@ -113,22 +184,4 @@
     if (!clickable || clickable.id === 'scilabSoundButton') return;
     play('click');
   });
-
-  const toast = document.querySelector('.toast');
-  if (toast) {
-    let lastDiscovery = '';
-    const checkToast = () => {
-      const text = (toast.textContent || '').trim();
-      if (toast.classList.contains('show') && text.includes('새 천체 발견') && text !== lastDiscovery) {
-        lastDiscovery = text;
-        play('discovery');
-      }
-    };
-    new MutationObserver(checkToast).observe(toast, {
-      attributes: true,
-      childList: true,
-      characterData: true,
-      subtree: true
-    });
-  }
 })();
