@@ -5,8 +5,6 @@ const SESSION_DAYS = 14;
 const MAX_POINTS_PER_SESSION = 300;
 const CODE_ALPHABET = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
 
-let initialized = false;
-let initialization: Promise<void> | null = null;
 
 export type MapSession = {
   id: string;
@@ -64,42 +62,9 @@ function mapPoint(row: Record<string, unknown>): MapPoint {
   };
 }
 
+// Schema is validated at build time and migrated only with npm run db:migrate.
 export async function ensureEarthquakeVolcanoDatabase() {
-  if (initialized) return;
-  if (initialization) return initialization;
-
-  initialization = (async () => {
-    const db = database();
-    await db`CREATE TABLE IF NOT EXISTS earthquake_volcano_sessions (
-      id TEXT PRIMARY KEY,
-      code TEXT NOT NULL UNIQUE,
-      title TEXT NOT NULL DEFAULT '',
-      teacher_key_hash TEXT NOT NULL,
-      created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-      expires_at TIMESTAMPTZ NOT NULL
-    )`;
-    await db`CREATE TABLE IF NOT EXISTS earthquake_volcano_points (
-      id TEXT PRIMARY KEY,
-      session_id TEXT NOT NULL REFERENCES earthquake_volcano_sessions(id) ON DELETE CASCADE,
-      group_name TEXT NOT NULL,
-      point_type TEXT NOT NULL CHECK (point_type IN ('지진', '화산')),
-      name TEXT NOT NULL,
-      lat DOUBLE PRECISION NOT NULL CHECK (lat BETWEEN -90 AND 90),
-      lng DOUBLE PRECISION NOT NULL CHECK (lng BETWEEN -180 AND 180),
-      delete_key_hash TEXT NOT NULL,
-      created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
-    )`;
-    await db`CREATE INDEX IF NOT EXISTS earthquake_volcano_points_session_created_idx
-      ON earthquake_volcano_points(session_id, created_at)`;
-    await db`CREATE INDEX IF NOT EXISTS earthquake_volcano_sessions_expires_idx
-      ON earthquake_volcano_sessions(expires_at)`;
-    initialized = true;
-  })().catch((error) => {
-    initialization = null;
-    throw error;
-  });
-
-  return initialization;
+  database();
 }
 
 export function normalizeSessionCode(value: unknown) {

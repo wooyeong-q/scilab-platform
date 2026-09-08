@@ -43,8 +43,6 @@ const QUESTIONS = [
   ],
 ] as const;
 
-let initialized = false;
-let initialization: Promise<void> | null = null;
 
 type EscapeSession = {
   id: string;
@@ -102,109 +100,9 @@ export function normalizeEscapeCode(value: unknown) {
   return /^[A-HJ-NP-Z2-9]{6}$/.test(code) ? code : '';
 }
 
+// Schema is validated at build time and migrated only with npm run db:migrate.
 export async function ensureStarEscapeDatabase() {
-  if (initialized) return;
-  if (initialization) return initialization;
-  initialization = (async () => {
-    const db = database();
-    const schemaRows = await db`SELECT
-      to_regclass('public.star_escape_sessions') IS NOT NULL AS has_sessions,
-      EXISTS (
-        SELECT 1 FROM information_schema.columns
-        WHERE table_schema='public' AND table_name='star_escape_team_progress' AND column_name='question_no'
-      ) AS has_question_progress,
-      EXISTS (
-        SELECT 1 FROM information_schema.columns
-        WHERE table_schema='public' AND table_name='star_escape_team_progress' AND column_name='last_action_status'
-      ) AS has_action_progress,
-      EXISTS (
-        SELECT 1 FROM information_schema.columns
-        WHERE table_schema='public' AND table_name='star_escape_team_progress' AND column_name='scene_state'
-      ) AS has_scene_state`;
-    if (schemaRows[0]?.has_sessions && schemaRows[0]?.has_question_progress && schemaRows[0]?.has_action_progress && schemaRows[0]?.has_scene_state) {
-      initialized = true;
-      return;
-    }
-    await db`CREATE TABLE IF NOT EXISTS star_escape_sessions (
-      id TEXT PRIMARY KEY,
-      code TEXT NOT NULL UNIQUE,
-      title TEXT NOT NULL DEFAULT '',
-      teacher_key_hash TEXT NOT NULL,
-      duration_seconds INTEGER NOT NULL DEFAULT 1800 CHECK (duration_seconds BETWEEN 300 AND 3600),
-      started_at TIMESTAMPTZ,
-      created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-      expires_at TIMESTAMPTZ NOT NULL
-    )`;
-    await db`CREATE TABLE IF NOT EXISTS star_escape_players (
-      id TEXT PRIMARY KEY,
-      session_id TEXT NOT NULL REFERENCES star_escape_sessions(id) ON DELETE CASCADE,
-      team_name TEXT NOT NULL,
-      nickname TEXT NOT NULL,
-      role_no INTEGER NOT NULL CHECK (role_no BETWEEN 1 AND 4),
-      player_key_hash TEXT NOT NULL,
-      created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-      last_seen_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-      UNIQUE(session_id, nickname),
-      UNIQUE(session_id, team_name, role_no)
-    )`;
-    await db`CREATE TABLE IF NOT EXISTS star_escape_team_progress (
-      session_id TEXT NOT NULL REFERENCES star_escape_sessions(id) ON DELETE CASCADE,
-      team_name TEXT NOT NULL,
-      stage INTEGER NOT NULL DEFAULT 1 CHECK (stage BETWEEN 1 AND 5),
-      question_no INTEGER NOT NULL DEFAULT 1,
-      stage_started_at TIMESTAMPTZ,
-      question_started_at TIMESTAMPTZ,
-      penalty_seconds INTEGER NOT NULL DEFAULT 0 CHECK (penalty_seconds >= 0),
-      hint_count INTEGER NOT NULL DEFAULT 0 CHECK (hint_count >= 0),
-      last_submitter TEXT,
-      last_action_status TEXT,
-      last_action_at TIMESTAMPTZ,
-      scene_state JSONB NOT NULL DEFAULT '{}'::jsonb,
-      completed_at TIMESTAMPTZ,
-      updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-      PRIMARY KEY(session_id, team_name)
-    )`;
-    await db`CREATE TABLE IF NOT EXISTS star_escape_attempts (
-      id TEXT PRIMARY KEY,
-      session_id TEXT NOT NULL REFERENCES star_escape_sessions(id) ON DELETE CASCADE,
-      team_name TEXT NOT NULL,
-      player_id TEXT NOT NULL REFERENCES star_escape_players(id) ON DELETE CASCADE,
-      stage INTEGER NOT NULL CHECK (stage BETWEEN 1 AND 4),
-      question_no INTEGER NOT NULL DEFAULT 1,
-      answer TEXT NOT NULL DEFAULT '',
-      is_correct BOOLEAN NOT NULL DEFAULT FALSE,
-      elapsed_ms INTEGER NOT NULL DEFAULT 0,
-      created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
-    )`;
-    await db`CREATE TABLE IF NOT EXISTS star_escape_hints (
-      id TEXT PRIMARY KEY,
-      session_id TEXT NOT NULL REFERENCES star_escape_sessions(id) ON DELETE CASCADE,
-      team_name TEXT,
-      requester_id TEXT REFERENCES star_escape_players(id) ON DELETE SET NULL,
-      hint_type TEXT NOT NULL CHECK (hint_type IN ('request', 'teacher')),
-      stage INTEGER NOT NULL DEFAULT 1,
-      question_no INTEGER NOT NULL DEFAULT 1,
-      message TEXT NOT NULL DEFAULT '',
-      created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
-    )`;
-    await db`ALTER TABLE star_escape_team_progress ADD COLUMN IF NOT EXISTS question_no INTEGER NOT NULL DEFAULT 1`;
-    await db`ALTER TABLE star_escape_team_progress ADD COLUMN IF NOT EXISTS question_started_at TIMESTAMPTZ`;
-    await db`ALTER TABLE star_escape_team_progress ADD COLUMN IF NOT EXISTS last_submitter TEXT`;
-    await db`ALTER TABLE star_escape_team_progress ADD COLUMN IF NOT EXISTS last_action_status TEXT`;
-    await db`ALTER TABLE star_escape_team_progress ADD COLUMN IF NOT EXISTS last_action_at TIMESTAMPTZ`;
-    await db`ALTER TABLE star_escape_team_progress ADD COLUMN IF NOT EXISTS scene_state JSONB NOT NULL DEFAULT '{}'::jsonb`;
-    await db`ALTER TABLE star_escape_attempts ADD COLUMN IF NOT EXISTS question_no INTEGER NOT NULL DEFAULT 1`;
-    await db`ALTER TABLE star_escape_hints ADD COLUMN IF NOT EXISTS question_no INTEGER NOT NULL DEFAULT 1`;
-    await db`CREATE INDEX IF NOT EXISTS star_escape_sessions_expires_idx ON star_escape_sessions(expires_at)`;
-    await db`CREATE INDEX IF NOT EXISTS star_escape_players_session_team_idx ON star_escape_players(session_id, team_name)`;
-    await db`CREATE INDEX IF NOT EXISTS star_escape_attempts_session_stage_idx ON star_escape_attempts(session_id, stage)`;
-    await db`CREATE INDEX IF NOT EXISTS star_escape_hints_session_created_idx ON star_escape_hints(session_id, created_at DESC)`;
-    initialized = true;
-  })().catch((error) => {
-    initialization = null;
-    throw error;
-  });
-  return initialization;
+  database();
 }
 
 export async function createStarEscapeSession(titleValue: unknown) {

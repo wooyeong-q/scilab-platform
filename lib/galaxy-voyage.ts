@@ -6,8 +6,6 @@ const MAX_PLAYERS = 40;
 const MAX_UFO_EVENTS = 30;
 const CODE_ALPHABET = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
 
-let initialized = false;
-let initialization: Promise<void> | null = null;
 
 export type GalaxySession = {
   id: string;
@@ -57,54 +55,9 @@ export function normalizeGalaxySessionCode(value: unknown) {
   return /^[A-HJ-NP-Z2-9]{6}$/.test(code) ? code : '';
 }
 
+// Schema is validated at build time and migrated only with npm run db:migrate.
 export async function ensureGalaxyVoyageDatabase() {
-  if (initialized) return;
-  if (initialization) return initialization;
-
-  initialization = (async () => {
-    const db = database();
-    await db`CREATE TABLE IF NOT EXISTS galaxy_voyage_sessions (
-      id TEXT PRIMARY KEY,
-      code TEXT NOT NULL UNIQUE,
-      title TEXT NOT NULL DEFAULT '',
-      teacher_key_hash TEXT NOT NULL,
-      created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-      expires_at TIMESTAMPTZ NOT NULL
-    )`;
-    await db`CREATE TABLE IF NOT EXISTS galaxy_voyage_players (
-      id TEXT PRIMARY KEY,
-      session_id TEXT NOT NULL REFERENCES galaxy_voyage_sessions(id) ON DELETE CASCADE,
-      nickname TEXT NOT NULL,
-      player_key_hash TEXT NOT NULL,
-      score INTEGER NOT NULL DEFAULT 0 CHECK (score >= 0),
-      created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-      updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-      UNIQUE(session_id, nickname)
-    )`;
-    await db`CREATE TABLE IF NOT EXISTS galaxy_voyage_score_events (
-      id TEXT PRIMARY KEY,
-      session_id TEXT NOT NULL REFERENCES galaxy_voyage_sessions(id) ON DELETE CASCADE,
-      actor_id TEXT NOT NULL REFERENCES galaxy_voyage_players(id) ON DELETE CASCADE,
-      target_id TEXT REFERENCES galaxy_voyage_players(id) ON DELETE CASCADE,
-      event_key TEXT NOT NULL,
-      event_kind TEXT NOT NULL,
-      actor_delta INTEGER NOT NULL DEFAULT 0,
-      target_delta INTEGER NOT NULL DEFAULT 0,
-      actor_message TEXT NOT NULL DEFAULT '',
-      target_message TEXT NOT NULL DEFAULT '',
-      created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-      UNIQUE(actor_id, event_key)
-    )`;
-    await db`CREATE INDEX IF NOT EXISTS galaxy_voyage_sessions_expires_idx ON galaxy_voyage_sessions(expires_at)`;
-    await db`CREATE INDEX IF NOT EXISTS galaxy_voyage_players_session_score_idx ON galaxy_voyage_players(session_id, score DESC)`;
-    await db`CREATE INDEX IF NOT EXISTS galaxy_voyage_events_target_created_idx ON galaxy_voyage_score_events(target_id, created_at DESC)`;
-    initialized = true;
-  })().catch((error) => {
-    initialization = null;
-    throw error;
-  });
-
-  return initialization;
+  database();
 }
 
 export async function createGalaxySession(titleValue: unknown) {
