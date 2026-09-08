@@ -4,7 +4,7 @@
   "private": true,
   "scripts": {
     "dev": "next dev",
-    "build": "npm run db:check && next build",
+    "build": "npm run db:migrate && npm run db:check && next build",
     "start": "next start",
     "db:check": "node scripts/database.mjs --check",
     "db:migrate": "node scripts/database.mjs --migrate",
