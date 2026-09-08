@@ -1,8 +1,12 @@
 import { notFound } from 'next/navigation';
 import { ResponsiveProgramRunner } from '@/components/ResponsiveProgramRunner';
-import { getProgram } from '@/lib/db';
+import { getProgram, getPrograms } from '@/lib/program-cache';
 
-export const dynamic='force-dynamic';
+export const revalidate = 60;
+
+export async function generateStaticParams() {
+  return (await getPrograms()).map(({ id }) => ({ id }));
+}
 
 export default async function RunPage({params}:{params:Promise<{id:string}>}){
   const {id}=await params;

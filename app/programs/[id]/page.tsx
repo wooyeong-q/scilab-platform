@@ -3,9 +3,13 @@ import { notFound } from 'next/navigation';
 import { ArrowLeft, BookOpen, Clock3, FileText, Github, MonitorPlay, Presentation, School, Video } from 'lucide-react';
 import { Header } from '@/components/Header';
 import { ProgramInteractions } from '@/components/ProgramInteractions';
-import { getProgram } from '@/lib/db';
+import { getProgram, getPrograms } from '@/lib/program-cache';
 
-export const dynamic = 'force-dynamic';
+export const revalidate = 60;
+
+export async function generateStaticParams() {
+  return (await getPrograms()).map(({ id }) => ({ id }));
+}
 
 export default async function ProgramPage({params}:{params:Promise<{id:string}>}){
   const {id}=await params;

@@ -1,9 +1,9 @@
 import { ArrowRight, BookOpenCheck, Layers3, UsersRound } from 'lucide-react';
 import { Header } from '@/components/Header';
 import { ProgramExplorer } from '@/components/ProgramExplorer';
-import { getPrograms } from '@/lib/db';
+import { getPrograms } from '@/lib/program-cache';
 
-export const dynamic = 'force-dynamic';
+export const revalidate = 60;
 
 export default async function Home() {
   const programs = await getPrograms();

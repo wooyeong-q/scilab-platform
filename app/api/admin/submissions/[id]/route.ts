@@ -1,3 +1,4 @@
+import { revalidatePrograms } from '@/lib/program-cache';
 import { NextResponse } from 'next/server';
 import { isAdmin } from '@/lib/auth';
 import { ensureDatabase, sql } from '@/lib/db';
@@ -12,6 +13,7 @@ export async function PATCH(request:Request,{params}:{params:Promise<{id:string}
     await sql!`INSERT INTO programs (id,title,summary,description,category,grade,tags,icon,url,author,featured,duration,format,standard,thumbnail_url,worksheet_url,ppt_url,video_url,source_url,guide_url)
       VALUES (${programId},${String(item.title)},${String(item.summary)},${String(item.summary)},${String(item.category)},${String(item.grade)},${JSON.stringify(item.tags||[])}::jsonb,'🧪',${String(item.url)},${String(item.author)},FALSE,${String(item.duration||'수업에 따라')},'웹 프로그램',${String(item.standard||'')},${String(item.thumbnail_url||'')},${String(item.worksheet_url||'')},${String(item.ppt_url||'')},${String(item.video_url||'')},${String(item.source_url||'')},${String(item.guide_url||'')}) ON CONFLICT(id) DO NOTHING`;
     await sql!`UPDATE submissions SET status='approved',reviewed_at=NOW() WHERE id=${id}`;
+    revalidatePrograms();
   }else if(action==='reject')await sql!`UPDATE submissions SET status='rejected',reviewed_at=NOW() WHERE id=${id}`;
   else return NextResponse.json({error:'올바르지 않은 작업입니다.'},{status:400});
   return NextResponse.json({ok:true});

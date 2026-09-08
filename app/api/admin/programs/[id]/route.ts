@@ -1,3 +1,4 @@
+import { revalidatePrograms } from '@/lib/program-cache';
 import { NextResponse } from 'next/server';
 import { isAdmin } from '@/lib/auth';
 import { ensureDatabase, sql } from '@/lib/db';
@@ -26,6 +27,7 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ id
       guide_url=${String(body.guideUrl || '')}, updated_at=NOW()
     WHERE id=${id}
   `;
+  revalidatePrograms();
   return NextResponse.json({ ok: true });
 }
 
@@ -34,5 +36,6 @@ export async function DELETE(_request: Request, { params }: { params: Promise<{ 
   const { id } = await params;
   await ensureDatabase();
   await sql!`DELETE FROM programs WHERE id=${id}`;
+  revalidatePrograms();
   return NextResponse.json({ ok: true });
 }
