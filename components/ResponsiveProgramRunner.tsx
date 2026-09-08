@@ -12,6 +12,7 @@ type LockableScreen = Screen & {
 
 export function ResponsiveProgramRunner({title,url,programId}:{title:string;url:string;programId:string}){
   const shellRef=useRef<HTMLDivElement>(null);
+  const iframeRef=useRef<HTMLIFrameElement>(null);
   const autoLandscapeTried=useRef(false);
   const router=useRouter();
   const [portrait,setPortrait]=useState(false);
@@ -47,6 +48,21 @@ export function ResponsiveProgramRunner({title,url,programId}:{title:string;url:
     setLoaded(false);
     setReloadKey(value=>value+1);
     showTemporaryMessage('이전 수업 연결을 해제했습니다. 새 수업을 만들 수 있습니다.',3200);
+  }
+
+  function handleFrameLoad(){
+    setLoaded(true);
+    if(!classroomStorageKey)return;
+    try{
+      const frameDocument=iframeRef.current?.contentDocument;
+      if(!frameDocument)return;
+      frameDocument.addEventListener('keydown',event=>{
+        const target=event.target as Element|null;
+        if(target?.closest?.('input, textarea, select, [contenteditable="true"], [contenteditable=""]')){
+          event.stopPropagation();
+        }
+      },true);
+    }catch{}
   }
 
   async function fullscreen(){
@@ -127,7 +143,7 @@ export function ResponsiveProgramRunner({title,url,programId}:{title:string;url:
     <div className="runnerShell" ref={shellRef}>
       <button type="button" className="runnerFloatingClose" onClick={closeRunner} aria-label="프로그램 닫기" title="프로그램 닫기"><X size={21}/></button>
       {!loaded&&<div className="runnerLoading">프로그램을 불러오는 중입니다.</div>}
-      <iframe key={reloadKey} src={url} title={title} onLoad={()=>setLoaded(true)} allow="fullscreen; clipboard-read; clipboard-write" />
+      <iframe ref={iframeRef} key={reloadKey} src={url} title={title} onLoad={handleFrameLoad} allow="fullscreen; clipboard-read; clipboard-write" />
     </div>
     <p className="runnerHelp">화면이 비어 있거나 조작이 제한되면 <strong>원본 열기</strong>를 눌러 주세요.</p>
   </main>;
