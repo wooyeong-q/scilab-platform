@@ -114,6 +114,14 @@ export function ResponsiveProgramRunner({title,url,programId}:{title:string;url:
       returnBar.appendChild(returnButton);
       classifyCard.appendChild(returnBar);
     }
+
+    if(!frameDocument.getElementById('scilabMilkyWaySfxScript')){
+      const soundScript=frameDocument.createElement('script');
+      soundScript.id='scilabMilkyWaySfxScript';
+      soundScript.src='/labs/galaxy-voyage/milky-way-sfx.js?v=20260908';
+      soundScript.async=false;
+      frameDocument.body.appendChild(soundScript);
+    }
   }
 
   function handleFrameLoad(){
