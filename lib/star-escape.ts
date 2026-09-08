@@ -188,25 +188,38 @@ export async function getStarEscapeState(code: string, playerId: string, playerK
   const db = database();
   const sessionId = String(player.session_id);
   const team = String(player.team_name);
-  await db`UPDATE star_escape_players SET last_seen_at=NOW() WHERE id=${playerId}`;
-  const [sessionRows, progressRows, memberRows, leaderboardRows, hintRows] = await Promise.all([
-    db`SELECT * FROM star_escape_sessions WHERE id=${sessionId} LIMIT 1`,
-    db`SELECT * FROM star_escape_team_progress WHERE session_id=${sessionId} AND team_name=${team} LIMIT 1`,
-    db`SELECT id, nickname, role_no, last_seen_at FROM star_escape_players WHERE session_id=${sessionId} AND team_name=${team} ORDER BY role_no`,
-    db`SELECT p.team_name, p.stage, p.question_no, p.completed_at, p.hint_count,
-        CASE WHEN s.started_at IS NULL THEN 0 ELSE EXTRACT(EPOCH FROM (COALESCE(p.completed_at, NOW())-s.started_at))+p.penalty_seconds END AS total_seconds
-      FROM star_escape_team_progress p JOIN star_escape_sessions s ON s.id=p.session_id
-      WHERE p.session_id=${sessionId}
-      ORDER BY (p.completed_at IS NOT NULL) DESC, p.stage DESC, p.question_no DESC,
-        CASE WHEN s.started_at IS NULL THEN 0 ELSE EXTRACT(EPOCH FROM (COALESCE(p.completed_at, NOW())-s.started_at))+p.penalty_seconds END ASC,
-        p.team_name ASC`,
-    db`SELECT id, team_name, message, stage, question_no, created_at FROM star_escape_hints
-      WHERE session_id=${sessionId} AND hint_type='teacher' AND (team_name IS NULL OR team_name=${team})
-      ORDER BY created_at DESC LIMIT 8`,
-  ]);
-  if (!sessionRows[0] || !progressRows[0]) return null;
-  const session = mapSession(sessionRows[0] as Record<string, unknown>);
-  const progress = progressRows[0] as Record<string, unknown>;
+  // One authenticated snapshot replaces six separate database requests.
+  // RETURNING preserves the current player's heartbeat within the same SQL snapshot.
+  const snapshotRows = await db`WITH heartbeat AS (
+      UPDATE star_escape_players SET last_seen_at=NOW() WHERE id=${playerId}
+      RETURNING last_seen_at
+    )
+    SELECT row_to_json(s) AS session, row_to_json(p) AS progress,
+      (SELECT COALESCE(json_agg(m ORDER BY m.role_no), '[]'::json) FROM (
+        SELECT id, nickname, role_no,
+          CASE WHEN id=${playerId} THEN (SELECT last_seen_at FROM heartbeat) ELSE last_seen_at END AS last_seen_at
+        FROM star_escape_players WHERE session_id=${sessionId} AND team_name=${team}
+      ) m) AS members,
+      (SELECT COALESCE(json_agg(l ORDER BY (l.completed_at IS NOT NULL) DESC, l.stage DESC,
+        l.question_no DESC, l.total_seconds ASC, l.team_name ASC), '[]'::json) FROM (
+        SELECT t.team_name, t.stage, t.question_no, t.completed_at, t.hint_count,
+          CASE WHEN s.started_at IS NULL THEN 0 ELSE EXTRACT(EPOCH FROM (COALESCE(t.completed_at, NOW())-s.started_at))+t.penalty_seconds END AS total_seconds
+        FROM star_escape_team_progress t WHERE t.session_id=s.id
+      ) l) AS leaderboard,
+      (SELECT COALESCE(json_agg(h ORDER BY h.created_at DESC), '[]'::json) FROM (
+        SELECT id, team_name, message, stage, question_no, created_at FROM star_escape_hints
+        WHERE session_id=${sessionId} AND hint_type='teacher' AND (team_name IS NULL OR team_name=${team})
+        ORDER BY created_at DESC LIMIT 8
+      ) h) AS hints
+    FROM star_escape_sessions s JOIN star_escape_team_progress p ON p.session_id=s.id
+    WHERE s.id=${sessionId} AND p.team_name=${team} LIMIT 1`;
+  if (!snapshotRows[0]) return null;
+  const snapshot = snapshotRows[0] as Record<string, unknown>;
+  const session = mapSession(snapshot.session as Record<string, unknown>);
+  const progress = snapshot.progress as Record<string, unknown>;
+  const memberRows = snapshot.members as Record<string, unknown>[];
+  const leaderboardRows = snapshot.leaderboard as Record<string, unknown>[];
+  const hintRows = snapshot.hints as Record<string, unknown>[];
   const elapsed = session.startedAt ? Math.floor((Date.now() - new Date(session.startedAt).getTime()) / 1000) : 0;
   const penalty = Number(progress.penalty_seconds || 0);
   return {

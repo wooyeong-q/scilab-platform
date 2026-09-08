@@ -1274,13 +1274,20 @@
     }
 
     async function apiRequest(path, options = {}) {
-      const response = await fetch(path, {
-        ...options,
-        headers: { 'Content-Type': 'application/json', ...(options.headers || {}) }
-      });
-      const payload = await response.json().catch(() => ({}));
-      if (!response.ok) throw new Error(payload.error || '네트워크 요청에 실패했습니다.');
-      return payload;
+      const controller = new AbortController();
+      const timeout = setTimeout(() => controller.abort(), 12000);
+      try {
+        const response = await fetch(path, {
+          ...options,
+          signal: controller.signal,
+          headers: { 'Content-Type': 'application/json', ...(options.headers || {}) }
+        });
+        const payload = await response.json().catch(() => ({}));
+        if (!response.ok) throw new Error(payload.error || '네트워크 요청에 실패했습니다.');
+        return payload;
+      } finally {
+        clearTimeout(timeout);
+      }
     }
 
     function classLink(code) {
@@ -1324,7 +1331,7 @@
 
       if (!pointPollTimer) {
         pointPollTimer = setInterval(() => {
-          if (!document.hidden && !isSaving) loadPoints();
+          if (!document.hidden && !isSaving) loadPoints(true);
         }, 3000);
       }
     }
@@ -2227,26 +2234,42 @@
       pointLayer.appendChild(g);
     }
 
+    let renderedPointsSignature = '';
     function renderPoints(points) {
       latestPoints = points || [];
-      pointLayer.innerHTML = '';
-      latestPoints.forEach(drawMarker);
-      renderAllTargetPreview();
+      const signature = (activeSession?.code || '') + JSON.stringify(latestPoints);
+      if (signature !== renderedPointsSignature) {
+        renderedPointsSignature = signature;
+        pointLayer.innerHTML = '';
+        latestPoints.forEach(drawMarker);
+        renderAllTargetPreview();
+      }
       if (activePoint && !latestPoints.some((p) => String(p.id) === String(activePoint.id))) {
         closePointPopup();
       }
       statusEl.textContent = `점 ${latestPoints.length}개 · ${new Date().toLocaleTimeString('ko-KR', { hour: 'numeric', minute: '2-digit' })}`;
     }
 
-    async function loadPoints() {
+// Keep one read in flight; a refresh after an action runs once more with fresh data.
+function coalesceRefresh(load){
+  var pending=null,queued=false;
+  return function(background){
+    if(pending){if(background!==true)queued=true;return pending}
+    pending=(async function(){do{queued=false;await load()}while(queued)})().finally(function(){pending=null});
+    return pending;
+  };
+}
+    const loadPoints = coalesceRefresh(async function() {
       if (!activeSession) return;
+      const code = activeSession.code;
       try {
-        const payload = await apiRequest(`/api/labs/earthquake-volcano/sessions/${activeSession.code}/points`);
+        const payload = await apiRequest(`/api/labs/earthquake-volcano/sessions/${code}/points`);
+        if (activeSession?.code !== code) return;
         renderPoints(payload.points || []);
       } catch (error) {
         statusEl.textContent = '자료를 불러오지 못했습니다: ' + (error.message || error);
       }
-    }
+    });
 
     refreshBtn.addEventListener('click', loadPoints);
     showAllBtn.addEventListener('click', toggleAllTargets);
@@ -2270,6 +2293,7 @@
         });
         clearTemporaryMarker();
         renderPoints([]);
+        void loadPoints();
         showMessage('저장된 점을 모두 삭제했습니다.');
       } catch (error) {
         alert('초기화 실패: ' + (error.message || error));

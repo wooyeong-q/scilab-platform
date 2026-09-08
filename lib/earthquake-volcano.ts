@@ -97,14 +97,14 @@ export async function createMapSession(titleValue: unknown) {
 export async function listMapPoints(code: string) {
   await ensureEarthquakeVolcanoDatabase();
   const db = database();
-  const sessionRows = await db`SELECT * FROM earthquake_volcano_sessions
-    WHERE code=${code} AND expires_at > NOW() LIMIT 1`;
+  const sessionRows = await db`SELECT row_to_json(s) AS session,
+      (SELECT COALESCE(json_agg(p ORDER BY p.created_at ASC), '[]'::json)
+        FROM earthquake_volcano_points p WHERE p.session_id=s.id) AS points
+    FROM earthquake_volcano_sessions s WHERE s.code=${code} AND s.expires_at > NOW() LIMIT 1`;
   if (!sessionRows[0]) return null;
 
-  const session = mapSession(sessionRows[0] as Record<string, unknown>);
-  const pointRows = await db`SELECT p.* FROM earthquake_volcano_points p
-    WHERE p.session_id=${session.id}
-    ORDER BY p.created_at ASC`;
+  const session = mapSession(sessionRows[0].session as Record<string, unknown>);
+  const pointRows = sessionRows[0].points as Record<string, unknown>[];
   return { session, points: pointRows.map((row) => mapPoint(row as Record<string, unknown>)) };
 }
 

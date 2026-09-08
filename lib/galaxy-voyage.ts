@@ -122,24 +122,27 @@ export async function getGalaxyScoreboard(code: string, playerId: string, player
   const since = new Date(String(sinceValue || 0));
   const safeSince = Number.isFinite(since.getTime()) ? since.toISOString() : new Date(0).toISOString();
   const checkpoint = new Date().toISOString();
-  const [leaders, ownRows, notificationRows] = await Promise.all([
-    db`SELECT id, nickname, score, ROW_NUMBER() OVER (ORDER BY score DESC, updated_at ASC)::int AS rank
-      FROM galaxy_voyage_players WHERE session_id=${sessionId}
-      ORDER BY score DESC, updated_at ASC LIMIT 10`,
-    db`SELECT id, nickname, score, rank FROM (
+  // Rank the class once and return both the leaderboard and the player's row.
+  const snapshotRows = await db`WITH ranked AS (
       SELECT id, nickname, score, ROW_NUMBER() OVER (ORDER BY score DESC, updated_at ASC)::int AS rank
       FROM galaxy_voyage_players WHERE session_id=${sessionId}
-    ) ranked WHERE id=${playerId} LIMIT 1`,
-    db`SELECT e.id, e.target_message AS message, e.created_at
-      FROM galaxy_voyage_score_events e
-      WHERE e.target_id=${playerId} AND e.created_at > ${safeSince}
-      ORDER BY e.created_at ASC LIMIT 10`,
-  ]);
+    ) SELECT
+      (SELECT COALESCE(json_agg(r ORDER BY r.rank), '[]'::json) FROM ranked r WHERE r.rank<=10) AS leaders,
+      (SELECT row_to_json(r) FROM ranked r WHERE r.id=${playerId} LIMIT 1) AS self,
+      (SELECT COALESCE(json_agg(n ORDER BY n.created_at ASC), '[]'::json) FROM (
+        SELECT e.id, e.target_message AS message, e.created_at FROM galaxy_voyage_score_events e
+        WHERE e.target_id=${playerId} AND e.created_at > ${safeSince}
+        ORDER BY e.created_at ASC LIMIT 10
+      ) n) AS notifications`;
+  const snapshot = snapshotRows[0] as Record<string, unknown>;
+  const leaders = snapshot.leaders as Record<string, unknown>[];
+  const own = snapshot.self as Record<string, unknown> | null;
+  const notificationRows = snapshot.notifications as Record<string, unknown>[];
   const mapPlayer = (row: Record<string, unknown>): GalaxyPlayer => ({
     id: String(row.id), nickname: String(row.nickname), score: Number(row.score || 0), rank: Number(row.rank || 0),
   });
   return {
-    self: ownRows[0] ? mapPlayer(ownRows[0] as Record<string, unknown>) : null,
+    self: own ? mapPlayer(own) : null,
     leaders: leaders.map((row) => mapPlayer(row as Record<string, unknown>)),
     notifications: notificationRows.map((row) => ({ id: String(row.id), message: String(row.message), createdAt: new Date(String(row.created_at)).toISOString() })),
     serverTime: checkpoint,
