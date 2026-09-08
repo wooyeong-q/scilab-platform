@@ -79,10 +79,9 @@
 
     const visitor = target.closest('.spaceVisitor');
     if (visitor) {
-      const wasEncountered = visitor.classList.contains('encountered');
       window.setTimeout(() => {
-        if (!wasEncountered && visitor.classList.contains('encountered')) play('ufo');
-      }, 40);
+        if (visitor.classList.contains('cooldown')) play('ufo');
+      }, 0);
       return;
     }
 
