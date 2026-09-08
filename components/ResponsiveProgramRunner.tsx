@@ -77,6 +77,33 @@ export function ResponsiveProgramRunner({title,url,programId}:{title:string;url:
     `;
     frameDocument.head.appendChild(style);
 
+    const replaceEmissionNebulaCopy=(root:Node)=>{
+      const replaceTextNode=(node:Node)=>{
+        if(node.nodeType!==3)return;
+        const parent=node.parentElement;
+        if(parent?.closest('script, style'))return;
+        const value=node.nodeValue;
+        if(!value)return;
+        const next=value.replaceAll('발광 성운','방출 성운').replaceAll('발광성운','방출성운');
+        if(next!==value)node.nodeValue=next;
+      };
+      if(root.nodeType===3){replaceTextNode(root);return;}
+      const walker=frameDocument.createTreeWalker(root,4);
+      let node=walker.nextNode();
+      while(node){replaceTextNode(node);node=walker.nextNode();}
+    };
+    replaceEmissionNebulaCopy(frameDocument.body);
+    const FrameMutationObserver=frameDocument.defaultView?.MutationObserver;
+    if(FrameMutationObserver){
+      const copyObserver=new FrameMutationObserver(mutations=>{
+        mutations.forEach(mutation=>{
+          if(mutation.type==='characterData')replaceEmissionNebulaCopy(mutation.target);
+          mutation.addedNodes.forEach(node=>replaceEmissionNebulaCopy(node));
+        });
+      });
+      copyObserver.observe(frameDocument.body,{childList:true,characterData:true,subtree:true});
+    }
+
     const introCard=frameDocument.querySelector('#introModal .introModalCard');
     const classroomForm=frameDocument.querySelector('#introModal .classroomForm');
     if(introCard&&classroomForm){
