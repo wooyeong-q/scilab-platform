@@ -26,7 +26,7 @@ export async function POST(request: Request, { params }: Context) {
       : {};
     const kind = String(body.kind || '');
     const result = kind === 'ufo'
-      ? await applyRandomUfoEvent(code, playerId, playerKey, body.reference)
+      ? await applyRandomUfoEvent(code, playerId, playerKey, body.reference, body.experience)
       : ['observation', 'classification_correct', 'classification_wrong'].includes(kind)
         ? await applyGalaxyScoreEvent(code, playerId, playerKey, kind as RegularEvent, body.reference)
         : { status: 'invalid' as const };

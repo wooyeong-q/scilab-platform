@@ -70,6 +70,8 @@ CREATE TABLE IF NOT EXISTS galaxy_voyage_players (
       UNIQUE(session_id, nickname)
     );
 
+ALTER TABLE galaxy_voyage_players ADD COLUMN IF NOT EXISTS last_ufo_at TIMESTAMPTZ;
+
 CREATE TABLE IF NOT EXISTS galaxy_voyage_score_events (
       id TEXT PRIMARY KEY,
       session_id TEXT NOT NULL REFERENCES galaxy_voyage_sessions(id) ON DELETE CASCADE,

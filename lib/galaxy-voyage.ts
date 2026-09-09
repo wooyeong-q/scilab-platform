@@ -195,12 +195,110 @@ function randomUfoOutcome(): UfoOutcome {
   return 'swap';
 }
 
-export async function applyRandomUfoEvent(code: string, playerId: string, playerKey: string, eventKeyValue: unknown) {
+function randomMilkyWayUfoOutcome() {
+  const roll = Math.random();
+  if (roll < .15) return 'gain50';
+  if (roll < .40) return 'gain100';
+  if (roll < .55) return 'gain200';
+  if (roll < .65) return 'gain500';
+  if (roll < .70) return 'gain1000';
+  if (roll < .80) return 'lose30';
+  if (roll < .95) return 'steal30';
+  return 'swap';
+}
+
+async function applyMilkyWayUfoEvent(player: Record<string, unknown>, eventRef: string) {
+  const playerId = String(player.id);
+  const sessionId = String(player.session_id);
+  const outcome = randomMilkyWayUfoOutcome();
+  const needsTarget = outcome === 'steal30' || outcome === 'swap';
+  const bonus = outcome.startsWith('gain') ? Number(outcome.slice(4)) : 0;
+  const eventId = randomUUID();
+  const eventKey = `ufo:${eventRef}`;
+
+  // Lock both participants in ID order, then calculate from their current scores.
+  // The timestamp keeps the five-second cooldown without scanning growing event history.
+  // The event and both score changes commit together; a repeated event cannot award twice.
+  const rows = await database()`WITH candidate AS MATERIALIZED (
+      SELECT id FROM galaxy_voyage_players
+      WHERE session_id=${sessionId} AND id<>${playerId} AND ${needsTarget}::boolean
+        AND (${outcome}::text='swap' OR score>0)
+      ORDER BY RANDOM() LIMIT 1
+    ), locked AS MATERIALIZED (
+      SELECT p.id, p.nickname, p.score, p.last_ufo_at
+      FROM galaxy_voyage_players p
+      WHERE p.session_id=${sessionId} AND (p.id=${playerId} OR p.id=(SELECT id FROM candidate))
+      ORDER BY p.id FOR UPDATE OF p
+    ), ready AS (
+      SELECT a.score AS actor_score, a.nickname AS actor_name,
+        t.id AS target_id, t.score AS target_score, t.nickname AS target_name,
+        CASE WHEN ${needsTarget}::boolean AND t.id IS NULL THEN 'gain50'
+          WHEN ${outcome}::text='steal30' AND t.score<=0 THEN 'gain50'
+          ELSE ${outcome}::text END AS outcome
+      FROM locked a LEFT JOIN locked t ON t.id<>${playerId}
+      WHERE a.id=${playerId}
+        AND (a.last_ufo_at IS NULL OR a.last_ufo_at<=statement_timestamp()-INTERVAL '5 seconds')
+    ), amounts AS (
+      SELECT *, CASE outcome
+          WHEN 'swap' THEN target_score-actor_score
+          WHEN 'steal30' THEN LEAST(30, target_score)
+          WHEN 'lose30' THEN -LEAST(30, actor_score)
+          WHEN 'gain50' THEN 50 ELSE ${bonus}::int END AS delta
+      FROM ready
+    ), inserted AS (
+      INSERT INTO galaxy_voyage_score_events
+        (id, session_id, actor_id, target_id, event_key, event_kind, actor_delta, target_delta, actor_message, target_message)
+      SELECT ${eventId}, ${sessionId}, ${playerId},
+        CASE WHEN outcome IN ('swap', 'steal30') THEN target_id END,
+        ${eventKey}, 'ufo_' || outcome, delta,
+        CASE WHEN outcome IN ('swap', 'steal30') THEN -delta ELSE 0 END,
+        CASE outcome
+          WHEN 'swap' THEN target_name || '와 총점을 서로 교환했습니다! ' || actor_score || ' → ' || target_score || '점'
+          WHEN 'steal30' THEN target_name || '에게서 ' || delta || '점을 가져왔습니다!'
+          WHEN 'lose30' THEN 'UFO가 ' || (-delta) || '점을 가져갔습니다.'
+          WHEN 'gain1000' THEN 'UFO 잭팟! 1000점을 획득했습니다!'
+          ELSE 'UFO에서 ' || delta || '점을 발견했습니다!' END,
+        CASE outcome
+          WHEN 'swap' THEN actor_name || '와 총점을 서로 교환했습니다! ' || target_score || ' → ' || actor_score || '점'
+          WHEN 'steal30' THEN actor_name || '가 ' || delta || '점을 가져갔습니다.'
+          ELSE '' END
+      FROM amounts
+      ON CONFLICT (actor_id, event_key) DO NOTHING
+      RETURNING target_id, actor_delta, target_delta, actor_message, event_kind
+    ), updated AS (
+      UPDATE galaxy_voyage_players p
+      SET score=GREATEST(0, p.score + CASE WHEN p.id=${playerId} THEN i.actor_delta ELSE i.target_delta END),
+        updated_at=statement_timestamp(),
+        last_ufo_at=CASE WHEN p.id=${playerId} THEN statement_timestamp() ELSE p.last_ufo_at END
+      FROM inserted i WHERE p.id=${playerId} OR p.id=i.target_id
+      RETURNING p.id, p.score
+    ) SELECT COALESCE(u.score, a.score) AS score, i.actor_delta, i.actor_message, i.event_kind,
+        EXISTS(SELECT 1 FROM ready) AS ready
+      FROM locked a LEFT JOIN inserted i ON TRUE LEFT JOIN updated u ON u.id=a.id
+      WHERE a.id=${playerId}`;
+
+  const row = rows[0];
+  if (!row) return { status: 'unauthorized' as const };
+  if (!row.event_kind) {
+    if (!row.ready) return { status: 'cooldown' as const };
+    return { status: 'duplicate' as const, score: Number(row.score || 0), delta: 0, message: '이미 처리된 UFO입니다.' };
+  }
+  return {
+    status: 'applied' as const,
+    outcome: String(row.event_kind).replace(/^ufo_/, ''),
+    score: Number(row.score || 0),
+    delta: Number(row.actor_delta || 0),
+    message: String(row.actor_message || ''),
+  };
+}
+
+export async function applyRandomUfoEvent(code: string, playerId: string, playerKey: string, eventKeyValue: unknown, experienceValue?: unknown) {
   await ensureGalaxyVoyageDatabase();
   const player = await verifiedPlayer(code, playerId, playerKey);
   if (!player) return { status: 'unauthorized' as const };
   const eventRef = String(eventKeyValue || '').trim().toLowerCase();
   if (!/^[a-z0-9-]{8,80}$/.test(eventRef)) return { status: 'invalid' as const };
+  if (experienceValue === 'milky-way-objects') return applyMilkyWayUfoEvent(player, eventRef);
   const db = database();
   const recent = await db`SELECT COUNT(*)::int AS total,
       COUNT(*) FILTER (WHERE created_at > NOW() - INTERVAL '5 seconds')::int AS recent

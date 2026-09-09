@@ -284,6 +284,8 @@
     @media(hover:none) and (pointer:coarse){.mobileJoysticks:not([hidden]){display:flex}.navZoomControls,.navGuide{display:none!important}.instrument,.simNotice{display:none}.app:not(.observationMode) .deckButton.primary{display:none}.app:not(.observationMode) .deckActions{grid-template-columns:52px minmax(0,1fr)}}
     @media(max-width:700px) and (hover:none) and (pointer:coarse){.mobileJoysticks{bottom:10px}.joystickPad{width:94px;height:94px}.joystickKnob{width:38px;height:38px;margin:-19px}}
     @media(orientation:landscape) and (max-height:600px) and (hover:none) and (pointer:coarse){.mobileJoysticks{left:max(18px,var(--safe-left));right:max(18px,var(--safe-right));bottom:7px}.joystickPad{width:86px;height:86px}.joystickKnob{width:34px;height:34px;margin:-17px}.joystickLabel,.touchSpeedButton{min-height:19px;padding:2px 7px;font-size:7px}.navRadar{top:48px;width:88px}.navRadar>small{display:none}}
+    @media(max-width:700px),(hover:none) and (pointer:coarse){.app.milkyWayObjectsMode .missionPanel{display:none}}
+    @media(max-width:700px) and (orientation:landscape) and (max-height:600px),(hover:none) and (pointer:coarse) and (orientation:landscape) and (max-height:600px){.app.milkyWayObjectsMode.observationMode .observedGalaxyPhoto{left:max(10px,var(--safe-left))!important}}
   </style>
 </head>
 <body>
@@ -482,6 +484,7 @@
 
       const searchParams=new URLSearchParams(location.search);
       const isMilkyWayObjects=searchParams.get('experience')==='milky-way-objects';
+      document.getElementById('app').classList.toggle('milkyWayObjectsMode',isMilkyWayObjects);
       const entityName=isMilkyWayObjects?'천체':'은하';
       const entityNameWithParticle=isMilkyWayObjects?'천체를':'은하를';
       const classificationUnlockCount=isMilkyWayObjects?5:3;
@@ -847,11 +850,24 @@
       }
 
       function holdVisitor(visitor){visitor.holdUntil=performance.now()+1200;visitor.holdPosition=[...visitor.worldPosition]}
-      function localUfoResult(){const roll=Math.random();if(roll<.3)return{delta:50,message:'UFO에서 50점을 발견했습니다!'};if(roll<.42)return{delta:100,message:'UFO 대박! 100점을 획득했습니다!'};if(roll<.65)return{delta:-30,message:'UFO가 30점을 가져갔습니다.'};if(roll<.9)return{delta:30,message:'UFO에서 30점을 회수했습니다!'};const delta=Math.round((Math.random()*100-50)/10)*10;return{delta,message:`점수 파동! ${delta>=0?'+':''}${delta}점`}}
+      function localUfoResult(){
+        const roll=Math.random();
+        if(isMilkyWayObjects){
+          if(roll<.15)return{delta:50,message:'UFO에서 50점을 발견했습니다!'};
+          if(roll<.40)return{delta:100,message:'UFO에서 100점을 발견했습니다!'};
+          if(roll<.55)return{delta:200,message:'UFO에서 200점을 발견했습니다!'};
+          if(roll<.65)return{delta:500,message:'UFO에서 500점을 발견했습니다!'};
+          if(roll<.70)return{delta:1000,message:'UFO 잭팟! 1000점을 획득했습니다!'};
+          if(roll<.80){const amount=Math.min(30,expeditionScore);return{delta:-amount,message:`UFO가 ${amount}점을 가져갔습니다.`}};
+          // There is no classmate to steal from or swap with during a solo voyage.
+          return{delta:50,message:'UFO에서 50점을 발견했습니다!'};
+        }
+        if(roll<.3)return{delta:50,message:'UFO에서 50점을 발견했습니다!'};if(roll<.42)return{delta:100,message:'UFO 대박! 100점을 획득했습니다!'};if(roll<.65)return{delta:-30,message:'UFO가 30점을 가져갔습니다.'};if(roll<.9)return{delta:30,message:'UFO에서 30점을 회수했습니다!'};const delta=Math.round((Math.random()*100-50)/10)*10;return{delta,message:`점수 파동! ${delta>=0?'+':''}${delta}점`}
+      }
       async function resolveVisitor(visitor){
         if(mode!=='map'||visitor.resolving)return;const now=performance.now(),wait=Math.ceil((visitor.cooldownUntil-now)/1000);if(wait>0){showToast(`레이저 충전 중 · ${wait}초`);return}const range=Math.hypot(visitor.worldPosition[0]-camera.x,visitor.worldPosition[1]-camera.y,visitor.worldPosition[2]-camera.z);if(range>UFO_TAP_DISTANCE){holdVisitor(visitor);showToast(`격추 사거리 밖 · 거리 ${Math.round(range)}`,'bad');return}
         visitor.resolving=true;visitor.element.classList.remove('encountered');void visitor.element.offsetWidth;visitor.element.classList.add('encountered');visitor.cooldownUntil=now+UFO_COMM_COOLDOWN;visitor.element.classList.add('cooldown');visitorEncounters++;
-        try{let result;if(classroom){const reference=globalThis.crypto?.randomUUID?.()||`${Date.now()}-${Math.random().toString(36).slice(2)}`,{response,data}=await requestJson(`/api/labs/galaxy-voyage/sessions/${classroom.code}/events`,{method:'POST',headers:{'content-type':'application/json',...classroomHeaders()},body:JSON.stringify({kind:'ufo',reference})});result=data;if(!response.ok)throw new Error(result.error||'UFO 이벤트 실패');setScore(result.score)}else{result=localUfoResult();updateScore(result.delta)}showToast(result.message,result.delta<0?'bad':'good');if(!selectedKey)renderPanel()}catch(error){showToast(error.message||'UFO 신호가 끊겼습니다.','bad');void loadScoreboard()}finally{visitor.resolving=false;setTimeout(()=>visitor.element.classList.remove('cooldown'),UFO_COMM_COOLDOWN)}
+        try{let result;if(classroom){const reference=globalThis.crypto?.randomUUID?.()||`${Date.now()}-${Math.random().toString(36).slice(2)}`,{response,data}=await requestJson(`/api/labs/galaxy-voyage/sessions/${classroom.code}/events`,{method:'POST',headers:{'content-type':'application/json',...classroomHeaders()},body:JSON.stringify({kind:'ufo',reference,experience:isMilkyWayObjects?'milky-way-objects':'galaxy-voyage'})});result=data;if(!response.ok)throw new Error(result.error||'UFO 이벤트 실패');setScore(result.score)}else{result=localUfoResult();updateScore(result.delta)}showToast(result.message,result.delta<0?'bad':'good');if(!selectedKey)renderPanel()}catch(error){showToast(error.message||'UFO 신호가 끊겼습니다.','bad');void loadScoreboard()}finally{visitor.resolving=false;setTimeout(()=>visitor.element.classList.remove('cooldown'),UFO_COMM_COOLDOWN)}
       }
       function updateSpaceVisitors(time){
         if(mode!=='map')return;visitorStates.forEach(visitor=>{const phase=time*.000052+visitor.index*2.17,moving=[Math.sin(phase)*(1150+visitor.index*210),Math.sin(phase*(.69+visitor.index*.07)+1.15)*520,1280+visitor.index*470+Math.cos(phase*.81)*610],position=time<visitor.holdUntil&&visitor.holdPosition?visitor.holdPosition:moving;if(time>=visitor.holdUntil)visitor.holdPosition=moving;visitor.worldPosition=[...position];const point=projectWorld(position),range=Math.hypot(position[0]-camera.x,position[1]-camera.y,position[2]-camera.z),scale=clamp(920/Math.max(1,point.depth),.48,1.12),label=visitor.element.querySelector('.visitorLabel');visitor.element.style.transform=`translate(${point.x-viewWidth/2}px,${point.y-viewHeight/2}px) scale(${scale}) rotate(${Math.sin(phase*.9)*5}deg)`;visitor.element.style.opacity=point.visible?'1':'0';visitor.element.style.pointerEvents=point.visible?'auto':'none';setText(label,range<=UFO_TAP_DISTANCE?'격추':'UFO')})
