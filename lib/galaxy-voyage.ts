@@ -243,7 +243,9 @@ async function applyMilkyWayUfoEvent(player: Record<string, unknown>, eventRef: 
     ), candidate AS MATERIALIZED (
       SELECT id FROM galaxy_voyage_players
       WHERE session_id=${sessionId} AND id<>${playerId} AND ${needsTarget}::boolean
-        AND (${outcome}::text='swap' OR score>0)
+        AND (CASE WHEN ${outcome}::text='swap'
+          THEN score>(SELECT score FROM galaxy_voyage_players WHERE id=${playerId})
+          ELSE score>0 END)
       ORDER BY RANDOM() LIMIT 1
     ), locked AS MATERIALIZED (
       SELECT p.id, p.nickname, p.score, p.last_ufo_at
@@ -255,6 +257,7 @@ async function applyMilkyWayUfoEvent(player: Record<string, unknown>, eventRef: 
         t.id AS target_id, t.score AS target_score, t.nickname AS target_name, progress.reward_multiplier,
         CASE WHEN ${needsTarget}::boolean AND t.id IS NULL THEN 'gain25'
           WHEN ${outcome}::text='steal15' AND t.score<=0 THEN 'gain25'
+          WHEN ${outcome}::text='swap' AND t.score<=a.score THEN 'gain25'
           ELSE ${outcome}::text END AS outcome
       FROM locked a LEFT JOIN locked t ON t.id<>${playerId}
       CROSS JOIN progress
