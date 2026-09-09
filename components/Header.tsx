@@ -1,7 +1,7 @@
 'use client';
 
 import Link from 'next/link';
-import { FlaskConical, Menu, PlusCircle, Settings, X } from 'lucide-react';
+import { FlaskConical, Menu, PlusCircle, Settings, UsersRound, X } from 'lucide-react';
 import { useState } from 'react';
 
 export function Header() {
@@ -19,6 +19,7 @@ export function Header() {
         </button>
         <nav className={open?'navLinks open':'navLinks'}>
           <Link href="/" onClick={close}>프로그램</Link>
+          <Link href="/class-activities" onClick={close}><UsersRound size={16} /> 학급활동</Link>
           <Link href="/submit" onClick={close}><PlusCircle size={16} /> 프로그램 제안</Link>
           <Link href="/admin" className="navButton" onClick={close}><Settings size={16} /> 관리</Link>
         </nav>
