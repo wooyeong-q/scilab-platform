@@ -38,6 +38,7 @@ function makeSeats(rows:number, cols:number, width=900) {
 export default function SeatArrangementPage(){
   const stageRef=useRef<HTMLDivElement|null>(null);
   const dragRef=useRef<any>(null);
+  const teacherTapRef=useRef({count:0,last:0});
   const [namesText,setNamesText]=useState(DEFAULT_NAMES.join('\n'));
   const [rows,setRows]=useState(6);
   const [cols,setCols]=useState(5);
@@ -58,6 +59,14 @@ export default function SeatArrangementPage(){
   const activeIndexes=useMemo(()=>seats.map((s,i)=>s.active?i:-1).filter(i=>i>=0),[seats]);
 
   const notify=(text:string)=>{setToast(text);window.setTimeout(()=>setToast(''),1700);};
+  const openTeacherPanel=()=>{setTeacherUnlocked(false);setPinInput('');setTeacherOpen(true);};
+  const secretTitleClick=()=>{
+    const now=Date.now();
+    const tap=teacherTapRef.current;
+    if(now-tap.last>1400) tap.count=0;
+    tap.count+=1;tap.last=now;
+    if(tap.count>=5){tap.count=0;openTeacherPanel();}
+  };
 
   useEffect(()=>{
     try{
@@ -74,9 +83,9 @@ export default function SeatArrangementPage(){
 
   useEffect(()=>{
     const key=(e:KeyboardEvent)=>{
-      if(e.ctrlKey&&e.shiftKey&&e.key.toLowerCase()==='l'){
-        e.preventDefault();setTeacherUnlocked(false);setPinInput('');setTeacherOpen(true);
-      }
+      const legacy=e.ctrlKey&&e.shiftKey&&e.key.toLowerCase()==='l';
+      const alternate=e.altKey&&e.shiftKey&&e.key.toLowerCase()==='t';
+      if(legacy||alternate){e.preventDefault();openTeacherPanel();}
     };
     window.addEventListener('keydown',key);return()=>window.removeEventListener('keydown',key);
   },[]);
@@ -183,6 +192,13 @@ export default function SeatArrangementPage(){
     setAssignments({});setOverrides([]);setPin('2468');setMessage('아직 배정하지 않았습니다.');
   };
   const print=()=>window.print();
+  const saveTeacherSettings=()=>{
+    if(newPin&&newPin.length<4){notify('PIN은 4자리 이상으로 설정하세요.');return;}
+    const nextPin=newPin||pin;
+    setPin(nextPin);setNewPin('');
+    localStorage.setItem(STORE_KEY,JSON.stringify({namesText,rows,cols,seats,assignments,overrides,pin:nextPin}));
+    setTeacherOpen(false);notify('교사 설정을 저장했습니다.');
+  };
 
   const shown=preview||assignments;
   const activeCount=activeIndexes.length;
@@ -194,7 +210,7 @@ export default function SeatArrangementPage(){
       <div className="seatTop container">
         <div>
           <Link href="/class-activities" className="back"><ArrowLeft size={16}/> 학급활동</Link>
-          <h1>자리배치</h1><p>책상 위 이름이 빠르게 섞이다가 최종 자리에서 멈춥니다.</p>
+          <h1 onClick={secretTitleClick}>자리배치</h1><p>책상 위 이름이 빠르게 섞이다가 최종 자리에서 멈춥니다.</p>
         </div>
         <div className="topButtons"><button onClick={print}><Printer size={17}/> 교탁용 인쇄</button><button onClick={save}><Save size={17}/> 저장</button><button onClick={reset}>초기화</button></div>
       </div>
@@ -236,13 +252,13 @@ export default function SeatArrangementPage(){
         <div className="overrideList">{overrides.length===0&&<div className="empty">현재 지정된 자리가 없습니다.</div>}{overrides.map((o,idx)=><div className="override" key={idx}><select value={o.name} onChange={e=>setOverrides(v=>v.map((x,j)=>j===idx?{...x,name:e.target.value}:x))}>{names.map(n=><option key={n}>{n}</option>)}</select><select value={o.seat} onChange={e=>setOverrides(v=>v.map((x,j)=>j===idx?{...x,seat:Number(e.target.value)}:x))}>{activeIndexes.map(i=><option value={i} key={i}>{i+1}번 자리</option>)}</select><button onClick={()=>setOverrides(v=>v.filter((_,j)=>j!==idx))}>삭제</button></div>)}</div>
         <button className="add" onClick={()=>{if(!names.length||!activeIndexes.length)return;const usedN=new Set(overrides.map(o=>o.name)),usedS=new Set(overrides.map(o=>Number(o.seat)));setOverrides(v=>[...v,{name:names.find(n=>!usedN.has(n))||names[0],seat:activeIndexes.find(i=>!usedS.has(i))??activeIndexes[0]}])}}>+ 지정석 추가</button>
         <label className="pinLabel">교사 PIN 변경</label><input type="password" placeholder="새 PIN 4자리 이상" value={newPin} onChange={e=>setNewPin(e.target.value)}/>
-        <div className="modalButtons"><button onClick={()=>setTeacherOpen(false)}>닫기</button><button className="primary" onClick={()=>{if(newPin&&newPin.length<4){notify('PIN은 4자리 이상으로 설정하세요.');return;}if(newPin){setPin(newPin);setNewPin('');}window.setTimeout(save,0);setTeacherOpen(false);notify('교사 설정을 저장했습니다.');}}>설정 저장</button></div></>}
+        <div className="modalButtons"><button onClick={()=>setTeacherOpen(false)}>닫기</button><button className="primary" onClick={saveTeacherSettings}>설정 저장</button></div></>}
     </div></div>}
     {toast&&<div className="toast">{toast}</div>}
 
     <style jsx>{`
       .seatPage{padding:34px 0 64px;background:#f4f6f9;min-height:calc(100vh - 72px)}
-      .seatTop{display:flex;justify-content:space-between;gap:20px;align-items:flex-end;margin-bottom:18px}.seatTop h1{font-size:34px;margin:8px 0 5px}.seatTop p{margin:0;color:#6c7582}.back{display:inline-flex;align-items:center;gap:5px;text-decoration:none;color:#4256e8;font-weight:800;font-size:14px}
+      .seatTop{display:flex;justify-content:space-between;gap:20px;align-items:flex-end;margin-bottom:18px}.seatTop h1{font-size:34px;margin:8px 0 5px;user-select:none}.seatTop p{margin:0;color:#6c7582}.back{display:inline-flex;align-items:center;gap:5px;text-decoration:none;color:#4256e8;font-weight:800;font-size:14px}
       button,input,textarea,select{font:inherit}.topButtons,.deskButtons,.minor{display:flex;gap:8px;flex-wrap:wrap}.topButtons button,.deskButtons button,.minor button,.wide,.add,.modalButtons button{display:inline-flex;align-items:center;justify-content:center;gap:6px;border:1px solid #dfe4ea;background:white;padding:10px 13px;border-radius:11px;font-weight:800;cursor:pointer}
       .work{display:grid;grid-template-columns:340px minmax(0,1fr);gap:18px;align-items:start}.right{display:flex;flex-direction:column;gap:18px}.card{background:white;border:1px solid #e0e5eb;border-radius:18px;box-shadow:0 10px 28px rgba(31,42,68,.08)}
       .settings{padding:18px;position:sticky;top:88px}.settings h2{font-size:19px;margin:0 0 16px}.settings label,.pinLabel{display:block;font-size:13px;font-weight:900;margin:12px 0 7px}.settings textarea{width:100%;height:285px;resize:vertical;border:1px solid #dfe4ea;border-radius:11px;background:#fafbfc;padding:11px;line-height:1.55}.numberRow{display:grid;grid-template-columns:1fr 1fr;gap:9px}.numberRow input,.modal input,.override select{width:100%;padding:10px;border:1px solid #dfe4ea;border-radius:10px}.wide{width:100%;margin-top:12px}.hint{font-size:12px;color:#77808d;line-height:1.55}.status,.message,.empty{padding:11px 12px;border-radius:11px;background:#f5f7fa;color:#667080;font-size:13px}
