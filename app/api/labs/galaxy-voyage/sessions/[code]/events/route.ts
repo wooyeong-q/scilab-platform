@@ -28,7 +28,7 @@ export async function POST(request: Request, { params }: Context) {
     const result = kind === 'ufo'
       ? await applyRandomUfoEvent(code, playerId, playerKey, body.reference, body.experience)
       : ['observation', 'classification_correct', 'classification_wrong'].includes(kind)
-        ? await applyGalaxyScoreEvent(code, playerId, playerKey, kind as RegularEvent, body.reference)
+        ? await applyGalaxyScoreEvent(code, playerId, playerKey, kind as RegularEvent, body.reference, body.experience)
         : { status: 'invalid' as const };
 
     if (result.status === 'unauthorized') return noStore({ error: '입장 정보를 확인해 주세요.' }, { status: 401 });
