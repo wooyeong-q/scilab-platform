@@ -210,3 +210,7 @@ CREATE INDEX IF NOT EXISTS star_escape_players_session_team_idx ON star_escape_p
 CREATE INDEX IF NOT EXISTS star_escape_attempts_session_stage_idx ON star_escape_attempts(session_id, stage);
 
 CREATE INDEX IF NOT EXISTS star_escape_hints_session_created_idx ON star_escape_hints(session_id, created_at DESC);
+
+ALTER TABLE galaxy_voyage_sessions ADD COLUMN IF NOT EXISTS duration_seconds INTEGER;
+ALTER TABLE galaxy_voyage_sessions ADD COLUMN IF NOT EXISTS started_at TIMESTAMPTZ;
+

@@ -13,10 +13,11 @@ export async function POST(request: Request) {
     const body = parsed && typeof parsed === 'object' && !Array.isArray(parsed)
       ? parsed as Record<string, unknown>
       : {};
-    const result = await createGalaxySession(body.title);
+    const result = await createGalaxySession(body.title, body.durationSeconds);
     return noStore(result, { status: 201 });
   } catch (error) {
     console.error('Failed to create galaxy-voyage session', error);
     return noStore({ error: '수업을 만들지 못했습니다.' }, { status: 500 });
   }
 }
+

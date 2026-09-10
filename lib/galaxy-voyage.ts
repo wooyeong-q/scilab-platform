@@ -21,6 +21,9 @@ export type GalaxySession = {
   code: string;
   title: string;
   expiresAt: string;
+  durationSeconds: number | null;
+  startedAt: string | null;
+  endsAt: string | null;
 };
 
 export type GalaxyPlayer = {
@@ -56,6 +59,9 @@ function mapSession(row: Record<string, unknown>): GalaxySession {
     code: String(row.code),
     title: String(row.title || ''),
     expiresAt: new Date(String(row.expires_at)).toISOString(),
+    durationSeconds: row.duration_seconds == null ? null : Number(row.duration_seconds),
+    startedAt: row.started_at ? new Date(String(row.started_at)).toISOString() : null,
+    endsAt: row.started_at && row.duration_seconds ? new Date(new Date(String(row.started_at)).getTime()+Number(row.duration_seconds)*1000).toISOString() : null,
   };
 }
 
@@ -69,10 +75,12 @@ export async function ensureGalaxyVoyageDatabase() {
   database();
 }
 
-export async function createGalaxySession(titleValue: unknown) {
+export async function createGalaxySession(titleValue: unknown, durationValue?: unknown) {
   await ensureGalaxyVoyageDatabase();
   const db = database();
   const title = String(titleValue || '은하 항해 수업').trim().slice(0, 60) || '은하 항해 수업';
+  const duration = durationValue == null ? null : Number(durationValue);
+  if (duration !== null && (!Number.isInteger(duration) || duration < 60 || duration > 7200)) throw new Error('Invalid duration');
   const teacherKey = newSecret();
   const expiresAt = new Date(Date.now() + SESSION_DAYS * 24 * 60 * 60 * 1000);
   await db`DELETE FROM galaxy_voyage_sessions WHERE expires_at < NOW()`;
@@ -80,8 +88,8 @@ export async function createGalaxySession(titleValue: unknown) {
   for (let attempt = 0; attempt < 12; attempt += 1) {
     const id = randomUUID();
     const code = newCode();
-    const rows = await db`INSERT INTO galaxy_voyage_sessions (id, code, title, teacher_key_hash, expires_at)
-      VALUES (${id}, ${code}, ${title}, ${hashKey(teacherKey)}, ${expiresAt.toISOString()})
+    const rows = await db`INSERT INTO galaxy_voyage_sessions (id, code, title, teacher_key_hash, expires_at, duration_seconds)
+      VALUES (${id}, ${code}, ${title}, ${hashKey(teacherKey)}, ${expiresAt.toISOString()}, ${duration})
       ON CONFLICT (code) DO NOTHING RETURNING *`;
     if (rows[0]) return { session: mapSession(rows[0] as Record<string, unknown>), teacherKey };
   }
@@ -114,7 +122,8 @@ export async function joinGalaxySession(code: string, nicknameValue: unknown) {
 }
 
 async function verifiedPlayer(code: string, playerId: string, playerKey: string) {
-  const rows = await database()`SELECT p.id, p.session_id, p.nickname, p.score
+  const rows = await database()`SELECT p.id, p.session_id, p.nickname, p.score, s.duration_seconds, s.started_at,
+      statement_timestamp() AS server_now
     FROM galaxy_voyage_players p
     JOIN galaxy_voyage_sessions s ON s.id=p.session_id
     WHERE s.code=${code} AND s.expires_at > NOW() AND p.id=${playerId} AND p.player_key_hash=${hashKey(playerKey)}
@@ -136,7 +145,7 @@ export async function getGalaxyScoreboard(code: string, playerId: string, player
       SELECT id, nickname, score, ROW_NUMBER() OVER (ORDER BY score DESC, updated_at ASC)::int AS rank
       FROM galaxy_voyage_players WHERE session_id=${sessionId}
     ) SELECT
-      (SELECT COALESCE(json_agg(r ORDER BY r.rank), '[]'::json) FROM ranked r WHERE r.rank<=10) AS leaders,
+      (SELECT COALESCE(json_agg(r ORDER BY r.rank), '[]'::json) FROM ranked r WHERE r.rank<=200) AS leaders,
       (SELECT row_to_json(r) FROM ranked r WHERE r.id=${playerId} LIMIT 1) AS self,
       (SELECT COUNT(*)>=${MILKY_WAY_OBJECT_KEYS.length} FROM galaxy_voyage_score_events
         WHERE actor_id=${playerId} AND event_key=ANY(${MILKY_WAY_OBSERVATION_KEYS}::text[])) AS milky_way_ufo_bonus,
@@ -154,6 +163,7 @@ export async function getGalaxyScoreboard(code: string, playerId: string, player
   });
   return {
     self: own ? mapPlayer(own) : null,
+    timing: timingForPlayer(player),
     milkyWayUfoBonus: Boolean(snapshot.milky_way_ufo_bonus),
     leaders: leaders.map((row) => mapPlayer(row as Record<string, unknown>)),
     notifications: notificationRows.map((row) => ({ id: String(row.id), message: String(row.message), createdAt: new Date(String(row.created_at)).toISOString() })),
@@ -171,6 +181,8 @@ export async function applyGalaxyScoreEvent(code: string, playerId: string, play
   await ensureGalaxyVoyageDatabase();
   const player = await verifiedPlayer(code, playerId, playerKey);
   if (!player) return { status: 'unauthorized' as const };
+  const timing = timingForPlayer(player);
+  if (timing.state === 'waiting' || timing.state === 'ended') return { status: timing.state };
   const reference = String(referenceValue || '').trim().toLowerCase();
   if (!/^[a-z0-9:_-]{1,80}$/.test(reference)) return { status: 'invalid' as const };
   const isMilkyWayObjects = experienceValue === 'milky-way-objects';
@@ -184,7 +196,8 @@ export async function applyGalaxyScoreEvent(code: string, playerId: string, play
   const rows = await database()`WITH inserted AS (
       INSERT INTO galaxy_voyage_score_events
         (id, session_id, actor_id, event_key, event_kind, actor_delta, actor_message)
-      VALUES (${eventId}, ${String(player.session_id)}, ${playerId}, ${eventKey}, ${kind}, ${delta}, ${message})
+      SELECT ${eventId}, ${String(player.session_id)}, ${playerId}, ${eventKey}, ${kind}, ${delta}, ${message}
+      FROM galaxy_voyage_sessions s WHERE s.id=${String(player.session_id)} AND (s.duration_seconds IS NULL OR (s.started_at IS NOT NULL AND s.started_at<=statement_timestamp() AND s.started_at+s.duration_seconds*INTERVAL '1 second'>statement_timestamp()))
       ON CONFLICT (actor_id, event_key) DO NOTHING
       RETURNING actor_delta
     ), updated AS (
@@ -287,7 +300,7 @@ async function applyMilkyWayUfoEvent(player: Record<string, unknown>, eventRef: 
           WHEN 'swap' THEN actor_name || '와 총점을 서로 교환했습니다! ' || target_score || ' → ' || actor_score || '점'
           WHEN 'steal15' THEN actor_name || '가 ' || delta || '점을 가져갔습니다.'
           ELSE '' END
-      FROM amounts
+      FROM amounts WHERE EXISTS(SELECT 1 FROM galaxy_voyage_sessions s WHERE s.id=${sessionId} AND (s.duration_seconds IS NULL OR (s.started_at IS NOT NULL AND s.started_at<=statement_timestamp() AND s.started_at+s.duration_seconds*INTERVAL '1 second'>statement_timestamp())))
       ON CONFLICT (actor_id, event_key) DO NOTHING
       RETURNING target_id, actor_delta, target_delta, actor_message, event_kind
     ), updated AS (
@@ -322,6 +335,8 @@ export async function applyRandomUfoEvent(code: string, playerId: string, player
   await ensureGalaxyVoyageDatabase();
   const player = await verifiedPlayer(code, playerId, playerKey);
   if (!player) return { status: 'unauthorized' as const };
+  const timing = timingForPlayer(player);
+  if (timing.state === 'waiting' || timing.state === 'ended') return { status: timing.state };
   const eventRef = String(eventKeyValue || '').trim().toLowerCase();
   if (!/^[a-z0-9-]{8,80}$/.test(eventRef)) return { status: 'invalid' as const };
   if (experienceValue === 'milky-way-objects') return applyMilkyWayUfoEvent(player, eventRef);
@@ -374,7 +389,8 @@ export async function applyRandomUfoEvent(code: string, playerId: string, player
   const rows = await db`WITH inserted AS (
       INSERT INTO galaxy_voyage_score_events
         (id, session_id, actor_id, target_id, event_key, event_kind, actor_delta, target_delta, actor_message, target_message)
-      VALUES (${eventId}, ${String(player.session_id)}, ${playerId}, ${target ? String(target.id) : null}, ${eventKey}, ${`ufo_${outcome}`}, ${actorDelta}, ${targetDelta}, ${actorMessage}, ${targetMessage})
+      SELECT ${eventId}, ${String(player.session_id)}, ${playerId}, ${target ? String(target.id) : null}, ${eventKey}, ${`ufo_${outcome}`}, ${actorDelta}, ${targetDelta}, ${actorMessage}, ${targetMessage}
+      FROM galaxy_voyage_sessions s WHERE s.id=${String(player.session_id)} AND (s.duration_seconds IS NULL OR (s.started_at IS NOT NULL AND s.started_at<=statement_timestamp() AND s.started_at+s.duration_seconds*INTERVAL '1 second'>statement_timestamp()))
       ON CONFLICT (actor_id, event_key) DO NOTHING
       RETURNING actor_delta, target_delta, target_id, actor_message
     ), actor_updated AS (
@@ -397,3 +413,32 @@ export async function applyRandomUfoEvent(code: string, playerId: string, player
     message: String(rows[0].actor_message || actorMessage),
   };
 }
+
+function timingForPlayer(row: Record<string, unknown>) {
+  const duration = row.duration_seconds == null ? null : Number(row.duration_seconds);
+  const start = row.started_at ? new Date(String(row.started_at)).getTime() : null;
+  const now = new Date(String(row.server_now)).getTime();
+  const end = start !== null && duration !== null ? start + duration * 1000 : null;
+  const state: 'running' | 'waiting' | 'ended' = duration === null ? 'running' : start === null || now < start ? 'waiting' : now >= end! ? 'ended' : 'running';
+  return { durationSeconds: duration, startedAt: start === null ? null : new Date(start).toISOString(), endsAt: end === null ? null : new Date(end).toISOString(), serverTime: new Date(now).toISOString(), state };
+}
+
+export async function controlGalaxySession(code: string, teacherKey: string, start: boolean) {
+  const db = database();
+  if (start) {
+    await db`UPDATE galaxy_voyage_sessions SET started_at=statement_timestamp()+INTERVAL '10 seconds'
+      WHERE code=${code} AND teacher_key_hash=${hashKey(teacherKey)} AND expires_at>NOW()
+        AND duration_seconds IS NOT NULL AND started_at IS NULL`;
+  }
+  const rows = await db`SELECT s.duration_seconds, s.started_at, statement_timestamp() AS server_now,
+    (SELECT COUNT(*)::int FROM galaxy_voyage_players p WHERE p.session_id=s.id) AS participant_count,
+    (SELECT COALESCE(json_agg(r ORDER BY r.rank), '[]'::json) FROM (
+      SELECT nickname, score, ROW_NUMBER() OVER (ORDER BY score DESC, updated_at ASC)::int AS rank
+      FROM galaxy_voyage_players WHERE session_id=s.id
+    ) r) AS leaders
+    FROM galaxy_voyage_sessions s WHERE s.code=${code} AND s.teacher_key_hash=${hashKey(teacherKey)}
+      AND s.expires_at>NOW()`;
+  if (!rows[0]) return null;
+  return { timing: timingForPlayer(rows[0]), participantCount: Number(rows[0].participant_count), leaders: rows[0].leaders };
+}
+

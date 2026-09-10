@@ -31,6 +31,7 @@ export async function POST(request: Request, { params }: Context) {
         ? await applyGalaxyScoreEvent(code, playerId, playerKey, kind as RegularEvent, body.reference, body.experience)
         : { status: 'invalid' as const };
 
+    if (result.status === 'waiting' || result.status === 'ended') return noStore({ error: result.status === 'waiting' ? '교사의 시작을 기다려 주세요.' : '수업 시간이 종료되었습니다.', status: result.status }, { status: 409 });
     if (result.status === 'unauthorized') return noStore({ error: '입장 정보를 확인해 주세요.' }, { status: 401 });
     if (result.status === 'invalid') return noStore({ error: '점수 요청을 확인해 주세요.' }, { status: 400 });
     if (result.status === 'cooldown') return noStore({ error: '레이저 충전 중입니다.' }, { status: 429 });
@@ -41,3 +42,4 @@ export async function POST(request: Request, { params }: Context) {
     return noStore({ error: '점수를 반영하지 못했습니다.' }, { status: 500 });
   }
 }
+
