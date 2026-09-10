@@ -672,7 +672,7 @@
 
       let classTiming=null,clockAnchor=0,clockServer=0,teacherSession=null,teacherBusy=false;
       const teacherStorageKey=classroomStorageKey+'-teacher';
-      const timeBadge=document.createElement('div');timeBadge.style.cssText='position:fixed;top:78px;left:50%;transform:translateX(-50%);z-index:90;background:#111c36;color:#fff;padding:8px 16px;border-radius:12px;font-weight:bold';timeBadge.hidden=true;app.append(timeBadge);
+      const timeBadge=document.createElement('div');timeBadge.style.cssText='color:var(--amber);font-size:11px;line-height:14px;font-weight:900;white-space:nowrap;font-variant-numeric:tabular-nums;pointer-events:none';timeBadge.hidden=true;document.querySelector('.brandText').prepend(timeBadge);
       const timedOverlay=document.createElement('div');timedOverlay.style.cssText='position:fixed;inset:0;z-index:200;background:rgba(3,7,22,.96);color:white;display:none;overflow:auto;padding:8vh 8vw;text-align:center';
       const timedTitle=document.createElement('h2'),timedDetail=document.createElement('p'),finalList=document.createElement('ol');finalList.style.cssText='max-width:600px;margin:24px auto;text-align:left;line-height:2';
       timedOverlay.append(timedTitle,timedDetail,finalList);app.append(timedOverlay);
@@ -685,7 +685,7 @@
       function classBlocked(){if(!classroom)return false;if(!classTiming)return true;if(classTiming.durationSeconds==null)return false;const now=classNow();return !classTiming.startedAt||now<Date.parse(classTiming.startedAt)||now>=Date.parse(classTiming.endsAt)}
       function showFinalRanks(leaders){finalList.replaceChildren();for(const p of leaders||[]){const li=document.createElement('li');li.textContent=p.rank+'위 · '+p.nickname+' · '+p.score+'점';finalList.append(li)}}
       function tickClassClock(){
-        if(!classroom)return;const blocked=classBlocked();timeBadge.hidden=false;
+        if(!classroom)return;const blocked=classBlocked();timeBadge.hidden=false;document.querySelector('.brandText small').style.display=classTiming?.durationSeconds==null&&classTiming?'':'none';
         if(!classTiming){timedTitle.textContent='수업 연결 확인 중';timedDetail.textContent='서버의 시작 시각을 확인하고 있습니다.'}
         else if(classTiming.durationSeconds==null){timeBadge.hidden=true}
         else{const now=classNow(),start=Date.parse(classTiming.startedAt),end=Date.parse(classTiming.endsAt);
