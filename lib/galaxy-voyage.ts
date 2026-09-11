@@ -442,3 +442,59 @@ export async function controlGalaxySession(code: string, teacherKey: string, sta
   return { timing: timingForPlayer(rows[0]), participantCount: Number(rows[0].participant_count), leaders: rows[0].leaders };
 }
 
+
+
+// One authenticated statement per position exchange; positions are scoped to a classroom.
+export async function syncGalaxyFlight(code: string, playerId: string, key: string, position: unknown) {
+  if (!Array.isArray(position) || position.length !== 3 || !position.every(v => typeof v === 'number' && Number.isFinite(v) && Math.abs(v) <= 20000)) return null;
+  const [x,y,z] = position;
+  const rows = await database()`WITH actor AS (
+    UPDATE galaxy_voyage_players p SET flight_x=${x},flight_y=${y},flight_z=${z},flight_at=statement_timestamp()
+    FROM galaxy_voyage_sessions s WHERE p.session_id=s.id AND s.code=${code} AND p.id=${playerId}
+      AND p.player_key_hash=${hashKey(key)} AND s.expires_at>statement_timestamp()
+      AND (s.duration_seconds IS NULL OR (s.started_at<=statement_timestamp() AND s.started_at+s.duration_seconds*INTERVAL '1 second'>statement_timestamp()))
+      AND (p.flight_at IS NULL OR p.flight_at<statement_timestamp()-INTERVAL '1 second')
+    RETURNING p.id,p.session_id,p.attack_at,p.shield_until
+  ) SELECT a.attack_at,a.shield_until,statement_timestamp() AS server_time,
+    (SELECT COUNT(*)>=25 FROM galaxy_voyage_score_events WHERE actor_id=a.id AND event_key=ANY(${MILKY_WAY_OBSERVATION_KEYS}::text[])) AS unlocked,
+    (SELECT COALESCE(json_agg(v),'[]'::json) FROM (
+      SELECT p.id,p.nickname,p.flight_x AS x,p.flight_y AS y,p.flight_z AS z,p.shield_until
+      FROM galaxy_voyage_players p WHERE p.session_id=a.session_id AND p.id<>a.id
+        AND p.flight_at>statement_timestamp()-INTERVAL '8 seconds'
+      ORDER BY p.id LIMIT 40
+    ) v) AS peers FROM actor a`;
+  return rows[0] || null;
+}
+
+export async function attackGalaxyPlayer(code: string, playerId: string, key: string, target: unknown, shot: unknown) {
+  if (typeof target !== 'string' || target===playerId || typeof shot !== 'string' || !/^[a-zA-Z0-9-]{8,80}$/.test(shot)) return null;
+  // Lock in the same ID order as UFO exchanges, keeping transfer and protection atomic.
+  const rows = await database()`WITH auth AS MATERIALIZED (
+    SELECT p.id,p.session_id FROM galaxy_voyage_players p JOIN galaxy_voyage_sessions s ON s.id=p.session_id
+    WHERE p.id=${playerId} AND p.player_key_hash=${hashKey(key)} AND s.code=${code} AND s.expires_at>statement_timestamp()
+      AND (s.duration_seconds IS NULL OR (s.started_at<=statement_timestamp() AND s.started_at+s.duration_seconds*INTERVAL '1 second'>statement_timestamp()))
+  ), locked AS MATERIALIZED (
+    SELECT p.* FROM galaxy_voyage_players p JOIN auth a ON p.session_id=a.session_id
+    WHERE p.id=a.id OR p.id=${target} ORDER BY p.id FOR UPDATE OF p
+  ), ready AS (
+    SELECT a.id AS actor_id,a.session_id,a.nickname AS actor_name,t.id AS target_id,t.nickname AS target_name,LEAST(10,t.score) AS delta
+    FROM locked a JOIN locked t ON t.id=${target} WHERE a.id=${playerId}
+      AND (SELECT COUNT(*) FROM galaxy_voyage_score_events WHERE actor_id=a.id AND event_key=ANY(${MILKY_WAY_OBSERVATION_KEYS}::text[]))>=25
+      AND (a.attack_at IS NULL OR a.attack_at<=statement_timestamp()-INTERVAL '5 seconds')
+      AND (t.shield_until IS NULL OR t.shield_until<=statement_timestamp())
+      AND a.flight_at>statement_timestamp()-INTERVAL '8 seconds' AND t.flight_at>statement_timestamp()-INTERVAL '8 seconds'
+      AND power(a.flight_x-t.flight_x,2)+power(a.flight_y-t.flight_y,2)+power(a.flight_z-t.flight_z,2)<=810000
+  ), event AS (
+    INSERT INTO galaxy_voyage_score_events(id,session_id,actor_id,target_id,event_key,event_kind,actor_delta,target_delta,actor_message,target_message)
+    SELECT ${randomUUID()},session_id,actor_id,target_id,${'attack:'+shot},'player_attack',delta,-delta,
+      target_name||' 명중! +'||delta||'점',actor_name||'의 공격! -'||delta||'점 · 10초 보호막' FROM ready
+    ON CONFLICT(actor_id,event_key) DO NOTHING RETURNING *
+  ), changed AS (
+    UPDATE galaxy_voyage_players p SET score=p.score+CASE WHEN p.id=e.actor_id THEN e.actor_delta ELSE e.target_delta END,
+      attack_at=CASE WHEN p.id=e.actor_id THEN statement_timestamp() ELSE p.attack_at END,
+      shield_until=CASE WHEN p.id=e.target_id THEN statement_timestamp()+INTERVAL '10 seconds' ELSE p.shield_until END,
+      updated_at=statement_timestamp()
+    FROM event e WHERE p.id=e.actor_id OR p.id=e.target_id RETURNING p.id,p.score
+  ) SELECT e.actor_message AS message,e.actor_delta AS delta,c.score FROM event e JOIN changed c ON c.id=e.actor_id`;
+  return rows[0] || null;
+}

@@ -214,3 +214,11 @@ CREATE INDEX IF NOT EXISTS star_escape_hints_session_created_idx ON star_escape_
 ALTER TABLE galaxy_voyage_sessions ADD COLUMN IF NOT EXISTS duration_seconds INTEGER;
 ALTER TABLE galaxy_voyage_sessions ADD COLUMN IF NOT EXISTS started_at TIMESTAMPTZ;
 
+
+
+ALTER TABLE galaxy_voyage_players ADD COLUMN IF NOT EXISTS flight_x DOUBLE PRECISION NOT NULL DEFAULT 0;
+ALTER TABLE galaxy_voyage_players ADD COLUMN IF NOT EXISTS flight_y DOUBLE PRECISION NOT NULL DEFAULT 0;
+ALTER TABLE galaxy_voyage_players ADD COLUMN IF NOT EXISTS flight_z DOUBLE PRECISION NOT NULL DEFAULT 0;
+ALTER TABLE galaxy_voyage_players ADD COLUMN IF NOT EXISTS flight_at TIMESTAMPTZ;
+ALTER TABLE galaxy_voyage_players ADD COLUMN IF NOT EXISTS attack_at TIMESTAMPTZ;
+ALTER TABLE galaxy_voyage_players ADD COLUMN IF NOT EXISTS shield_until TIMESTAMPTZ;

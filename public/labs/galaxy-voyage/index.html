@@ -779,6 +779,33 @@
         ctx.restore();
       }
 
+      const flightPeers=new Map();let flightBusy=false,attackBusy=false,flightUnlocked=false,attackReadyAt=0,flightSeenAt=0;
+      const flightLayer=document.createElement('div');flightLayer.style.cssText='position:absolute;inset:0;z-index:16;pointer-events:none;overflow:hidden';ui.visitors.parentElement.append(flightLayer);
+      const flightRadar=document.createElement('div');flightRadar.style.cssText='position:absolute;inset:0;pointer-events:none';ui.radarDots.parentElement.append(flightRadar);
+      const flightStatus=document.createElement('div');flightStatus.style.cssText='position:absolute;left:8px;bottom:8px;color:#ffe269;font-size:11px;pointer-events:none';flightLayer.append(flightStatus);
+      async function syncFlight(){
+        if(!isMilkyWayObjects||!classroom||!started||classBlocked()||document.hidden||flightBusy)return;
+        flightBusy=true;
+        try{const {response,data}=await requestJson(`/api/labs/galaxy-voyage/sessions/${classroom.code}/flight`,{method:'POST',headers:{...classroomHeaders(),'Content-Type':'application/json'},body:JSON.stringify({position:[camera.x,camera.y,camera.z]})});
+          if(!response.ok)return;flightSeenAt=performance.now();flightUnlocked=Boolean(data.unlocked);const server=Date.parse(data.server_time);attackReadyAt=performance.now()+Math.max(0,Date.parse(data.attack_at||0)+5000-server);
+          const seen=new Set();for(const p of data.peers||[]){seen.add(p.id);let item=flightPeers.get(p.id);if(!item){const button=document.createElement('button');button.type='button';button.style.cssText='position:absolute;transform:translate(-50%,-50%);color:#ffe269;background:rgba(30,25,5,.75);border:1px solid #ffe269;border-radius:12px;padding:7px;pointer-events:auto;font-size:12px;white-space:nowrap;touch-action:manipulation';const dot=document.createElement('span');dot.style.cssText='position:absolute;width:6px;height:6px;border-radius:50%;background:#ffe269;transform:translate(-50%,-50%)';button.addEventListener('pointerdown',e=>e.stopPropagation());button.addEventListener('click',e=>{e.stopPropagation();void fireAt(p.id)});flightLayer.append(button);flightRadar.append(dot);item={button,dot,current:[p.x,p.y,p.z]};flightPeers.set(p.id,item)}Object.assign(item,{target:[p.x,p.y,p.z],name:p.nickname,shield:performance.now()+Math.max(0,Date.parse(p.shield_until||0)-server)})}
+          for(const [id,p] of flightPeers)if(!seen.has(id)){p.button.remove();p.dot.remove();flightPeers.delete(id)}
+        }catch{}finally{flightBusy=false}
+      }
+      async function fireAt(id){
+        const p=flightPeers.get(id);if(!p||classBlocked()||!flightUnlocked||attackBusy||performance.now()<attackReadyAt||performance.now()<p.shield||performance.now()-flightSeenAt>8000)return;
+        if(Math.hypot(p.target[0]-camera.x,p.target[1]-camera.y,p.target[2]-camera.z)>900){showToast('친구에게 더 가까이 다가가세요.','bad');return}
+        attackBusy=true;try{const {response,data}=await requestJson(`/api/labs/galaxy-voyage/sessions/${classroom.code}/flight`,{method:'POST',headers:{...classroomHeaders(),'Content-Type':'application/json'},body:JSON.stringify({action:'attack',targetId:id,shotId:crypto.randomUUID()})});if(!response.ok){showToast(data.error||'공격 대기 중입니다.','bad');return}attackReadyAt=performance.now()+5000;p.shield=performance.now()+10000;p.button.animate([{background:'#fff',transform:'translate(-50%,-50%) scale(1.4)'},{background:'rgba(30,25,5,.75)',transform:'translate(-50%,-50%) scale(1)'}],{duration:350});showToast(data.message);void loadScoreboard()}catch{showToast('통신이 지연되었습니다.','bad')}finally{attackBusy=false}
+      }
+      function drawFlight(delta){
+        const visible=isMilkyWayObjects&&classroom&&started&&!classBlocked()&&mode==='map'&&performance.now()-flightSeenAt<8000;flightLayer.hidden=!visible;flightRadar.hidden=!visible;if(!visible)return;
+        flightStatus.textContent=flightUnlocked?(performance.now()<attackReadyAt?'공격 충전 '+Math.ceil((attackReadyAt-performance.now())/1000)+'초':'노란 우주선을 눌러 공격 · 최대 10점'):'노란색: 친구 · 천체 25개 발견 시 공격 해제';
+        for(const p of flightPeers.values()){const blend=1-Math.exp(-delta/280);for(let i=0;i<3;i++)p.current[i]+=(p.target[i]-p.current[i])*blend;const q=projectWorld(p.current),range=Math.hypot(p.current[0]-camera.x,p.current[1]-camera.y,p.current[2]-camera.z),protectedNow=performance.now()<p.shield;p.button.hidden=!q.visible||range>2400;p.button.style.left=q.x+'px';p.button.style.top=q.y+'px';p.button.textContent='▲ '+p.name+' · '+Math.round(range)+(protectedNow?' 🛡':'');p.button.setAttribute('aria-label',p.name+(protectedNow?' 보호 중':' 우주선 공격'));p.button.style.boxShadow=protectedNow?'0 0 0 5px rgba(100,220,255,.5)':'none';p.button.disabled=!flightUnlocked||protectedNow||performance.now()<attackReadyAt||range>900;
+          const angle=Math.atan2(p.current[0]-camera.x,p.current[2]-camera.z)-camera.yaw,r=Math.min(1,range/3200)*42;p.dot.style.left=(50+Math.sin(angle)*r)+'%';p.dot.style.top=(50-Math.cos(angle)*r)+'%';p.dot.title=p.name;
+        }
+      }
+      setTimeout(function flightLoop(){void syncFlight().finally(()=>setTimeout(flightLoop,1500+Math.random()*150))},Math.random()*1500);
+
       function cameraBasis(){return{cy:Math.cos(camera.yaw),sy:Math.sin(camera.yaw),cp:Math.cos(camera.pitch),sp:Math.sin(camera.pitch)}}
       function projectWorld(position,basis=cameraBasis()){
         const dx=position[0]-camera.x,dy=position[1]-camera.y,dz=position[2]-camera.z;
@@ -861,12 +888,12 @@
       function strafeCamera(distance,refresh=true){camera.x+=Math.cos(camera.yaw)*distance;camera.z-=Math.sin(camera.yaw)*distance;limitCamera();if(refresh)updateBeacons()}
       function moveVertical(distance,refresh=true){camera.y+=distance;limitCamera();if(refresh)updateBeacons()}
 
-      function drawScene(time){if(classBlocked()){lastFrame=time;requestAnimationFrame(drawScene);return;}
+      function drawScene(time){if(classBlocked()){flightLayer.hidden=true;flightRadar.hidden=true;lastFrame=time;requestAnimationFrame(drawScene);return;}
         const delta=Math.min(40,time-(lastFrame||time));lastFrame=time;ctx.clearRect(0,0,width,height);
         if(mode==='map'&&!warping){const move=delta*.19*moveSpeed,turn=delta*.0015*turnSpeed;if(keys.has('w'))moveCamera(move,false);if(keys.has('s'))moveCamera(-move,false);if(keys.has('a'))strafeCamera(-move,false);if(keys.has('d'))strafeCamera(move,false);if(keys.has('q'))moveVertical(move,false);if(keys.has('e'))moveVertical(-move,false);if(keys.has('arrowleft'))camera.yaw-=turn;if(keys.has('arrowright'))camera.yaw+=turn;if(keys.has('arrowup'))camera.pitch=clamp(camera.pitch+turn,-1.05,1.05);if(keys.has('arrowdown'))camera.pitch=clamp(camera.pitch-turn,-1.05,1.05);if(Math.abs(touchInput.moveY)>.06)moveCamera(-touchInput.moveY*move*.92,false);if(Math.abs(touchInput.moveX)>.06)strafeCamera(touchInput.moveX*move*.92,false);if(Math.abs(touchInput.lookX)>.06)camera.yaw+=touchInput.lookX*turn*1.8;if(Math.abs(touchInput.lookY)>.06)camera.pitch=clamp(camera.pitch-touchInput.lookY*turn*1.65,-1.05,1.05)}
         look.x+=(targetLook.x-look.x)*.045;look.y+=(targetLook.y-look.y)*.045;warpPower*=.94;drawStars();
-        if(mode==='map'){drawNavigationStars();drawSpaceLandmarks(time);drawMapGlows();updateLandmarks();updateRadar();updateSpaceVisitors(time);updateBeacons()}else if(observingKey){const galaxy=galaxyByKey(observingKey);ui.observedPhoto.style.left=`calc(50% + ${look.x*18}px)`;ui.observedPhoto.style.top=`calc(${width<700?46:51}% + ${look.y*12}px)`;if(galaxy.key==='milkyway'&&viewMode==='side')drawEdgeGalaxy();else if(!solarView&&ui.observedPhoto.hidden)drawParticleGalaxy(galaxy,time)}
-        requestAnimationFrame(drawScene);
+        if(mode==='map'){drawNavigationStars();drawSpaceLandmarks(time);drawMapGlows();updateLandmarks();updateRadar();updateSpaceVisitors(time);updateBeacons();drawFlight(delta)}else if(observingKey){const galaxy=galaxyByKey(observingKey);ui.observedPhoto.style.left=`calc(50% + ${look.x*18}px)`;ui.observedPhoto.style.top=`calc(${width<700?46:51}% + ${look.y*12}px)`;if(galaxy.key==='milkyway'&&viewMode==='side')drawEdgeGalaxy();else if(!solarView&&ui.observedPhoto.hidden)drawParticleGalaxy(galaxy,time)}
+        if(mode!=='map'){flightLayer.hidden=true;flightRadar.hidden=true}requestAnimationFrame(drawScene);
       }
 
       function buildBeacons(){
@@ -1119,3 +1146,4 @@
   </script>
 </body>
 </html>
+
