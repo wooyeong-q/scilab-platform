@@ -104,6 +104,7 @@ export async function joinGalaxySession(code: string, nicknameValue: unknown) {
   const sessions = await db`SELECT * FROM galaxy_voyage_sessions WHERE code=${code} AND expires_at > NOW() LIMIT 1`;
   if (!sessions[0]) return { status: 'missing' as const };
   const session = mapSession(sessions[0] as Record<string, unknown>);
+  if (session.endsAt && Date.parse(session.endsAt) <= Date.now()) return { status: 'ended' as const };
   const counts = await db`SELECT COUNT(*)::int AS count FROM galaxy_voyage_players WHERE session_id=${session.id}`;
   if (Number(counts[0]?.count || 0) >= MAX_PLAYERS) return { status: 'full' as const };
   const playerKey = newSecret();
@@ -433,8 +434,13 @@ export async function controlGalaxySession(code: string, teacherKey: string, sta
   const rows = await db`SELECT s.duration_seconds, s.started_at, statement_timestamp() AS server_now,
     (SELECT COUNT(*)::int FROM galaxy_voyage_players p WHERE p.session_id=s.id) AS participant_count,
     (SELECT COALESCE(json_agg(r ORDER BY r.rank), '[]'::json) FROM (
-      SELECT nickname, score, ROW_NUMBER() OVER (ORDER BY score DESC, updated_at ASC)::int AS rank
-      FROM galaxy_voyage_players WHERE session_id=s.id
+      SELECT p.id,p.nickname,p.score,p.flight_x AS x,p.flight_y AS y,p.flight_z AS z,p.flight_at,
+        ROW_NUMBER() OVER (ORDER BY p.score DESC,p.updated_at ASC)::int AS rank,
+        (SELECT COALESCE(json_agg(e.event_key),'[]'::json) FROM galaxy_voyage_score_events e
+          WHERE e.actor_id=p.id AND e.event_key=ANY(${MILKY_WAY_OBSERVATION_KEYS}::text[])) AS observations,
+        (SELECT COALESCE(json_agg(e.event_key),'[]'::json) FROM galaxy_voyage_score_events e
+          WHERE e.actor_id=p.id AND e.event_kind='classification_correct') AS classifications
+      FROM galaxy_voyage_players p WHERE p.session_id=s.id
     ) r) AS leaders
     FROM galaxy_voyage_sessions s WHERE s.code=${code} AND s.teacher_key_hash=${hashKey(teacherKey)}
       AND s.expires_at>NOW()`;
@@ -468,7 +474,7 @@ export async function syncGalaxyFlight(code: string, playerId: string, key: stri
 
 export async function attackGalaxyPlayer(code: string, playerId: string, key: string, target: unknown, shot: unknown) {
   if (typeof target !== 'string' || target===playerId || typeof shot !== 'string' || !/^[a-zA-Z0-9-]{8,80}$/.test(shot)) return null;
-  // Lock in the same ID order as UFO exchanges, keeping transfer and protection atomic.
+  // Lock in the same ID order as UFO exchanges, keeping each score transfer atomic.
   const rows = await database()`WITH auth AS MATERIALIZED (
     SELECT p.id,p.session_id FROM galaxy_voyage_players p JOIN galaxy_voyage_sessions s ON s.id=p.session_id
     WHERE p.id=${playerId} AND p.player_key_hash=${hashKey(key)} AND s.code=${code} AND s.expires_at>statement_timestamp()
@@ -477,24 +483,23 @@ export async function attackGalaxyPlayer(code: string, playerId: string, key: st
     SELECT p.* FROM galaxy_voyage_players p JOIN auth a ON p.session_id=a.session_id
     WHERE p.id=a.id OR p.id=${target} ORDER BY p.id FOR UPDATE OF p
   ), ready AS (
-    SELECT a.id AS actor_id,a.session_id,a.nickname AS actor_name,t.id AS target_id,t.nickname AS target_name,LEAST(10,t.score) AS delta
+    SELECT a.id AS actor_id,a.session_id,a.nickname AS actor_name,t.id AS target_id,t.nickname AS target_name,LEAST(50,t.score) AS delta
     FROM locked a JOIN locked t ON t.id=${target} WHERE a.id=${playerId}
       AND (SELECT COUNT(*) FROM galaxy_voyage_score_events WHERE actor_id=a.id AND event_key=ANY(${MILKY_WAY_OBSERVATION_KEYS}::text[]))>=25
-      AND (a.attack_at IS NULL OR a.attack_at<=statement_timestamp()-INTERVAL '5 seconds')
-      AND (t.shield_until IS NULL OR t.shield_until<=statement_timestamp())
+      AND (a.attack_at IS NULL OR a.attack_at<=statement_timestamp()-INTERVAL '2 seconds')
       AND a.flight_at>statement_timestamp()-INTERVAL '8 seconds' AND t.flight_at>statement_timestamp()-INTERVAL '8 seconds'
       AND power(a.flight_x-t.flight_x,2)+power(a.flight_y-t.flight_y,2)+power(a.flight_z-t.flight_z,2)<=810000
   ), event AS (
     INSERT INTO galaxy_voyage_score_events(id,session_id,actor_id,target_id,event_key,event_kind,actor_delta,target_delta,actor_message,target_message)
     SELECT ${randomUUID()},session_id,actor_id,target_id,${'attack:'+shot},'player_attack',delta,-delta,
-      target_name||' 명중! +'||delta||'점',actor_name||'의 공격! -'||delta||'점 · 10초 보호막' FROM ready
+      target_name||' 명중! +'||delta||'점',actor_name||'의 공격! -'||delta||'점' FROM ready
     ON CONFLICT(actor_id,event_key) DO NOTHING RETURNING *
   ), changed AS (
     UPDATE galaxy_voyage_players p SET score=p.score+CASE WHEN p.id=e.actor_id THEN e.actor_delta ELSE e.target_delta END,
       attack_at=CASE WHEN p.id=e.actor_id THEN statement_timestamp() ELSE p.attack_at END,
-      shield_until=CASE WHEN p.id=e.target_id THEN statement_timestamp()+INTERVAL '10 seconds' ELSE p.shield_until END,
       updated_at=statement_timestamp()
     FROM event e WHERE p.id=e.actor_id OR p.id=e.target_id RETURNING p.id,p.score
   ) SELECT e.actor_message AS message,e.actor_delta AS delta,c.score FROM event e JOIN changed c ON c.id=e.actor_id`;
   return rows[0] || null;
 }
+
