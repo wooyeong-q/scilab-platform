@@ -6,8 +6,8 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import { ArrowLeft, Lock, Printer, Save, Shuffle, Unlock } from 'lucide-react';
 import { Header } from '@/components/Header';
 
-const SEAT_W=118;
-const SEAT_H=66;
+const SEAT_W=106;
+const SEAT_H=59;
 const STORE_KEY='scilab-seat-arrangement-v2';
 const DEFAULT_NAMES=[
   '김민준','이서준','박도윤','최예준','정시우','강하준','조지호','윤주원','장우진','임건우',
@@ -24,18 +24,29 @@ const shuffle=(items:any[])=>{
 
 function makeSeats(rows:number,cols:number,width=900){
   const result:any[]=[];
-  const leftPad=48,topPad=86;
+  const leftPad=44,topPad=82;
   const gapX=Math.max(8,Math.min(28,(Math.max(width,760)-leftPad*2-cols*SEAT_W)/Math.max(1,cols-1)));
-  const gapY=18;
+  const gapY=16;
   for(let r=0;r<rows;r++)for(let c=0;c<cols;c++)result.push({
     active:true,x:Math.round(leftPad+c*(SEAT_W+gapX)),y:Math.round(topPad+r*(SEAT_H+gapY))
   });
   return result;
 }
 
+function overlapsSeat(moving:number,x:number,y:number,current:any[]){
+  const a={l:x,t:y,r:x+SEAT_W,b:y+SEAT_H};
+  for(let i=0;i<current.length;i++){
+    if(i===moving||!current[i].active)continue;
+    const b={l:current[i].x,t:current[i].y,r:current[i].x+SEAT_W,b:current[i].y+SEAT_H};
+    if(!(a.r<=b.l||a.l>=b.r||a.b<=b.t||a.t>=b.b))return true;
+  }
+  return false;
+}
+
 export default function SeatArrangementPage(){
   const stageRef=useRef<HTMLDivElement|null>(null);
   const dragRef=useRef<any>(null);
+  const suppressClickRef=useRef(false);
   const secretTapRef=useRef({count:0,last:0});
 
   const [namesText,setNamesText]=useState(DEFAULT_NAMES.join('\n'));
@@ -45,6 +56,8 @@ export default function SeatArrangementPage(){
   const [assignments,setAssignments]=useState<Record<number,string>>({});
   const [preview,setPreview]=useState<Record<number,string>|null>(null);
   const [lockedSeats,setLockedSeats]=useState<number[]>([]);
+  const [selectedSeat,setSelectedSeat]=useState<number|null>(null);
+  const [draggingSeat,setDraggingSeat]=useState<number|null>(null);
   const [shuffling,setShuffling]=useState(false);
   const [message,setMessage]=useState('아직 배정하지 않았습니다.');
 
@@ -90,6 +103,33 @@ export default function SeatArrangementPage(){
     return()=>window.removeEventListener('keydown',key);
   },[]);
 
+  useEffect(()=>{
+    const move=(e:PointerEvent)=>{
+      const d=dragRef.current;if(!d||!stageRef.current)return;
+      if(Math.abs(e.clientX-d.startX)>3||Math.abs(e.clientY-d.startY)>3)d.moved=true;
+      const rect=stageRef.current.getBoundingClientRect();
+      const x=Math.round(Math.max(0,Math.min(stageRef.current.clientWidth-SEAT_W,e.clientX-rect.left-d.ox)));
+      const y=Math.round(Math.max(48,Math.min(stageRef.current.clientHeight-SEAT_H,e.clientY-rect.top-d.oy)));
+      setSeats(current=>{
+        if(overlapsSeat(d.i,x,y,current))return current;
+        return current.map((s,idx)=>idx===d.i?{...s,x,y}:s);
+      });
+    };
+    const up=()=>{
+      const d=dragRef.current;
+      if(d?.moved){suppressClickRef.current=true;window.setTimeout(()=>{suppressClickRef.current=false;},120);}
+      dragRef.current=null;setDraggingSeat(null);
+    };
+    window.addEventListener('pointermove',move);
+    window.addEventListener('pointerup',up);
+    window.addEventListener('pointercancel',up);
+    return()=>{
+      window.removeEventListener('pointermove',move);
+      window.removeEventListener('pointerup',up);
+      window.removeEventListener('pointercancel',up);
+    };
+  },[]);
+
   const secretTitleTap=()=>{
     const now=Date.now();
     const ref=secretTapRef.current;
@@ -97,38 +137,13 @@ export default function SeatArrangementPage(){
     if(ref.count>=5){ref.count=0;openTeacher();}
   };
 
-  const overlaps=(moving:number,x:number,y:number,current=seats)=>{
-    const a={l:x,t:y,r:x+SEAT_W,b:y+SEAT_H};
-    for(let i=0;i<current.length;i++){
-      if(i===moving||!current[i].active)continue;
-      const b={l:current[i].x,t:current[i].y,r:current[i].x+SEAT_W,b:current[i].y+SEAT_H};
-      if(!(a.r<=b.l||a.l>=b.r||a.b<=b.t||a.t>=b.b))return true;
-    }
-    return false;
-  };
-
-  useEffect(()=>{
-    const move=(e:PointerEvent)=>{
-      const d=dragRef.current;if(!d||!stageRef.current)return;
-      const rect=stageRef.current.getBoundingClientRect();
-      const x=Math.round(Math.max(0,Math.min(stageRef.current.clientWidth-SEAT_W,e.clientX-rect.left-d.ox)));
-      const y=Math.round(Math.max(48,Math.min(stageRef.current.clientHeight-SEAT_H,e.clientY-rect.top-d.oy)));
-      setSeats(current=>{
-        if(overlaps(d.i,x,y,current))return current;
-        return current.map((s,idx)=>idx===d.i?{...s,x,y}:s);
-      });
-    };
-    const up=()=>{dragRef.current=null;};
-    window.addEventListener('pointermove',move);window.addEventListener('pointerup',up);window.addEventListener('pointercancel',up);
-    return()=>{window.removeEventListener('pointermove',move);window.removeEventListener('pointerup',up);window.removeEventListener('pointercancel',up);};
-  },[seats]);
-
   const startDrag=(e:any,i:number)=>{
     if(shuffling||!stageRef.current)return;
     if(e.target.closest?.('.lockBtn'))return;
     const rect=stageRef.current.getBoundingClientRect();
-    dragRef.current={i,ox:e.clientX-rect.left-seats[i].x,oy:e.clientY-rect.top-seats[i].y};
-    e.currentTarget.setPointerCapture?.(e.pointerId);e.preventDefault();
+    dragRef.current={i,ox:e.clientX-rect.left-seats[i].x,oy:e.clientY-rect.top-seats[i].y,startX:e.clientX,startY:e.clientY,moved:false};
+    setDraggingSeat(i);
+    e.currentTarget.setPointerCapture?.(e.pointerId);
   };
 
   const toggleSeat=(i:number)=>{
@@ -137,14 +152,39 @@ export default function SeatArrangementPage(){
     setSeats(current=>current.map((s,idx)=>idx===i?{...s,active:!s.active}:s));
   };
 
+  const handleSeatClick=(i:number)=>{
+    if(suppressClickRef.current||shuffling||!hasResult||!seats[i]?.active||!assignments[i])return;
+    if(lockedSeats.includes(i)){notify('고정된 자리는 먼저 고정을 해제하세요.');return;}
+
+    if(selectedSeat===null){
+      setSelectedSeat(i);
+      setMessage(`${assignments[i]} 선택됨 · 맞교환할 다른 학생의 책상을 클릭하세요.`);
+      return;
+    }
+    if(selectedSeat===i){
+      setSelectedSeat(null);
+      setMessage('맞교환 선택을 취소했습니다.');
+      return;
+    }
+    if(lockedSeats.includes(selectedSeat)){
+      setSelectedSeat(null);notify('선택한 자리가 고정되었습니다. 고정을 해제한 뒤 다시 선택하세요.');return;
+    }
+    const first=assignments[selectedSeat],second=assignments[i];
+    if(!first||!second){setSelectedSeat(null);return;}
+    setAssignments(current=>({...current,[selectedSeat]:current[i],[i]:current[selectedSeat]}));
+    setSelectedSeat(null);
+    setMessage(`${first} ↔ ${second} 자리 맞교환 완료`);
+  };
+
   const toggleLock=(i:number)=>{
     if(!assignments[i])return;
+    setSelectedSeat(current=>current===i?null:current);
     setLockedSeats(current=>current.includes(i)?current.filter(v=>v!==i):[...current,i]);
   };
 
   const rebuild=()=>{
     const r=Math.max(1,Math.min(10,Number(rows)||6)),c=Math.max(1,Math.min(10,Number(cols)||5));
-    setRows(r);setCols(c);setAssignments({});setPreview(null);setLockedSeats([]);
+    setRows(r);setCols(c);setAssignments({});setPreview(null);setLockedSeats([]);setSelectedSeat(null);
     setSeats(makeSeats(r,c,stageRef.current?.clientWidth||900));setMessage('책상을 새로 만들었습니다.');
   };
 
@@ -203,17 +243,21 @@ export default function SeatArrangementPage(){
   const runShuffle=async()=>{
     try{
       const final=buildFinal();
-      setShuffling(true);setMessage(lockedSeats.length?`고정 자리 ${lockedSeats.length}개를 유지하며 섞는 중...`:'이름이 섞이는 중...');
+      setSelectedSeat(null);setShuffling(true);
+      setMessage(lockedSeats.length?`고정 자리 ${lockedSeats.length}개를 유지하며 섞는 중...`:'이름이 섞이는 중...');
       const delays=[35,35,35,40,40,45,50,55,65,80,100,130,170,220];
       for(const delay of delays){setPreview(randomPreview());await sleep(delay);}
       setPreview(final);await sleep(180);setAssignments(final);setPreview(null);
       setLockedSeats(current=>current.filter(i=>final[i]));
-      setMessage(`배정 완료! ${Object.keys(final).length}명의 자리가 정해졌습니다.`);
+      setMessage(`배정 완료! ${Object.keys(final).length}명의 자리가 정해졌습니다. · 두 책상을 차례로 클릭하면 맞교환할 수 있습니다.`);
     }catch(e:any){notify(e.message||'배정 중 오류가 발생했습니다.');setPreview(null);}
     finally{setShuffling(false);}
   };
 
-  const clearResult=()=>{if(shuffling)return;setAssignments({});setPreview(null);setLockedSeats([]);setMessage('배정 결과를 지웠습니다.');};
+  const clearResult=()=>{
+    if(shuffling)return;
+    setAssignments({});setPreview(null);setLockedSeats([]);setSelectedSeat(null);setMessage('배정 결과를 지웠습니다.');
+  };
 
   const save=()=>{
     localStorage.setItem(STORE_KEY,JSON.stringify({namesText,rows,cols,seats,assignments,lockedSeats,overrides,pin}));
@@ -230,7 +274,7 @@ export default function SeatArrangementPage(){
   const reset=()=>{
     if(!window.confirm('자리배치 데이터를 초기화할까요?'))return;
     localStorage.removeItem(STORE_KEY);setNamesText(DEFAULT_NAMES.join('\n'));setRows(6);setCols(5);
-    setSeats(makeSeats(6,5,stageRef.current?.clientWidth||900));setAssignments({});setPreview(null);setLockedSeats([]);
+    setSeats(makeSeats(6,5,stageRef.current?.clientWidth||900));setAssignments({});setPreview(null);setLockedSeats([]);setSelectedSeat(null);
     setOverrides([]);setPin('2468');setMessage('아직 배정하지 않았습니다.');
   };
 
@@ -261,9 +305,9 @@ export default function SeatArrangementPage(){
             <div><label>책상 열</label><input type="number" min="1" max="10" value={cols} onChange={e=>setCols(Number(e.target.value))}/></div>
           </div>
           <button className="wide" onClick={rebuild}>책상 수 다시 만들기</button>
-          <p className="hint">책상은 서로 겹칠 수 없지만 딱 붙일 수 있어 짝궁·모둠 배치가 가능합니다. 더블클릭하면 좌석을 제외합니다.</p>
+          <p className="hint">책상은 서로 겹치지 않지만 딱 붙일 수 있어 짝궁·모둠 배치가 가능합니다. 더블클릭하면 좌석을 제외합니다.</p>
           <div className="status">{status}</div>
-          {hasResult&&<div className="lockGuide"><Lock size={15}/><span>자리 고정: 책상의 자물쇠를 누르면 다음 재배정에서도 그 학생은 그대로 유지됩니다.</span></div>}
+          {hasResult&&<div className="lockGuide"><Lock size={15}/><span>자물쇠는 다음 재배정에서도 그 학생의 자리를 유지합니다. 학생 맞교환은 고정되지 않은 두 책상을 차례로 클릭하세요.</span></div>}
         </aside>
 
         <section className="right">
@@ -286,10 +330,17 @@ export default function SeatArrangementPage(){
               <div className="teacherDesk">교 탁</div>
               {seats.map((s,i)=>{
                 const locked=lockedSeats.includes(i)&&!!assignments[i];
-                return <div key={i} className={`seat ${s.active?'':'off'} ${shuffling?'mixing':''} ${locked?'locked':''}`} style={{left:s.x,top:s.y}} onPointerDown={e=>startDrag(e,i)} onDoubleClick={()=>toggleSeat(i)}>
+                const selected=selectedSeat===i;
+                const dragging=draggingSeat===i;
+                return <div key={i}
+                  className={`seat ${s.active?'':'off'} ${shuffling?'mixing':''} ${locked?'locked':''} ${selected?'selected':''} ${dragging?'dragging':''}`}
+                  style={{left:s.x,top:s.y}}
+                  onPointerDown={e=>startDrag(e,i)}
+                  onClick={()=>handleSeatClick(i)}
+                  onDoubleClick={()=>toggleSeat(i)}>
                   <span className="seatNo">{i+1}</span>
                   <strong>{s.active?(shown[i]||'빈 자리'):'사용 안 함'}</strong>
-                  {s.active&&assignments[i]&&!shuffling?<button className={`lockBtn ${locked?'on':''}`} title={locked?'자리 고정 해제':'이 자리 고정'} onPointerDown={e=>e.stopPropagation()} onClick={e=>{e.stopPropagation();toggleLock(i)}}>{locked?<Lock size={13}/>:<Unlock size={13}/>}</button>:<span className="grip">⋮⋮</span>}
+                  {s.active&&assignments[i]&&!shuffling?<button className={`lockBtn ${locked?'on':''}`} title={locked?'자리 고정 해제':'이 자리 고정'} onPointerDown={e=>e.stopPropagation()} onClick={e=>{e.stopPropagation();toggleLock(i)}}>{locked?<Lock size={12}/>:<Unlock size={12}/>}</button>:<span className="grip">⋮⋮</span>}
                 </div>;
               })}
             </div></div>
@@ -330,13 +381,25 @@ export default function SeatArrangementPage(){
       button,input,textarea,select{font:inherit}.topButtons,.deskButtons,.assignmentActions,.modalButtons{display:flex;gap:8px;flex-wrap:wrap}.topButtons button,.deskButtons button,.assignmentActions button,.wide,.add,.modalButtons button{display:inline-flex;align-items:center;justify-content:center;gap:6px;border:1px solid #dfe4ea;background:white;padding:10px 13px;border-radius:11px;font-weight:800;cursor:pointer}
       .work{display:grid;grid-template-columns:340px minmax(0,1fr);gap:18px;align-items:start}.right{min-width:0}.card{background:white;border:1px solid #e0e5eb;border-radius:18px;box-shadow:0 10px 28px rgba(31,42,68,.08)}
       .settings{padding:18px;position:sticky;top:88px}.settings h2{font-size:19px;margin:0 0 16px}.settings label,.pinLabel{display:block;font-size:13px;font-weight:900;margin:12px 0 7px}.settings textarea{width:100%;height:285px;resize:vertical;border:1px solid #dfe4ea;border-radius:11px;background:#fafbfc;padding:11px;line-height:1.55}.numberRow{display:grid;grid-template-columns:1fr 1fr;gap:9px}.numberRow input,.modal input,.override select{width:100%;padding:10px;border:1px solid #dfe4ea;border-radius:10px}.wide{width:100%;margin-top:12px}.hint{font-size:12px;color:#77808d;line-height:1.55}.status,.empty{padding:11px 12px;border-radius:11px;background:#f5f7fa;color:#667080;font-size:13px}.lockGuide{display:flex;gap:8px;align-items:flex-start;margin-top:10px;padding:10px 11px;border-radius:11px;background:#eef1ff;color:#4755a8;font-size:12px;line-height:1.5}
-      .classroom{padding:18px}.assignmentBar{display:flex;align-items:center;justify-content:space-between;gap:14px;margin-bottom:15px;padding:13px 14px;background:#f7f8fb;border:1px solid #e5e8ee;border-radius:13px}.assignmentCopy{display:flex;flex-direction:column;gap:3px}.assignmentCopy strong{font-size:16px}.assignmentCopy span{font-size:12px;color:#6c7582}.assignmentActions .primaryAction{background:#4256e8;color:#fff;border-color:#4256e8}.assignmentActions button:disabled{opacity:.55;cursor:not-allowed}
+      .classroom{padding:18px}.assignmentBar{display:flex;align-items:center;justify-content:space-between;gap:14px;margin-bottom:15px;padding:13px 14px;background:#f7f8fb;border:1px solid #e5e8ee;border-radius:13px}.assignmentCopy{display:flex;flex-direction:column;gap:3px;min-width:0}.assignmentCopy strong{font-size:16px}.assignmentCopy span{font-size:12px;color:#6c7582}.assignmentActions .primaryAction{background:#4256e8;color:#fff;border-color:#4256e8}.assignmentActions button:disabled{opacity:.55;cursor:not-allowed}
       .board{width:min(520px,86%);margin:0 auto 15px;padding:10px;background:#29323d;color:white;text-align:center;border-radius:9px;font-weight:900;letter-spacing:.16em}.stageWrap{overflow:auto;border:1px solid #e0e5eb;border-radius:14px;padding:9px;background:#fafbfc}.stage{position:relative;min-width:760px;height:560px;overflow:hidden;border-radius:10px;background:linear-gradient(#eef1f5 1px,transparent 1px),linear-gradient(90deg,#eef1f5 1px,transparent 1px),#fff;background-size:40px 40px;touch-action:none}.teacherDesk{position:absolute;z-index:1;left:50%;top:12px;transform:translateX(-50%);padding:7px 17px;border:2px solid #707885;background:#f0f2f5;border-radius:9px;font-size:13px;font-weight:900}
-      .seat{position:absolute;width:${SEAT_W}px;height:${SEAT_H}px;border:1px solid #cdd4de;border-radius:13px;background:#fff;display:flex;align-items:center;justify-content:center;text-align:center;padding:7px;box-shadow:0 3px 8px rgba(0,0,0,.06);user-select:none;touch-action:none;cursor:grab;transition:transform .08s,box-shadow .1s,border-color .1s}.seat:hover{box-shadow:0 7px 17px rgba(0,0,0,.12)}.seat.off{background:#e8ebef;color:#999;border-style:dashed;opacity:.72}.seat.locked{border:2px solid #6575e9;background:#f7f8ff}.seat strong{font-size:16px}.seatNo{position:absolute;left:7px;top:5px;font-size:10px;color:#9aa3ae}.grip{position:absolute;right:7px;top:4px;font-size:11px;color:#a5acb5}.seat.mixing{animation:mix .13s linear}@keyframes mix{50%{transform:scale(1.035)}}.lockBtn{position:absolute;right:5px;top:4px;width:24px;height:24px;padding:0;border:0;border-radius:7px;background:#f1f3f6;color:#8a93a0;display:grid;place-items:center;cursor:pointer;z-index:3}.lockBtn.on{background:#6575e9;color:#fff}
+      .seat{position:absolute;width:${SEAT_W}px;height:${SEAT_H}px;border:1px solid #cdd4de;border-radius:12px;background:#fff;display:flex;align-items:center;justify-content:center;text-align:center;padding:6px;box-shadow:0 3px 8px rgba(0,0,0,.06);user-select:none;touch-action:none;cursor:grab;transition:left .18s cubic-bezier(.2,.8,.2,1),top .18s cubic-bezier(.2,.8,.2,1),transform .08s,box-shadow .12s,border-color .12s,background .12s}.seat.dragging{transition:none;z-index:20;cursor:grabbing;box-shadow:0 10px 24px rgba(0,0,0,.18)}.seat:hover{box-shadow:0 7px 17px rgba(0,0,0,.12)}.seat.off{background:#e8ebef;color:#999;border-style:dashed;opacity:.72}.seat.locked{border:2px solid #6575e9;background:#f7f8ff}.seat.selected{border:2px solid #f09a32;background:#fff9ef;box-shadow:0 0 0 3px rgba(240,154,50,.18)}.seat strong{font-size:14px}.seatNo{position:absolute;left:6px;top:4px;font-size:9px;color:#9aa3ae}.grip{position:absolute;right:6px;top:3px;font-size:10px;color:#a5acb5}.seat.mixing{animation:mix .13s linear}@keyframes mix{50%{transform:scale(1.035)}}.lockBtn{position:absolute;right:4px;top:3px;width:22px;height:22px;padding:0;border:0;border-radius:7px;background:#f1f3f6;color:#8a93a0;display:grid;place-items:center;cursor:pointer;z-index:3}.lockBtn.on{background:#6575e9;color:#fff}
       .deskButtons{justify-content:center;margin-top:12px}.printTitle{display:none}
       .modalBack{position:fixed;z-index:3000;inset:0;background:rgba(20,25,33,.55);display:grid;place-items:center;padding:20px}.modal{width:min(720px,100%);max-height:86vh;overflow:auto;background:white;border-radius:18px;padding:21px;box-shadow:0 30px 80px rgba(0,0,0,.25)}.modal h2{margin:0 0 7px}.modal p{color:#6c7582;font-size:13px}.modalButtons{justify-content:flex-end;margin-top:16px}.modalButtons .primary{background:#4256e8;color:#fff;border-color:#4256e8}.secret{display:inline-block;background:#eef1ff;color:#4256e8;font-size:11px;border-radius:999px;padding:4px 7px}.overrideList{display:grid;gap:8px}.override{display:grid;grid-template-columns:1fr 1fr auto;gap:7px}.override button{border:1px solid #ead0d0;background:#fff;color:#c13e3e;border-radius:9px;font-weight:800}.add{margin-top:10px}.toast{position:fixed;z-index:5000;top:28px;left:50%;transform:translateX(-50%);background:#18212c;color:#fff;padding:10px 17px;border-radius:999px;font-weight:800;box-shadow:0 8px 24px rgba(0,0,0,.2)}
       @media(max-width:980px){.work{grid-template-columns:1fr}.settings{position:static}.seatTop{align-items:flex-start;flex-direction:column}.topButtons{width:100%}.assignmentBar{align-items:flex-start;flex-direction:column}.assignmentActions{width:100%}.assignmentActions button{flex:1}}
-      @media print{@page{size:A4 landscape;margin:10mm}.noPrint,:global(header),:global(footer),.seatTop{display:none!important}.seatPage{padding:0;background:white}.work{display:block}.right{display:block}.classroom{border:0;box-shadow:none;padding:0}.printTitle{display:flex;justify-content:space-between;align-items:end;border-bottom:2px solid #222;padding-bottom:4mm;margin-bottom:6mm}.printTitle strong{font-size:22pt}.printTitle span{font-size:10pt}.stageWrap{border:0;padding:0;overflow:visible}.stage{width:100%!important;min-width:0!important;height:155mm!important;border:1px solid #444;background:white!important}.board{background:#222!important;color:white!important;-webkit-print-color-adjust:exact;print-color-adjust:exact}.teacherDesk{background:white}.seat{width:31mm!important;height:18mm!important;border:1.2px solid #444;box-shadow:none;background:white!important}.seat.off{display:none}.seat strong{font-size:10pt}.seatNo{font-size:7pt}.grip,.lockBtn{display:none}}
+      @media print{
+        @page{size:A4 landscape;margin:8mm}
+        .noPrint,:global(header),:global(footer),.seatTop,.toast,.modalBack{display:none!important}
+        .seatPage{padding:0!important;background:white!important;min-height:0!important}
+        .work{display:block!important;width:auto!important;max-width:none!important;margin:0!important}
+        .right{display:block!important}.classroom{width:225mm!important;margin:0 auto!important;border:0!important;box-shadow:none!important;padding:0!important;break-inside:avoid-page;page-break-inside:avoid}
+        .printTitle{display:flex!important;justify-content:space-between;align-items:end;border-bottom:1.5px solid #222;padding-bottom:3mm;margin-bottom:4mm}.printTitle strong{font-size:19pt}.printTitle span{font-size:9pt}
+        .board{width:120mm!important;margin:0 auto 4mm!important;padding:2.5mm 0!important;background:#222!important;color:white!important;-webkit-print-color-adjust:exact;print-color-adjust:exact}
+        .stageWrap{width:225mm!important;height:150mm!important;border:0!important;padding:0!important;overflow:hidden!important;background:white!important}
+        .stage{width:225mm!important;min-width:225mm!important;height:150mm!important;border:1px solid #444!important;background:white!important;overflow:hidden!important;border-radius:2mm!important}
+        .teacherDesk{background:white!important;padding:1.5mm 4mm!important}
+        .seat{border:1px solid #444!important;box-shadow:none!important;background:white!important;transition:none!important;-webkit-print-color-adjust:exact;print-color-adjust:exact}.seat.locked,.seat.selected{background:white!important;border:1px solid #444!important}.seat.off{display:none!important}.seat strong{font-size:9pt}.seatNo{font-size:6.5pt}.grip,.lockBtn{display:none!important}
+      }
     `}</style>
   </>;
 }
