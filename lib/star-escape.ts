@@ -133,9 +133,29 @@ export async function joinStarEscapeSession(code: string, nicknameValue: unknown
   const sessions = await db`SELECT * FROM star_escape_sessions WHERE code=${code} AND expires_at > NOW() LIMIT 1`;
   if (!sessions[0]) return { status: 'missing' as const };
   const session = mapSession(sessions[0] as Record<string, unknown>);
+  const playerKey = newSecret();
+  const existingRows = await db`SELECT id, nickname, team_name, role_no
+    FROM star_escape_players WHERE session_id=${session.id} AND nickname=${nickname} LIMIT 1`;
+  if (existingRows[0]) {
+    const existing = existingRows[0] as Record<string, unknown>;
+    if (String(existing.team_name) !== team || Number(existing.role_no) !== role) {
+      return { status: 'duplicate' as const };
+    }
+    const resumedRows = await db`UPDATE star_escape_players
+      SET player_key_hash=${hashKey(playerKey)}, last_seen_at=NOW()
+      WHERE id=${String(existing.id)} AND session_id=${session.id}
+      RETURNING id, nickname, team_name, role_no`;
+    if (!resumedRows[0]) return { status: 'duplicate' as const };
+    return {
+      status: 'rejoined' as const,
+      resumed: true,
+      session,
+      player: { id: String(existing.id), nickname: String(existing.nickname), team, role },
+      playerKey,
+    };
+  }
   const counts = await db`SELECT COUNT(*)::int AS count FROM star_escape_players WHERE session_id=${session.id}`;
   if (Number(counts[0]?.count || 0) >= MAX_PLAYERS) return { status: 'full' as const };
-  const playerKey = newSecret();
   const id = randomUUID();
   const rows = await db`INSERT INTO star_escape_players (id, session_id, team_name, nickname, role_no, player_key_hash)
     VALUES (${id}, ${session.id}, ${team}, ${nickname}, ${role}, ${hashKey(playerKey)})

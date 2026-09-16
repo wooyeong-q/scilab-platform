@@ -15,6 +15,14 @@ test('escape room: R1–R4, teacher start/hints, shared state, 14 puzzles and fo
     const p = await game.joinStarEscapeSession(code, 'Player ' + role, '1', role);
     assert.equal(p.status, 'joined'); assert.equal(p.player.role, role); players.push(p);
   }
+  const resumed = await game.joinStarEscapeSession(code, 'Player 1', '1', 1);
+  assert.equal(resumed.status, 'rejoined');
+  assert.equal(resumed.resumed, true);
+  assert.equal(resumed.player.id, players[0].player.id);
+  assert.equal(await game.getStarEscapeState(code, players[0].player.id, players[0].playerKey), null);
+  assert.equal((await game.getStarEscapeState(code, resumed.player.id, resumed.playerKey)).player.nickname, 'Player 1');
+  players[0] = resumed;
+  assert.equal((await game.joinStarEscapeSession(code, 'Player 1', '2', 1)).status, 'duplicate');
   assert.equal((await game.joinStarEscapeSession(code, 'Duplicate role', '1', 1)).status, 'role_taken');
   const p = players[0], args = [code, p.player.id, p.playerKey];
   assert.equal((await game.submitStarEscapeAnswer(...args, 1, 1, '7139')).status, 'waiting');
