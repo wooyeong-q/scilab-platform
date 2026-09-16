@@ -48,8 +48,8 @@ test('lobby downloads no BGM; scene 1 keeps its dread layer and never fetches go
   assert.deepEqual(h.remote().sort(), ['bgm-delirium.mp3', 'bgm-selpan.mp3']);
   assert.equal(h.fetches.length, 4);
   const state = h.sound.debugState();
-  assert.equal(state.tracks.selpan.volume, .013);
-  assert.equal(state.tracks.delirium.volume, .0085 * .34);
+  assert.equal(state.tracks.selpan.volume, .013 * 3);
+  assert.equal(state.tracks.delirium.volume, .0085 * .34 * 3);
   assert.equal(state.tracks.delirium.playbackRate, .82);
   assert.equal(state.tracks.goats.paused, true);
 });
@@ -60,10 +60,10 @@ test('scene transition retains 700ms gap, existing mixes and all four sound stag
   assert.ok(!h.remote().includes('bgm-goats.mp3'));
   await h.advance(1); await h.advance(600);
   assert.ok(h.remote().includes('bgm-goats.mp3'));
-  assert.equal(h.sound.debugState().tracks.goats.volume, .040);
+  assert.equal(h.sound.debugState().tracks.goats.volume, .040 * 3);
   assert.equal(h.sound.debugState().tracks.delirium.playbackRate, .72);
   h.sound.setStage(3); await h.advance(700); await h.advance(600);
-  assert.equal(h.sound.debugState().tracks.delirium.volume, .0085);
+  assert.equal(h.sound.debugState().tracks.delirium.volume, .0085 * 3);
   assert.equal(h.sound.debugState().tracks.delirium.playbackRate, 1);
   h.sound.setStage(4); await h.advance(700); await h.advance(600);
   assert.equal(h.sound.debugState().track, 'returnSignal');

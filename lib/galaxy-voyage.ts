@@ -3,8 +3,8 @@ import { sql } from './db';
 
 const SESSION_DAYS = 14;
 const MAX_PLAYERS = 40;
-const MAX_UFO_EVENTS = 30;
 const CODE_ALPHABET = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+const GALAXY_CLASSIFICATION_COUNT = 50;
 // The fixed 25-object catalog in the Milky Way Objects activity.
 const MILKY_WAY_OBJECT_KEYS = [
   'lagoon', 'eagle', 'omega', 'north-america', 'rosette',
@@ -13,9 +13,6 @@ const MILKY_WAY_OBJECT_KEYS = [
   'pleiades', 'beehive', 'm35', 'double-cluster', 'jewel-box',
   'm13', 'm3', 'm5', 'm15', 'omega-centauri',
 ];
-const MILKY_WAY_OBSERVATION_KEYS = MILKY_WAY_OBJECT_KEYS.map((key) => `observation:${key}`);
-
-
 export type GalaxySession = {
   id: string;
   code: string;
@@ -123,7 +120,7 @@ export async function joinGalaxySession(code: string, nicknameValue: unknown) {
 }
 
 async function verifiedPlayer(code: string, playerId: string, playerKey: string) {
-  const rows = await database()`SELECT p.id, p.session_id, p.nickname, p.score, s.duration_seconds, s.started_at,
+  const rows = await database()`SELECT p.id, p.session_id, p.nickname, p.score, s.title, s.duration_seconds, s.started_at,
       statement_timestamp() AS server_now
     FROM galaxy_voyage_players p
     JOIN galaxy_voyage_sessions s ON s.id=p.session_id
@@ -150,13 +147,13 @@ export async function getGalaxyScoreboard(code: string, playerId: string, player
       (SELECT row_to_json(me) FROM (
         SELECT r.*,p.flight_x AS x,p.flight_y AS y,p.flight_z AS z,p.flight_at,p.disabled_until,
           (SELECT COALESCE(json_agg(e.event_key),'[]'::json) FROM galaxy_voyage_score_events e
-            WHERE e.actor_id=p.id AND e.event_key=ANY(${MILKY_WAY_OBSERVATION_KEYS}::text[])) AS observations,
+            WHERE e.actor_id=p.id AND e.event_kind='observation') AS observations,
           (SELECT COALESCE(json_agg(e.event_key),'[]'::json) FROM galaxy_voyage_score_events e
             WHERE e.actor_id=p.id AND e.event_kind='classification_correct') AS classifications
         FROM ranked r JOIN galaxy_voyage_players p ON p.id=r.id WHERE r.id=${playerId} LIMIT 1
       ) me) AS self,
-      (SELECT COUNT(*)>=${MILKY_WAY_OBJECT_KEYS.length} FROM galaxy_voyage_score_events
-        WHERE actor_id=${playerId} AND event_key=ANY(${MILKY_WAY_OBSERVATION_KEYS}::text[])) AS milky_way_ufo_bonus,
+      (SELECT COUNT(*)>=${String(player.title).includes('우리은하 천체 탐사') ? MILKY_WAY_OBJECT_KEYS.length : GALAXY_CLASSIFICATION_COUNT}
+        FROM galaxy_voyage_score_events WHERE actor_id=${playerId} AND event_kind='observation') AS ufo_bonus,
       (SELECT COALESCE(json_agg(n ORDER BY n.created_at ASC), '[]'::json) FROM (
         SELECT e.id, e.target_message AS message, e.created_at FROM galaxy_voyage_score_events e
         WHERE e.target_id=${playerId} AND e.created_at > ${safeSince}
@@ -176,7 +173,8 @@ export async function getGalaxyScoreboard(code: string, playerId: string, player
       observations: Array.isArray(own.observations) ? own.observations.map(String) : [],
       classifications: Array.isArray(own.classifications) ? own.classifications.map(String) : [] } : null,
     timing: timingForPlayer(player),
-    milkyWayUfoBonus: Boolean(snapshot.milky_way_ufo_bonus),
+    ufoBonus: Boolean(snapshot.ufo_bonus),
+    milkyWayUfoBonus: Boolean(snapshot.ufo_bonus),
     leaders: leaders.map((row) => mapPlayer(row as Record<string, unknown>)),
     notifications: notificationRows.map((row) => ({ id: String(row.id), message: String(row.message), createdAt: new Date(String(row.created_at)).toISOString() })),
     serverTime: checkpoint,
@@ -189,7 +187,7 @@ function eventDelta(kind: Exclude<ScoreEventKind, 'ufo'>, isMilkyWayObjects: boo
   return 0;
 }
 
-export async function applyGalaxyScoreEvent(code: string, playerId: string, playerKey: string, kind: Exclude<ScoreEventKind, 'ufo'>, referenceValue: unknown, experienceValue?: unknown) {
+export async function applyGalaxyScoreEvent(code: string, playerId: string, playerKey: string, kind: Exclude<ScoreEventKind, 'ufo'>, referenceValue: unknown, _experienceValue?: unknown) {
   await ensureGalaxyVoyageDatabase();
   const player = await verifiedPlayer(code, playerId, playerKey);
   if (!player) return { status: 'unauthorized' as const };
@@ -197,7 +195,7 @@ export async function applyGalaxyScoreEvent(code: string, playerId: string, play
   if (timing.state === 'waiting' || timing.state === 'ended') return { status: timing.state };
   const reference = String(referenceValue || '').trim().toLowerCase();
   if (!/^[a-z0-9:_-]{1,80}$/.test(reference)) return { status: 'invalid' as const };
-  const isMilkyWayObjects = experienceValue === 'milky-way-objects';
+  const isMilkyWayObjects = String(player.title).includes('우리은하 천체 탐사');
   if (isMilkyWayObjects && kind !== 'classification_wrong' && !MILKY_WAY_OBJECT_KEYS.includes(reference)) {
     return { status: 'invalid' as const };
   }
@@ -225,17 +223,6 @@ export async function applyGalaxyScoreEvent(code: string, playerId: string, play
   return { status: 'applied' as const, score: Number(rows[0].score || 0), delta };
 }
 
-type UfoOutcome = 'gain50' | 'gain100' | 'lose30' | 'steal30' | 'swap';
-
-function randomUfoOutcome(): UfoOutcome {
-  const roll = Math.random();
-  if (roll < .30) return 'gain50';
-  if (roll < .42) return 'gain100';
-  if (roll < .65) return 'lose30';
-  if (roll < .90) return 'steal30';
-  return 'swap';
-}
-
 function randomMilkyWayUfoOutcome() {
   const roll = Math.random();
   if (roll < .15) return 'gain25';
@@ -248,7 +235,7 @@ function randomMilkyWayUfoOutcome() {
   return 'swap';
 }
 
-async function applyMilkyWayUfoEvent(player: Record<string, unknown>, eventRef: string) {
+async function applySharedUfoEvent(player: Record<string, unknown>, eventRef: string, isMilkyWayObjects: boolean) {
   const playerId = String(player.id);
   const sessionId = String(player.session_id);
   const outcome = randomMilkyWayUfoOutcome();
@@ -260,11 +247,12 @@ async function applyMilkyWayUfoEvent(player: Record<string, unknown>, eventRef: 
   // Lock both participants in ID order, then calculate from their current scores.
   // The timestamp keeps the five-second cooldown without scanning growing event history.
   // The event and both score changes commit together; a repeated event cannot award twice.
-  // Probe the 25 unique observation keys, rather than count the unbounded UFO history.
+  const completionCount = isMilkyWayObjects ? MILKY_WAY_OBJECT_KEYS.length : GALAXY_CLASSIFICATION_COUNT;
+  // Observation events are unique per player and object, so they are also the completion counter.
   const rows = await database()`WITH progress AS (
-      SELECT CASE WHEN COUNT(*)>=${MILKY_WAY_OBJECT_KEYS.length} THEN 2 ELSE 1 END AS reward_multiplier
+      SELECT CASE WHEN COUNT(*)>=${completionCount} THEN 2 ELSE 1 END AS reward_multiplier
       FROM galaxy_voyage_score_events
-      WHERE actor_id=${playerId} AND event_key=ANY(${MILKY_WAY_OBSERVATION_KEYS}::text[])
+      WHERE actor_id=${playerId} AND event_kind='observation'
     ), candidate AS MATERIALIZED (
       SELECT id FROM galaxy_voyage_players
       WHERE session_id=${sessionId} AND id<>${playerId} AND ${needsTarget}::boolean
@@ -336,6 +324,7 @@ async function applyMilkyWayUfoEvent(player: Record<string, unknown>, eventRef: 
   return {
     status: 'applied' as const,
     outcome: String(row.event_kind).replace(/^ufo_/, ''),
+    ufoBonus: Number(row.reward_multiplier) === 2,
     milkyWayUfoBonus: Number(row.reward_multiplier) === 2,
     score: Number(row.score || 0),
     delta: Number(row.actor_delta || 0),
@@ -343,7 +332,7 @@ async function applyMilkyWayUfoEvent(player: Record<string, unknown>, eventRef: 
   };
 }
 
-export async function applyRandomUfoEvent(code: string, playerId: string, playerKey: string, eventKeyValue: unknown, experienceValue?: unknown) {
+export async function applyRandomUfoEvent(code: string, playerId: string, playerKey: string, eventKeyValue: unknown, _experienceValue?: unknown) {
   await ensureGalaxyVoyageDatabase();
   const player = await verifiedPlayer(code, playerId, playerKey);
   if (!player) return { status: 'unauthorized' as const };
@@ -351,79 +340,7 @@ export async function applyRandomUfoEvent(code: string, playerId: string, player
   if (timing.state === 'waiting' || timing.state === 'ended') return { status: timing.state };
   const eventRef = String(eventKeyValue || '').trim().toLowerCase();
   if (!/^[a-z0-9-]{8,80}$/.test(eventRef)) return { status: 'invalid' as const };
-  if (experienceValue === 'milky-way-objects') return applyMilkyWayUfoEvent(player, eventRef);
-  const db = database();
-  const recent = await db`SELECT COUNT(*)::int AS total,
-      COUNT(*) FILTER (WHERE created_at > NOW() - INTERVAL '5 seconds')::int AS recent
-    FROM galaxy_voyage_score_events WHERE actor_id=${playerId} AND event_kind LIKE 'ufo_%'`;
-  if (Number(recent[0]?.total || 0) >= MAX_UFO_EVENTS) return { status: 'limit' as const };
-  if (Number(recent[0]?.recent || 0) > 0) return { status: 'cooldown' as const };
-
-  let outcome = randomUfoOutcome();
-  let target: Record<string, unknown> | undefined;
-  if (outcome === 'steal30' || outcome === 'swap') {
-    const targets = await db`SELECT id, nickname, score FROM galaxy_voyage_players
-      WHERE session_id=${String(player.session_id)} AND id<>${playerId} AND score>0
-      ORDER BY RANDOM() LIMIT 1`;
-    target = targets[0] as Record<string, unknown> | undefined;
-    if (!target) outcome = 'gain50';
-  }
-
-  const actorScore = Number(player.score || 0);
-  let actorDelta = 0;
-  let targetDelta = 0;
-  let actorMessage = '';
-  let targetMessage = '';
-  if (outcome === 'gain50') {
-    actorDelta = 50;
-    actorMessage = 'UFO에서 50점을 발견했습니다!';
-  } else if (outcome === 'gain100') {
-    actorDelta = 100;
-    actorMessage = 'UFO 대박! 100점을 획득했습니다!';
-  } else if (outcome === 'lose30') {
-    actorDelta = -30;
-    actorMessage = 'UFO가 30점을 가져갔습니다.';
-  } else if (outcome === 'steal30' && target) {
-    const amount = Math.min(30, Number(target.score || 0));
-    actorDelta = amount;
-    targetDelta = -amount;
-    actorMessage = `${String(target.nickname)}에게서 ${amount}점을 가져왔습니다!`;
-    targetMessage = `${String(player.nickname)}가 ${amount}점을 가져갔습니다.`;
-  } else if (outcome === 'swap' && target) {
-    actorDelta = Math.max(-50, Math.min(50, Number(target.score || 0) - actorScore));
-    targetDelta = -actorDelta;
-    actorMessage = `${String(target.nickname)}와 점수 파동이 발생했습니다. ${actorDelta >= 0 ? '+' : ''}${actorDelta}점`;
-    targetMessage = `${String(player.nickname)}와 점수가 섞였습니다. ${targetDelta >= 0 ? '+' : ''}${targetDelta}점`;
-  }
-
-  const eventId = randomUUID();
-  const eventKey = `ufo:${eventRef}`;
-  const rows = await db`WITH inserted AS (
-      INSERT INTO galaxy_voyage_score_events
-        (id, session_id, actor_id, target_id, event_key, event_kind, actor_delta, target_delta, actor_message, target_message)
-      SELECT ${eventId}, ${String(player.session_id)}, ${playerId}, ${target ? String(target.id) : null}, ${eventKey}, ${`ufo_${outcome}`}, ${actorDelta}, ${targetDelta}, ${actorMessage}, ${targetMessage}
-      FROM galaxy_voyage_sessions s WHERE s.id=${String(player.session_id)} AND (s.duration_seconds IS NULL OR (s.started_at IS NOT NULL AND s.started_at<=statement_timestamp() AND s.started_at+s.duration_seconds*INTERVAL '1 second'>statement_timestamp()))
-      ON CONFLICT (actor_id, event_key) DO NOTHING
-      RETURNING actor_delta, target_delta, target_id, actor_message
-    ), actor_updated AS (
-      UPDATE galaxy_voyage_players p SET score=GREATEST(0, p.score+i.actor_delta), updated_at=NOW()
-      FROM inserted i WHERE p.id=${playerId} RETURNING p.score
-    ), target_updated AS (
-      UPDATE galaxy_voyage_players p SET score=GREATEST(0, p.score+i.target_delta), updated_at=NOW()
-      FROM inserted i WHERE i.target_id IS NOT NULL AND p.id=i.target_id RETURNING p.id
-    )
-    SELECT i.actor_delta, i.actor_message, a.score FROM inserted i JOIN actor_updated a ON TRUE`;
-  if (!rows[0]) {
-    const current = await verifiedPlayer(code, playerId, playerKey);
-    return { status: 'duplicate' as const, score: Number(current?.score || 0), delta: 0, message: '이미 처리된 UFO입니다.' };
-  }
-  return {
-    status: 'applied' as const,
-    outcome,
-    score: Number(rows[0].score || 0),
-    delta: Number(rows[0].actor_delta || 0),
-    message: String(rows[0].actor_message || actorMessage),
-  };
+  return applySharedUfoEvent(player, eventRef, String(player.title).includes('우리은하 천체 탐사'));
 }
 
 function timingForPlayer(row: Record<string, unknown>) {
@@ -448,7 +365,7 @@ export async function controlGalaxySession(code: string, teacherKey: string, sta
       SELECT p.id,p.nickname,p.score,p.flight_x AS x,p.flight_y AS y,p.flight_z AS z,p.flight_at,
         ROW_NUMBER() OVER (ORDER BY p.score DESC,p.updated_at ASC)::int AS rank,
         (SELECT COALESCE(json_agg(e.event_key),'[]'::json) FROM galaxy_voyage_score_events e
-          WHERE e.actor_id=p.id AND e.event_key=ANY(${MILKY_WAY_OBSERVATION_KEYS}::text[])) AS observations,
+          WHERE e.actor_id=p.id AND e.event_kind='observation') AS observations,
         (SELECT COALESCE(json_agg(e.event_key),'[]'::json) FROM galaxy_voyage_score_events e
           WHERE e.actor_id=p.id AND e.event_kind='classification_correct') AS classifications
       FROM galaxy_voyage_players p WHERE p.session_id=s.id
@@ -466,7 +383,7 @@ export async function syncGalaxyFlight(code: string, playerId: string, key: stri
   if (!Array.isArray(position) || position.length !== 3 || !position.every(v => typeof v === 'number' && Number.isFinite(v) && Math.abs(v) <= 20000)) return null;
   const [x,y,z] = position;
   const rows = await database()`WITH actor AS MATERIALIZED (
-    SELECT p.id,p.session_id,p.attack_at,p.disabled_until FROM galaxy_voyage_players p
+    SELECT p.id,p.session_id,p.attack_at,p.disabled_until,s.title FROM galaxy_voyage_players p
     JOIN galaxy_voyage_sessions s ON p.session_id=s.id WHERE s.code=${code} AND p.id=${playerId}
       AND p.player_key_hash=${hashKey(key)} AND s.expires_at>statement_timestamp()
       AND (s.duration_seconds IS NULL OR (s.started_at<=statement_timestamp() AND s.started_at+s.duration_seconds*INTERVAL '1 second'>statement_timestamp()))
@@ -479,7 +396,8 @@ export async function syncGalaxyFlight(code: string, playerId: string, key: stri
     FROM actor a WHERE p.id=a.id AND (p.flight_at IS NULL OR p.flight_at<statement_timestamp()-INTERVAL '1 second')
     RETURNING p.id
   ) SELECT a.attack_at,a.disabled_until,statement_timestamp() AS server_time,
-    (SELECT COUNT(*)>=25 FROM galaxy_voyage_score_events WHERE actor_id=a.id AND event_key=ANY(${MILKY_WAY_OBSERVATION_KEYS}::text[])) AS unlocked,
+    (SELECT COUNT(*)>=CASE WHEN a.title LIKE '%우리은하 천체 탐사%' THEN ${MILKY_WAY_OBJECT_KEYS.length}::int ELSE ${GALAXY_CLASSIFICATION_COUNT}::int END
+      FROM galaxy_voyage_score_events WHERE actor_id=a.id AND event_kind='observation') AS unlocked,
     (SELECT COALESCE(json_agg(v),'[]'::json) FROM (
       SELECT p.id,p.nickname,p.flight_x AS x,p.flight_y AS y,p.flight_z AS z,p.disabled_until
       FROM galaxy_voyage_players p WHERE p.session_id=a.session_id AND p.id<>a.id
@@ -493,16 +411,17 @@ export async function attackGalaxyPlayer(code: string, playerId: string, key: st
   if (typeof target !== 'string' || target===playerId || typeof shot !== 'string' || !/^[a-zA-Z0-9-]{8,80}$/.test(shot)) return null;
   // Lock in the same ID order as UFO exchanges, keeping each score transfer atomic.
   const rows = await database()`WITH auth AS MATERIALIZED (
-    SELECT p.id,p.session_id FROM galaxy_voyage_players p JOIN galaxy_voyage_sessions s ON s.id=p.session_id
+    SELECT p.id,p.session_id,s.title FROM galaxy_voyage_players p JOIN galaxy_voyage_sessions s ON s.id=p.session_id
     WHERE p.id=${playerId} AND p.player_key_hash=${hashKey(key)} AND s.code=${code} AND s.expires_at>statement_timestamp()
       AND (s.duration_seconds IS NULL OR (s.started_at<=statement_timestamp() AND s.started_at+s.duration_seconds*INTERVAL '1 second'>statement_timestamp()))
   ), locked AS MATERIALIZED (
-    SELECT p.* FROM galaxy_voyage_players p JOIN auth a ON p.session_id=a.session_id
+    SELECT p.*,a.title FROM galaxy_voyage_players p JOIN auth a ON p.session_id=a.session_id
     WHERE p.id=a.id OR p.id=${target} ORDER BY p.id FOR UPDATE OF p
   ), ready AS (
     SELECT a.id AS actor_id,a.session_id,a.nickname AS actor_name,t.id AS target_id,t.nickname AS target_name,LEAST(50,t.score) AS delta
     FROM locked a JOIN locked t ON t.id=${target} WHERE a.id=${playerId}
-      AND (SELECT COUNT(*) FROM galaxy_voyage_score_events WHERE actor_id=a.id AND event_key=ANY(${MILKY_WAY_OBSERVATION_KEYS}::text[]))>=25
+      AND (SELECT COUNT(*) FROM galaxy_voyage_score_events WHERE actor_id=a.id AND event_kind='observation')>=
+        CASE WHEN a.title LIKE '%우리은하 천체 탐사%' THEN ${MILKY_WAY_OBJECT_KEYS.length}::int ELSE ${GALAXY_CLASSIFICATION_COUNT}::int END
       AND (a.attack_at IS NULL OR a.attack_at<=statement_timestamp()-INTERVAL '2 seconds')
       AND (a.disabled_until IS NULL OR a.disabled_until<=statement_timestamp())
       AND a.flight_at>statement_timestamp()-INTERVAL '8 seconds' AND t.flight_at>statement_timestamp()-INTERVAL '8 seconds'

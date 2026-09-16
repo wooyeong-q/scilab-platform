@@ -78,11 +78,34 @@ test('galaxy classroom: 30 joins, observation/classification scoring and live sc
   assert.equal((await game.applyGalaxyScoreEvent(...args, 'observation', 'm42')).score, 10);
   assert.equal((await game.applyGalaxyScoreEvent(...args, 'observation', 'm42')).status, 'duplicate');
   assert.equal((await game.applyGalaxyScoreEvent(...args, 'classification_correct', 'm42')).score, 110);
-  assert.equal((await game.applyGalaxyScoreEvent(...args, 'classification_wrong', 'm45')).score, 90);
+  assert.equal((await game.applyGalaxyScoreEvent(...args, 'classification_wrong', 'm45')).score, 110);
   const boards = await Promise.all(players.map(p => game.getGalaxyScoreboard(session.code, p.player.id, p.playerKey, new Date(0).toISOString())));
-  assert.equal(boards[0].self.score, 90);
-  assert.ok(boards.every(board => board.leaders.length === 10));
+  assert.equal(boards[0].self.score, 110);
+  assert.ok(boards.every(board => board.leaders.length === 30));
   assert.equal((await h.pg.query('SELECT count(*)::int AS n FROM galaxy_voyage_players WHERE session_id=$1', [session.id])).rows[0].n, 30);
+});
+
+test('galaxy classification: timed start, 50 discoveries, live flight and attack unlock', async () => {
+  const game = h.load('lib/galaxy-voyage.ts');
+  const { session, teacherKey } = await game.createGalaxySession('은하 분류 수업', 1800);
+  const attacker = await game.joinGalaxySession(session.code, 'Galaxy attacker');
+  const target = await game.joinGalaxySession(session.code, 'Galaxy target');
+  const attackerArgs = [session.code, attacker.player.id, attacker.playerKey];
+  const targetArgs = [session.code, target.player.id, target.playerKey];
+  assert.equal((await game.applyGalaxyScoreEvent(...attackerArgs, 'observation', 'galaxy-0', 'galaxy-voyage')).status, 'waiting');
+  assert.equal((await game.controlGalaxySession(session.code, teacherKey, true)).timing.state, 'waiting');
+  await h.pg.query("UPDATE galaxy_voyage_sessions SET started_at=NOW()-INTERVAL '1 second' WHERE id=$1", [session.id]);
+  for (let i = 0; i < 50; i++) {
+    assert.equal((await game.applyGalaxyScoreEvent(...attackerArgs, 'observation', `galaxy-${i}`, 'galaxy-voyage')).status, 'applied');
+  }
+  await game.applyGalaxyScoreEvent(...targetArgs, 'observation', 'target-galaxy', 'galaxy-voyage');
+  const attackerFlight = await game.syncGalaxyFlight(...attackerArgs, [0, 0, 0]);
+  const targetFlight = await game.syncGalaxyFlight(...targetArgs, [100, 0, 0]);
+  assert.equal(attackerFlight.unlocked, true);
+  assert.equal(targetFlight.unlocked, false);
+  const attack = await game.attackGalaxyPlayer(...attackerArgs, target.player.id, 'shot-12345678');
+  assert.equal(attack.delta, 10);
+  assert.match(attack.message, /명중/);
 });
 
 test('earthquake/volcano classroom: lesson code, points and deletion authorization', async () => {

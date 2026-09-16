@@ -678,7 +678,7 @@
       const returnToEntry=document.createElement('button');returnToEntry.type='button';returnToEntry.className='modalButton';returnToEntry.textContent='새 수업 참여';returnToEntry.hidden=true;returnToEntry.addEventListener('click',()=>{clearOldClassroom();location.reload()});timedOverlay.append(timedTitle,timedDetail,finalList,returnToEntry);app.append(timedOverlay);
       const durationLabel=document.createElement('label');durationLabel.textContent='제한 시간(분) ';
       const durationInput=document.createElement('input');durationInput.type='number';durationInput.min='1';durationInput.max='120';durationInput.value='30';durationInput.style.cssText='width:80px;padding:8px;margin:8px;color:#fff;background:#17233d';durationLabel.append(durationInput);
-      if(isMilkyWayObjects)el('createClassButton').before(durationLabel);
+      el('createClassButton').before(durationLabel);
       const teacherInfo=document.createElement('p'),teacherStart=document.createElement('button');teacherStart.className='modalButton primary';teacherStart.textContent='모두 함께 시작';teacherStart.type='button';teacherStart.hidden=true;el('createClassResult').append(teacherInfo,teacherStart);
       function classNow(){return clockServer+performance.now()-clockAnchor}
       function syncTiming(t){if(!t)return;classTiming=t;clockServer=Date.parse(t.serverTime);clockAnchor=performance.now();tickClassClock()}
@@ -700,9 +700,9 @@
       setInterval(tickClassClock,200);
       let teacherSnapshot=null,watchedPlayer=null;
       const teacherLaunch=document.createElement('button');teacherLaunch.type='button';teacherLaunch.className='modalButton';teacherLaunch.textContent='교사 모드 · 분류 / 관전';
-      if(isMilkyWayObjects)el('createClassResult').after(teacherLaunch);
+      el('createClassResult').after(teacherLaunch);
       const teacherPanel=document.createElement('section');teacherPanel.setAttribute('role','dialog');teacherPanel.setAttribute('aria-label','교사 관제');teacherPanel.style.cssText='position:fixed;inset:0;z-index:240;background:#071022;color:#edf3ff;overflow:auto;padding:20px;display:none';
-      teacherPanel.innerHTML='<div style="max-width:1200px;margin:auto"><div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap"><h2 style="margin-right:auto">교사 모드</h2><button type="button" class="modalButton" data-teacher="close">닫기</button></div><p data-teacher="status"></p><div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:18px"><button type="button" class="modalButton primary" data-teacher="start">모두 함께 시작</button><button type="button" class="modalButton" data-teacher="new">새 수업 만들기</button><button type="button" class="modalButton" data-teacher="watch">학생 관전</button><button type="button" class="modalButton" data-teacher="catalog">전체 천체 분류</button></div><div data-teacher="watchView"><p>같은 수업 학생들의 위치를 위에서 보는 관전 지도입니다. 약 3초마다 갱신됩니다. 학생을 선택하면 발견·분류 기록을 확인할 수 있습니다.</p><canvas data-teacher="map" width="1000" height="560" style="display:block;width:100%;max-height:55vh;object-fit:contain;border:1px solid #34445e;background:#030918;border-radius:12px"></canvas><p data-teacher="detail">학생을 선택해 주세요.</p><div data-teacher="students" style="display:flex;flex-wrap:wrap;gap:8px"></div></div><div data-teacher="catalogView" hidden><p>교사용 전체 분류 자료입니다. 학생의 점수와 발견 기록에는 영향을 주지 않습니다.</p><div data-teacher="cards" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(230px,1fr));gap:16px"></div></div></div>';
+      teacherPanel.innerHTML='<div style="max-width:1200px;margin:auto"><div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap"><h2 style="margin-right:auto">교사 모드</h2><button type="button" class="modalButton" data-teacher="close">닫기</button></div><p data-teacher="status"></p><div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:18px"><button type="button" class="modalButton primary" data-teacher="start">모두 함께 시작</button><button type="button" class="modalButton" data-teacher="new">새 수업 만들기</button><button type="button" class="modalButton" data-teacher="watch">학생 관전</button><button type="button" class="modalButton" data-teacher="catalog">전체 '+entityName+' 분류</button></div><div data-teacher="watchView"><p>같은 수업 학생들의 위치를 위에서 보는 관전 지도입니다. 약 3초마다 갱신됩니다. 학생을 선택하면 발견·분류 기록을 확인할 수 있습니다.</p><canvas data-teacher="map" width="1000" height="560" style="display:block;width:100%;max-height:55vh;object-fit:contain;border:1px solid #34445e;background:#030918;border-radius:12px"></canvas><p data-teacher="detail">학생을 선택해 주세요.</p><div data-teacher="students" style="display:flex;flex-wrap:wrap;gap:8px"></div></div><div data-teacher="catalogView" hidden><p>교사용 전체 분류 자료입니다. 학생의 점수와 발견 기록에는 영향을 주지 않습니다.</p><div data-teacher="cards" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(230px,1fr));gap:16px"></div></div></div>';
       document.body.append(teacherPanel);const teacherPart=name=>teacherPanel.querySelector('[data-teacher="'+name+'"]');
       teacherLaunch.addEventListener('click',()=>{if(!teacherSession){showClassroomError('먼저 수업 만들기를 눌러 교사 수업을 생성해 주세요.');return}teacherPanel.style.display='block';void refreshTeacher()});
       teacherPart('close').addEventListener('click',()=>teacherPanel.style.display='none');
@@ -716,7 +716,7 @@
         const canvas=teacherPart('map'),c=canvas.getContext('2d'),project=(x,z)=>[40+(Number(x)+2600)/5200*920,30+(3100-Number(z))/4500*500];c.clearRect(0,0,1000,560);c.fillStyle='#7891ad';c.font='11px sans-serif';
         for(const g of galaxies){const [x,y]=project(g.position[0],g.position[2]);c.beginPath();c.arc(x,y,3,0,Math.PI*2);c.fill();c.fillText(g.name,x+5,y)}
         teacherPart('students').replaceChildren();
-        for(const p of data.leaders||[]){const online=p.flight_at&&Date.parse(data.timing.serverTime)-Date.parse(p.flight_at)<8000;const b=document.createElement('button');b.type='button';b.className='modalButton';b.textContent=p.nickname+' · '+p.score+'점 · 발견 '+p.observations.length+'/25 · 분류 '+p.classifications.length+'/25'+(online?'':' · 위치 미수신');b.addEventListener('click',()=>{watchedPlayer=p.id;renderTeacherSnapshot()});teacherPart('students').append(b);if(!online)continue;const [x,y]=project(p.x,p.z);c.fillStyle='#ffdb48';c.beginPath();c.moveTo(x,y-8);c.lineTo(x-7,y+7);c.lineTo(x,y+3);c.lineTo(x+7,y+7);c.closePath();c.fill();c.fillText(p.nickname,x+9,y);if(p.id===watchedPlayer){c.strokeStyle='#fff';c.beginPath();c.arc(x,y,14,0,Math.PI*2);c.stroke()}}
+        for(const p of data.leaders||[]){const online=p.flight_at&&Date.parse(data.timing.serverTime)-Date.parse(p.flight_at)<8000;const b=document.createElement('button');b.type='button';b.className='modalButton';b.textContent=p.nickname+' · '+p.score+'점 · 발견 '+p.observations.length+'/'+galaxies.length+' · 분류 '+p.classifications.length+'/'+galaxies.length+(online?'':' · 위치 미수신');b.addEventListener('click',()=>{watchedPlayer=p.id;renderTeacherSnapshot()});teacherPart('students').append(b);if(!online)continue;const [x,y]=project(p.x,p.z);c.fillStyle='#ffdb48';c.beginPath();c.moveTo(x,y-8);c.lineTo(x-7,y+7);c.lineTo(x,y+3);c.lineTo(x+7,y+7);c.closePath();c.fill();c.fillText(p.nickname,x+9,y);if(p.id===watchedPlayer){c.strokeStyle='#fff';c.beginPath();c.arc(x,y,14,0,Math.PI*2);c.stroke()}}
         const p=(data.leaders||[]).find(p=>p.id===watchedPlayer);if(p){const names=items=>items.map(key=>galaxies.find(g=>g.key===key.split(':').slice(1).join(':'))?.name||key).join(', ')||'없음';teacherPart('detail').textContent=p.nickname+' · '+p.score+'점 | 발견: '+names(p.observations)+' | 분류 완료: '+names(p.classifications)}
       }
 
@@ -738,12 +738,12 @@
       function startVoyage(message,type='good'){void requestMobileLandscape();started=true;el('introModal').classList.remove('show');render();setPanel(false);if(message)showToast(message,type)}
       function eventObjectKey(value){return String(value||'').split(':').slice(1).join(':')}
       function restoreSavedVoyage(value){
-        const state=value?.voyageState;if(!isMilkyWayObjects||!state)return;
+        const state=value?.voyageState;if(!state)return;
         if(state.camera&&['x','y','z','yaw','pitch'].every(key=>Number.isFinite(Number(state.camera[key]))))camera={x:Number(state.camera.x),y:Number(state.camera.y),z:Number(state.camera.z),yaw:Number(state.camera.yaw),pitch:Number(state.camera.pitch)};
         visited=new Set(Array.isArray(state.visited)?state.visited:[]);discovered=new Set(Array.isArray(state.discovered)?state.discovered:[]);assigned=new Map(Array.isArray(state.assigned)?state.assigned:[]);visitedLandmarks=new Set(Array.isArray(state.visitedLandmarks)?state.visitedLandmarks:[]);localVoyageRestored=true;
       }
       function restoreServerProgress(self){
-        if(!isMilkyWayObjects||voyageRestored||!self)return;voyageRestored=true;
+        if(voyageRestored||!self)return;voyageRestored=true;
         if(!localVoyageRestored&&self.flightAt&&[self.x,self.y,self.z].every(Number.isFinite)){camera.x=self.x;camera.y=self.y;camera.z=self.z}
         for(const value of self.observations||[]){const key=eventObjectKey(value);if(galaxyByKey(key)){visited.add(key);discovered.add(key)}}
         for(const value of self.classifications||[]){const key=eventObjectKey(value),galaxy=galaxyByKey(key);if(galaxy){visited.add(key);discovered.add(key);assigned.set(key,galaxy.type)}}
@@ -751,7 +751,7 @@
       }
       function renderScoreboard(data){
         syncTiming(data?.timing);showFinalRanks(data?.leaders);
-        if(isMilkyWayObjects&&data?.milkyWayUfoBonus){redUfoUnlocked=true;updateUfoAppearance()}
+        if(data?.ufoBonus||data?.milkyWayUfoBonus){redUfoUnlocked=true;updateUfoAppearance()}
         if(data?.self){restoreServerProgress(data.self);setScore(data.self.score);ui.scorePlayerName.textContent=`${data.self.nickname} · ${classroom.code}`;ui.scoreRank.textContent=`${data.self.rank}위`;}
         ui.scoreLeaders.innerHTML='';(data?.leaders||[]).slice(0,5).forEach(player=>{const item=document.createElement('li');if(player.id===classroom?.player.id)item.classList.add('me');const rank=document.createElement('span'),name=document.createElement('span'),score=document.createElement('strong');rank.textContent=String(player.rank);name.textContent=player.nickname;score.textContent=String(player.score);item.append(rank,name,score);ui.scoreLeaders.appendChild(item)});
       }
@@ -766,13 +766,13 @@
       }
       async function createClassroom(){
         showClassroomError();el('createClassButton').disabled=true;
-        try{const {response,data}=await requestJson('/api/labs/galaxy-voyage/sessions',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({title:isMilkyWayObjects?'우리은하 천체 탐사 수업':'은하 항해 수업',durationSeconds:isMilkyWayObjects?Number(durationInput.value)*60:undefined})});if(!response.ok)throw new Error(data.error||'수업 생성 실패');if(isMilkyWayObjects){teacherSession={code:data.session.code,teacherKey:data.teacherKey};localStorage.setItem(teacherStorageKey,JSON.stringify(teacherSession));teacherStart.hidden=false;void refreshTeacher()}el('createdClassCode').textContent=data.session.code;el('classCodeInput').value=data.session.code;el('createClassResult').hidden=false;const url=new URL(location.href);url.searchParams.set('class',data.session.code);history.replaceState(null,'',`${url.pathname}${url.search}`)}catch(error){showClassroomError(error.message||'수업을 만들지 못했습니다.')}finally{el('createClassButton').disabled=false}
+        try{const {response,data}=await requestJson('/api/labs/galaxy-voyage/sessions',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({title:isMilkyWayObjects?'우리은하 천체 탐사 수업':'은하 분류 수업',durationSeconds:Number(durationInput.value)*60})});if(!response.ok)throw new Error(data.error||'수업 생성 실패');teacherSession={code:data.session.code,teacherKey:data.teacherKey};localStorage.setItem(teacherStorageKey,JSON.stringify(teacherSession));teacherStart.hidden=false;void refreshTeacher();el('createdClassCode').textContent=data.session.code;el('classCodeInput').value=data.session.code;el('createClassResult').hidden=false;const url=new URL(location.href);url.searchParams.set('class',data.session.code);history.replaceState(null,'',`${url.pathname}${url.search}`)}catch(error){showClassroomError(error.message||'수업을 만들지 못했습니다.')}finally{el('createClassButton').disabled=false}
       }
       async function copyClassLink(){const code=el('createdClassCode').textContent;if(!code)return;const url=new URL(location.href);url.searchParams.set('class',code);try{await navigator.clipboard.writeText(url.href);showToast('수업 링크를 복사했습니다.')}catch{showClassroomError(`수업 코드: ${code}`)}}
       function saveClassroom(){
         if(!classroom)return;
         if(classTiming?.state==='ended'||(classTiming?.endsAt&&classNow()>=Date.parse(classTiming.endsAt))){localStorage.removeItem(classroomStorageKey);return}
-        if(isMilkyWayObjects&&started)classroom.voyageState={camera:{...camera},visited:[...visited],discovered:[...discovered],assigned:[...assigned],visitedLandmarks:[...visitedLandmarks]};
+        if(started)classroom.voyageState={camera:{...camera},visited:[...visited],discovered:[...discovered],assigned:[...assigned],visitedLandmarks:[...visitedLandmarks]};
         localStorage.setItem(classroomStorageKey,JSON.stringify(classroom));
       }
       function clearOldClassroom(){
@@ -830,7 +830,7 @@
       const flightRadar=document.createElement('div');flightRadar.style.cssText='position:absolute;inset:0;pointer-events:none';ui.radarDots.parentElement.append(flightRadar);
       const flightStatus=document.createElement('div');flightStatus.style.cssText='position:absolute;left:8px;bottom:8px;color:#ffe269;font-size:11px;pointer-events:none';flightLayer.append(flightStatus);
       async function syncFlight(){
-        if(!isMilkyWayObjects||!classroom||!started||classBlocked()||document.hidden||flightBusy)return;
+        if(!classroom||!started||classBlocked()||document.hidden||flightBusy)return;
         flightBusy=true;
         try{const {response,data}=await requestJson(`/api/labs/galaxy-voyage/sessions/${classroom.code}/flight`,{method:'POST',headers:{...classroomHeaders(),'Content-Type':'application/json'},body:JSON.stringify({position:[camera.x,camera.y,camera.z]})});
           if(!response.ok)return;flightSeenAt=performance.now();flightUnlocked=Boolean(data.unlocked);const server=Date.parse(data.server_time),now=performance.now(),nextDisabled=now+Math.max(0,Date.parse(data.disabled_until||0)-server);attackReadyAt=now+Math.max(0,Date.parse(data.attack_at||0)+2000-server);if(nextDisabled>now&&disabledUntil<=now&&now-disabledNoticeAt>1000){disabledNoticeAt=now;showToast('집중 공격으로 우주선이 30초간 불능 상태입니다.','bad')}disabledUntil=nextDisabled;
@@ -844,8 +844,8 @@
         attackBusy=true;try{const {response,data}=await requestJson(`/api/labs/galaxy-voyage/sessions/${classroom.code}/flight`,{method:'POST',headers:{...classroomHeaders(),'Content-Type':'application/json'},body:JSON.stringify({action:'attack',targetId:id,shotId:crypto.randomUUID()})});if(!response.ok){showToast(data.error||'공격 대기 중입니다.','bad');return}attackReadyAt=performance.now()+2000;p.button.animate([{background:'#fff',transform:'translate(-50%,-50%) scale(1.4)'},{background:'rgba(30,25,5,.75)',transform:'translate(-50%,-50%) scale(1)'}],{duration:350});showToast(data.message);void loadScoreboard()}catch{showToast('통신이 지연되었습니다.','bad')}finally{attackBusy=false}
       }
       function drawFlight(delta){
-        const visible=isMilkyWayObjects&&classroom&&started&&!classBlocked()&&mode==='map'&&performance.now()-flightSeenAt<8000;flightLayer.hidden=!visible;flightRadar.hidden=!visible;if(!visible)return;
-        const now=performance.now();flightStatus.textContent=now<disabledUntil?'우주선 불능 · '+Math.ceil((disabledUntil-now)/1000)+'초':flightUnlocked?(now<attackReadyAt?'공격 충전 '+Math.ceil((attackReadyAt-now)/1000)+'초':'노란 우주선을 눌러 공격 · 최대 50점'):'노란색: 친구 · 천체 25개 발견 시 공격 해제';
+        const visible=classroom&&started&&!classBlocked()&&mode==='map'&&performance.now()-flightSeenAt<8000;flightLayer.hidden=!visible;flightRadar.hidden=!visible;if(!visible)return;
+        const now=performance.now();flightStatus.textContent=now<disabledUntil?'우주선 불능 · '+Math.ceil((disabledUntil-now)/1000)+'초':flightUnlocked?(now<attackReadyAt?'공격 충전 '+Math.ceil((attackReadyAt-now)/1000)+'초':'노란 우주선을 눌러 공격 · 최대 50점'):'노란색: 친구 · '+entityName+' '+galaxies.length+'개 발견 시 공격 해제';
         for(const p of flightPeers.values()){const blend=1-Math.exp(-delta/280);for(let i=0;i<3;i++)p.current[i]+=(p.target[i]-p.current[i])*blend;const q=projectWorld(p.current),range=Math.hypot(p.current[0]-camera.x,p.current[1]-camera.y,p.current[2]-camera.z),peerDisabled=now<p.disabled;p.button.hidden=!q.visible||range>2400;p.button.style.left=q.x+'px';p.button.style.top=q.y+'px';p.label.textContent=p.name+' · '+Math.round(range)+(peerDisabled?' · 불능':'');p.button.setAttribute('aria-label',p.name+' 우주선 공격');p.button.disabled=!flightUnlocked||now<attackReadyAt||now<disabledUntil||range>900;
           const angle=Math.atan2(p.current[0]-camera.x,p.current[2]-camera.z)-camera.yaw,r=Math.min(1,range/3200)*42;p.dot.style.left=(50+Math.sin(angle)*r)+'%';p.dot.style.top=(50-Math.cos(angle)*r)+'%';p.dot.title=p.name;
         }
@@ -930,7 +930,7 @@
       }
 
       function limitCamera(){camera.x=clamp(camera.x,-2600,2600);camera.y=clamp(camera.y,-1700,1700);camera.z=clamp(camera.z,-1400,3100)}
-      function flightDisabled(){return isMilkyWayObjects&&classroom&&performance.now()<disabledUntil}
+      function flightDisabled(){return classroom&&performance.now()<disabledUntil}
       function moveCamera(distance,refresh=true){if(classBlocked()||flightDisabled())return;const cp=Math.cos(camera.pitch);camera.x+=Math.sin(camera.yaw)*cp*distance;camera.y+=Math.sin(camera.pitch)*distance;camera.z+=Math.cos(camera.yaw)*cp*distance;limitCamera();if(refresh)updateBeacons()}
       function strafeCamera(distance,refresh=true){if(flightDisabled())return;camera.x+=Math.cos(camera.yaw)*distance;camera.z-=Math.sin(camera.yaw)*distance;limitCamera();if(refresh)updateBeacons()}
       function moveVertical(distance,refresh=true){if(flightDisabled())return;camera.y+=distance;limitCamera();if(refresh)updateBeacons()}
@@ -976,7 +976,7 @@
       }
 
       function holdVisitor(visitor){visitor.holdUntil=performance.now()+1200;visitor.holdPosition=[...visitor.worldPosition]}
-      function ufoRewardMultiplier(){return isMilkyWayObjects&&(classroom?redUfoUnlocked:visited.size>=milkyWayObjectCatalog.length)?2:1}
+      function ufoRewardMultiplier(){return classroom?(redUfoUnlocked?2:1):(visited.size>=galaxies.length?2:1)}
       function updateUfoAppearance(){
         const bonus=ufoRewardMultiplier()===2;if(ui.visitors.classList.contains('bonusUfo')===bonus)return;
         ui.visitors.classList.toggle('bonusUfo',bonus);
@@ -984,19 +984,16 @@
       }
       function localUfoResult(){
         const roll=Math.random();
-        if(isMilkyWayObjects){
-          const multiplier=ufoRewardMultiplier(),label=multiplier===2?'빨간 UFO':'UFO';
-          if(roll<.70){const base=roll<.15?25:roll<.40?50:roll<.55?100:roll<.65?250:500,delta=base*multiplier;return{delta,message:base===500?`${label} 잭팟! ${delta}점을 획득했습니다!`:`${label}에서 ${delta}점을 발견했습니다!`}};
-          if(roll<.80){const amount=Math.min(15,expeditionScore);return{delta:-amount,message:`UFO가 ${amount}점을 가져갔습니다.`}};
-          // There is no classmate to steal from or swap with during a solo voyage.
-          const delta=25*multiplier;return{delta,message:`${label}에서 ${delta}점을 발견했습니다!`};
-        }
-        if(roll<.3)return{delta:50,message:'UFO에서 50점을 발견했습니다!'};if(roll<.42)return{delta:100,message:'UFO 대박! 100점을 획득했습니다!'};if(roll<.65)return{delta:-30,message:'UFO가 30점을 가져갔습니다.'};if(roll<.9)return{delta:30,message:'UFO에서 30점을 회수했습니다!'};const delta=Math.round((Math.random()*100-50)/10)*10;return{delta,message:`점수 파동! ${delta>=0?'+':''}${delta}점`}
+        const multiplier=ufoRewardMultiplier(),label=multiplier===2?'빨간 UFO':'UFO';
+        if(roll<.70){const base=roll<.15?25:roll<.40?50:roll<.55?100:roll<.65?250:500,delta=base*multiplier;return{delta,message:base===500?`${label} 잭팟! ${delta}점을 획득했습니다!`:`${label}에서 ${delta}점을 발견했습니다!`}};
+        if(roll<.80){const amount=Math.min(15,expeditionScore);return{delta:-amount,message:`UFO가 ${amount}점을 가져갔습니다.`}};
+        // There is no classmate to steal from or swap with during a solo voyage.
+        const delta=25*multiplier;return{delta,message:`${label}에서 ${delta}점을 발견했습니다!`};
       }
       async function resolveVisitor(visitor){if(classBlocked())return;
         if(mode!=='map'||visitor.resolving)return;const now=performance.now(),wait=Math.ceil((visitor.cooldownUntil-now)/1000);if(wait>0){showToast(`레이저 충전 중 · ${wait}초`);return}const range=Math.hypot(visitor.worldPosition[0]-camera.x,visitor.worldPosition[1]-camera.y,visitor.worldPosition[2]-camera.z);if(range>UFO_TAP_DISTANCE){holdVisitor(visitor);showToast(`격추 사거리 밖 · 거리 ${Math.round(range)}`,'bad');return}
         visitor.resolving=true;visitor.element.classList.remove('encountered');void visitor.element.offsetWidth;visitor.element.classList.add('encountered');visitor.cooldownUntil=now+UFO_COMM_COOLDOWN;visitor.element.classList.add('cooldown');visitorEncounters++;
-        try{let result;if(classroom){const reference=globalThis.crypto?.randomUUID?.()||`${Date.now()}-${Math.random().toString(36).slice(2)}`,{response,data}=await requestJson(`/api/labs/galaxy-voyage/sessions/${classroom.code}/events`,{method:'POST',headers:{'content-type':'application/json',...classroomHeaders()},body:JSON.stringify({kind:'ufo',reference,experience:isMilkyWayObjects?'milky-way-objects':'galaxy-voyage'})});result=data;if(!response.ok)throw new Error(result.error||'UFO 이벤트 실패');setScore(result.score);if(isMilkyWayObjects&&result.milkyWayUfoBonus){redUfoUnlocked=true;updateUfoAppearance()}}else{result=localUfoResult();updateScore(result.delta)}showToast(result.message,result.delta<0?'bad':'good');if(!selectedKey)renderPanel()}catch(error){showToast(error.message||'UFO 신호가 끊겼습니다.','bad');void loadScoreboard()}finally{visitor.resolving=false;setTimeout(()=>visitor.element.classList.remove('cooldown'),UFO_COMM_COOLDOWN)}
+        try{let result;if(classroom){const reference=globalThis.crypto?.randomUUID?.()||`${Date.now()}-${Math.random().toString(36).slice(2)}`,{response,data}=await requestJson(`/api/labs/galaxy-voyage/sessions/${classroom.code}/events`,{method:'POST',headers:{'content-type':'application/json',...classroomHeaders()},body:JSON.stringify({kind:'ufo',reference,experience:isMilkyWayObjects?'milky-way-objects':'galaxy-voyage'})});result=data;if(!response.ok)throw new Error(result.error||'UFO 이벤트 실패');setScore(result.score);if(result.ufoBonus||result.milkyWayUfoBonus){redUfoUnlocked=true;updateUfoAppearance()}}else{result=localUfoResult();updateScore(result.delta)}showToast(result.message,result.delta<0?'bad':'good');if(!selectedKey)renderPanel()}catch(error){showToast(error.message||'UFO 신호가 끊겼습니다.','bad');void loadScoreboard()}finally{visitor.resolving=false;setTimeout(()=>visitor.element.classList.remove('cooldown'),UFO_COMM_COOLDOWN)}
       }
       function updateSpaceVisitors(time){
         if(mode!=='map')return;visitorStates.forEach(visitor=>{const phase=time*.000052+visitor.index*2.17,moving=[Math.sin(phase)*(1150+visitor.index*210),Math.sin(phase*(.69+visitor.index*.07)+1.15)*520,1280+visitor.index*470+Math.cos(phase*.81)*610],position=time<visitor.holdUntil&&visitor.holdPosition?visitor.holdPosition:moving;if(time>=visitor.holdUntil)visitor.holdPosition=moving;visitor.worldPosition=[...position];const point=projectWorld(position),range=Math.hypot(position[0]-camera.x,position[1]-camera.y,position[2]-camera.z),scale=clamp(920/Math.max(1,point.depth),.48,1.12),label=visitor.element.querySelector('.visitorLabel');visitor.element.style.transform=`translate(${point.x-viewWidth/2}px,${point.y-viewHeight/2}px) scale(${scale}) rotate(${Math.sin(phase*.9)*5}deg)`;visitor.element.style.opacity=point.visible?'1':'0';visitor.element.style.pointerEvents=point.visible?'auto':'none';setText(label,(range<=UFO_TAP_DISTANCE?'격추':'UFO')+(ufoRewardMultiplier()===2?' ×2':''))})
@@ -1194,4 +1191,3 @@
   </script>
 </body>
 </html>
-

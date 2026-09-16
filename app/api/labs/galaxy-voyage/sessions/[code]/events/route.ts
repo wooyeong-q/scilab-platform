@@ -35,11 +35,9 @@ export async function POST(request: Request, { params }: Context) {
     if (result.status === 'unauthorized') return noStore({ error: '입장 정보를 확인해 주세요.' }, { status: 401 });
     if (result.status === 'invalid') return noStore({ error: '점수 요청을 확인해 주세요.' }, { status: 400 });
     if (result.status === 'cooldown') return noStore({ error: '레이저 충전 중입니다.' }, { status: 429 });
-    if (result.status === 'limit') return noStore({ error: '이번 항해의 UFO 점수 이벤트를 모두 완료했습니다.' }, { status: 409 });
     return noStore(result);
   } catch (error) {
     console.error('Failed to apply galaxy-voyage score event', error);
     return noStore({ error: '점수를 반영하지 못했습니다.' }, { status: 500 });
   }
 }
-
