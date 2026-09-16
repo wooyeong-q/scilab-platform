@@ -222,3 +222,4 @@ ALTER TABLE galaxy_voyage_players ADD COLUMN IF NOT EXISTS flight_z DOUBLE PRECI
 ALTER TABLE galaxy_voyage_players ADD COLUMN IF NOT EXISTS flight_at TIMESTAMPTZ;
 ALTER TABLE galaxy_voyage_players ADD COLUMN IF NOT EXISTS attack_at TIMESTAMPTZ;
 ALTER TABLE galaxy_voyage_players ADD COLUMN IF NOT EXISTS shield_until TIMESTAMPTZ;
+ALTER TABLE galaxy_voyage_players ADD COLUMN IF NOT EXISTS disabled_until TIMESTAMPTZ;

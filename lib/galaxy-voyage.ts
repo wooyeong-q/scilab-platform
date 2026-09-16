@@ -147,7 +147,14 @@ export async function getGalaxyScoreboard(code: string, playerId: string, player
       FROM galaxy_voyage_players WHERE session_id=${sessionId}
     ) SELECT
       (SELECT COALESCE(json_agg(r ORDER BY r.rank), '[]'::json) FROM ranked r WHERE r.rank<=200) AS leaders,
-      (SELECT row_to_json(r) FROM ranked r WHERE r.id=${playerId} LIMIT 1) AS self,
+      (SELECT row_to_json(me) FROM (
+        SELECT r.*,p.flight_x AS x,p.flight_y AS y,p.flight_z AS z,p.flight_at,p.disabled_until,
+          (SELECT COALESCE(json_agg(e.event_key),'[]'::json) FROM galaxy_voyage_score_events e
+            WHERE e.actor_id=p.id AND e.event_key=ANY(${MILKY_WAY_OBSERVATION_KEYS}::text[])) AS observations,
+          (SELECT COALESCE(json_agg(e.event_key),'[]'::json) FROM galaxy_voyage_score_events e
+            WHERE e.actor_id=p.id AND e.event_kind='classification_correct') AS classifications
+        FROM ranked r JOIN galaxy_voyage_players p ON p.id=r.id WHERE r.id=${playerId} LIMIT 1
+      ) me) AS self,
       (SELECT COUNT(*)>=${MILKY_WAY_OBJECT_KEYS.length} FROM galaxy_voyage_score_events
         WHERE actor_id=${playerId} AND event_key=ANY(${MILKY_WAY_OBSERVATION_KEYS}::text[])) AS milky_way_ufo_bonus,
       (SELECT COALESCE(json_agg(n ORDER BY n.created_at ASC), '[]'::json) FROM (
@@ -163,7 +170,11 @@ export async function getGalaxyScoreboard(code: string, playerId: string, player
     id: String(row.id), nickname: String(row.nickname), score: Number(row.score || 0), rank: Number(row.rank || 0),
   });
   return {
-    self: own ? mapPlayer(own) : null,
+    self: own ? { ...mapPlayer(own), x: Number(own.x || 0), y: Number(own.y || 0), z: Number(own.z || 0),
+      flightAt: own.flight_at ? new Date(String(own.flight_at)).toISOString() : null,
+      disabledUntil: own.disabled_until ? new Date(String(own.disabled_until)).toISOString() : null,
+      observations: Array.isArray(own.observations) ? own.observations.map(String) : [],
+      classifications: Array.isArray(own.classifications) ? own.classifications.map(String) : [] } : null,
     timing: timingForPlayer(player),
     milkyWayUfoBonus: Boolean(snapshot.milky_way_ufo_bonus),
     leaders: leaders.map((row) => mapPlayer(row as Record<string, unknown>)),
@@ -454,17 +465,23 @@ export async function controlGalaxySession(code: string, teacherKey: string, sta
 export async function syncGalaxyFlight(code: string, playerId: string, key: string, position: unknown) {
   if (!Array.isArray(position) || position.length !== 3 || !position.every(v => typeof v === 'number' && Number.isFinite(v) && Math.abs(v) <= 20000)) return null;
   const [x,y,z] = position;
-  const rows = await database()`WITH actor AS (
-    UPDATE galaxy_voyage_players p SET flight_x=${x},flight_y=${y},flight_z=${z},flight_at=statement_timestamp()
-    FROM galaxy_voyage_sessions s WHERE p.session_id=s.id AND s.code=${code} AND p.id=${playerId}
+  const rows = await database()`WITH actor AS MATERIALIZED (
+    SELECT p.id,p.session_id,p.attack_at,p.disabled_until FROM galaxy_voyage_players p
+    JOIN galaxy_voyage_sessions s ON p.session_id=s.id WHERE s.code=${code} AND p.id=${playerId}
       AND p.player_key_hash=${hashKey(key)} AND s.expires_at>statement_timestamp()
       AND (s.duration_seconds IS NULL OR (s.started_at<=statement_timestamp() AND s.started_at+s.duration_seconds*INTERVAL '1 second'>statement_timestamp()))
-      AND (p.flight_at IS NULL OR p.flight_at<statement_timestamp()-INTERVAL '1 second')
-    RETURNING p.id,p.session_id,p.attack_at,p.shield_until
-  ) SELECT a.attack_at,a.shield_until,statement_timestamp() AS server_time,
+  ), moved AS (
+    UPDATE galaxy_voyage_players p SET
+      flight_x=CASE WHEN p.disabled_until>statement_timestamp() THEN p.flight_x ELSE ${x} END,
+      flight_y=CASE WHEN p.disabled_until>statement_timestamp() THEN p.flight_y ELSE ${y} END,
+      flight_z=CASE WHEN p.disabled_until>statement_timestamp() THEN p.flight_z ELSE ${z} END,
+      flight_at=statement_timestamp()
+    FROM actor a WHERE p.id=a.id AND (p.flight_at IS NULL OR p.flight_at<statement_timestamp()-INTERVAL '1 second')
+    RETURNING p.id
+  ) SELECT a.attack_at,a.disabled_until,statement_timestamp() AS server_time,
     (SELECT COUNT(*)>=25 FROM galaxy_voyage_score_events WHERE actor_id=a.id AND event_key=ANY(${MILKY_WAY_OBSERVATION_KEYS}::text[])) AS unlocked,
     (SELECT COALESCE(json_agg(v),'[]'::json) FROM (
-      SELECT p.id,p.nickname,p.flight_x AS x,p.flight_y AS y,p.flight_z AS z,p.shield_until
+      SELECT p.id,p.nickname,p.flight_x AS x,p.flight_y AS y,p.flight_z AS z,p.disabled_until
       FROM galaxy_voyage_players p WHERE p.session_id=a.session_id AND p.id<>a.id
         AND p.flight_at>statement_timestamp()-INTERVAL '8 seconds'
       ORDER BY p.id LIMIT 40
@@ -487,6 +504,7 @@ export async function attackGalaxyPlayer(code: string, playerId: string, key: st
     FROM locked a JOIN locked t ON t.id=${target} WHERE a.id=${playerId}
       AND (SELECT COUNT(*) FROM galaxy_voyage_score_events WHERE actor_id=a.id AND event_key=ANY(${MILKY_WAY_OBSERVATION_KEYS}::text[]))>=25
       AND (a.attack_at IS NULL OR a.attack_at<=statement_timestamp()-INTERVAL '2 seconds')
+      AND (a.disabled_until IS NULL OR a.disabled_until<=statement_timestamp())
       AND a.flight_at>statement_timestamp()-INTERVAL '8 seconds' AND t.flight_at>statement_timestamp()-INTERVAL '8 seconds'
       AND power(a.flight_x-t.flight_x,2)+power(a.flight_y-t.flight_y,2)+power(a.flight_z-t.flight_z,2)<=810000
   ), event AS (
@@ -497,9 +515,13 @@ export async function attackGalaxyPlayer(code: string, playerId: string, key: st
   ), changed AS (
     UPDATE galaxy_voyage_players p SET score=p.score+CASE WHEN p.id=e.actor_id THEN e.actor_delta ELSE e.target_delta END,
       attack_at=CASE WHEN p.id=e.actor_id THEN statement_timestamp() ELSE p.attack_at END,
+      disabled_until=CASE WHEN p.id=e.target_id AND (p.disabled_until IS NULL OR p.disabled_until<=statement_timestamp())
+        AND 1+(SELECT COUNT(*) FROM galaxy_voyage_score_events h WHERE h.target_id=e.target_id
+          AND h.event_kind='player_attack' AND h.created_at>statement_timestamp()-INTERVAL '10 seconds')>=3
+        THEN statement_timestamp()+INTERVAL '30 seconds' ELSE p.disabled_until END,
       updated_at=statement_timestamp()
-    FROM event e WHERE p.id=e.actor_id OR p.id=e.target_id RETURNING p.id,p.score
-  ) SELECT e.actor_message AS message,e.actor_delta AS delta,c.score FROM event e JOIN changed c ON c.id=e.actor_id`;
+    FROM event e WHERE p.id=e.actor_id OR p.id=e.target_id RETURNING p.id,p.score,p.disabled_until
+  ) SELECT e.actor_message||CASE WHEN t.disabled_until>statement_timestamp() THEN ' · 상대 우주선 30초 불능!' ELSE '' END AS message,
+      e.actor_delta AS delta,c.score FROM event e JOIN changed c ON c.id=e.actor_id JOIN changed t ON t.id=e.target_id`;
   return rows[0] || null;
 }
-
