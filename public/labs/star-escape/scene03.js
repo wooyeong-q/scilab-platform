@@ -109,14 +109,16 @@
   }
 
   async function syncScene(patch, redraw) {
+    var base = JSON.parse(JSON.stringify(sceneState()));
     setLocalSceneState(patch);
     if (redraw !== false) draw();
     try {
       var sync = ctx.sync || ctx.syncState;
       if (typeof sync !== 'function') throw new Error('모둠 동기화 기능을 찾을 수 없습니다.');
-      await sync(Object.assign({}, ctx.state.progress.sceneState || {}));
+      await sync(Object.assign({}, ctx.state.progress.sceneState || {}), base);
     } catch (error) {
       ctx.toast(error.message || '모둠 상태를 저장하지 못했습니다.', true);
+      throw error;
     }
   }
 
@@ -439,7 +441,7 @@
     if (mode === 'q3') {
       return '<div class="s3-result-overlay"><article class="s3-result-card"><header><small>기준 별 삽입 완료</small><h2>실제로 가장 밝은 별 C</h2></header><div class="s3-result-body"><p>기준 별이 고정되자 중앙 분석 화면이 마지막 거리 판정 모드로 전환됩니다.</p></div><button class="primary" id="s3ResultContinue">방의 변화 확인</button></article></div>';
     }
-    return '<div class="s3-result-overlay"><article class="s3-result-card"><header><small>철컥 · 세 슬롯 잠김</small><h2>별빛 분석 시스템 복구 완료</h2></header><div class="s3-result-body"><p>장치의 조명이 정상으로 돌아오고, 오른쪽 작은 정비 패널에서 낯선 신호가 깜박입니다.</p></div><button class="primary" id="s3ResultContinue">복구된 방 보기</button></article></div>';
+    return '<div class="s3-result-overlay"><article class="s3-result-card"><header><small>철컥 · 세 슬롯 잠김</small><h2>별빛 분석 시스템 복구 완료</h2></header><div class="s3-result-body"><p>장치의 조명이 정상으로 돌아오고, 오른쪽 작은 정비 패널에서 낯선 신호가 깜박입니다.</p></div><button class="primary" id="s3ResultContinue">다음 단계 · 정비 패널 확인</button></article></div>';
   }
 
   function recordingMarkup(state) {
@@ -580,7 +582,7 @@
     if (state.p1Slots.join('') !== '123456') return setFeedback('빛의 밝기와 등급 표시가 맞지 않습니다.', true);
     button.disabled = true;
     await syncScene({ p1Slots: ['1', '2', '3', '4', '5', '6'], p1Complete: true }, false);
-    await ctx.submit('123456', button);
+    await ctx.submit('654321', button);
   }
 
   function beginTransmission() {
@@ -624,18 +626,21 @@
         if (state.p3Aligned || Math.abs(Number(state.p3Positions[letter]) - 50) < .01) return;
         event.preventDefault();
         var moved = false;
+        var startX = event.clientX, startY = event.clientY;
+        var startPosition = Number(state.p3Positions[letter]);
         distanceDraft = Object.assign({}, state.p3Positions);
         element.classList.add('dragging');
         try { element.setPointerCapture(event.pointerId); } catch (error) {}
 
         function update(moveEvent) {
+          if (!moved && Math.hypot(moveEvent.clientX - startX, moveEvent.clientY - startY) < 5) return;
           moved = true;
           var rect = surface.getBoundingClientRect();
           var angle = distanceAngles[letter] * Math.PI / 180;
-          var centerX = rect.left + rect.width * .5;
-          var centerY = rect.top + rect.height * .49;
-          var projection = (moveEvent.clientX - centerX) * Math.cos(angle) + (moveEvent.clientY - centerY) * Math.sin(angle);
-          var position = (projection / rect.width - .05) / .0022;
+          // Invert distancePoint in normalized coordinates, preserving the grab offset.
+          var dx = (moveEvent.clientX - startX) / rect.width;
+          var dy = (moveEvent.clientY - startY) / (rect.height * 2.1);
+          var position = startPosition + (dx * Math.cos(angle) + dy * Math.sin(angle)) / .0022;
           distanceDraft[letter] = Math.round(Math.max(10, Math.min(90, position)) * 10) / 10;
           var point = distancePoint(letter, distanceDraft[letter]);
           element.style.setProperty('--sx', point.x + '%');
@@ -870,13 +875,15 @@
     }
     if (resultMode) {
       var resultContinue = document.getElementById('s3ResultContinue');
-      if (resultContinue) resultContinue.onclick = function () {
+      if (resultContinue) resultContinue.onclick = async function () {
         var mode = resultMode;
         markResultSeen(mode);
         resultMode = '';
         puzzle = '';
         inspect = null;
-        draw();
+        if (mode === 'p4' && !sceneState().maintenanceOpen) {
+          await syncScene({ maintenanceOpen: true, maintenanceDialogue: 0 });
+        } else draw();
       };
     }
     var recordingNext = document.getElementById('s3RecordingNext');
@@ -976,7 +983,7 @@
     data: {
       observations: personalRecords,
       absoluteMagnitudes: absoluteMagnitudes,
-      answers: ['123456', 'A', 'C', 'XYZ'],
+      answers: ['654321', 'A', 'C', 'XYZ'],
       recording: recordingLines.map(function (line) { return line.text; }),
     },
   };

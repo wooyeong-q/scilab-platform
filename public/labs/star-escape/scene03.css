@@ -139,3 +139,7 @@
 .s3-recording-followup{display:grid;gap:5px;margin:10px 0;padding:10px;border:1px solid #ff718d55;border-radius:9px;background:#ff718d0b;text-align:left}
 .s3-recording-followup p{margin:0;color:#dbe3f1;font-size:clamp(11px,1.2vw,14px);line-height:1.5}
 .s3-recording-followup b{color:#72eaff}
+
+/* Reversed lamp order for the new exercise; keep number glyphs readable. */
+.s3-p1-base{transform:scaleX(-1)}
+.s3-p1-base .s3-number-tile{transform:scaleX(-1)}

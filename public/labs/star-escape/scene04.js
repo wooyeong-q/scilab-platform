@@ -206,14 +206,16 @@
   }
 
   async function sync(patch, redraw) {
+    var base = JSON.parse(JSON.stringify(sceneState()));
     setLocalState(patch);
     if (redraw !== false) draw();
     try {
       var callback = ctx.sync || ctx.syncState;
       if (typeof callback !== 'function') throw new Error('모둠 동기화 기능을 찾을 수 없습니다.');
-      await callback(Object.assign({}, ctx.state.progress.sceneState));
+      await callback(Object.assign({}, ctx.state.progress.sceneState), base);
     } catch (error) {
       ctx.toast(error.message || '모둠 상태를 저장하지 못했습니다.', true);
+      throw error;
     }
   }
 
@@ -513,8 +515,8 @@
       var found = complete || uvHits.has(index);
       return '<div class="s4-uv-symbol u' + (index + 1) + (found ? ' found' : '') + '" data-uv-hit="' + index + '" style="left:' + pos.left + ';top:' + pos.top + '"><span><img src="' + img(entry) + '" alt="숨은 천체 기호"></span></div>';
     }).join('');
-    return modalShell('UV 검사 · 오래된 별지도', '<div class="s4-uv-board' + (complete ? ' complete' : '') + '" id="s4UvBoard"><img src="' + img('scene04_p04_starmap_base.webp') + '" alt="오래된 별지도"><div class="s4-uv-overlay" id="s4UvOverlay">' + overlay + '</div><div class="s4-uv-lamp"><img src="' + img('scene04_item_uv_light.webp') + '" alt=""></div></div><div class="s4-uv-progress"><b>숨은 기호 · ' + (complete ? 5 : uvHits.size) + '/5</b><span>▲에서 시작해 굵은 보라색 화살표를 따라 읽으세요.</span></div><p class="s4-help">다섯 기호는 각각 앞에서 분류한 천체를 뜻합니다. 화살표가 연결하는 순서가 중앙 귀환장치에 넣을 인증칩 순서입니다.</p>' +
-      '<button class="s4-primary" id="s4SaveUv" ' + (uvHits.size >= 5 || state.uvRevealed ? '' : 'disabled') + '>숨은 순서 기록</button>' + puzzleFooter('지도 위에 숨겨진 기호를 모두 찾아 방향을 따라 순서를 읽으세요.'), 'uv');
+    return modalShell('UV 검사 · 오래된 별지도', '<button class="s4-primary" id="s4SaveUv" ' + (uvHits.size >= 5 || state.uvRevealed ? '' : 'disabled') + '>기록 저장 · 방으로 돌아가기</button>' + '<div class="s4-uv-board' + (complete ? ' complete' : '') + '" id="s4UvBoard"><img src="' + img('scene04_p04_starmap_base.webp') + '" alt="오래된 별지도"><div class="s4-uv-overlay" id="s4UvOverlay">' + overlay + '</div><div class="s4-uv-lamp"><img src="' + img('scene04_item_uv_light.webp') + '" alt=""></div></div><div class="s4-uv-progress"><b>숨은 기호 · ' + (complete ? 5 : uvHits.size) + '/5</b><span>▲에서 시작해 굵은 보라색 화살표를 따라 읽으세요.</span></div><p class="s4-help">다섯 기호는 각각 앞에서 분류한 천체를 뜻합니다. 화살표가 연결하는 순서가 중앙 귀환장치에 넣을 인증칩 순서입니다.</p>' +
+      puzzleFooter('지도 위에 숨겨진 기호를 모두 찾아 방향을 따라 순서를 읽으세요.'), 'uv');
   }
 
   function chipButton(kind, placed) {
@@ -524,14 +526,14 @@
   function coreMarkup(state) {
     if (modal === 'auth-success') return modalShell('귀환 인증 완료', '<div class="s4-auth-success"><b>중앙 귀환 시스템 복구</b><p>루멘: “최종 인증이 완료되었습니다.”<br>“귀환 시스템을 복구합니다.”</p><button class="s4-primary" id="s4AuthReturn">방으로 돌아가기</button></div>');
     var owned = state.nebulaComplete && state.lockerOpen;
-    var unlocked = owned && state.uvRevealed;
+    var unlocked = owned;
     var placed = new Set(state.finalSlots.filter(Boolean));
     var slots = state.finalSlots.map(function (value, index) {
       return '<button class="s4-core-slot slot-' + (index + 1) + (value ? ' filled' : '') + '" data-s4-drop="final" data-slot="' + index + '" data-value="' + esc(value) + '" ' + (unlocked ? '' : 'disabled') + '>' +
         (value ? '<img src="' + img('scene04_chip_base.webp') + '" alt=""><span>' + chipNames[value] + '</span>' : '<i></i>') + '</button>';
     }).join('');
     var chips = unlocked ? chipBankOrder.filter(function (kind) { return !placed.has(kind); }).map(function (kind) { return chipButton(kind, false); }).join('') : '';
-    var bankMessage = !owned ? '아직 인증칩 5개가 모두 없습니다.' : !state.uvRevealed ? 'UV로 별지도의 숨은 순서를 먼저 확인해야 합니다.' : !chips ? '칩 5개가 모두 장치에 들어갔습니다.' : '';
+    var bankMessage = !owned ? '아직 인증칩 5개가 모두 없습니다.' : !chips ? '칩 5개가 모두 장치에 들어갔습니다.' : '';
     var filled = state.finalSlots.filter(Boolean).length;
     var controls = unlocked ? '<div class="s4-auth-controls"><button class="s4-secondary" id="s4AuthReset" ' + (filled ? '' : 'disabled') + '>칩 모두 빼기</button><button class="s4-primary" id="s4AuthSubmit" ' + (filled === 5 ? '' : 'disabled') + '>귀환 인증 확인</button></div>' + puzzleFooter('칩을 모두 배치한 뒤 한 번에 인증합니다. 개별 슬롯은 정답 여부를 알려주지 않습니다.') : '';
     return modalShell('중앙 귀환 인증 장치', '<div class="s4-core-layout"><div class="s4-core-device">' + slots + '</div><aside><h3>보유 인증칩</h3><div class="s4-chip-bank">' + chips + (bankMessage ? '<p>' + bankMessage + '</p>' : '') + '</div><p>별지도에서 읽은 순서를 ▲부터 시계방향으로 배치하세요. 넣은 칩은 다시 눌러 뺄 수 있습니다.</p></aside></div>' + controls, 'puzzle core-modal');
@@ -624,8 +626,8 @@
     if (kind === 'nebula') { expected = ['emission', 'reflection', 'dark']; slots = state.nebulaSlots.slice(); }
     else if (kind === 'cluster') { expected = ['open', 'globular']; slots = state.clusterSlots.slice(); }
     else {
-      if (!state.uvRevealed) {
-        feedback = 'UV로 별지도의 숨은 순서를 먼저 확인하세요.';
+      if (!state.nebulaComplete || !state.lockerOpen) {
+        feedback = '먼저 분류를 마치고 보관함에서 인증칩을 확보하세요.';
         feedbackBad = true;
         play('error');
         draw();
@@ -689,7 +691,7 @@
 
   async function verifyFinalOrder() {
     var state = sceneState();
-    if (!state.uvRevealed || state.finalSlots.some(function (value) { return !value; })) return;
+    if (!state.nebulaComplete || !state.lockerOpen || state.finalSlots.some(function (value) { return !value; })) return;
     selectedToken = null;
     if (state.finalSlots.join(',') !== finalOrder.join(',')) {
       feedback = '인증 불일치 · 다섯 칩이 함께 튕겨 나왔습니다. 별지도의 전체 화살표 순서를 다시 확인하세요.';
@@ -1020,6 +1022,9 @@
         board.classList.add('complete');
         var button = document.getElementById('s4SaveUv');
         if (button) button.disabled = false;
+        if (!sceneState().uvRevealed) {
+          sync({ uvRevealed: true }, false).catch(function () {});
+        }
       }
     }
     board.onpointerdown = function (event) { board.setPointerCapture(event.pointerId); scan(event); board.onpointermove = scan; };

@@ -29,9 +29,11 @@ export async function PATCH(request: Request, { params }: Context) {
       body.stage,
       body.question,
       body.sceneState,
+      body.baseSceneState,
     );
     if (result.status === 'unauthorized') return noStore({ error: '입장 정보를 확인해 주세요.' }, { status: 401 });
     if (result.status === 'invalid') return noStore({ error: '장면 상태를 확인해 주세요.' }, { status: 400 });
+    if (result.status === 'conflict') return noStore({ error: '다른 대원이 같은 부품을 조작했습니다. 새 상태를 확인한 뒤 다시 놓아 주세요.' }, { status: 409 });
     if (result.status === 'stale') return noStore({ error: '이미 다음 단계로 진행했습니다.' }, { status: 409 });
     return noStore(result);
   } catch (error) {

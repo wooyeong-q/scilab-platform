@@ -524,3 +524,6 @@
 @keyframes s4Noise{50%{transform:translate(5px,-2px);filter:hue-rotate(70deg) saturate(2)}}
 
 @media(prefers-reduced-motion:reduce){.s4-signal-feed,.s4-cctv.frame-8 i,.s4-cctv.frame-9 i{animation:none}}
+
+/* Keep the optional UV action visible on short/mobile screens. */
+#s4SaveUv{position:sticky;top:0;z-index:5;display:block;width:100%;min-height:44px;margin:0 0 10px;box-shadow:0 4px 12px #0008}

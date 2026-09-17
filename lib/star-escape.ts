@@ -8,9 +8,9 @@ const CODE_ALPHABET = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
 const STAGE_QUESTION_COUNTS = [3, 3, 4, 4] as const;
 const QUESTIONS = [
   [
-    { answer: '7139', label: '비상 전력 암호', hint: '각 대원의 별 색과 숫자를 모은 뒤, 별의 표면 온도가 높은 순서대로 숫자를 배열하세요.' },
-    { answer: '4826', label: '관측 수납함 배선', hint: 'R3은 노란색입니다. 별의 표면 온도는 푸른색, 흰색, 노란색, 붉은색 순으로 낮아집니다. 네 조건을 비교해 각 대원의 전선을 알맞은 별 색 단자에 연결하세요.' },
-    { answer: '14', label: '항법장치 검증 암호', hint: '자료가 부족한 기록은 틀린 기록과 다릅니다. 과학적으로 참이라고 확인되는 기록 번호 두 개를 고르세요.' },
+    { answer: '5268', label: '비상 전력 암호', hint: '각 대원의 별 색과 숫자를 모은 뒤, 별의 표면 온도가 높은 순서대로 숫자를 배열하세요.' },
+    { answer: '8642', label: '관측 수납함 배선', hint: 'R4는 노란색입니다. 별의 표면 온도는 푸른색, 흰색, 노란색, 붉은색 순으로 낮아집니다. 네 조건을 비교해 각 대원의 전선을 알맞은 별 색 단자에 연결하세요.' },
+    { answer: '23', label: '항법장치 검증 암호', hint: '자료가 부족한 기록은 틀린 기록과 다릅니다. 과학적으로 참이라고 확인되는 기록 번호 두 개를 고르세요.' },
   ],
   [
     { answer: 'A', label: '관측 카드 기준별 선택', hint: '각 요원이 단서 탭에 저장한 3월·9월 카드에서 같은 별의 위치 변화를 비교하세요.', hints: ['각 요원이 맡은 별 A~D의 위치 변화가 얼마나 큰지 말로 공유하세요.', '두 사진의 배경별은 같으므로 날짜가 다른 같은 별의 위치만 비교하면 됩니다.', '별 A의 3월·9월 위치 변화가 가장 큽니다.'] },
@@ -18,7 +18,7 @@ const QUESTIONS = [
     { answer: 'ACDB', label: '같은 별 거리 자료 복구', hint: '처음 조사한 별 A~D의 두 관측 카드에서 위치 변화가 큰 순서를 공유하세요.', hints: ['각 요원이 단서 탭을 다시 열어 3월·9월 카드의 위치 변화를 비교하세요.', '연주시차가 클수록 별까지의 거리는 가깝습니다.', '위치 변화는 A > C > D > B입니다. 따라서 가까운 순서는 A → C → D → B입니다.'] },
   ],
   [
-    { answer: '123456', label: '별의 등급 표시 복구', hint: '별은 등급 숫자가 작을수록 밝습니다.' },
+    { answer: '654321', label: '별의 등급 표시 복구', hint: '별은 등급 숫자가 작을수록 밝습니다.' },
     { answer: 'A', label: '겉보기등급 비교', hint: '전송된 관측 자료와 등급 기준을 다시 확인하세요.', hints: ['각 대원의 단서 탭에 전송된 겉보기등급을 말로 공유하세요.', '별은 등급 숫자가 작을수록 밝습니다.'] },
     { answer: 'C', label: '기준 거리 실제 밝기 비교', hint: '현재 별들은 서로 다른 거리에 있습니다.', hints: ['현재 별들은 서로 다른 거리에 있습니다.', '별들을 같은 거리에서 비교해 보세요.'] },
     { answer: 'XYZ', label: '겉보기등급·절대등급 거리 판정', hint: '겉보기등급은 지구에서 보이는 밝기입니다.', hints: ['겉보기등급은 지구에서 보이는 밝기입니다.', '절대등급은 10 pc에서의 밝기입니다.', '실제보다 밝게 보이면 가까운 쪽, 어둡게 보이면 먼 쪽입니다.'] },
@@ -357,7 +357,7 @@ function normalizeScene03State(value: unknown) {
   const p1Complete = input.p1Complete === true && p1Slots.join('') === '123456';
   const dataSent = p1Complete && input.dataSent === true;
   const q2Complete = dataSent && q2Selected === 'A' && input.q2Complete === true;
-  const p3Aligned = q2Complete && Object.values(p3Positions).every((position) => position === 50) && input.p3Aligned === true;
+  const p3Aligned = q2Complete && Object.values(p3Positions).every((position) => position === 50);
   const p3ResultConfirmed = p3Aligned && input.p3ResultConfirmed === true;
   const q3Complete = p3ResultConfirmed && referenceCard === 'C' && input.q3Complete === true;
   const p4Complete = q3Complete && p4Slots.join('') === 'XYZ' && input.p4Complete === true;
@@ -427,7 +427,7 @@ function normalizeScene04State(value: unknown) {
   const lockerOpen = handleUnlocked && input.lockerOpen === true;
   const uvAcquired = lockerOpen && input.uvAcquired === true;
   const uvRevealed = uvAcquired && input.uvRevealed === true;
-  const authComplete = uvRevealed
+  const authComplete = nebulaComplete && lockerOpen
     && finalSlots.join(',') === 'emission,open,dark,globular,reflection'
     && input.authComplete === true;
   const horrorSeen = authComplete && input.horrorSeen === true;
@@ -478,29 +478,56 @@ function normalizeScene04State(value: unknown) {
   };
 }
 
-export async function updateStarEscapeSceneState(code: string, playerId: string, playerKey: string, stageValue: unknown, questionValue: unknown, stateValue: unknown) {
+// Apply only values changed by this client; preserve independent teammate edits.
+function mergeSceneChanges(current: unknown, next: unknown, base: unknown): unknown {
+  if ((!next || typeof next !== 'object') && JSON.stringify(next) === JSON.stringify(base)) return current === undefined ? next : current;
+  if (typeof next === 'boolean') return current === true || next;
+  if (Array.isArray(next)) {
+    const old = Array.isArray(base) ? base : [];
+    const live = Array.isArray(current) ? current : [];
+    return next.map((value, index) => mergeSceneChanges(live[index], value, old[index]));
+  }
+  if (next && typeof next === 'object') {
+    const result = { ...(current as Record<string, unknown> || {}) };
+    for (const [key, value] of Object.entries(next)) {
+      if (['__proto__', 'constructor', 'prototype'].includes(key)) continue;
+      result[key] = mergeSceneChanges(result[key], value, (base as Record<string, unknown>)?.[key]);
+    }
+    return result;
+  }
+  return next;
+}
+
+export async function updateStarEscapeSceneState(code: string, playerId: string, playerKey: string, stageValue: unknown, questionValue: unknown, stateValue: unknown, baseValue?: unknown) {
   await ensureStarEscapeDatabase();
   const player = await verifiedPlayer(code, playerId, playerKey);
   if (!player) return { status: 'unauthorized' as const };
-  const stage = Number(stageValue);
-  const question = Number(questionValue);
-  const sceneState = stage === 3
-    ? normalizeScene03State(stateValue)
-    : stage === 4
-      ? normalizeScene04State(stateValue)
-      : null;
-  const questionCount = stage === 3 ? STAGE_QUESTION_COUNTS[2] : stage === 4 ? STAGE_QUESTION_COUNTS[3] : 0;
-  if (!questionCount || !Number.isInteger(question) || question < 1 || question > questionCount || !sceneState) {
+  const stage = Number(stageValue), question = Number(questionValue);
+  const normalize = stage === 3 ? normalizeScene03State : stage === 4 ? normalizeScene04State : null;
+  if (!normalize || !Number.isInteger(question) || question < 1 || question > STAGE_QUESTION_COUNTS[stage - 1] || !normalize(stateValue)) {
     return { status: 'invalid' as const };
   }
-  const serialized = JSON.stringify(sceneState);
-  const rows = await database()`UPDATE star_escape_team_progress SET scene_state=${serialized}::jsonb, updated_at=NOW()
-    WHERE session_id=${String(player.session_id)} AND team_name=${String(player.team_name)}
-      AND stage=${stage} AND question_no=${question}
-    RETURNING scene_state`;
-  return rows[0]
-    ? { status: 'ok' as const, sceneState: rows[0].scene_state }
-    : { status: 'stale' as const };
+  const db = database();
+  for (let attempt = 0; attempt < 6; attempt++) {
+    const rows = await db`SELECT scene_state FROM star_escape_team_progress
+      WHERE session_id=${String(player.session_id)} AND team_name=${String(player.team_name)} AND stage=${stage} AND question_no=${question}`;
+    if (!rows[0]) return { status: 'stale' as const };
+    const current = rows[0].scene_state || {};
+    const merged = mergeSceneChanges(current, stateValue, baseValue) as Record<string, unknown>;
+    // A submitted answer is authoritative even if an earlier browser missed a state update.
+    if (stage === 3) {
+      if (question >= 2) Object.assign(merged, { p1Slots: ['1','2','3','4','5','6'], p1Complete: true });
+      if (question >= 3) Object.assign(merged, { dataSent: true, q2Selected: 'A', q2Complete: true });
+      if (question >= 4) Object.assign(merged, { p3Positions: { A: 50, B: 50, C: 50, D: 50 }, p3Aligned: true, p3ResultConfirmed: true, referenceCard: 'C', q3Complete: true });
+    }
+    const sceneState = normalize(merged);
+    if (!sceneState) return { status: 'conflict' as const };
+    const updated = await db`UPDATE star_escape_team_progress SET scene_state=${JSON.stringify(sceneState)}::jsonb, updated_at=NOW()
+      WHERE session_id=${String(player.session_id)} AND team_name=${String(player.team_name)} AND stage=${stage} AND question_no=${question}
+        AND scene_state=${JSON.stringify(current)}::jsonb RETURNING scene_state`;
+    if (updated[0]) return { status: 'ok' as const, sceneState: updated[0].scene_state };
+  }
+  return { status: 'conflict' as const };
 }
 
 export async function requestStarEscapeHint(code: string, playerId: string, playerKey: string, stageValue: unknown, questionValue: unknown) {

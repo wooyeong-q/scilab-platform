@@ -25,7 +25,7 @@ test('escape room: R1–R4, teacher start/hints, shared state, 14 puzzles and fo
   assert.equal((await game.joinStarEscapeSession(code, 'Player 1', '2', 1)).status, 'duplicate');
   assert.equal((await game.joinStarEscapeSession(code, 'Duplicate role', '1', 1)).status, 'role_taken');
   const p = players[0], args = [code, p.player.id, p.playerKey];
-  assert.equal((await game.submitStarEscapeAnswer(...args, 1, 1, '7139')).status, 'waiting');
+  assert.equal((await game.submitStarEscapeAnswer(...args, 1, 1, '5268')).status, 'waiting');
   assert.equal((await game.controlStarEscapeSession(code, 'bad-key', { action: 'start' })).status, 'unauthorized');
   assert.equal((await game.controlStarEscapeSession(code, teacherKey, { action: 'start' })).status, 'started');
   assert.equal((await game.getStarEscapeState(...args)).members.length, 4);
@@ -37,7 +37,7 @@ test('escape room: R1–R4, teacher start/hints, shared state, 14 puzzles and fo
   }
   assert.equal((await game.controlStarEscapeSession(code, teacherKey, { action: 'hint', message: 'Test teacher hint', stage: 1, question: 1 })).status, 'hint_sent');
   assert.equal((await game.getStarEscapeState(code, players[3].player.id, players[3].playerKey)).teacherHints[0].message, 'Test teacher hint');
-  const answers = [['7139', '4826', '14'], ['A', '6측12', 'ACDB'], ['123456', 'A', 'C', 'XYZ'], ['반사판뒤', '성운분류완료', '성단분류완료', 'RETURN']];
+  const answers = [['5268', '8642', '23'], ['A', '6측12', 'ACDB'], ['654321', 'A', 'C', 'XYZ'], ['반사판뒤', '성운분류완료', '성단분류완료', 'RETURN']];
   for (let stage = 1; stage <= 4; stage++) {
     for (let question = 1; question <= answers[stage - 1].length; question++) {
       if (stage === 3 && question === 1) {
@@ -66,7 +66,7 @@ test('escape room: expired timer still prevents answers', async () => {
   const { session } = await game.createStarEscapeSession('Isolated timer test');
   const p = await game.joinStarEscapeSession(session.code, 'Timer player', '1', 1);
   await h.pg.query("UPDATE star_escape_sessions SET started_at=NOW()-INTERVAL '31 minutes' WHERE id=$1", [session.id]);
-  assert.equal((await game.submitStarEscapeAnswer(session.code, p.player.id, p.playerKey, 1, 1, '7139')).status, 'expired');
+  assert.equal((await game.submitStarEscapeAnswer(session.code, p.player.id, p.playerKey, 1, 1, '5268')).status, 'expired');
 });
 
 test('galaxy classroom: 30 joins, observation/classification scoring and live scoreboard', async () => {
