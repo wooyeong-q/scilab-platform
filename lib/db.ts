@@ -13,6 +13,7 @@ export type Submission = {
 
 function rowToProgram(row: Record<string, unknown>): Program {
   return {
+    assets: Array.isArray(row.assets) ? row.assets as Program['assets'] : [],
     id:String(row.id), title:String(row.title), summary:String(row.summary), description:String(row.description),
     category:String(row.category), grade:String(row.grade), tags:Array.isArray(row.tags)?row.tags.map(String):[],
     icon:String(row.icon||'🧪'), url:String(row.url), author:String(row.author), featured:Boolean(row.featured),

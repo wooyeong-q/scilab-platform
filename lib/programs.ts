@@ -1,4 +1,7 @@
+import type { ProgramAsset } from './program-assets';
+
 export type Program = {
+  assets?: ProgramAsset[];
   id: string;
   title: string;
   summary: string;

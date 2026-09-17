@@ -28,6 +28,29 @@ ALTER TABLE programs ADD COLUMN IF NOT EXISTS source_url TEXT NOT NULL DEFAULT '
 
 ALTER TABLE programs ADD COLUMN IF NOT EXISTS guide_url TEXT NOT NULL DEFAULT '';
 
+ALTER TABLE programs ADD COLUMN IF NOT EXISTS assets JSONB NOT NULL DEFAULT '[]'::jsonb;
+
+CREATE TABLE IF NOT EXISTS program_assets (
+    id TEXT PRIMARY KEY,
+    program_id TEXT NOT NULL REFERENCES programs(id) ON DELETE CASCADE,
+    name TEXT NOT NULL,
+    mime TEXT NOT NULL,
+    kind TEXT NOT NULL CHECK (kind IN ('image', 'file')),
+    size INTEGER NOT NULL CHECK (size > 0 AND size <= 31457280),
+    ready BOOLEAN NOT NULL DEFAULT FALSE,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+CREATE INDEX IF NOT EXISTS program_assets_program_idx ON program_assets(program_id);
+
+CREATE TABLE IF NOT EXISTS program_asset_chunks (
+    asset_id TEXT NOT NULL REFERENCES program_assets(id) ON DELETE CASCADE,
+    chunk_index INTEGER NOT NULL CHECK (chunk_index >= 0),
+    data TEXT NOT NULL,
+    byte_size INTEGER NOT NULL CHECK (byte_size > 0 AND byte_size <= 524288),
+    PRIMARY KEY (asset_id, chunk_index)
+);
+
 CREATE TABLE IF NOT EXISTS submissions (
     id TEXT PRIMARY KEY,title TEXT NOT NULL,author TEXT NOT NULL,url TEXT NOT NULL,category TEXT NOT NULL,grade TEXT NOT NULL,summary TEXT NOT NULL,
     tags JSONB NOT NULL DEFAULT '[]'::jsonb,duration TEXT NOT NULL DEFAULT '',standard TEXT NOT NULL DEFAULT '',thumbnail_url TEXT NOT NULL DEFAULT '',
