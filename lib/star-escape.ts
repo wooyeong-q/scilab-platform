@@ -154,7 +154,7 @@ export async function joinStarEscapeSession(code: string, nicknameValue: unknown
       playerKey,
     };
   }
-  const counts = await db`SELECT COUNT(*)::int AS count FROM star_escape_players WHERE session_id=${session.id}`;
+  const counts = await db`SELECT COUNT(*)::int AS count FROM star_escape_players WHERE session_id=${session.id} AND team_name NOT LIKE 'removed:%'`;
   if (Number(counts[0]?.count || 0) >= MAX_PLAYERS) return { status: 'full' as const };
   const id = randomUUID();
   const rows = await db`INSERT INTO star_escape_players (id, session_id, team_name, nickname, role_no, player_key_hash)
@@ -580,15 +580,15 @@ export async function getStarEscapeTeacherState(code: string, teacherKey: string
         COUNT(*) FILTER (WHERE is_correct)::int AS correct,
         COALESCE(AVG(elapsed_ms) FILTER (WHERE is_correct), 0)::float AS average_ms
       FROM star_escape_attempts WHERE session_id=${session.id} GROUP BY stage, question_no ORDER BY stage, question_no`,
-    db`SELECT team_name, nickname, role_no, last_seen_at FROM star_escape_players WHERE session_id=${session.id} ORDER BY team_name, role_no`,
+    db`SELECT id, team_name, nickname, role_no, last_seen_at FROM star_escape_players WHERE session_id=${session.id} AND team_name NOT LIKE 'removed:%' ORDER BY team_name, role_no`,
     db`SELECT h.id, h.team_name, h.stage, h.question_no, h.message, h.created_at FROM star_escape_hints h
       WHERE h.session_id=${session.id} AND h.hint_type='request' ORDER BY h.created_at DESC LIMIT 20`,
   ]);
-  const members = new Map<string, { nickname: string; role: number; online: boolean }[]>();
+  const members = new Map<string, { id: string; nickname: string; role: number; online: boolean }[]>();
   playerRows.forEach((row) => {
     const team = String(row.team_name);
     const list = members.get(team) || [];
-    list.push({ nickname: String(row.nickname), role: Number(row.role_no), online: Date.now() - new Date(String(row.last_seen_at)).getTime() < 15000 });
+    list.push({ id: String(row.id), nickname: String(row.nickname), role: Number(row.role_no), online: Date.now() - new Date(String(row.last_seen_at)).getTime() < 15000 });
     members.set(team, list);
   });
   const leaderboard = leaderboardFromRows(teamRows as Record<string, unknown>[]);
@@ -645,6 +645,16 @@ export async function controlStarEscapeSession(code: string, teacherKey: string,
   const db = database();
   const sessionId = String(verified.id);
   const action = String(input.action || '');
+  if (action === 'remove_player') {
+    const playerId = String(input.playerId || '');
+    if (!playerId || playerId.length > 80) return { status: 'invalid' as const };
+    // Keep the historical player row so answer statistics/FK references survive.
+    // Release its unique nickname and role, and revoke the previous connection key.
+    const rows = await db`UPDATE star_escape_players SET team_name=${'removed:' + playerId},
+      nickname=${'removed:' + playerId}, player_key_hash=${hashKey(newSecret())}
+      WHERE id=${playerId} AND session_id=${sessionId} AND team_name NOT LIKE 'removed:%' RETURNING id`;
+    return { status: 'player_removed' as const, removed: rows.length > 0 };
+  }
   if (action === 'advance') {
     const team = normalizeTeam(input.team);
     const stage = Number(input.stage), question = Number(input.question);

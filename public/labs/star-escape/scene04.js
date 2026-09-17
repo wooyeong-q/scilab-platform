@@ -4,6 +4,7 @@
   var ROOT = '/labs/star-escape/assets/scene04/';
   var ctx = null;
   var identity = '';
+  var recordingStarting = false, cctvStarting = false;
   var introStep = 0;
   var modal = '';
   var inspect = null;
@@ -207,14 +208,18 @@
 
   async function sync(patch, redraw) {
     var base = JSON.parse(JSON.stringify(sceneState()));
+    if (Object.keys(patch).every(function (key) { return JSON.stringify(base[key]) === JSON.stringify(patch[key]); })) return;
     setLocalState(patch);
+    var pendingState = ctx.state.progress.sceneState;
+    var pendingContext = ctx;
     if (redraw !== false) draw();
     try {
       var callback = ctx.sync || ctx.syncState;
       if (typeof callback !== 'function') throw new Error('모둠 동기화 기능을 찾을 수 없습니다.');
       await callback(Object.assign({}, ctx.state.progress.sceneState), base);
     } catch (error) {
-      ctx.toast(error.message || '모둠 상태를 저장하지 못했습니다.', true);
+      if (ctx && ctx.state === pendingContext.state && ctx.state.progress.sceneState === pendingState) { ctx.state.progress.sceneState = base; draw(); }
+      pendingContext.toast(error.message || '모둠 상태를 저장하지 못했습니다.', true);
       throw error;
     }
   }
@@ -542,7 +547,7 @@
   function recorderMarkup(state) {
     if (!state.recordingStarted && modal === 'recorder-found') return modalShell('비인가 기록 장치', '<div class="s4-recorder"><div class="s4-recorder-unit"><i></i><b>UNAUTHORIZED LOG</b></div><div class="s4-dialog-copy"><b>대원</b><p>“또 같은 형태의 기록 장치다.”</p><b>루멘</b><p>“기존에 발견된 비인가 기록 장치와 동일 계열입니다.”</p></div><button class="s4-primary" id="s4PlayRecording">기록 장치 재생</button></div>');
     var index = state.recordingComplete ? 4 : recordingLocal;
-    return modalShell('마지막 기록 재생', '<div class="s4-recording"><small>미확인 음성</small><p class="' + (index === 4 ? 'last' : '') + '">“' + esc(recordingLines[index]) + '”</p><div class="s4-wave"><i></i><i></i><i></i><i></i><i></i></div>' + (state.recordingComplete ? '<b>기록 종료</b>' : '<span>재생 중…</span>') + '</div>', 'recording-modal');
+    return modalShell('마지막 기록 재생', '<div class="s4-recording"><small>미확인 음성</small><p class="' + (index === 4 ? 'last' : '') + '">“' + esc(recordingLines[index]) + '”</p><div class="s4-wave"><i></i><i></i><i></i><i></i><i></i></div>' + (state.recordingComplete ? '<b>기록 종료</b><button class="s4-primary" id="s4RecordingContinue">다음 · 조작 로그 확인</button>' : recordingTimer ? '<span>재생 중…</span>' : '<button class="s4-primary" id="s4PlayRecording">기록 다시 재생 · 이어가기</button>') + '</div>', 'recording-modal');
   }
 
   function logMarkup(state) {
@@ -553,7 +558,7 @@
     var frame = state.cctvComplete ? 10 : Math.max(0, Math.min(10, cctvLocal));
     var labels = ['사고 전 장면 4 방', '빈 방', '사람 형체 입장', '중앙 관측 장치로 이동', '장치 조작', '움직임 정지', 'CCTV 쪽으로 천천히 고개 회전', '얼굴 부분 노이즈', '영상 끊김', '한 프레임 복원', '다시 빈 방'];
     return modalShell('CCTV 감시 기록', '<div class="s4-cctv frame-' + frame + '"><img src="' + img('scene04_room_state04_auth_complete.webp') + '" alt="감시 카메라에 기록된 통제실"><img class="s4-cctv-silhouette" src="' + img('scene04_silhouette_master.webp') + '" alt="검은 사람 실루엣"><i></i><span>CAM 04 · ' + esc(labels[frame]) + '</span></div>' +
-      (state.cctvComplete ? '<div class="s4-cctv-result"><b>퇴실 기록이 존재하지 않습니다.</b><p>루멘: “접근 기록은 있으나, 퇴실 기록은 존재하지 않습니다.”</p></div>' : '<p class="s4-help">감시 기록 복원 중…</p>'), 'cctv-modal');
+      (state.cctvComplete ? '<div class="s4-cctv-result"><b>퇴실 기록이 존재하지 않습니다.</b><p>루멘: “접근 기록은 있으나, 퇴실 기록은 존재하지 않습니다.”</p></div>' : cctvTimer ? '<p class="s4-help">감시 기록 복원 중…</p>' : '<button class="s4-primary" id="s4ReplayCctv">감시 기록 다시 재생</button>'), 'cctv-modal');
   }
 
   function exitMarkup() {
@@ -774,30 +779,41 @@
     }, 1150);
   }
 
-  function startRecording() {
+  async function startRecording() {
+    if (recordingTimer || recordingStarting) return;
+    if (sceneState().recordingComplete) { modal = 'recording'; draw(); return; }
+    var playbackIdentity = identity;
+    recordingStarting = true;
     recordingLocal = 0;
     modal = 'recording';
-    sync({ recordingStarted: true, recordingLine: 0 }, false);
+    try { await sync({ recordingStarted: true, recordingLine: 0 }, false); } catch (error) { draw(); return; } finally { recordingStarting = false; }
+    if (!ctx || identity !== playbackIdentity) return;
     play('scene4_final_record');
     draw();
     clearInterval(recordingTimer);
     recordingTimer = setInterval(function () {
       if (recordingLocal < 4) {
         recordingLocal += 1;
-        setLocalState({ recordingLine: recordingLocal });
         draw();
       } else {
         clearInterval(recordingTimer);
-        sync({ recordingLine: 4, recordingComplete: true });
+        recordingTimer = 0;
+        sync({ recordingLine: 4, recordingComplete: true }).catch(function () { draw(); });
       }
     }, 1200);
+    draw();
   }
 
-  function startCctv() {
+  async function startCctv() {
+    if (cctvTimer || cctvStarting) return;
+    if (sceneState().cctvComplete) { modal = 'cctv'; draw(); return; }
+    var playbackIdentity = identity;
+    cctvStarting = true;
     var state = sceneState();
     modal = 'cctv';
     cctvLocal = state.cctvComplete ? 10 : 0;
-    sync({ cctvStarted: true, cctvFrame: cctvLocal }, false);
+    try { await sync({ cctvStarted: true, cctvFrame: cctvLocal }, false); } catch (error) { draw(); return; } finally { cctvStarting = false; }
+    if (!ctx || identity !== playbackIdentity) return;
     eventHook('cctv-start');
     draw();
     if (state.cctvComplete) return;
@@ -806,15 +822,14 @@
       if (cctvLocal < 10) {
         cctvLocal += 1;
         if (cctvLocal === 8) play('scene4_cctv_noise');
-        setLocalState({ cctvFrame: cctvLocal });
         draw();
       } else {
         clearInterval(cctvTimer);
-        sync({ cctvFrame: 10, cctvComplete: true, exitOpen: true });
-        eventHook('exit-open');
-        play('doorOpen');
+        cctvTimer = 0;
+        sync({ cctvFrame: 10, cctvComplete: true, exitOpen: true }).then(function () { eventHook('exit-open'); play('doorOpen'); }).catch(function () { draw(); });
       }
     }, 700);
+    draw();
   }
 
   function showInspect(title, text, stateText, image, focus) {
@@ -1062,6 +1077,8 @@
     var authSubmit = document.getElementById('s4AuthSubmit'); if (authSubmit) authSubmit.onclick = verifyFinalOrder;
     var authReturn = document.getElementById('s4AuthReturn'); if (authReturn) authReturn.onclick = startHorror;
     var playRecording = document.getElementById('s4PlayRecording'); if (playRecording) playRecording.onclick = startRecording;
+    var recordingContinue = document.getElementById('s4RecordingContinue'); if (recordingContinue) recordingContinue.onclick = function () { modal = 'log'; draw(); };
+    var replayCctv = document.getElementById('s4ReplayCctv'); if (replayCctv) replayCctv.onclick = startCctv;
     var saveLog = document.getElementById('s4SaveLog'); if (saveLog) saveLog.onclick = function () { sync({ logSeen: true }).then(function () { modal = ''; ctx.toast('수동 조작 흔적을 확인했습니다.'); draw(); }); };
     var leave = document.getElementById('s4Leave'); if (leave) leave.onclick = function () {
       modal = ''; horrorVisible = true; play('scene4_exit'); draw();
@@ -1108,6 +1125,8 @@
     clearTimeout(signalIntrusionTimer);
     clearInterval(recordingTimer);
     clearInterval(cctvTimer);
+    recordingTimer = 0;
+    cctvTimer = 0;
     modal = '';
     inspect = null;
     selectedItem = '';
@@ -1141,5 +1160,5 @@
     draw();
   }
 
-  window.StarEscapeScene04 = { render: render };
+  window.StarEscapeScene04 = { render: render, stop: function () { resetForIdentity(''); ctx = null; } };
 })();

@@ -49,10 +49,10 @@ test('conflicting duplicate chips are rejected instead of corrupting team state'
  assert.equal((await game.updateStarEscapeSceneState(...other,3,1,b,base)).status,'conflict');
  assert.deepEqual((await game.getStarEscapeState(...args)).progress.sceneState.p1Slots,a.p1Slots);
 });
-function client(scene,expose){
+function client(scene,expose,extra={}){
  let text=fs.readFileSync(`${root}/public/labs/star-escape/scene0${scene}.js`,'utf8');
  text=text.replace(`window.StarEscapeScene0${scene} =`, `window.test = {setup:function(c){ctx=c;draw=function(){};},${expose}}; window.StarEscapeScene0${scene} =`);
- const nodes={};const sandbox={window:{},document:{getElementById:id=>nodes[id]||null,querySelectorAll:()=>[],querySelector:()=>null},localStorage:{getItem:()=>null,setItem:()=>{}},setTimeout,clearTimeout,console};
+ const nodes={};const sandbox={window:{},document:{getElementById:id=>nodes[id]||null,querySelectorAll:()=>[],querySelector:()=>null},localStorage:{getItem:()=>null,setItem:()=>{}},setTimeout,clearTimeout,console,...extra};
  vm.runInNewContext(text,sandbox);return {api:sandbox.window.test,nodes};
 }
 test('client final chip verification accepts no UV save; optional save precedes map',async()=>{
@@ -115,4 +115,58 @@ test('teacher advance: authorized, one step only, isolated to selected team, all
  assert.ok((await game.getStarEscapeState(session.code,p.player.id,p.playerKey)).progress.completedAt);
  const teacher=await game.getStarEscapeTeacherState(session.code,teacherKey);
  assert.ok(teacher.questionStats.every(q=>q.attempts===0));
+});
+function playableScene4(){return {patternA:true,filmB:true,overlayComplete:true,lensAcquired:true,photosRestored:{A:true,B:true,C:true},nebulaSlots:['emission','reflection','dark'],nebulaComplete:true,lockerActive:true,dataSent:true,clusterSlots:['open','globular'],clusterComplete:true,handleUnlocked:true,lockerOpen:true,uvAcquired:true,uvRevealed:true,finalSlots:['emission','open','dark','globular','reflection'],authComplete:true,horrorSeen:true,maintenanceOpen:true};}
+test('recording and CCTV finish through the real shared-state merge, with only start/end saves',async()=>{
+ const {args}=await setup(4,4);let scene=playableScene4();
+ scene=(await game.updateStarEscapeSceneState(...args,4,4,scene)).sceneState;
+ let timer, pending=[],writes=0;
+ const extra={setInterval:fn=>{timer=fn;return 1},clearInterval:()=>{},clearTimeout:()=>{}};
+ const {api}=client(4,'record:startRecording,cctv:startCctv,recorder:recorderMarkup,sync:sync',extra);
+ const state={progress:{stage:4,question:4,sceneState:scene},player:{role:1}};
+ api.setup({state,toast(){},syncState:(next,base)=>{
+  writes++;const job=game.updateStarEscapeSceneState(...args,4,4,next,base).then(r=>{assert.equal(r.status,'ok');state.progress.sceneState=r.sceneState;return r});pending.push(job);return job;
+ }});
+ await api.record();assert.equal(writes,1);
+ for(let i=0;i<4;i++)timer();
+ assert.equal(writes,1);assert.equal(state.progress.sceneState.recordingLine,0);
+ timer();await Promise.all(pending);await Promise.resolve();
+ assert.equal(state.progress.sceneState.recordingComplete,true);assert.match(api.recorder(state.progress.sceneState),/s4RecordingContinue/);assert.equal(writes,2);
+ await api.sync({logSeen:true});const before=writes;
+ await api.cctv();for(let i=0;i<10;i++)timer();assert.equal(writes,before+1);
+ timer();await Promise.all(pending);await Promise.resolve();
+ assert.equal(state.progress.sceneState.cctvComplete,true);assert.equal(state.progress.sceneState.exitOpen,true);assert.equal(writes,before+2);
+ await api.sync({exitOpen:true});assert.equal(writes,before+2,'unchanged value is not sent again');
+});
+test('interrupted recording can replay, and failed completion rolls back for retry',async()=>{
+ let timer,failed=false;
+ const {api}=client(4,'record:startRecording,recorder:recorderMarkup,sync:sync',{setInterval:fn=>{timer=fn;return 1},clearInterval(){}});
+ const state={progress:{sceneState:{...playableScene4(),recordingStarted:true,recordingLine:0,recordingComplete:false}},player:{role:1}};
+ api.setup({state,toast(){},syncState:async next=>{if(next.recordingComplete&&!failed){failed=true;throw Error('network interruption')}return {status:'ok'}}});
+ assert.match(api.recorder(state.progress.sceneState),/기록 다시 재생/);
+ await api.record();for(let i=0;i<5;i++)timer();await new Promise(r=>setImmediate(r));
+ assert.equal(state.progress.sceneState.recordingComplete,false);assert.match(api.recorder(state.progress.sceneState),/기록 다시 재생/);
+ await api.record();for(let i=0;i<5;i++)timer();await new Promise(r=>setImmediate(r));
+ assert.equal(state.progress.sceneState.recordingComplete,true);
+});
+test('teacher removal revokes credentials, releases name/role, and preserves team progress and attempts',async()=>{
+ const {session,teacherKey}=await game.createStarEscapeSession('Removal test');
+ const p=await game.joinStarEscapeSession(session.code,'Wrong team','1',1);
+ const args=[session.code,p.player.id,p.playerKey];
+ await game.controlStarEscapeSession(session.code,teacherKey,{action:'start'});
+ await game.submitStarEscapeAnswer(...args,1,1,'5268');
+ const before=await game.getStarEscapeTeacherState(session.code,teacherKey);
+ assert.equal(before.teams[0].members[0].id,p.player.id);
+ const input={action:'remove_player',playerId:p.player.id};
+ assert.equal((await game.controlStarEscapeSession(session.code,p.playerKey,input)).status,'unauthorized');
+ const other=await game.createStarEscapeSession('Different class');
+ assert.equal((await game.controlStarEscapeSession(other.session.code,other.teacherKey,input)).removed,false);
+ assert.equal((await game.controlStarEscapeSession(session.code,teacherKey,input)).removed,true);
+ assert.equal(await game.getStarEscapeState(...args),null);
+ assert.equal((await game.submitStarEscapeAnswer(...args,1,2,'8642')).status,'unauthorized');
+ assert.equal((await game.controlStarEscapeSession(session.code,teacherKey,input)).removed,false);
+ const after=await game.getStarEscapeTeacherState(session.code,teacherKey);
+ assert.equal(after.players,0);assert.equal(after.teams[0].question,2);assert.equal(after.questionStats[0].attempts,1);
+ assert.equal((await game.joinStarEscapeSession(session.code,'Wrong team','2',1)).status,'joined');
+ assert.equal((await game.joinStarEscapeSession(session.code,'Replacement','1',1)).status,'joined');
 });

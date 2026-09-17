@@ -110,14 +110,18 @@
 
   async function syncScene(patch, redraw) {
     var base = JSON.parse(JSON.stringify(sceneState()));
+    if (Object.keys(patch).every(function (key) { return JSON.stringify(base[key]) === JSON.stringify(patch[key]); })) return;
     setLocalSceneState(patch);
+    var pendingState = ctx.state.progress.sceneState;
+    var pendingContext = ctx;
     if (redraw !== false) draw();
     try {
       var sync = ctx.sync || ctx.syncState;
       if (typeof sync !== 'function') throw new Error('모둠 동기화 기능을 찾을 수 없습니다.');
       await sync(Object.assign({}, ctx.state.progress.sceneState || {}), base);
     } catch (error) {
-      ctx.toast(error.message || '모둠 상태를 저장하지 못했습니다.', true);
+      if (ctx && ctx.state === pendingContext.state && ctx.state.progress.sceneState === pendingState) { ctx.state.progress.sceneState = base; draw(); }
+      pendingContext.toast(error.message || '모둠 상태를 저장하지 못했습니다.', true);
       throw error;
     }
   }
