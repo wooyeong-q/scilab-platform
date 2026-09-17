@@ -1127,12 +1127,17 @@
     introStep = Math.max(0, Math.min(intro.length, Number(stored('intro-step-v2') || 0)));
   }
 
+  var lastTeacherAdvance = null;
   function render(options) {
     ctx = options;
     var session = ctx.state.session || {};
     var player = ctx.state.player || {};
     var nextIdentity = [session.code || 'SOLO', player.team || '', player.id || '', session.startedAt || 'waiting'].join(':');
+    var progress = ctx.state.progress;
+    var forced = progress.lastActionStatus === 'teacher_advance' && lastTeacherAdvance !== progress.lastActionAt;
+    if (forced) { lastTeacherAdvance = progress.lastActionAt; identity = ''; }
     resetForIdentity(nextIdentity);
+    if (forced && Number(progress.question) > 1) introStep = intro.length;
     draw();
   }
 

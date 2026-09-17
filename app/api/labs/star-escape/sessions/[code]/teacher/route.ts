@@ -24,6 +24,7 @@ export async function POST(request: Request, { params }: Context) {
     const body = parsed && typeof parsed === 'object' && !Array.isArray(parsed) ? parsed as Record<string, unknown> : {};
     const result = await controlStarEscapeSession(code, request.headers.get('x-teacher-key') || '', body);
     if (result.status === 'unauthorized') return noStore({ error: '교사용 정보를 확인해 주세요.' }, { status: 403 });
+    if (result.status === 'stale') return noStore({ error: '모둠의 진행 상태가 바뀌었습니다. 현재 단계를 확인하고 다시 눌러 주세요.' }, { status: 409 });
     if (result.status === 'invalid') return noStore({ error: '관제 명령을 확인해 주세요.' }, { status: 400 });
     return noStore(result);
   } catch (error) {

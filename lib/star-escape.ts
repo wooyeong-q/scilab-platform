@@ -77,7 +77,7 @@ function mapSession(row: Record<string, unknown>): EscapeSession {
     code: String(row.code),
     title: String(row.title || ''),
     durationSeconds: Number(row.duration_seconds || 1800),
-    startedAt: row.started_at ? new Date(String(row.started_at)).toISOString() : null,
+    startedAt: row.started_at ? new Date(row.started_at as string).toISOString() : null,
     expiresAt: new Date(String(row.expires_at)).toISOString(),
   };
 }
@@ -618,6 +618,26 @@ export async function getStarEscapeTeacherState(code: string, teacherKey: string
   };
 }
 
+// A teacher skip reconstructs the prerequisites of the destination puzzle.
+function teacherAdvanceState(stage: number, question: number) {
+  if (stage === 3) return normalizeScene03State({
+    p1Slots: question >= 2 ? ['1','2','3','4','5','6'] : ['','','','','',''], p1Complete: question >= 2,
+    dataSent: question >= 3, q2Selected: question >= 3 ? 'A' : '', q2Complete: question >= 3,
+    p3Positions: question >= 4 ? { A:50, B:50, C:50, D:50 } : { A:22, B:37, C:82, D:68 },
+    p3ResultConfirmed: question >= 4, referenceCard: question >= 4 ? 'C' : '', q3Complete: question >= 4,
+    p4Slots: ['','',''],
+  });
+  if (stage === 4) return normalizeScene04State({
+    patternA: question >= 2, filmB: question >= 2, overlayComplete: question >= 2,
+    lensAcquired: question >= 3, photosRestored: { A:question >= 3, B:question >= 3, C:question >= 3 },
+    nebulaSlots: question >= 3 ? ['emission','reflection','dark'] : ['','',''],
+    nebulaComplete: question >= 3, lockerActive: question >= 3, dataSent: question >= 4,
+    clusterSlots: question >= 4 ? ['open','globular'] : ['',''], clusterComplete: question >= 4,
+    handleUnlocked: question >= 4, finalSlots: ['','','','',''],
+  });
+  return {};
+}
+
 export async function controlStarEscapeSession(code: string, teacherKey: string, input: Record<string, unknown>) {
   await ensureStarEscapeDatabase();
   const verified = await verifiedTeacher(code, teacherKey);
@@ -625,9 +645,29 @@ export async function controlStarEscapeSession(code: string, teacherKey: string,
   const db = database();
   const sessionId = String(verified.id);
   const action = String(input.action || '');
+  if (action === 'advance') {
+    const team = normalizeTeam(input.team);
+    const stage = Number(input.stage), question = Number(input.question);
+    if (!team || !Number.isInteger(stage) || !Number.isInteger(question) || !questionConfig(stage, question)
+      || typeof input.startedAt !== 'string' || !Number.isFinite(Date.parse(input.startedAt))) return { status: 'invalid' as const };
+    // Match the exact state the teacher confirmed: duplicate clicks cannot skip twice.
+    const last = question === STAGE_QUESTION_COUNTS[stage - 1];
+    const nextStage = last ? stage + 1 : stage, nextQuestion = last ? 1 : question + 1;
+    const scene = JSON.stringify(teacherAdvanceState(nextStage, nextQuestion));
+    const rows = await db`UPDATE star_escape_team_progress SET stage=${nextStage}, question_no=${nextQuestion},
+      scene_state=${scene}::jsonb, question_started_at=NOW(),
+      stage_started_at=CASE WHEN ${last} THEN NOW() ELSE stage_started_at END,
+      completed_at=CASE WHEN ${nextStage}=5 THEN NOW() ELSE completed_at END,
+      last_submitter='교사', last_action_status='teacher_advance', last_action_at=NOW(), updated_at=NOW()
+      WHERE session_id=${sessionId} AND team_name=${team} AND stage=${stage} AND question_no=${question} AND completed_at IS NULL
+        AND EXISTS (SELECT 1 FROM star_escape_sessions s WHERE s.id=${sessionId} AND date_trunc('milliseconds', s.started_at)=${input.startedAt}::timestamptz)
+      RETURNING stage, question_no`;
+    return rows[0] ? { status: 'advanced' as const, team, stage: nextStage, question: nextQuestion, completed: nextStage === 5 }
+      : { status: 'stale' as const };
+  }
   if (action === 'start') {
     const rows = await db`UPDATE star_escape_sessions SET started_at=COALESCE(started_at, NOW()) WHERE id=${sessionId} RETURNING started_at`;
-    const startedAt = new Date(String(rows[0]?.started_at || new Date().toISOString())).toISOString();
+    const startedAt = new Date((rows[0]?.started_at || new Date().toISOString()) as string).toISOString();
     await db`UPDATE star_escape_team_progress SET stage_started_at=COALESCE(stage_started_at, ${startedAt}),
       question_started_at=COALESCE(question_started_at, ${startedAt}), updated_at=NOW() WHERE session_id=${sessionId}`;
     return { status: 'started' as const, startedAt };
@@ -650,7 +690,7 @@ export async function controlStarEscapeSession(code: string, teacherKey: string,
     const rows = await db`UPDATE star_escape_sessions SET started_at=NOW(), duration_seconds=1800
       WHERE id=${sessionId} RETURNING started_at`;
     if (!rows[0]) return { status: 'invalid' as const };
-    const startedAt = new Date(String(rows[0].started_at)).toISOString();
+    const startedAt = new Date(rows[0].started_at as string).toISOString();
     await db`DELETE FROM star_escape_attempts WHERE session_id=${sessionId}`;
     await db`DELETE FROM star_escape_hints WHERE session_id=${sessionId}`;
     await db`UPDATE star_escape_team_progress SET stage=1, question_no=1,

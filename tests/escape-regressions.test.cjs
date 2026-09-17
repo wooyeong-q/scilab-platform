@@ -85,3 +85,34 @@ test('distance dragging snaps to 10pc with an off-center grab on a narrow surfac
  handlers.pointermove({clientX:end.x*3.2+8,clientY:end.y*1.8-5});
  await handlers.pointerup();assert.equal(state.progress.sceneState.p3Positions.A,50);assert.equal(saves,1);
 });
+test('teacher advance: authorized, one step only, isolated to selected team, all prerequisite states',async()=>{
+ const {session,teacherKey}=await game.createStarEscapeSession('Teacher rescue');
+ const p=await game.joinStarEscapeSession(session.code,'Rescued','1',1);
+ const peer=await game.joinStarEscapeSession(session.code,'Unaffected','2',1);
+ const started=await game.controlStarEscapeSession(session.code,teacherKey,{action:'start'});
+ const counts=[3,3,4,4];
+ for(let stage=1;stage<=4;stage++)for(let question=1;question<=counts[stage-1];question++){
+  const input={action:'advance',team:'1',stage,question,startedAt:started.startedAt};
+  assert.equal((await game.controlStarEscapeSession(session.code,p.playerKey,input)).status,'unauthorized');
+  assert.equal((await game.controlStarEscapeSession(session.code,teacherKey,{...input,startedAt:new Date(0).toISOString()})).status,'stale');
+  const results=await Promise.all([game.controlStarEscapeSession(session.code,teacherKey,input),game.controlStarEscapeSession(session.code,teacherKey,input)]);
+  assert.deepEqual(results.map(r=>r.status).sort(),['advanced','stale']);
+  const state=(await game.getStarEscapeState(session.code,p.player.id,p.playerKey)).progress;
+  assert.equal(state.lastActionStatus,'teacher_advance');
+  if(state.stage===3){
+   if(state.question>=2)assert.equal(state.sceneState.p1Complete,true);
+   if(state.question>=3)assert.equal(state.sceneState.q2Complete,true);
+   if(state.question>=4)assert.equal(state.sceneState.q3Complete,true);
+  }
+  if(state.stage===4){
+   if(state.question>=2)assert.equal(state.sceneState.overlayComplete,true);
+   if(state.question>=3)assert.equal(state.sceneState.nebulaComplete,true);
+   if(state.question>=4)assert.equal(state.sceneState.handleUnlocked,true);
+  }
+ }
+ const untouched=await game.getStarEscapeState(session.code,peer.player.id,peer.playerKey);
+ assert.equal(untouched.progress.stage,1);assert.equal(untouched.progress.question,1);
+ assert.ok((await game.getStarEscapeState(session.code,p.player.id,p.playerKey)).progress.completedAt);
+ const teacher=await game.getStarEscapeTeacherState(session.code,teacherKey);
+ assert.ok(teacher.questionStats.every(q=>q.attempts===0));
+});
