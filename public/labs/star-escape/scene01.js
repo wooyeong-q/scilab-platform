@@ -71,10 +71,10 @@
       { id: 'warning', mode: 'hold', title: '경고등 점멸 기록', intro: '붉은 경고등 옆의 보조 기록기가 짧은 신호를 반복하고 있다. 신호를 끝까지 수신해야 기록이 열린다.', action: '점멸 신호 수신', text: '신호 수신이 끝나자 붉은빛 별 사진과 ‘관측 표본 D’가 표시된다. 모서리에 복구 숫자 8이 선명하게 나타난다.', image: 'stars/star_observation_red.webp' },
     ],
     2: [
-      { id: 'door', mode: 'press', title: '중앙 통로의 자석 태그', intro: '잠긴 중앙 통로 옆에 작은 자석 태그가 거꾸로 붙어 있다. 앞면에는 아무것도 없지만 뒤쪽에 기록이 있는 듯하다.', action: '자석 태그 뒤집기', text: '태그를 뒤집자 “R3의 별은 R4의 별보다 표면 온도가 높다.”라는 문장이 나타난다.', image: 'memos/memo_fragment_01.webp' },
+      { id: 'door', mode: 'press', title: '중앙 통로의 자석 태그', intro: '잠긴 중앙 통로 옆에 작은 자석 태그가 거꾸로 붙어 있다. 앞면에는 아무것도 없지만 뒤쪽에 기록이 있는 듯하다.', action: '자석 태그 뒤집기', text: '태그를 뒤집자 “R3의 별은 네 별 중 표면 온도가 가장 높다.”라는 문장이 나타난다.', image: 'memos/memo_fragment_01.webp' },
       { id: 'terminal', mode: 'instant', title: '복구 단말의 자동 백업', intro: '', action: '', text: '복구 단말이 전력을 되찾으며 백업 문장을 자동으로 띄운다. “R1는 네 별 중 표면 온도가 가장 높은 별이 아니다.”', image: 'memos/memo_fragment_02.webp' },
       { id: 'communicator', mode: 'hold', title: '통신기의 R4 음성 기록', intro: '통신기 수신함에 R4가 남긴 짧은 음성 기록이 있다. 잡음이 많아 끝까지 수신해야 한다.', action: '음성 기록 수신', text: '음성 기록이 재생된다. “R4에서 관측한 별은 노란색이다.”', image: 'memos/memo_fragment_03.webp' },
-      { id: 'trash', mode: 'unfold', title: '우주식량 포장지 안쪽', intro: '구겨진 포장지 안쪽에 누군가 급히 적은 문장이 비친다. 포장지를 펴면 읽을 수 있을 것 같다.', action: '포장지 펼치기', text: '포장지를 펼치자 “R2의 별은 R1의 별보다 표면 온도가 낮다.”라는 문장이 온전히 보인다.', image: 'memos/memo_fragment_04.webp' },
+      { id: 'trash', mode: 'unfold', title: '우주식량 포장지 안쪽', intro: '구겨진 포장지 안쪽에 누군가 급히 적은 문장이 비친다. 포장지를 펴면 읽을 수 있을 것 같다.', action: '포장지 펼치기', text: '포장지를 펼치자 “R2의 별은 네 별 중 표면 온도가 가장 낮다.”라는 문장이 온전히 보인다.', image: 'memos/memo_fragment_04.webp' },
     ],
     3: [
       { id: 'storage', mode: 'press', title: '열린 수납함의 검증 카드 C2', intro: '방금 열린 수납함 안쪽에 C2 카드가 자석으로 고정되어 있다.', action: 'C2 카드 꺼내기', text: 'C2는 푸른색 별이며 “네 표본 중 표면 온도가 가장 높다.”라고 기록되어 있다.', image: 'stars/star_observation_blue.webp' },
@@ -364,7 +364,7 @@
       return '<path class="s1-wire-shadow" data-wire-path="' + role + '"></path><path class="s1-wire-line" data-wire-path="' + role + '" style="--wire:' + color.wire + '"></path>';
     }).join('');
     var connectedCount = Object.keys(wireMapping).length;
-    return '<div class="s1-wire-panel"><div class="s1-wire-guide"><small>RESTORE WIRING</small><b>대원별 관측 전선 연결</b><p>위쪽 R 단자에서 아래쪽 별 단자로 전선을 끌거나, 두 단자를 차례로 선택하세요.</p><div class="s1-wire-actions"><button type="button" id="s1WireReset" ' + (connectedCount ? '' : 'disabled') + '>초기화</button><span>' + connectedCount + ' / 4 연결</span></div></div>' +
+    return '<div class="s1-wire-panel"><div class="s1-wire-guide"><small>RESTORE WIRING</small><b>대원별 관측 전선 연결</b><p>① 단서에서 가장 뜨거운 별·가장 차가운 별·노란 별의 대원을 찾으세요. ② 남은 대원은 남은 별에 연결하세요.<br><strong>온도 높은 순서: 푸른색 → 흰색 → 노란색 → 붉은색</strong><br>위쪽 R 단자와 아래쪽 별을 차례로 누르면 연결됩니다.</p><div class="s1-wire-actions"><button type="button" id="s1WireReset" ' + (connectedCount ? '' : 'disabled') + '>초기화</button><span>' + connectedCount + ' / 4 연결</span></div></div>' +
       '<div class="s1-wire-board"><div class="s1-wire-bank roles">' + roleButtons + '</div><svg class="s1-wire-canvas" aria-hidden="true">' + lines + '<path class="s1-wire-preview" id="s1WirePreview"></path></svg><div class="s1-wire-bank colors">' + colorButtons + '</div></div></div>';
   }
 
