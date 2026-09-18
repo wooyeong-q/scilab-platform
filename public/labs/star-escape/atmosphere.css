@@ -56,3 +56,44 @@
 @keyframes atmosphereRadioNoise{0%{transform:translate(-8px,3px) scale(1.03)}50%{transform:translate(7px,-4px) scale(1.02)}100%{transform:translate(-2px,6px) scale(1.04)}}
 @media(max-width:600px){.scene-atmosphere-note{top:8%;max-width:82%;padding:6px 9px}.scene-atmosphere-glitch{right:3%;top:15%;width:54%;padding:6px 8px}.scene-atmosphere-silhouette.s2-crouched{left:77.6%;top:67.7%;width:13.6%;height:15.6%}.scene-atmosphere-silhouette.s1-storage-lean{right:-1%;top:17%;width:21%;height:70%}.scene-atmosphere-silhouette.s2-door-edge{left:38%;top:15%;width:27%;height:59%}.scene-atmosphere-silhouette.s3-desk-peek{left:7.5%;top:50%;width:19.5%;height:18%}.s1-puzzle,.s2-puzzle,.s3-puzzle{background:rgba(5,7,16,.86)!important}}
 @media(prefers-reduced-motion:reduce){.scene-atmosphere-noise{animation:none}.scene-atmosphere-flicker.show,.scene-atmosphere-panel-pulse.show,.scene-atmosphere-silhouette.show,.scene-atmosphere-glitch.show,.scene-atmosphere-tear.show{animation:none;opacity:0}.scene-atmosphere-note.show{animation:none;opacity:.84;transform:translate(-50%,0)}}
+
+/* Keep the current task readable in all four rooms without covering puzzles. */
+.s1-objective,.s2-objective,.s3-objective,.s4-objective{
+  display:block;
+  box-sizing:border-box;
+  max-width:48%;
+  padding:10px 13px;
+  border:2px solid #ffd66e;
+  border-left:5px solid #ffd66e;
+  border-radius:10px;
+  background:#171407f5;
+  color:#fff8df;
+  font-size:clamp(12px,1.25vw,16px);
+  font-weight:800;
+  line-height:1.5;
+  text-align:left;
+  word-break:keep-all;
+  overflow-wrap:anywhere;
+  box-shadow:0 0 0 2px #ffd66e18,0 5px 18px #0009;
+  animation:escapeObjectiveNotice 1.4s ease-out 2;
+}
+.s1-objective::before,.s2-objective::before,.s3-objective::before,.s4-objective::before{
+  content:'▶';
+  color:#ffd66e;
+  margin-right:6px;
+}
+.s1-objective b,.s2-objective b,.s3-objective b,.s4-objective b{color:#ffe393}
+.s4-objective b{margin-right:6px}
+@keyframes escapeObjectiveNotice{
+  0%,100%{box-shadow:0 0 0 2px #ffd66e18,0 5px 18px #0009}
+  45%{box-shadow:0 0 0 4px #ffd66e55,0 0 20px #ffd66e38}
+}
+@media(max-width:600px),(max-height:500px){
+  .s1-objective,.s2-objective,.s3-objective,.s4-objective{
+    max-width:48%;padding:6px 8px;border-left-width:4px;
+    font-size:11px;line-height:1.4;
+  }
+}
+@media(prefers-reduced-motion:reduce){
+  .s1-objective,.s2-objective,.s3-objective,.s4-objective{animation:none}
+}
