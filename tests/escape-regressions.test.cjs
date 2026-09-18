@@ -16,6 +16,25 @@ async function setup(stage,question){
  return {args:[session.code,p.player.id,p.playerKey],other:[session.code,other.player.id,other.playerKey]};
 }
 const s3=()=>({p1Slots:['1','2','3','4','5','6'],p1Complete:true,dataSent:true,q2Selected:'A',q2Complete:true,p3Positions:{A:22,B:37,C:82,D:68},p3Aligned:false,p3ResultConfirmed:false,referenceCard:'',q3Complete:false,p4Slots:['','',''],p4Complete:false,maintenanceOpen:false,maintenanceDialogue:-1,recordingStarted:false,recordingLine:0,recordingComplete:false});
+test('state reads throttle heartbeat writes while keeping fresh teammates online',async()=>{
+ const {args,other}=await setup(1,1);
+ const heartbeat=async id=>(await h.pg.query('SELECT last_seen_at FROM star_escape_players WHERE id=$1',[id])).rows[0].last_seen_at;
+ const original=await heartbeat(args[1]);
+ for(let i=0;i<3;i++){
+  const state=await game.getStarEscapeState(...args);
+  assert.equal(state.members.find(m=>m.id===args[1]).online,true);
+ }
+ assert.deepEqual(await heartbeat(args[1]),original,'frequent polls do not rewrite presence');
+ await h.pg.query("UPDATE star_escape_players SET last_seen_at=NOW()-INTERVAL '20 seconds' WHERE id=ANY($1)",[[args[1],other[1]]]);
+ const stale=await heartbeat(args[1]);
+ const state=await game.getStarEscapeState(...args);
+ assert.notDeepEqual(await heartbeat(args[1]),stale,'heartbeat refreshes when due');
+ assert.ok(state.members.every(m=>m.online),'throttled peer heartbeat still counts as online');
+ await h.pg.query("UPDATE star_escape_players SET last_seen_at=NOW()-INTERVAL '50 seconds' WHERE id=$1",[other[1]]);
+ const later=await game.getStarEscapeState(...args);
+ assert.equal(later.members.find(m=>m.id===other[1]).online,false);
+ assert.equal(await game.getStarEscapeState(args[0],args[1],'wrong-key'),null);
+});
 test('independent simultaneous star moves survive and all four align',async()=>{
  const {args,other}=await setup(3,3);let base=s3();
  assert.equal((await game.updateStarEscapeSceneState(...args,3,3,base,base)).status,'ok');

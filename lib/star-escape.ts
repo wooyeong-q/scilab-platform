@@ -4,6 +4,8 @@ import { sql } from './db';
 const SESSION_DAYS = 14;
 const MAX_PLAYERS = 45;
 const MAX_TEAMS = 12;
+const HEARTBEAT_SECONDS = 15;
+const ONLINE_WINDOW_MS = 45000;
 const CODE_ALPHABET = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
 const STAGE_QUESTION_COUNTS = [3, 3, 4, 4] as const;
 const QUESTIONS = [
@@ -212,12 +214,13 @@ export async function getStarEscapeState(code: string, playerId: string, playerK
   // RETURNING preserves the current player's heartbeat within the same SQL snapshot.
   const snapshotRows = await db`WITH heartbeat AS (
       UPDATE star_escape_players SET last_seen_at=NOW() WHERE id=${playerId}
+        AND last_seen_at < NOW() - ${HEARTBEAT_SECONDS} * INTERVAL '1 second'
       RETURNING last_seen_at
     )
     SELECT row_to_json(s) AS session, row_to_json(p) AS progress,
       (SELECT COALESCE(json_agg(m ORDER BY m.role_no), '[]'::json) FROM (
         SELECT id, nickname, role_no,
-          CASE WHEN id=${playerId} THEN (SELECT last_seen_at FROM heartbeat) ELSE last_seen_at END AS last_seen_at
+          CASE WHEN id=${playerId} THEN COALESCE((SELECT last_seen_at FROM heartbeat), last_seen_at) ELSE last_seen_at END AS last_seen_at
         FROM star_escape_players WHERE session_id=${sessionId} AND team_name=${team}
       ) m) AS members,
       (SELECT COALESCE(json_agg(l ORDER BY (l.completed_at IS NOT NULL) DESC, l.stage DESC,
@@ -259,7 +262,7 @@ export async function getStarEscapeState(code: string, playerId: string, playerK
       lastActionAt: progress.last_action_at ? new Date(String(progress.last_action_at)).toISOString() : null,
       sceneState: progress.scene_state && typeof progress.scene_state === 'object' ? progress.scene_state : {},
     },
-    members: memberRows.map((row) => ({ id: String(row.id), nickname: String(row.nickname), role: Number(row.role_no), online: Date.now() - new Date(String(row.last_seen_at)).getTime() < 15000 })),
+    members: memberRows.map((row) => ({ id: String(row.id), nickname: String(row.nickname), role: Number(row.role_no), online: Date.now() - new Date(String(row.last_seen_at)).getTime() < ONLINE_WINDOW_MS })),
     leaderboard: leaderboardFromRows(leaderboardRows as Record<string, unknown>[]),
     teacherHints: hintRows.map((row) => ({ id: String(row.id), team: row.team_name ? String(row.team_name) : null, stage: Number(row.stage), question: Number(row.question_no || 1), message: String(row.message), createdAt: new Date(String(row.created_at)).toISOString() })).reverse(),
   };
@@ -588,7 +591,7 @@ export async function getStarEscapeTeacherState(code: string, teacherKey: string
   playerRows.forEach((row) => {
     const team = String(row.team_name);
     const list = members.get(team) || [];
-    list.push({ id: String(row.id), nickname: String(row.nickname), role: Number(row.role_no), online: Date.now() - new Date(String(row.last_seen_at)).getTime() < 15000 });
+    list.push({ id: String(row.id), nickname: String(row.nickname), role: Number(row.role_no), online: Date.now() - new Date(String(row.last_seen_at)).getTime() < ONLINE_WINDOW_MS });
     members.set(team, list);
   });
   const leaderboard = leaderboardFromRows(teamRows as Record<string, unknown>[]);
@@ -596,7 +599,7 @@ export async function getStarEscapeTeacherState(code: string, teacherKey: string
     session,
     serverTime: new Date().toISOString(),
     players: playerRows.length,
-    activePlayers: playerRows.filter((row) => Date.now() - new Date(String(row.last_seen_at)).getTime() < 15000).length,
+    activePlayers: playerRows.filter((row) => Date.now() - new Date(String(row.last_seen_at)).getTime() < ONLINE_WINDOW_MS).length,
     teams: leaderboard.map((team) => ({ ...team, penaltySeconds: Number((teamRows[team.rank - 1] as Record<string, unknown>).penalty_seconds || 0), members: members.get(team.team) || [] })),
     questionStats: QUESTIONS.flatMap((questions, stageIndex) => questions.map((question, questionIndex) => {
       const stage = stageIndex + 1;
