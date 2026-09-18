@@ -590,15 +590,24 @@
   }
 
   function beginTransmission() {
-    if (transmissionTimer || sceneState().dataSent) return;
+    if (transmitting || transmissionTimer || sceneState().dataSent) return;
+    var startedIdentity = identity;
     transmitting = true;
     draw();
     transmissionTimer = setTimeout(async function () {
       transmissionTimer = 0;
-      await syncScene({ dataSent: true });
-      transmitting = false;
-      ensurePersonalClues(sceneState());
-      draw();
+      if (identity !== startedIdentity || !ctx || ctx.state.progress.stage !== 3 || question() !== 2) { transmitting = false; return; }
+      try {
+        await syncScene({ dataSent: true });
+        if (identity === startedIdentity && ctx && ctx.state.progress.stage === 3 && question() === 2) ensurePersonalClues(sceneState());
+      } catch (error) {
+        // syncScene restores the last saved state and reports the error.
+      } finally {
+        if (identity === startedIdentity) {
+          transmitting = false;
+          draw();
+        }
+      }
     }, 1000);
   }
 
@@ -611,7 +620,12 @@
     await syncScene({ q2Selected: value });
     if (value !== 'A') {
       setFeedback('전송된 관측 자료와 등급 기준을 다시 확인하세요.', true);
-      setTimeout(function () { syncScene({ q2Selected: '' }); }, 700);
+      var selectedIdentity = identity;
+      setTimeout(function () {
+        if (identity === selectedIdentity && question() === 2 && sceneState().q2Selected === value && !sceneState().q2Complete) {
+          syncScene({ q2Selected: '' }).catch(function () {});
+        }
+      }, 700);
       return;
     }
     var button = document.querySelector('[data-s3-draggable="q2"][data-value="A"]') || document.getElementById('s3AnalysisSlot');

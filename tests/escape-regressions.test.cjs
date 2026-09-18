@@ -170,3 +170,21 @@ test('teacher removal revokes credentials, releases name/role, and preserves tea
  assert.equal((await game.joinStarEscapeSession(session.code,'Wrong team','2',1)).status,'joined');
  assert.equal((await game.joinStarEscapeSession(session.code,'Replacement','1',1)).status,'joined');
 });
+
+test('scene 3 failed personal-data transmission unlocks retry and avoids duplicate saves',async()=>{
+ let callback;let saves=0;let fail=true;
+ const {api}=client(3,'beginTransmission:beginTransmission,isTransmitting:function(){return transmitting}',{setTimeout:fn=>{callback=fn;return 1}});
+ const state={session:{code:'TEST'},player:{role:1},progress:{stage:3,question:2,sceneState:{...s3(),dataSent:false}}};
+ api.setup({state,toast(){},syncState:async()=>{saves++;if(fail)throw Error('offline')}});
+ api.beginTransmission();api.beginTransmission();assert.equal(api.isTransmitting(),true);
+ await callback();assert.equal(api.isTransmitting(),false);assert.equal(state.progress.sceneState.dataSent,false);assert.equal(saves,1);
+ fail=false;api.beginTransmission();await callback();assert.equal(api.isTransmitting(),false);assert.equal(state.progress.sceneState.dataSent,true);assert.equal(saves,2);
+});
+test('delayed wrong-card reset never erases a newer correct selection',async()=>{
+ let callback;
+ const {api}=client(3,'placeQ2:placeQ2',{setTimeout:fn=>{callback=fn;return 1}});
+ const state={progress:{stage:3,question:2,sceneState:s3()}};
+ api.setup({state,toast(){},syncState:async()=>({status:'ok'})});
+ await api.placeQ2('B','slot');state.progress.sceneState.q2Selected='A';state.progress.sceneState.q2Complete=true;
+ await callback();assert.equal(state.progress.sceneState.q2Selected,'A');
+});
