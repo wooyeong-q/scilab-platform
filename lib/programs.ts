@@ -1,3 +1,4 @@
+import atomExplorer from '../public/labs/atom-explorer/program.json';
 import type { ProgramAsset } from './program-assets';
 
 export type Program = {
@@ -27,4 +28,4 @@ export type Program = {
   likeCount?: number;
 };
 
-export const programs: Program[] = [];
+export const programs: Program[] = [atomExplorer];

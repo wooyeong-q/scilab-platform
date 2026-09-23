@@ -33,9 +33,10 @@ async function harness() {
   function load(file) {
     file = path.resolve(root, file);
     if (!path.extname(file)) file += '.ts';
+    if (file.endsWith('.json')) return JSON.parse(fs.readFileSync(file, 'utf8'));
     if (modules.has(file)) return modules.get(file).exports;
     const mod = { exports: {} }; modules.set(file, mod);
-    const compiled = ts.transpileModule(fs.readFileSync(file, 'utf8'), { compilerOptions: { module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2022 } }).outputText;
+    const compiled = ts.transpileModule(fs.readFileSync(file, 'utf8'), { compilerOptions: { module: ts.ModuleKind.CommonJS, esModuleInterop: true, target: ts.ScriptTarget.ES2022 } }).outputText;
     const localRequire = name => mocks[name] || (name.startsWith('@/') ? load(name.slice(2)) : name.startsWith('.') ? load(path.resolve(path.dirname(file), name)) : require(name));
     new Function('require', 'module', 'exports', compiled)(localRequire, mod, mod.exports);
     return mod.exports;
