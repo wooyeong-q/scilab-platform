@@ -447,7 +447,7 @@ export default function SeatArrangementPage(){
 
         <section className="right">
           <div className="classroom card printArea">
-            <div className="printTitle"><strong>자리 배치표</strong><span>{new Date().toLocaleDateString('ko-KR')} · 칠판 쪽이 위</span></div>
+            <div className="printTitle"><strong>자리 배치표</strong><span>{new Date().toLocaleDateString('ko-KR')} · 교탁에서 본 방향</span></div>
 
             <div className="assignmentBar noPrint">
               <div className="assignmentCopy">
@@ -490,7 +490,7 @@ export default function SeatArrangementPage(){
                 <div className="printTeacherDesk">교 탁</div>
                 {seats.map((s,i)=>s.active?<div key={i} className="printSeat" style={{
                   left:`${(s.x/safeStageWidth)*100}%`,
-                  top:`${(s.y/STAGE_H)*100}%`,
+                  top:`${((STAGE_H-s.y-SEAT_H)/STAGE_H)*100}%`,
                   width:`${(SEAT_W/safeStageWidth)*100}%`,
                   height:`${(SEAT_H/STAGE_H)*100}%`
                 }}>
@@ -613,13 +613,13 @@ export default function SeatArrangementPage(){
         .seatPage{padding:0!important;background:white!important;min-height:0!important}
         .work{display:block!important;width:auto!important;max-width:none!important;margin:0!important}
         .right{display:block!important}
-        .classroom{width:245mm!important;margin:0 auto!important;border:0!important;box-shadow:none!important;padding:0!important;break-inside:avoid-page;page-break-inside:avoid}
-        .printTitle{display:flex!important;justify-content:space-between;align-items:end;border-bottom:1.5px solid #222;padding-bottom:2.5mm;margin-bottom:3mm}
+        .classroom{width:245mm!important;margin:0 auto!important;border:0!important;box-shadow:none!important;padding:0!important;break-inside:avoid-page;page-break-inside:avoid;display:flex!important;flex-direction:column!important}
+        .printTitle{display:flex!important;order:0;justify-content:space-between;align-items:end;border-bottom:1.5px solid #222;padding-bottom:2.5mm;margin-bottom:3mm}
         .printTitle strong{font-size:18pt}.printTitle span{font-size:8.5pt}
-        .board{width:125mm!important;margin:0 auto 3mm!important;padding:2.2mm 0!important;background:#222!important;color:white!important;font-size:15pt!important;-webkit-print-color-adjust:exact;print-color-adjust:exact}
-        .printStageWrap{width:245mm!important;margin:0 auto!important}
+        .board{order:2;width:125mm!important;margin:3mm auto 0!important;padding:2.2mm 0!important;background:#222!important;color:white!important;font-size:15pt!important;-webkit-print-color-adjust:exact;print-color-adjust:exact}
+        .printStageWrap{order:1;width:245mm!important;margin:0 auto!important}
         .printStage{position:relative;width:100%!important;border:1px solid #444!important;background:white!important;overflow:hidden!important;border-radius:2mm!important}
-        .printTeacherDesk{position:absolute;left:50%;top:2.15%;transform:translateX(-50%);padding:1.5mm 5mm;border:1.2px solid #555;border-radius:1.5mm;background:white;font-size:15pt;font-weight:900;z-index:2}
+        .printTeacherDesk{position:absolute;left:50%;bottom:2.15%;transform:translateX(-50%);padding:1.5mm 5mm;border:1.2px solid #555;border-radius:1.5mm;background:white;font-size:15pt;font-weight:900;z-index:2}
         .printSeat{position:absolute;border:1px solid #444;background:white;display:flex;align-items:center;justify-content:center;text-align:center;box-sizing:border-box;border-radius:1.6mm;-webkit-print-color-adjust:exact;print-color-adjust:exact}
         .printSeat strong{font-size:40pt;font-weight:900;line-height:1;white-space:nowrap;transform:scaleX(.6);transform-origin:center}.printSeatNo{position:absolute;left:1.2mm;top:.8mm;font-size:14pt;font-weight:800;color:#555}
       }
