@@ -489,7 +489,7 @@ export default function SeatArrangementPage(){
               <div className="printStage" style={{aspectRatio:`${safeStageWidth} / ${STAGE_H}`}}>
                 <div className="printTeacherDesk">교 탁</div>
                 {seats.map((s,i)=>s.active?<div key={i} className="printSeat" style={{
-                  left:`${(s.x/safeStageWidth)*100}%`,
+                  left:`${((safeStageWidth-s.x-SEAT_W)/safeStageWidth)*100}%`,
                   top:`${((STAGE_H-s.y-SEAT_H)/STAGE_H)*100}%`,
                   width:`${(SEAT_W/safeStageWidth)*100}%`,
                   height:`${(SEAT_H/STAGE_H)*100}%`
