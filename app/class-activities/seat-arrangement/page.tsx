@@ -616,12 +616,12 @@ export default function SeatArrangementPage(){
         .classroom{width:245mm!important;margin:0 auto!important;border:0!important;box-shadow:none!important;padding:0!important;break-inside:avoid-page;page-break-inside:avoid}
         .printTitle{display:flex!important;justify-content:space-between;align-items:end;border-bottom:1.5px solid #222;padding-bottom:2.5mm;margin-bottom:3mm}
         .printTitle strong{font-size:18pt}.printTitle span{font-size:8.5pt}
-        .board{width:125mm!important;margin:0 auto 3mm!important;padding:2.2mm 0!important;background:#222!important;color:white!important;-webkit-print-color-adjust:exact;print-color-adjust:exact}
+        .board{width:125mm!important;margin:0 auto 3mm!important;padding:2.2mm 0!important;background:#222!important;color:white!important;font-size:15pt!important;-webkit-print-color-adjust:exact;print-color-adjust:exact}
         .printStageWrap{width:245mm!important;margin:0 auto!important}
         .printStage{position:relative;width:100%!important;border:1px solid #444!important;background:white!important;overflow:hidden!important;border-radius:2mm!important}
-        .printTeacherDesk{position:absolute;left:50%;top:2.15%;transform:translateX(-50%);padding:1.3mm 4mm;border:1.2px solid #555;border-radius:1.5mm;background:white;font-size:8pt;font-weight:900;z-index:2}
+        .printTeacherDesk{position:absolute;left:50%;top:2.15%;transform:translateX(-50%);padding:1.5mm 5mm;border:1.2px solid #555;border-radius:1.5mm;background:white;font-size:15pt;font-weight:900;z-index:2}
         .printSeat{position:absolute;border:1px solid #444;background:white;display:flex;align-items:center;justify-content:center;text-align:center;box-sizing:border-box;border-radius:1.6mm;-webkit-print-color-adjust:exact;print-color-adjust:exact}
-        .printSeat strong{font-size:8.5pt}.printSeatNo{position:absolute;left:1.1mm;top:.8mm;font-size:6pt;color:#555}
+        .printSeat strong{font-size:40pt;font-weight:900;line-height:1;white-space:nowrap;transform:scaleX(.6);transform-origin:center}.printSeatNo{position:absolute;left:1.2mm;top:.8mm;font-size:14pt;font-weight:800;color:#555}
       }
     `}</style>
   </>;
