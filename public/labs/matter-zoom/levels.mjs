@@ -8,7 +8,7 @@ export const MODE_INFO = {
     title: '중학교 · 물질의 구성',
     description: '중학교 2학년을 기준으로 물질을 확대하며 원자·분자·원소, 원자 구조와 전하를 알아봅니다.',
     focus: ['원자·분자·원소 구별', '양성자·중성자·전자', '원자 번호와 중성', '전자 하나의 이동과 이온'],
-    extension: '원자번호 1~20의 단순한 전자배치는 관찰을 돕는 확장 활동입니다. 중성자 수 암기, 질량수와 동위원소 계산은 기본 평가에 넣지 않습니다.',
+    extension: '원자번호 1~20의 단순한 전자배치는 선택 탐험입니다. 종합 탐험에서는 전자배치를 선택한 경우에만 배치도 평가합니다. 중성자 수 암기, 질량수와 동위원소 계산은 기본 평가에 넣지 않습니다.',
     modelNote: '원자 내부와 전자배치는 이해를 돕는 모형입니다. 확대한다고 분자의 결합이 끊어지는 것은 아닙니다.'
   },
   high: {
@@ -43,14 +43,14 @@ const mission = (id, z, n, e, shells, title, scope = 'basic') => ({
 export const MISSIONS = {
   middle: [
     mission('middle-f', 9, 10, 9, [2, 7], '처음 보는 중성 원자를 분석해 봅시다.'),
-    mission('middle-mg', 12, 12, 12, [2, 8, 2], '원자 번호와 전자배치를 연결해 봅시다.'),
+    mission('middle-mg', 12, 12, 12, [2, 8, 2], '입자 수를 읽어 원소와 전하를 판단해 봅시다.'),
     mission('middle-na-ion', 11, 12, 10, [2, 8], '이온 탐구 후: 전자 하나를 잃으면 무엇이 달라질까요?', 'ion-application')
   ],
   high: [
-    mission('high-c12', 6, 6, 6, [2, 4], '화학 추가 탐구: 탄소-12의 원자 구조를 분석해 봅시다.', 'chemistry-extension'),
-    mission('high-c13', 6, 7, 6, [2, 4], '화학 추가 탐구: 중성자 수가 다른 탄소를 비교해 봅시다.', 'chemistry-extension'),
-    mission('high-cl-ion', 17, 18, 18, [2, 8, 8], '염화 이온: 전자 수가 달라도 원소는 같을까요?', 'ion-application'),
-    mission('high-ca-ion', 20, 20, 18, [2, 8, 8], '칼슘 이온: 원자 번호와 전자 수를 구별해 봅시다.', 'ion-application')
+    mission('high-c12', 6, 6, 6, [2, 4], '양성자·중성자·전자 수로 원자 구조를 분석해 봅시다.', 'chemistry-extension'),
+    mission('high-c13', 6, 7, 6, [2, 4], '중성자 수가 달라지면 원소의 종류도 달라질까요?', 'chemistry-extension'),
+    mission('high-cl-ion', 17, 18, 18, [2, 8, 8], '전자가 더 많은 입자의 원소와 전하를 판단해 봅시다.', 'ion-application'),
+    mission('high-ca-ion', 20, 20, 18, [2, 8, 8], '전자를 잃은 입자의 원자 번호와 전자 수를 구별해 봅시다.', 'ion-application')
   ]
 };
 
@@ -76,8 +76,8 @@ function neutralAnswer(value) {
   return null;
 }
 
-/** Assess the particular particle, so p=e is checked rather than assumed. */
-export function evaluateMission(selected, answers = {}, mode = 'middle') {
+/** Assess the particle; optional middle-school shell exploration can be skipped. */
+export function evaluateMission(selected, answers = {}, mode = 'middle', options = { requireShells: true }) {
   const expectedShells = shellAnswer(selected?.shells);
   if (!selected || !ELEMENTS.some(v => v.z === selected.z) || !Number.isInteger(selected.e) || selected.e < 0 || !Number.isInteger(selected.n) || selected.n < 0 || (selected.p !== undefined && selected.p !== selected.z) || !expectedShells || expectedShells.reduce((sum, value) => sum + value, 0) !== selected.e) {
     throw new TypeError('제시된 원자·이온 모형이 올바르지 않습니다.');
@@ -88,11 +88,11 @@ export function evaluateMission(selected, answers = {}, mode = 'middle') {
   const result = {
     neutrality: neutralAnswer(answers.neutral) === (selected.z === selected.e),
     number: Number(answers.number) === selected.z,
-    element: Number(answers.element) === selected.z || answers.element === element.symbol || answers.element === element.name,
-    shells: !!offeredShells && offeredShells.length === expectedShells.length && offeredShells.every((v, i) => v === expectedShells[i])
+    element: Number(answers.element) === selected.z || answers.element === element.symbol || answers.element === element.name
   };
+  if (options?.requireShells !== false) result.shells = !!offeredShells && offeredShells.length === expectedShells.length && offeredShells.every((v, i) => v === expectedShells[i]);
   // Mass number belongs to the optional chemistry extension. A blank answer
-  // leaves the shared four-part assessment intact; an attempted answer receives
+  // leaves the core assessment intact; an attempted answer receives
   // feedback and contributes to completion until it is corrected or cleared.
   const hasMassAnswer = answers.mass !== undefined && answers.mass !== null && String(answers.mass).trim() !== '';
   if (mode === 'high' && hasMassAnswer) result.mass = Number(answers.mass) === selected.z + selected.n;

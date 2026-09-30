@@ -2,7 +2,7 @@ import {atom,MATERIALS,DISCOVERIES} from './data.mjs';
 import {missionFor,evaluateMission} from './levels.mjs';
 export const STORAGE_KEY='scilab-matter-zoom-v2';
 const lessonMode=mode=>mode==='high'?'high':'middle';
-export const fresh=(mode='middle')=>({version:2,mode:lessonMode(mode),chapter:0,unlocked:0,material:null,level:0,deepest:0,z:8,selected:0,visited:[],seen:[],records:[],answers:{},numberAnswers:{},neutralZ:8,neutralE:0,neutron:8,shellZ:8,shells:[0,0,0,0],shellDone:[],tableZ:1,tableSeen:[],missionZ:12,mission:{},done:false,missionIndex:0,conceptAnswers:{},shellPrediction:'',shellPredictionChecked:false,familyAnswer:'',isotopeAnswer:'',massAnswer:'',evidence:{},highViewed:false});
+export const fresh=(mode='middle')=>({version:3,mode:lessonMode(mode),chapter:0,unlocked:0,material:null,level:0,deepest:0,z:8,selected:0,visited:[],seen:[],records:[],answers:{},numberAnswers:{},neutralZ:8,neutralE:0,neutron:8,shellZ:8,shells:[0,0,0,0],shellDone:[],tableZ:1,tableSeen:[],missionZ:12,mission:{},done:false,missionIndex:0,conceptAnswers:{},shellPrediction:'',shellPredictionChecked:false,familyAnswer:'',isotopeAnswer:'',massAnswer:'',evidence:{},highViewed:false,groupCriterion:'e',groupChecked:[],identityRule:'',identityConfirmed:false,order:[],orderChecked:false,numberRule:'',numberPrediction:'',numberConfirmed:false,numberStage:0,mapFound:[],chargeAnswers:{},chargeConfirmed:false,shellTrack:lessonMode(mode)==='high'?'explore':'undecided',upgraded:false});
 export const total=s=>s.reduce((a,b)=>a+b,0);
 // These are lesson limits for ground-state neutral atoms Z=1..20, not universal shell capacities.
 export const LESSON_CAPS=[2,8,8,2];
@@ -20,10 +20,12 @@ export function checkMission(z,answers){
 export function restore(raw,mode='middle'){
  const base=fresh(mode);if(!raw)return base;
  let s;try{s=JSON.parse(raw);}catch{return base;}
- // Scoped lessons never inherit a legacy/global save or the other school level.
- if(!s||s.version!==2||s.mode!==base.mode)return base;
+ // Only a matching scoped v2 lesson can migrate. Legacy/global and other-level saves stay separate.
+ if(!s||![2,3].includes(s.version)||s.mode!==base.mode)return base;
+ const migrating=s.version===2;
  const integer=(v,min,max)=>Number.isInteger(v)&&v>=min&&v<=max;
- for(const [key,max] of [['chapter',6],['unlocked',6],['level',5],['deepest',5],['selected',40],['neutralE',20],['neutron',10]])if(integer(s[key],0,max))base[key]=s[key];
+ for(const [key,max] of [['level',5],['deepest',5],['selected',40],['neutralE',20],['neutron',10]])if(integer(s[key],0,max))base[key]=s[key];
+ if(!migrating)for(const key of ['chapter','unlocked'])if(Number.isInteger(s[key]))base[key]=Math.min(5,Math.max(0,s[key]));
  if(s.material&&Object.hasOwn(MATERIALS,s.material))base.material=s.material;
  for(const key of ['z','neutralZ','shellZ','tableZ','missionZ'])if(integer(s[key],1,20)||(key==='z'&&s[key]===79))base[key]=s[key];
  for(const [key,valid] of [['visited',v=>Object.hasOwn(MATERIALS,v)],['seen',v=>/^(1|8|79):[pne]$/.test(v)],['records',v=>Object.hasOwn(DISCOVERIES,v)],['shellDone',v=>integer(v,1,20)],['tableSeen',v=>integer(v,1,20)]])if(Array.isArray(s[key]))base[key]=[...new Set(s[key].filter(valid))];
@@ -44,7 +46,32 @@ export function restore(raw,mode='middle'){
  if(object(s.evidence))for(const key of ['identity','neutral','shells','final'])if(typeof s.evidence[key]==='string'&&/^[a-z0-9_-]{1,40}$/.test(s.evidence[key]))base.evidence[key]=s.evidence[key];
  base.shellPredictionChecked=s.shellPredictionChecked===true&&base.shellPrediction==='2,8,2'&&base.evidence.shells==='second-shell';
  base.highViewed=base.mode==='high'&&s.highViewed===true;
- base.done=s.done===true&&base.evidence.final==='protons'&&evaluateMission(missionFor(base.mode,base.missionIndex),base.mission,base.mode).allCorrect;
+ if(migrating){
+  // Observation/practice history survives, but changed inquiry tasks must be completed again.
+  base.upgraded=true;
+  base.records=base.records.filter(v=>!['compare','number','neutral','table','final'].includes(v));
+  delete base.answers.identity;
+  for(const key of ['identity','neutral','final'])delete base.evidence[key];
+  base.mission={};
+ }else{
+  if(['p','e','n'].includes(s.groupCriterion))base.groupCriterion=s.groupCriterion;
+  if(Array.isArray(s.groupChecked))base.groupChecked=[...new Set(s.groupChecked.filter(v=>['p','e','n'].includes(v)))];
+  if(['p','e','n'].includes(s.identityRule))base.identityRule=s.identityRule;
+  base.identityConfirmed=s.identityConfirmed===true&&base.groupChecked.length===3&&base.identityRule==='p';
+  if(Array.isArray(s.order))base.order=[...new Set(s.order.filter(v=>[1,2,6,8].includes(v)))].slice(0,4);
+  base.orderChecked=s.orderChecked===true&&base.order.length===4&&base.order.every((v,i)=>v===[1,2,6,8][i]);
+  if(['p','e','mass'].includes(s.numberRule))base.numberRule=s.numberRule;
+  if(typeof s.numberPrediction==='string'&&/^(?:[1-9]|1[0-9]|20)$/.test(s.numberPrediction))base.numberPrediction=s.numberPrediction;
+  base.numberConfirmed=s.numberConfirmed===true&&base.orderChecked&&base.identityConfirmed&&base.numberRule==='p'&&base.numberPrediction==='7';
+  const availableStage=base.numberConfirmed?2:base.orderChecked?1:0;
+  if(Number.isInteger(s.numberStage))base.numberStage=Math.min(availableStage,Math.max(0,s.numberStage));
+  if(Array.isArray(s.mapFound))base.mapFound=[...new Set(s.mapFound.filter(v=>[12,20].includes(v)))];
+  if(object(s.chargeAnswers))for(const key of ['na','na-plus','cl-minus'])if(['positive','neutral','negative'].includes(s.chargeAnswers[key]))base.chargeAnswers[key]=s.chargeAnswers[key];
+  base.chargeConfirmed=s.chargeConfirmed===true&&base.chargeAnswers.na==='neutral'&&base.chargeAnswers['na-plus']==='positive'&&base.chargeAnswers['cl-minus']==='negative';
+  if(base.mode==='middle'&&['skip','explore','undecided'].includes(s.shellTrack))base.shellTrack=s.shellTrack;
+  base.upgraded=s.upgraded===true;
+  base.done=s.done===true&&base.evidence.final==='protons'&&evaluateMission(missionFor(base.mode,base.missionIndex),base.mission,base.mode,{requireShells:base.mode==='high'||base.shellTrack==='explore'}).allCorrect;
+ }
  base.chapter=Math.min(base.chapter,base.unlocked);base.deepest=Math.max(base.deepest,base.level);
  if(!base.material){base.level=0;base.deepest=0;}
  return base;

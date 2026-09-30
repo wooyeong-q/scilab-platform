@@ -102,3 +102,33 @@ test('matter zoom levels: high chemistry extension is optional but attempted mas
   assert.equal(Object.hasOwn(middle, 'mass'), false);
   assert.equal(middle.allCorrect, true);
 });
+
+test('matter zoom levels: skipping middle electron placement assesses only identity, number and neutrality', async () => {
+  const { missionFor, evaluateMission } = await levels();
+  const f = missionFor('middle', 0);
+  const basic = { neutral: 'yes', number: 9, element: 'F' };
+  assert.deepEqual(evaluateMission(f, basic, 'middle', { requireShells: false }), {
+    neutrality: true, number: true, element: true, allCorrect: true
+  });
+  assert.equal(evaluateMission(f, basic, 'middle').allCorrect, false);
+  assert.equal(evaluateMission(f, basic, 'middle').shells, false);
+  assert.equal(evaluateMission(f, basic, 'middle', {}).shells, false);
+  assert.equal(evaluateMission(f, { ...basic, shells: [2, 7] }, 'middle').allCorrect, true);
+  assert.equal(evaluateMission(f, { ...basic, shells: [2, 8] }, 'middle', { requireShells: false }).allCorrect, true);
+  const wrongIdentity = evaluateMission(f, { neutral: 'yes', number: 10, element: 'Ne' }, 'middle', { requireShells: false });
+  assert.equal(wrongIdentity.allCorrect, false);
+  assert.equal(wrongIdentity.number, false);
+  assert.equal(wrongIdentity.element, false);
+  assert.equal(Object.hasOwn(wrongIdentity, 'shells'), false);
+});
+
+test('matter zoom levels: mission titles do not reveal the element being identified', async () => {
+  const { MISSIONS, MODE_INFO } = await levels();
+  const { atom } = await import('../public/labs/matter-zoom/data.mjs');
+  for (const example of Object.values(MISSIONS).flat()) {
+    assert.equal(example.title.includes(atom(example.z).name), false);
+  }
+  assert.equal(MISSIONS.middle[1].title.includes('전자배치'), false);
+  assert.match(MODE_INFO.middle.extension, /선택 탐험/);
+  assert.match(MODE_INFO.middle.extension, /선택한 경우에만/);
+});

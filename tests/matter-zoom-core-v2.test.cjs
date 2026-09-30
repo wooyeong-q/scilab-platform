@@ -2,15 +2,15 @@ const {test}=require('node:test');
 const assert=require('node:assert/strict');
 const corePath='../public/labs/matter-zoom/core.mjs';
 
-test('matter zoom v2: a class-level save cannot inherit a legacy or other-level lesson',async()=>{
+test('matter zoom: a class-level save cannot inherit a legacy or other-level lesson',async()=>{
  const {fresh,restore}=await import(corePath);
  const completed={...fresh('middle'),chapter:6,unlocked:6,visited:['water','hydrogen','gold'],records:['final']};
- assert.equal(fresh().version,2);
+ assert.equal(fresh().version,3);
  assert.equal(fresh('high').mode,'high');
  assert.deepEqual(restore(JSON.stringify({...completed,version:1}),'middle'),fresh('middle'));
  assert.deepEqual(restore(JSON.stringify(completed),'high'),fresh('high'));
  assert.deepEqual(restore(JSON.stringify({...completed,mode:undefined}),'middle'),fresh('middle'));
- assert.equal(restore(JSON.stringify(completed),'middle').chapter,6);
+ assert.equal(restore(JSON.stringify(completed),'middle').chapter,5);
 });
 
 test('matter zoom v2: predictions and evidence reject arbitrary persisted content',async()=>{
