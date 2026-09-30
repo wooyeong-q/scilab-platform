@@ -72,3 +72,24 @@ test('matter zoom registration inserts fresh metadata and leaves other programs 
     assert.deepEqual(after,before);
   }finally{await h.close();}
 });
+
+
+test('matter zoom replaces prior shell descriptions without overwriting teacher changes',async()=>{
+  const h=await harness();
+  try{
+    const {registerMatterZoom,PREVIOUS_OBSERVATION_METADATA:old}=await import('../scripts/register-matter-zoom.mjs');
+    await registerMatterZoom(h.sql,{...program,...old});
+    await h.pg.query('UPDATE programs SET like_count=5,view_count=19 WHERE id=$1',[program.id]);
+    await registerMatterZoom(h.sql,program);
+    const first=(await h.pg.query('SELECT * FROM programs WHERE id=$1',[program.id])).rows[0];
+    for(const field of ['description','tags','standard'])assert.deepEqual(first[field],program[field]);
+    assert.doesNotMatch(first.description+first.standard,/전자 배치|껍질/);
+    assert.ok(!first.tags.includes('전자 배치'));
+    assert.equal(first.like_count,5);assert.equal(first.view_count,19);
+    await registerMatterZoom(h.sql,program);
+    assert.deepEqual((await h.pg.query('SELECT * FROM programs WHERE id=$1',[program.id])).rows[0],first);
+    await h.pg.query('UPDATE programs SET description=$2 WHERE id=$1',[program.id,'교사 맞춤 설명']);
+    await registerMatterZoom(h.sql,program);
+    assert.equal((await h.pg.query('SELECT description FROM programs WHERE id=$1',[program.id])).rows[0].description,'교사 맞춤 설명');
+  }finally{await h.close();}
+});

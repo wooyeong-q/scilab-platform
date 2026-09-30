@@ -5,7 +5,7 @@ const explorerPath = '../public/labs/matter-zoom/exploration.mjs';
 test('matter explorer: fresh workspace has no quiz completion or navigation gates', async () => {
   const {freshExplorer} = await import(explorerPath);
   const first = freshExplorer();
-  assert.equal(first.version, 4);
+  assert.equal(first.version, 5);
   assert.equal(first.mode, 'middle');
   assert.equal(first.material, null);
   assert.equal(first.drawer, '');
@@ -13,16 +13,15 @@ test('matter explorer: fresh workspace has no quiz completion or navigation gate
     assert.equal(Object.hasOwn(first, key), false);
   }
   first.visited.push('water');
-  first.shells[0] = 1;
   assert.deepEqual(freshExplorer().visited, []);
-  assert.deepEqual(freshExplorer().shells, [0, 0, 0, 0]);
+  assert.equal(Object.hasOwn(first, 'shells'), false);
   assert.equal(freshExplorer('high').mode, 'high');
   assert.equal(freshExplorer('<script>').mode, 'middle');
 });
 
 test('matter explorer: old observations migrate without mandatory answers or completion state', async () => {
   const {freshExplorer, restoreExplorer} = await import(explorerPath);
-  for (const version of [2, 3]) {
+  for (const version of [2, 3, 4]) {
     const saved = {
       version, mode: 'middle', material: 'water', z: 8, selected: 22, level: 4, deepest: 5,
       visited: ['water', 'hydrogen', 'water'], seen: ['8:p', '8:e'],
@@ -32,7 +31,7 @@ test('matter explorer: old observations migrate without mandatory answers or com
       identityConfirmed: true, done: true, mission: {element: '9'},
     };
     const result = restoreExplorer(JSON.stringify(saved));
-    assert.equal(result.version, 4);
+    assert.equal(result.version, 5);
     assert.equal(result.upgraded, true);
     assert.equal(result.material, 'water');
     assert.equal(result.z, 8);
@@ -42,8 +41,8 @@ test('matter explorer: old observations migrate without mandatory answers or com
     assert.deepEqual(result.visited, ['water', 'hydrogen']);
     assert.deepEqual(result.seen, ['8:p', '8:e']);
     assert.deepEqual(result.records, ['water', 'structure', 'particles', 'compare', 'number']);
-    assert.deepEqual(result.shells, [2, 8, 1, 0]);
-    assert.deepEqual(result.shellDone, [8, 12]);
+    assert.equal(Object.hasOwn(result, 'shells'), false);
+    assert.equal(Object.hasOwn(result, 'shellDone'), false);
     for (const key of ['chapter', 'unlocked', 'conceptAnswers', 'identityConfirmed', 'done', 'mission']) {
       assert.equal(Object.hasOwn(result, key), false);
     }
@@ -67,8 +66,8 @@ test('matter explorer: restores only safe fields and allowed observation values'
   assert.equal(result.deepest, 4);
   assert.deepEqual(result.visited, ['water', 'gold']);
   assert.deepEqual(result.seen, ['8:p', '1:e']);
-  assert.deepEqual(result.records, ['water', 'shells']);
-  assert.deepEqual(result.shellDone, [1, 8]);
+  assert.deepEqual(result.records, ['water']);
+  assert.equal(Object.hasOwn(result, 'shellDone'), false);
   assert.deepEqual(result.tableSeen, [20, 1]);
   assert.equal(result.numberZ, 8);
   assert.equal(result.compareZ, 79);
@@ -89,11 +88,11 @@ test('matter explorer: material selection constrains the atom while retaining fi
   assert.equal(restoreExplorer(save({material: 'hydrogen', z: 1, numberZ: null})).numberZ, 1);
   assert.equal(restoreExplorer(save({material: 'gold', z: 8})).z, 79);
   const legacyGold = restoreExplorer(save({version: 3, material: 'gold', z: 79, level: 2, deepest: 2}));
-  assert.equal(legacyGold.level, 3);
-  assert.equal(legacyGold.deepest, 3);
+  assert.equal(legacyGold.level, 4);
+  assert.equal(legacyGold.deepest, 4);
   const arrayGold = restoreExplorer(save({material: 'gold', z: 79, level: 1, deepest: 2}));
   assert.equal(arrayGold.level, 1);
-  assert.equal(arrayGold.deepest, 3);
+  assert.equal(arrayGold.deepest, 4);
   const invalid = restoreExplorer(save({material: '__proto__', level: 5, deepest: 5, z: 79, selected: 22}));
   assert.equal(invalid.material, null);
   assert.equal(invalid.level, 0);
@@ -102,15 +101,17 @@ test('matter explorer: material selection constrains the atom while retaining fi
   assert.equal(invalid.selected, 0);
 });
 
-test('matter explorer: validates shell caps, inner-shell filling, and available electron count', async () => {
-  const {freshExplorer, restoreExplorer} = await import(explorerPath);
-  const save = (shellZ, shells) => JSON.stringify({...freshExplorer(), shellZ, shells});
-  assert.deepEqual(restoreExplorer(save(20, [2, 8, 8, 2])).shells, [2, 8, 8, 2]);
-  assert.deepEqual(restoreExplorer(save(8, [2, 3, 0, 0])).shells, [2, 3, 0, 0]);
-  for (const [z, shells] of [[8, [2, 7, 0, 0]], [20, [2, 9, 0, 0]], [8, [1, 1, 0, 0]],
-    [20, [2, 8, 7, 1]], [8, [2, -1, 0, 0]], [8, [2, 2.5, 0, 0]], [8, [2, 6]], [8, ['2', 6, 0, 0]]]) {
-    assert.deepEqual(restoreExplorer(save(z, shells)).shells, [0, 0, 0, 0]);
-  }
+test('matter explorer: obsolete shell activity is discarded while saved observation resumes', async () => {
+  const {restoreExplorer} = await import(explorerPath);
+  const saved = {version: 4, mode: 'middle', material: 'water', level: 3, deepest: 4, z: 1,
+    drawer: 'shells', shellZ: 20, shells: [2, 8, 8, 2], shellDone: [20], records: ['water', 'shells', 'number']};
+  const result = restoreExplorer(JSON.stringify(saved));
+  assert.equal(result.version, 5);
+  assert.equal(result.level, 4);
+  assert.equal(result.z, 1);
+  assert.equal(result.drawer, '');
+  assert.deepEqual(result.records, ['water', 'number']);
+  for (const key of ['shellZ', 'shells', 'shellDone']) assert.equal(Object.hasOwn(result, key), false);
 });
 
 test('matter explorer: fixed ion views and drawer selections round-trip with separate level saves', async () => {
@@ -128,5 +129,5 @@ test('matter explorer: fixed ion views and drawer selections round-trip with sep
   }
   assert.equal(restoreExplorer(JSON.stringify({...freshExplorer(), drawer: 'compare'})).drawer, 'compare');
   assert.equal(restoreExplorer(JSON.stringify({...freshExplorer(), drawer: 'number'})).drawer, 'number');
-  assert.equal(restoreExplorer(JSON.stringify({...freshExplorer(), drawer: 'shells'})).drawer, 'shells');
+  assert.equal(restoreExplorer(JSON.stringify({...freshExplorer(), drawer: 'shells'})).drawer, '');
 });
