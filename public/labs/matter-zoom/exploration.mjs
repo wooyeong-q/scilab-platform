@@ -3,7 +3,7 @@ import {MATERIALS, DISCOVERIES} from './data.mjs';
 const modeOf = mode => mode === 'high' ? 'high' : 'middle';
 const integer = (value, min, max) => Number.isInteger(value) && value >= min && value <= max;
 const elementNumber = value => integer(value, 1, 20);
-const materialDefaults = {water: 8, hydrogen: 1, gold: 79};
+const observedAtoms = new Set(Object.values(MATERIALS).flatMap(m => m.atoms));
 const drawers = new Set(['', 'compare', 'number', 'charge']);
 
 // This is an observation workspace. Opening a view never depends on a quiz,
@@ -29,11 +29,11 @@ export function restoreExplorer(raw, mode = 'middle') {
     Object.hasOwn(MATERIALS, saved.material) ? saved.material : null;
   if (material) {
     state.material = material;
-    state.z = MATERIALS[material].atoms.includes(saved.z) ? saved.z : materialDefaults[material];
+    state.z = MATERIALS[material].atoms.includes(saved.z) ? saved.z : MATERIALS[material].defaultZ;
     if (integer(saved.level, 0, 5)) state.level = saved.level;
     if (integer(saved.deepest, 0, 5)) state.deepest = saved.deepest;
-    // Gold goes from its repeated atom array directly to a selected atom.
-    if (material === 'gold') {
+    // Metals and monatomic gases skip the molecule close-up.
+    if (MATERIALS[material].kind !== 'molecule') {
       if (state.level === 2) state.level = 4;
       if (state.deepest === 2) state.deepest = 4;
     }
@@ -47,7 +47,7 @@ export function restoreExplorer(raw, mode = 'middle') {
 
   const arrays = [
     ['visited', value => typeof value === 'string' && Object.hasOwn(MATERIALS, value)],
-    ['seen', value => typeof value === 'string' && /^(1|8|79):[pne]$/.test(value)],
+    ['seen', value => typeof value === 'string' && /^\d+:[pne]$/.test(value) && observedAtoms.has(Number(value.split(':')[0]))],
     ['records', value => typeof value === 'string' && value !== 'final' && value !== 'shells' && Object.hasOwn(DISCOVERIES, value)],
     ['tableSeen', elementNumber],
   ];
@@ -58,7 +58,7 @@ export function restoreExplorer(raw, mode = 'middle') {
   for (const key of ['tableZ', 'numberZ']) {
     if (elementNumber(saved[key])) state[key] = saved[key];
   }
-  if (elementNumber(saved.compareZ) || saved.compareZ === 79) state.compareZ = saved.compareZ;
+  if (elementNumber(saved.compareZ) || observedAtoms.has(saved.compareZ)) state.compareZ = saved.compareZ;
   // Start an absent/invalid number selection from the currently observed atom.
   if (!elementNumber(saved.numberZ) && elementNumber(state.z)) state.numberZ = state.z;
 

@@ -93,3 +93,20 @@ test('matter zoom replaces prior shell descriptions without overwriting teacher 
     assert.equal((await h.pg.query('SELECT description FROM programs WHERE id=$1',[program.id])).rows[0].description,'교사 맞춤 설명');
   }finally{await h.close();}
 });
+
+
+test('seven-material catalog replaces prior automatic summary and keeps custom fields',async()=>{
+  const h=await harness();
+  try{
+    const {registerMatterZoom,PREVIOUS_MATERIAL_METADATA:old}=await import('../scripts/register-matter-zoom.mjs');
+    await registerMatterZoom(h.sql,{...program,...old});
+    await registerMatterZoom(h.sql,program);
+    const row=(await h.pg.query('SELECT * FROM programs WHERE id=$1',[program.id])).rows[0];
+    assert.equal(row.summary,program.summary);assert.equal(row.description,program.description);
+    for(const name of ['산소','이산화 탄소','헬륨','철'])assert.ok(row.description.includes(name));
+    await h.pg.query('UPDATE programs SET summary=$2,like_count=7 WHERE id=$1',[program.id,'교사 맞춤 소개']);
+    await registerMatterZoom(h.sql,program);
+    const again=(await h.pg.query('SELECT * FROM programs WHERE id=$1',[program.id])).rows[0];
+    assert.equal(again.summary,'교사 맞춤 소개');assert.equal(again.like_count,7);
+  }finally{await h.close();}
+});
