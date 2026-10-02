@@ -33,6 +33,11 @@ export const PREVIOUS_MATERIAL_METADATA=Object.freeze({
   "description": "물방울, 수소 기체, 금 조각에서 작은 세계로 들어가 보세요. 물 분자와 수소 분자의 원자를 고르고, 금의 반복된 원자 배열에서 원자 내부까지 확대합니다. 기본 수준은 중학교 2학년의 물질의 구성에 맞춰 원소·원자·분자, 양성자·중성자·전자, 원자 번호와 중성 원자를 탐구합니다. 고등학교 수준에서는 통합과학 내용을 연결하고 화학 확장 내용을 선택해 탐험할 수 있습니다. 정답 입력 없이 확대 관찰과 원소 비교, 전기적 중성과 원자번호 1~20 주기율표를 자유롭게 탐색하며, 그림 직접 선택·키보드·터치를 지원합니다. 학생 계정 없이 사용할 수 있고, 서로 다른 교사와 여러 학급은 반별 독립 링크와 기기별 탐험 기록으로 수업을 구분할 수 있습니다. 특정 학습지나 정해진 차시 없이 교사가 필요한 탐험을 선택합니다."
 });
 
+export const PREVIOUS_PERIODIC_METADATA=Object.freeze({
+  "description": "물·수소 기체·금·산소 기체·이산화 탄소·헬륨 기체·철, 일곱 가지 물질을 직접 눌러 확대해 보세요. 물·수소·산소·이산화 탄소는 분자 속 원자를 고르고, 헬륨은 따로 떨어진 원자를, 금과 철은 반복된 배열 속 원자를 골라 내부로 들어갑니다. 기본 수준은 중학교 2학년의 물질의 구성에 맞춰 원소·원자·분자, 양성자·중성자·전자, 원자 번호와 중성 원자를 탐구합니다. 고등학교 수준에서는 통합과학 내용을 연결하고 화학 확장 내용을 선택해 탐험할 수 있습니다. 정답 입력 없이 확대 관찰과 원소 비교, 전기적 중성과 원자번호 1~20 주기율표를 자유롭게 탐색하며, 그림 직접 선택·키보드·터치를 지원합니다. 학생 계정 없이 사용할 수 있고, 서로 다른 교사와 여러 학급은 반별 독립 링크와 기기별 탐험 기록으로 수업을 구분할 수 있습니다. 특정 학습지나 정해진 차시 없이 교사가 필요한 탐험을 선택합니다.",
+  "standard": "중2 물질의 구성 기본 탐험 · 고등학교 통합과학 연결 및 화학 선택 확장: 원소·원자·분자, 원자 구성 입자, 원자 번호, 전하와 전기적 중성"
+});
+
 export async function registerMatterZoom(sql,p){
   await sql.query(`INSERT INTO programs (id,title,summary,description,category,grade,tags,icon,url,author,featured,duration,format,standard)
  VALUES ($1,$2,$3,$4,$5,$6,$7::jsonb,$8,$9,$10,$11,$12,$13,$14) ON CONFLICT (id) DO NOTHING`,
@@ -41,13 +46,13 @@ export async function registerMatterZoom(sql,p){
   const old=ORIGINAL_SEED_METADATA;
   await sql.query(`UPDATE programs SET
     summary=CASE WHEN summary=$2 OR summary=$19 THEN $3 ELSE summary END,
-    description=CASE WHEN description=$4 OR description=$14 OR description=$15 OR description=$18 THEN $5 ELSE description END,
+    description=CASE WHEN description=$4 OR description=$14 OR description=$15 OR description=$18 OR description=$20 THEN $5 ELSE description END,
     grade=CASE WHEN grade=$6 THEN $7 ELSE grade END,
     tags=CASE WHEN tags=$8::jsonb OR tags=$16::jsonb THEN $9::jsonb ELSE tags END,
     format=CASE WHEN format=$10 THEN $11 ELSE format END,
-    standard=CASE WHEN standard=$12 OR standard=$17 THEN $13 ELSE standard END
-    WHERE id=$1 AND (summary=$2 OR description=$4 OR grade=$6 OR tags=$8::jsonb OR format=$10 OR standard=$12 OR description=$14 OR description=$15 OR tags=$16::jsonb OR standard=$17 OR description=$18 OR summary=$19)`,
-    [p.id,old.summary,p.summary,old.description,p.description,old.grade,p.grade,JSON.stringify(old.tags),JSON.stringify(p.tags),old.format,p.format,old.standard,p.standard,"물방울, 수소 기체, 금 조각에서 작은 세계로 들어가 보세요. 물 분자와 수소 분자의 원자를 고르고, 금의 반복된 원자 배열에서 원자 내부까지 확대합니다. 기본 수준은 중학교 2학년의 물질의 구성에 맞춰 원소·원자·분자, 양성자·중성자·전자, 원자 번호와 중성 원자를 탐구합니다. 고등학교 수준에서는 통합과학 내용을 연결하고 화학 확장 내용을 선택해 탐험할 수 있습니다. 전자 배치와 원자번호 1~20 주기율표, 처음 보는 원자 분석을 제공하며, 키보드·터치·드래그를 지원합니다. 학생 계정 없이 사용할 수 있고, 서로 다른 교사와 여러 학급은 반별 독립 링크와 기기별 탐험 기록으로 수업을 구분할 수 있습니다. 특정 학습지나 정해진 차시 없이 교사가 필요한 탐험을 선택합니다.",PREVIOUS_OBSERVATION_METADATA.description,JSON.stringify(PREVIOUS_OBSERVATION_METADATA.tags),PREVIOUS_OBSERVATION_METADATA.standard,PREVIOUS_MATERIAL_METADATA.description,PREVIOUS_MATERIAL_METADATA.summary],
+    standard=CASE WHEN standard=$12 OR standard=$17 OR standard=$21 THEN $13 ELSE standard END
+    WHERE id=$1 AND (summary=$2 OR description=$4 OR grade=$6 OR tags=$8::jsonb OR format=$10 OR standard=$12 OR description=$14 OR description=$15 OR tags=$16::jsonb OR standard=$17 OR description=$18 OR summary=$19 OR description=$20 OR standard=$21)`,
+    [p.id,old.summary,p.summary,old.description,p.description,old.grade,p.grade,JSON.stringify(old.tags),JSON.stringify(p.tags),old.format,p.format,old.standard,p.standard,"물방울, 수소 기체, 금 조각에서 작은 세계로 들어가 보세요. 물 분자와 수소 분자의 원자를 고르고, 금의 반복된 원자 배열에서 원자 내부까지 확대합니다. 기본 수준은 중학교 2학년의 물질의 구성에 맞춰 원소·원자·분자, 양성자·중성자·전자, 원자 번호와 중성 원자를 탐구합니다. 고등학교 수준에서는 통합과학 내용을 연결하고 화학 확장 내용을 선택해 탐험할 수 있습니다. 전자 배치와 원자번호 1~20 주기율표, 처음 보는 원자 분석을 제공하며, 키보드·터치·드래그를 지원합니다. 학생 계정 없이 사용할 수 있고, 서로 다른 교사와 여러 학급은 반별 독립 링크와 기기별 탐험 기록으로 수업을 구분할 수 있습니다. 특정 학습지나 정해진 차시 없이 교사가 필요한 탐험을 선택합니다.",PREVIOUS_OBSERVATION_METADATA.description,JSON.stringify(PREVIOUS_OBSERVATION_METADATA.tags),PREVIOUS_OBSERVATION_METADATA.standard,PREVIOUS_MATERIAL_METADATA.description,PREVIOUS_MATERIAL_METADATA.summary,PREVIOUS_PERIODIC_METADATA.description,PREVIOUS_PERIODIC_METADATA.standard],
     {fetchOptions:{signal:AbortSignal.timeout(15000)}});
 }
 

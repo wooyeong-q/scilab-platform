@@ -12,7 +12,7 @@ export function freshExplorer(mode = 'middle') {
   return {
     version: 5, mode: modeOf(mode), material: null, level: 0, deepest: 0,
     z: 8, selected: 0, visited: [], seen: [], records: [],
-    tableZ: 8, tableSeen: [], numberZ: 8, compareZ: 8,
+    tableZ: 8, tableSeen: [], numberZ: 8, compareZ: 8, tableAxis: 'group',
     chargeZ: 11, chargeVariant: 'neutral', drawer: '', upgraded: false,
   };
 }
@@ -69,6 +69,7 @@ export function restoreExplorer(raw, mode = 'middle') {
     state.chargeVariant = saved.chargeVariant;
   }
   if (typeof saved.drawer === 'string' && drawers.has(saved.drawer)) state.drawer = saved.drawer;
+  if (saved.tableAxis === 'group' || saved.tableAxis === 'period') state.tableAxis = saved.tableAxis;
   state.upgraded = saved.version < 5 || saved.upgraded === true;
   return state;
 }

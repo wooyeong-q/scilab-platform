@@ -1,8 +1,21 @@
-# 확대! 물질 탐험 연구소 — 일곱 물질 확대 관찰
+# 확대! 물질 탐험 연구소 — 확대 관찰과 주기율표
 
 운영 경로: [프로그램 실행](https://scilab-platform.vercel.app/run/matter-zoom) · [직접 실행](https://scilab-platform.vercel.app/labs/matter-zoom/index.html) · 소개 `/programs/matter-zoom`
 
-## 이번 변경
+## 이번 변경: 족·주기와 원소 특징 모션
+
+원자 내부 화면의 **주기율표**에서 다음 활동을 할 수 있다. 기본 수준은 중2이며 필수 문제 없이 자유롭게 선택한다.
+
+- **↕ 세로줄 = 족:** 족 번호를 누르면 같은 족의 원소 칸과 비교할 원소 목록을 강조한다. 1족에서는 H의 예외를 안내하고 Li·Na·K의 공통점을, 18족에서는 He·Ne·Ar의 낮은 반응성을 보여 준다.
+- **↔ 가로줄 = 주기:** 주기 번호를 누르면 같은 가로줄을 강조한다. 원소 목록에 원자 번호와 화살표를 함께 표시해 왼쪽에서 오른쪽으로 번호가 1씩 커지는 것을 살펴본다.
+- **원소 특징 모션:** 1~20번 모두 선택할 수 있다. 원소의 성질, 원소의 한 형태, 화합물의 쓰임을 구분한다. 모션은 약 7초 안에 한 번 재생하고 멈추며, 일시정지·이어 재생·다시 보기를 지원한다.
+- 휴대폰에서는 원소를 고르면 모션이 보이는 위치로 이동한다. ‘원소 표’로 돌아오면 선택한 칸에 키보드 초점을 둔다. 가로 스크롤 위치도 유지한다.
+- 기기의 ‘동작 줄이기’ 설정에서는 움직임 없이 결과 그림과 설명을 제공한다.
+- 양성자 수 슬라이더는 ‘양성자 수와 원자 번호를 차례로 이어 보기’를 펼쳐 사용한다.
+
+표는 **1~20번**을 제공한다. 전체 주기율표는 1~18족·1~7주기이며, 이번 표에서는 4주기의 K·Ca까지만 표시한다. 3~12족의 간격을 줄였다는 안내도 표시한다. 철(26)·금(79)은 이 표의 범위 밖임을 설명한다.
+
+## 확대 관찰
 
 기존의 간단한 확대 흐름에 산소·이산화 탄소·헬륨·철을 추가해 총 7개 물질을 제공한다. 기본 수준은 중학교 2학년이다.
 
@@ -31,7 +44,7 @@
 ## 연결된 개념
 
 - **원소 비교:** H·O·Au를 기본 비교한다. He 관찰 후에는 H·He·O, C 관찰 후에는 H·C·O, Fe 관찰 후에는 O·Fe·Au를 비교한다. 각 원자핵의 양성자 수와 원자 번호를 함께 표시한다. 선택 확장에서는 전자 수가 다른 Na와 Na⁺도 같은 원소임을 확인한다.
-- **원자 번호:** 양성자 그림·개수·원자 번호·원소 이름이 함께 바뀐다. 슬라이더·이전/다음 버튼·실제 족과 주기 위치의 1~20 주기율표를 사용할 수 있다. 철은 26번, 금은 79번으로 표 범위 밖임을 안내한다.
+- **주기율표와 원자 번호:** 족·주기와 원소 특징 모션을 선택한다. 펼침 활동에서는 양성자 그림·개수·원자 번호·원소 이름이 함께 바뀐다. 슬라이더·이전/다음 버튼·실제 족과 주기 위치의 1~20 주기율표를 사용할 수 있다. 철은 26번, 금은 79번으로 표 범위 밖임을 안내한다.
 - **전기적 중성:** 현재 원자의 +와 −를 같은 수로 짝지어 전하 합이 0임을 표시한다. 선택 확장에서는 Na⁺와 Cl⁻의 실제 입자 수를 확인한다.
 - **고등학교 선택 확장:** 같은 확대 경험에서 탄소-12·탄소-13의 중성자 수와 질량수를 비교한다.
 
@@ -47,22 +60,21 @@ v2·v3·v4 기록은 v5 관찰 상태로 복원한다. 이번 추가는 같은 v
 
 | 파일 | 변경 내용 |
 |---|---|
-| `public/labs/matter-zoom/data.mjs` | 7개 물질, Fe 원자 데이터, 공통 분자 배치·색상, 새 관찰 기록 |
-| `public/labs/matter-zoom/app.js` | 물질 유형에 따른 확대, 새 원자 선택, 현재 원자 비교, 간단한 물질 메뉴 |
-| `public/labs/matter-zoom/style.css` | 7개 선택 카드의 4·3·2열 반응형 배치, 새 실물 그림 크기 |
-| `public/labs/matter-zoom/index.html` | 7개 물질을 반영한 페이지 설명 |
-| `public/labs/matter-zoom/exploration.mjs` | 새 물질·원자 관찰 기록 복원 |
-| `public/labs/matter-zoom/program.json` | 7개 물질과 실제 제공 기능 안내 |
-| `public/labs/matter-zoom/assets/oxygen.webp` | 산소 기체 용기 일러스트 |
-| `public/labs/matter-zoom/assets/carbon-dioxide.webp` | 이산화 탄소 기체 용기 일러스트 |
-| `public/labs/matter-zoom/assets/helium.webp` | 헬륨 풍선 일러스트 |
-| `public/labs/matter-zoom/assets/iron.webp` | 순수한 철 조각 일러스트 |
-| `scripts/register-matter-zoom.mjs` | 기존 3종 안내를 7종으로 갱신하며 관리자 수정·조회·추천 수 보존 |
-| `tests/matter-zoom-materials.test.cjs` | 물질 구성·분자 배치·새 원자 기록·확대 경로 검증 |
-| `tests/matter-zoom-catalog-modes.test.cjs` | 3종 안내 갱신과 관리자 수정 보존 검증 |
-| `docs/matter-zoom.md` | 현재 구현·검증 보고 |
+| `public/labs/matter-zoom/app.js` | 주기율표 연결, 족·주기 선택, 모션 제어, 모바일 이동과 초점 |
+| `public/labs/matter-zoom/data.mjs` | 족·주기·원소 특징 관찰 기록 |
+| `public/labs/matter-zoom/exploration.mjs` | 선택한 표 방향 저장과 이전 기록 호환 |
+| `public/labs/matter-zoom/element-features.mjs` | 1~20번 특징·상태·모션 설명·출처, 같은 족 비교 안내 |
+| `public/labs/matter-zoom/element-motion.mjs` | 원소별 SVG 모션 장면 |
+| `public/labs/matter-zoom/periodic-view.mjs` | 족·주기 선택, 표, 특징 카드, 번호 탐구 화면 |
+| `public/labs/matter-zoom/periodic.css` | 반응형 주기율표와 한 번 재생하는 애니메이션, 동작 줄이기 대응 |
+| `public/labs/matter-zoom/index.html` | 새 주기율표 스타일 연결 |
+| `public/labs/matter-zoom/program.json` | 족·주기와 20개 원소 모션 안내 |
+| `scripts/register-matter-zoom.mjs` | 이전 자동 소개 갱신, 관리자 편집과 조회·추천 수 보존 |
+| `tests/matter-zoom-periodic.test.cjs` | 20개 특징·족/주기 묶음·예외·표 방향 복원 검증 |
+| `tests/matter-zoom-catalog-modes.test.cjs` | 이전 소개 갱신 및 관리자 편집 보존 검증 |
+| `docs/matter-zoom.md` | 현재 구현·과학적 검토·검증 보고 |
 
-기존 3개 실물 그림, 플랫폼 라우트·데이터베이스 스키마·수업 링크 형식은 계속 사용한다. 레거시 전자배치 데이터는 이전 버전 회귀 검사용으로 남아 있으며 현재 UI에서 사용하지 않는다.
+새 이미지·영상 파일이나 실행 의존 패키지를 추가하지 않았다. 모션은 SVG와 CSS로 실행하며 서버 요청이나 반복 조회를 만들지 않는다. 플랫폼 라우트·수업 링크·기기별 저장 방식은 그대로 사용한다.
 
 ## 과학적 검토
 
@@ -86,11 +98,42 @@ v2·v3·v4 기록은 v5 관찰 상태로 복원한다. 이번 추가는 같은 v
 
 ## 검증
 
-- 물질 구성·상태 복원·반별 링크·카탈로그 갱신 관련 자동 테스트 **20개 통과**.
-- 실제 Chromium에서 7개 물질의 확대 및 뒤로 이동, 모든 선택 가능한 원자의 p/n/e 수, 원자핵·전자 전환, 새 물질 메뉴, 관찰 기록과 새로고침 후 이어서 하기를 확인했다.
-- 3개 개념 화면에서 현재 원자가 유지되고, 주기율표는 20개 원소를 제공하며, Fe·Au의 표 범위 밖 안내가 나오는지 확인했다.
-- 화면 너비 **360·390·768·1366px에서 40개 가로 넘침 검사 통과**. 별도 한국어 글꼴을 갖춘 브라우저에서 선택 화면과 CO₂·He의 모바일 화면을 시각적으로 확인했다. 브라우저 실행 오류는 없었다.
-- 이는 화면 크기를 바꾼 브라우저 검사이며 실제 휴대기기·학생 대상 수업 검사를 대신하지 않는다.
+- 물질 구성·상태 복원·반별 링크·주기율표·카탈로그 관련 자동 테스트 **24개 통과**.
+- Chromium에서 1~20번 특징 장면을 모두 선택하고 실제 CSS 애니메이션 생성, SVG 라벨 잘림 여부와 설명을 확인했다.
+- 표시하는 8개 족·4개 주기의 강조 대상이 맞고, H의 예외·4주기의 일부만 표시한다는 안내가 나오는지 확인했다.
+- 일시정지 중 시간 유지, 이어 재생, 다시 보기, 한 번 재생 후 자동 정지, 동작 줄이기 설정의 정지 모형을 확인했다.
+- 화면 너비 **360·390·768·1366px**에서 족/주기 화면의 **8개 가로 넘침 검사 통과**. 휴대폰에서 원소 선택 후 모션이 화면 안에 들어오며 표로 돌아갈 수 있고, 표의 가로 스크롤을 유지한다.
+- 키보드 Enter 선택과 초점, 번호 슬라이더, 새로고침 후 표 방향·선택 원소 복원, 원자 관찰로 돌아오기, Fe·Au 범위 밖 안내를 확인했다. 페이지 및 콘솔 오류는 없었다.
+- 실제 휴대기기·학생 대상 수업 검사는 별도 확인이 필요하다.
+
+## 원소 모션과 과학적 근거
+
+족은 세로줄, 주기는 가로줄이며 원자 번호는 양성자 수다. 같은 족의 유사성은 화학적 성질을 중심으로 안내하고, 모든 상태·색·쓰임이 같다고 가르치지 않는다. [왕립화학회 주기율표 설명](https://periodic-table.rsc.org/about) 및 각 원소 페이지의 Group·Period 용어 설명을 참고했다.
+
+| 번호·원소 | 모션에서 보는 특징 | 구분·자료 |
+|---|---|---|
+| 1 · 수소 H | 산소와 반응하면 물이 생겨요 | 원소의 성질 · [RSC](https://periodic-table.rsc.org/element/1/hydrogen) |
+| 2 · 헬륨 He | 헬륨 풍선이 위로 떠올라요 | 성질과 쓰임 · [RSC](https://periodic-table.rsc.org/element/2/helium) |
+| 3 · 리튬 Li | 물과 반응해 기체가 나와요 | 원소의 성질 · [RSC](https://periodic-table.rsc.org/element/3/lithium) |
+| 4 · 베릴륨 Be | 얇은 금속판을 엑스선이 지나가요 | 성질과 쓰임 · [RSC](https://periodic-table.rsc.org/element/4/beryllium) |
+| 5 · 붕소 B | 붕소 화합물로 내열 유리를 만들어요 | 화합물의 쓰임 · [RSC](https://periodic-table.rsc.org/element/5/boron) |
+| 6 · 탄소 C | 흑연으로 글씨가 써져요 | 원소의 한 형태 · [RSC](https://periodic-table.rsc.org/element/6/carbon) |
+| 7 · 질소 N | 공기의 약 78%는 질소예요 | 주변에서 찾기 · [RSC](https://periodic-table.rsc.org/element/7/nitrogen) |
+| 8 · 산소 O | 다른 물질이 타는 것을 도와요 | 원소의 성질 · [RSC](https://periodic-table.rsc.org/element/8/oxygen) |
+| 9 · 플루오린 F | 다른 물질과 매우 쉽게 반응해요 | 원소의 성질 · [RSC](https://periodic-table.rsc.org/element/9/fluorine) |
+| 10 · 네온 Ne | 전기를 흘리면 붉은 주황빛이 나요 | 성질과 쓰임 · [RSC](https://periodic-table.rsc.org/element/10/neon) |
+| 11 · 나트륨 Na | 나트륨도 물과 반응해요 | 원소의 성질 · [RSC](https://periodic-table.rsc.org/element/11/sodium) |
+| 12 · 마그네슘 Mg | 탈 때 밝은 흰빛을 내요 | 원소의 성질 · [RSC](https://periodic-table.rsc.org/element/12/magnesium) |
+| 13 · 알루미늄 Al | 얇게 펴서 포일로 만들어요 | 성질과 쓰임 · [RSC](https://periodic-table.rsc.org/element/13/aluminium) |
+| 14 · 규소 Si | 전자 기기의 반도체 재료예요 | 성질과 쓰임 · [RSC](https://periodic-table.rsc.org/element/14/silicon) |
+| 15 · 인 P | 적린은 성냥갑 마찰면에 쓰여요 | 원소의 한 형태 · [RSC](https://periodic-table.rsc.org/element/15/phosphorus) |
+| 16 · 황 S | 노란색 고체가 가열되면 녹아요 | 원소의 성질 · [RSC](https://periodic-table.rsc.org/element/16/sulfur) |
+| 17 · 염소 Cl | 물 소독에 이용돼요 | 성질과 쓰임 · [RSC](https://periodic-table.rsc.org/element/17/chlorine) |
+| 18 · 아르곤 Ar | 잘 반응하지 않아 금속을 보호해요 | 성질과 쓰임 · [RSC](https://periodic-table.rsc.org/element/18/argon) |
+| 19 · 칼륨 K | 칼륨도 물과 반응해요 | 원소의 성질 · [RSC](https://periodic-table.rsc.org/element/19/potassium) |
+| 20 · 칼슘 Ca | 칼슘 화합물은 뼈와 이를 이루어요 | 화합물의 쓰임 · [RSC](https://periodic-table.rsc.org/element/20/calcium) |
+
+수소의 반응 모형은 2H₂ + O₂ → 2H₂O로 원자 수를 보존하며, 점화 조건을 표시한다. 리튬·나트륨·칼륨 장면은 물과 반응한다는 공통점의 모형이며 실제 반응 속도나 세기를 비교하는 실험이 아니다. 네온은 전기가 흐를 때의 붉은 주황빛을, 적린은 성냥 머리가 아닌 성냥갑 마찰면을 보여 준다. 붕소 유리와 뼈 속 칼슘은 화합물의 쓰임임을 명시한다.
 
 ## 실물 일러스트 제작 기록
 
