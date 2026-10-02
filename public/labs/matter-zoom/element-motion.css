@@ -1,0 +1,88 @@
+/* One shared timeline lets pause, replay and scene selection control every layer. */
+.motion-stage{background:radial-gradient(ellipse at 50% 35%,#234256,#102232 85%);border:1px solid #39586b}
+.element-motion{width:100%;height:auto;display:block}
+.element-motion .motion-label{font-size:24px;fill:#e7f4f7;text-anchor:middle;font-family:inherit}
+.element-motion .motion-label.small{font-size:21px}.element-motion .motion-label.tiny{font-size:18px}.element-motion .motion-label.big{font-size:40px;font-weight:750}.element-motion .motion-label.dark{fill:#142f41;font-weight:700}
+.motion-stage .fx{animation-duration:8.4s;animation-delay:0s;animation-timing-function:ease-in-out;animation-fill-mode:both;animation-iteration-count:1;animation-play-state:var(--motion-play,running)}
+.motion-stage .motion-clock{animation-name:motion-progress;animation-timing-function:linear;transform-origin:20px 336px}
+.motion-phases{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:4px;padding:10px;background:#112737}
+.motion-phases button,.motion-phases>span{position:relative;min-width:0;text-align:left;font-size:14px;padding:10px 7px;border:1px solid #567285;border-radius:9px;line-height:1.45;background:#142f40;color:#dbecf3;min-height:68px;word-break:keep-all}
+.motion-phases small{display:block;font-size:12px;color:#abc1cd;margin-bottom:3px}.motion-phases .phase-0{animation-name:phase-first}.motion-phases .phase-1{animation-name:phase-second}.motion-phases .phase-2{animation-name:phase-third}.motion-phases .result-phase{background:#294a43;border-color:#bdebc4}
+.element-motion .before{opacity:0;animation-name:motion-before}.element-motion .after,.element-motion .result-reveal{opacity:1;animation-name:motion-after}
+.element-motion .rearrange{transform:translate(var(--tx),var(--ty));animation-name:motion-regroup}
+.element-motion .ignition{opacity:0;animation-name:motion-ignite}
+.element-motion .balloon-rise{transform:translateY(-80px);animation-name:motion-rise}.element-motion .air-balloon{transform:translateY(20px);animation-name:motion-air-drop}.element-motion .rise-arrow{animation-name:motion-after}
+.element-motion .metal-drift{transform:translateX(var(--travel));animation-name:motion-drift}.element-motion .metal-shrink{transform-origin:270px 170px;transform:scale(.08);opacity:0;animation-name:motion-consume}
+.element-motion .reaction-bubble{opacity:0;transform:translate(var(--tx),var(--rise));animation-name:motion-bubbles}
+.element-motion .ripple{transform-origin:270px 180px;opacity:0;animation-name:motion-ripple}
+.element-motion .xray-beam{stroke-dasharray:8 5;animation-name:motion-beam}.element-motion .detector{animation-name:motion-detector;filter:drop-shadow(0 0 6px #bdebc4)}
+.element-motion .heater-light{animation-name:motion-heater}.element-motion .heat-wave{opacity:.7;animation-name:motion-heat}
+.element-motion .thermometer{transform-origin:453px 212px;animation-name:motion-thermometer}
+.element-motion .pencil-trace{stroke-dasharray:100;stroke-dashoffset:0;animation-name:motion-draw}.element-motion .pencil-move{transform:translateX(200px);animation-name:motion-pencil}
+.element-motion .graphite-layer{transform:translate(18px,20px);animation-name:motion-graphite}
+.element-motion .air-context{opacity:0;animation-name:motion-before}.element-motion .air-molecule{animation-name:motion-drift-air}.element-motion .air-grid{animation-name:motion-air-grid}.element-motion .nitrogen-bar{transform-origin:313px 190px;animation-name:motion-bar}
+.element-motion .oxygen-flame{animation-name:motion-fire-grow;transform:scale(1.1)}.element-motion .oxygen-glow{animation-name:motion-detector}.element-motion .oxygen-flow{transform:translateX(173px);opacity:0;animation-name:motion-oxygen}
+.element-motion .reaction-coat{opacity:1;animation-name:motion-coat}.element-motion .fluorine-flow{transform:translateX(206px);opacity:0;animation-name:motion-fluorine}
+.element-motion .current-wire{animation-name:motion-current;opacity:1}.element-motion .neon-tube{animation-name:motion-neon;filter:drop-shadow(0 0 13px #ff8d4b)}.element-motion .neon-core{animation-name:motion-detector}.element-motion .power-switch{transform:translateX(27px);animation-name:motion-switch}
+.element-motion .magnesium-strip{opacity:0;animation-name:motion-strip}.element-motion .magnesium-glow{opacity:0;animation-name:motion-magnesium-glow}.element-motion .magnesium-flame{opacity:0;transform:scale(.1);animation-name:motion-magnesium}.element-motion .oxide-grain{animation-name:motion-oxide}
+.element-motion .metal-feed{animation-name:motion-feed;transform:translateX(100px)}.element-motion .roller{animation-name:motion-roller;transform:rotate(var(--turn))}.element-motion .foil-sheet{transform-origin:273px 174px;animation-name:motion-foil}.element-motion .foil-fold{animation-name:motion-after}
+.element-motion .chip-signal{transform:translateX(195px);opacity:0;animation-name:motion-signal}.element-motion .chip-output{animation-name:motion-output}
+.element-motion .match-strike{transform:translate(164px,-55px);animation-name:motion-match}.element-motion .match-flame{transform:scale(.72);animation-name:motion-match-flame}.element-motion .strike-spark{opacity:0;animation-name:motion-ignite}
+.element-motion .sulfur-crystals{transform-origin:280px 227px;transform:scaleY(.02);opacity:0;animation-name:motion-melt}.element-motion .sulfur-pool{transform-origin:280px 225px;animation-name:motion-pool}
+.element-motion .disinfect-drop{opacity:0;transform:translateY(75px);animation-name:motion-drop}.element-motion .disinfect-spread{transform-origin:281px 196px;animation-name:motion-spread}.element-motion .microbe{opacity:.08;animation-name:motion-microbe}
+.element-motion .argon-cloud{animation-name:motion-after}.element-motion .argon-stream{transform:translate(var(--spread),99px);opacity:.7;animation-name:motion-argon}.element-motion .displaced-air{opacity:.18;animation-name:motion-displace}.element-motion .weld-glow{animation-name:motion-weld;opacity:.8}
+.element-motion .bone-zoom{transform-origin:175px 186px;animation-name:motion-bone-zoom}.element-motion .bone-grain{animation-name:motion-after}
+@keyframes motion-progress{from{transform:scaleX(0)}to{transform:scaleX(1)}}
+@keyframes phase-first{0%,27%{background:#35584b;border-color:#d7f8c1;color:#fff}28%,100%{background:#142f40;border-color:#567285}}
+@keyframes phase-second{0%,27%,71%,100%{background:#142f40;border-color:#567285}28%,70%{background:#35584b;border-color:#d7f8c1;color:#fff}}
+@keyframes phase-third{0%,70%{background:#142f40;border-color:#567285}71%,100%{background:#35584b;border-color:#d7f8c1;color:#fff}}
+@keyframes motion-before{0%,24%{opacity:1}45%,100%{opacity:0}}
+@keyframes motion-after{0%,55%{opacity:0}75%,100%{opacity:1}}
+@keyframes motion-regroup{0%,27%{transform:translate(0,0)}70%,100%{transform:translate(var(--tx),var(--ty))}}
+@keyframes motion-ignite{0%,27%{opacity:0}35%{opacity:1}46%,100%{opacity:0}}
+@keyframes motion-rise{0%,22%{transform:translateY(0)}80%,100%{transform:translateY(-80px)}}
+@keyframes motion-air-drop{0%,22%{transform:translateY(0)}70%,100%{transform:translateY(20px)}}
+@keyframes motion-drift{0%,10%{transform:translate(0,-32px)}23%{transform:translate(0,0)}46%{transform:translate(-20px,0)}69%,100%{transform:translate(var(--travel),0)}}
+@keyframes motion-consume{0%,24%{transform:scale(1);opacity:1}65%{transform:scale(.5);opacity:1}79%,100%{transform:scale(.08);opacity:0}}
+@keyframes motion-bubbles{0%,24%{opacity:0;transform:translate(0,0)}30%{opacity:1}47%{opacity:0;transform:translate(var(--tx),var(--rise))}48%{opacity:0;transform:translate(0,0)}54%{opacity:1}72%,100%{opacity:0;transform:translate(var(--tx),var(--rise))}}
+@keyframes motion-ripple{0%,24%{transform:scale(.3);opacity:0}33%{opacity:.7}50%{transform:scale(1.5);opacity:0}51%{transform:scale(.3);opacity:.6}75%,100%{transform:scale(1.6);opacity:0}}
+@keyframes motion-beam{0%,23%{stroke-dashoffset:100;opacity:0}32%{opacity:1}76%,100%{stroke-dashoffset:0;opacity:.8}}
+@keyframes motion-detector{0%,35%{opacity:.06;filter:none}75%,100%{opacity:1}}
+@keyframes motion-heater{0%,23%{opacity:.13}45%,100%{opacity:1}}
+@keyframes motion-heat{0%,23%{opacity:0;transform:translateY(10px)}45%{opacity:.9;transform:translateY(-6px)}55%{opacity:.3;transform:translateY(5px)}70%,100%{opacity:.7;transform:translateY(-5px)}}
+@keyframes motion-thermometer{0%,23%{transform:scaleY(.18)}75%,100%{transform:scaleY(1)}}
+@keyframes motion-draw{0%,24%{stroke-dashoffset:100}73%,100%{stroke-dashoffset:0}}
+@keyframes motion-pencil{0%,24%{transform:translateX(0)}73%,100%{transform:translateX(200px)}}
+@keyframes motion-graphite{0%,30%{transform:translate(0,0)}75%,100%{transform:translate(18px,20px)}}
+@keyframes motion-drift-air{from{transform:translate(0,0)}to{transform:translate(13px,-8px)}}
+@keyframes motion-air-grid{0%,23%{opacity:0;transform:translateY(15px)}57%,100%{opacity:1;transform:translateY(0)}}
+@keyframes motion-bar{0%,27%{transform:scaleX(.01)}67%,100%{transform:scaleX(1)}}
+@keyframes motion-fire-grow{0%,23%{transform:scale(.15)}48%{transform:scale(.75)}59%{transform:scale(.97,.84)}75%,100%{transform:scale(1.1)}}
+@keyframes motion-oxygen{0%,24%{transform:translateX(0);opacity:.7}65%,100%{transform:translateX(173px);opacity:0}}
+@keyframes motion-coat{0%,30%{opacity:0}75%,100%{opacity:1}}
+@keyframes motion-fluorine{0%,24%{transform:translateX(0);opacity:1}70%,100%{transform:translateX(206px);opacity:0}}
+@keyframes motion-current{0%,25%{opacity:0;stroke-dashoffset:120}75%,100%{opacity:1;stroke-dashoffset:0}}
+@keyframes motion-neon{0%,26%{opacity:.04;filter:none}48%{opacity:.65}65%,100%{opacity:1;filter:drop-shadow(0 0 13px #ff8d4b)}}
+@keyframes motion-switch{0%,23%{transform:translateX(0)}29%,100%{transform:translateX(27px)}}
+@keyframes motion-strip{0%,29%{opacity:1}65%,100%{opacity:0}}
+@keyframes motion-magnesium-glow{0%,27%{opacity:0}38%,56%{opacity:1}73%,100%{opacity:0}}
+@keyframes motion-magnesium{0%,27%{opacity:0;transform:scale(.1)}38%,56%{opacity:1;transform:scale(1.1)}73%,100%{opacity:0;transform:scale(.1)}}
+@keyframes motion-oxide{0%,46%{opacity:0;transform:translateY(-32px)}72%,100%{opacity:1;transform:translateY(0)}}
+@keyframes motion-feed{0%,24%{transform:translateX(0)}75%,100%{transform:translateX(100px)}}
+@keyframes motion-roller{0%,24%{transform:rotate(0)}75%,100%{transform:rotate(var(--turn))}}
+@keyframes motion-foil{0%,24%{transform:scaleX(.01)}75%,100%{transform:scaleX(1)}}
+@keyframes motion-signal{0%,24%{transform:translateX(0);opacity:0}26%{opacity:1}61%,100%{transform:translateX(195px);opacity:0}}
+@keyframes motion-output{0%,52%{opacity:.1}75%,100%{opacity:1}}
+@keyframes motion-match{0%,24%{transform:translate(0,-30px)}29%{transform:translate(0,0)}43%{transform:translate(114px,0)}65%,100%{transform:translate(164px,-55px)}}
+@keyframes motion-match-flame{0%,42%{transform:scale(0)}65%,100%{transform:scale(.72)}}
+@keyframes motion-melt{0%,27%{transform:scaleY(1);opacity:1}65%{opacity:1}76%,100%{transform:scaleY(.02);opacity:0}}
+@keyframes motion-pool{0%,27%{transform:scaleX(.1);opacity:0}76%,100%{transform:scaleX(1);opacity:1}}
+@keyframes motion-drop{0%,24%{transform:translateY(0);opacity:1}40%{opacity:1}44%,100%{transform:translateY(75px);opacity:0}}
+@keyframes motion-spread{0%,38%{opacity:0;transform:scale(.02)}65%,100%{opacity:.18;transform:scale(1)}}
+@keyframes motion-microbe{0%,47%{opacity:1}76%,100%{opacity:.08}}
+@keyframes motion-argon{0%,23%{transform:translate(0,0);opacity:0}32%{opacity:1}68%,100%{transform:translate(var(--spread),99px);opacity:.7}}
+@keyframes motion-displace{0%,30%{opacity:1;transform:translateY(26px)}70%,100%{opacity:.18;transform:translateY(-12px)}}
+@keyframes motion-weld{0%,24%{opacity:.15}40%,100%{opacity:.8}}
+@keyframes motion-bone-zoom{0%,22%{transform:scale(.25);opacity:.2}60%,100%{transform:scale(1);opacity:1}}
+@media(prefers-reduced-motion:reduce){.motion-stage .fx,.periodic-explore-grid .axis-match{animation:none!important}}
+@media(max-width:580px){.motion-phases{padding:7px;gap:4px}.motion-phases button,.motion-phases>span{font-size:12px;min-height:70px;padding:8px 6px}.motion-phases small{font-size:11px}}

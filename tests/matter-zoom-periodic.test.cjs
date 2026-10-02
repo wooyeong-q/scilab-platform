@@ -42,3 +42,18 @@ test('table direction survives reload and old or malformed records receive a saf
  }
  for(const tableAxis of [undefined,'shells','<img>',null])assert.equal(restoreExplorer(JSON.stringify({...freshExplorer(),tableAxis})).tableAxis,'group');
 });
+
+
+test('room-temperature states distinguish substances, elements, and heated samples',async()=>{
+ const {ELEMENT_FEATURES,ROOM_STATES}=await import('../public/labs/matter-zoom/element-features.mjs');
+ const {MATERIALS}=await import('../public/labs/matter-zoom/data.mjs');
+ const {periodicExplorer}=await import('../public/labs/matter-zoom/periodic-view.mjs');
+ assert.deepEqual(Object.keys(ELEMENT_FEATURES).map(Number).filter(z=>ELEMENT_FEATURES[z].state==='기체'),[1,2,7,8,9,10,17,18]);
+ assert.equal(Object.values(ELEMENT_FEATURES).filter(f=>f.state==='고체').length,12);
+ assert.equal(Object.values(ELEMENT_FEATURES).filter(f=>f.state==='액체').length,0);
+ assert.equal(MATERIALS.water.roomState,'액체');assert.equal(MATERIALS.gold.roomState,'고체');
+ for(const material of Object.values(MATERIALS))assert.ok(ROOM_STATES[material.roomState]);
+ assert.equal(ELEMENT_FEATURES[16].state,'고체');
+ assert.match(periodicExplorer({z:16,observedZ:8}),/황은 상온에서는 고체이며.*가열/);
+ assert.match(periodicExplorer({z:17,observedZ:8}),/기체인 염소와 소독제 용액의 상태는 구별/);
+});

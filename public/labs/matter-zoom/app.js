@@ -1,6 +1,7 @@
 import {ELEMENTS,atom,MATERIALS,PARTICLES,DISCOVERIES,MOLECULE_LAYOUTS,ATOM_COLORS} from './data.mjs';
-import {periodicExplorer} from './periodic-view.mjs';
+import {periodicExplorer,stateBadge} from './periodic-view.mjs';
 import {SHOWN_GROUPS} from './element-features.mjs';
+import {createPresentation} from './presentation.mjs';
 import {freshExplorer,restoreExplorer} from './exploration.mjs';
 const MODE_INFO={middle:{label:'중학교 · 중2'},high:{label:'고등학교 · 확장'}};
 import {normalizeMode,readContext,makeLessonLink,storageKey} from './session.mjs';
@@ -15,6 +16,7 @@ const $=s=>document.querySelector(s);
 const esc=s=>String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const btn=(label,action,value='',cls='',extra='')=>`<button class="${cls}" data-action="${action}" data-value="${esc(value)}" ${extra}>${label}</button>`;
 const high=()=>context.mode==='high';
+const presentation=createPresentation(()=>state);
 const add=(key,value)=>{if(!state[key].includes(value))state[key].push(value);};
 function save(){try{localStorage.setItem(activeKey,JSON.stringify(state));}catch{storageOK=false;}}
 function record(key){add('records',key);save();}
@@ -37,16 +39,18 @@ function render(focus=false){
  const tableScroll=$('.periodic-scroll')?.scrollLeft;
  const expanded=new Set([...document.querySelectorAll('#app details[open]')].map(d=>d.querySelector('summary')?.textContent));
  const prior=document.activeElement,action=prior?.dataset?.action,value=prior?.dataset?.value,change=prior?.dataset?.change;
+ presentation.beforeRender();
  $('#mode-label').textContent=high()?'고등학교 · 확장':'중학교 · 중2';$('.brand').href=location.pathname+location.search;
  $('#app').innerHTML=scopeStrip()+(needsResume?resumeScreen():state.material?workspace():landing());
  if(tableScroll!==undefined&&$('.periodic-scroll'))$('.periodic-scroll').scrollLeft=tableScroll;
  document.querySelectorAll('#app details').forEach(d=>{if(expanded.has(d.querySelector('summary')?.textContent))d.open=true;});
- if(focus)$('h1')?.focus({preventScroll:true});
- else if(action)document.querySelector(`#app ${prior?.tagName==='BUTTON'?'button':''}[data-action="${CSS.escape(action)}"][data-value="${CSS.escape(value||'')}"]`)?.focus({preventScroll:true});
+ presentation.afterRender();
+ if(focus)$(presentation.active?'#presentation h1':'#app h1')?.focus({preventScroll:true});
+ else if(action)document.querySelector(`${presentation.active?'#presentation':'#app'} ${prior?.tagName==='BUTTON'?'button':''}[data-action="${CSS.escape(action)}"][data-value="${CSS.escape(value||'')}"]`)?.focus({preventScroll:true});
  else if(change)document.querySelector(`[data-change="${CSS.escape(change)}"]`)?.focus({preventScroll:true});
  save();
 }
-function landing(){return `<section class="explorer-landing">${question('확대! 물질 탐험 연구소','물질을 확대하면 무엇이 보일까?','물질을 고르고, 원자 속까지 들어가 보세요.')}<div class="materials-choice">${Object.entries(MATERIALS).map(([id,m])=>btn(`${photo(id)}<div><small>${m.formula}</small><h2>${m.name}</h2><p>${m.card}</p><b>관찰 시작 ＋</b></div>`,'material',id,`material-choice ${id}`)).join('')}</div><p class="model-note-inline">원자와 전자는 맨눈으로 직접 볼 수 없어요. 확대 후에는 이해를 돕는 모형을 사용하며, 색·크기·간격은 실제와 다릅니다.</p></section>`;}
+function landing(){return `<section class="explorer-landing">${question('확대! 물질 탐험 연구소','물질을 확대하면 무엇이 보일까?','물질을 고르고, 원자 속까지 들어가 보세요.')}<div class="materials-choice">${Object.entries(MATERIALS).map(([id,m])=>btn(`${photo(id)}<div><div class="material-meta"><small>${m.formula}</small>${stateBadge(m.roomState)}</div><h2>${m.name}</h2><p>${m.card}</p><b>관찰 시작 ＋</b></div>`,'material',id,`material-choice ${id}`)).join('')}</div><p class="model-note-inline">상태 표시는 상온(20°C), 1기압 기준이에요. 원자와 전자는 맨눈으로 직접 볼 수 없어요. 확대 후에는 이해를 돕는 모형을 사용하며, 색·크기·간격은 실제와 다릅니다.</p></section>`;}
 function workspace(){
  const m=MATERIALS[state.material],a=atom(state.z),l=state.level,array=m.kind==='array',molecule=m.kind==='molecule';
  const titles={0:'그림을 눌러 확대해 보세요',1:molecule?'분자 하나를 눌러 보세요':`${atom(m.defaultZ).name} 원자 하나를 눌러 보세요`,2:`${[...new Set(m.atoms)].map(z=>atom(z).symbol).join(' 또는 ')}를 눌러 안을 보세요`,4:`${a.name} 원자 안에는 무엇이 있을까?`,5:'원자핵 속 입자를 눌러 보세요'};
@@ -54,7 +58,7 @@ function workspace(){
  const back=l===5?4:l>=4?(molecule?2:1):Math.max(0,l-1);
  const scene=l===0?`<button class="macro-photo ${state.material}" data-action="zoom" data-value="1" aria-label="${m.name} 확대">${photo(state.material)}<span class="photo-zoom">${m.name} 확대 <b>＋</b></span></button>`:l===1?fieldSVG():l===2?moleculeSVG():atomSVG(a.z,{nucleus:l===5,exploded});
  const caption=l===0?m.intro:l===1?m.field:l===2?m.detail:l===5?(a.n===0?'이 수소 원자핵에는 양성자 1개만 있어요.':'원자핵 안에는 양성자와 중성자가 모여 있어요.'):'가운데는 원자핵, 그 주변에는 전자가 있어요.';
- return `<section class="explorer-workspace"><div class="workspace-bar">${btn('← 물질 선택','home','','text-button')}<div class="material-switch"><select id="material-select" data-change="material" aria-label="다른 물질 선택">${Object.entries(MATERIALS).map(([id,v])=>`<option value="${id}" ${id===state.material?'selected':''}>${v.name} · ${v.formula}</option>`).join('')}</select></div></div><ol class="breadcrumb" aria-label="확대 위치">${steps.map(([name,level])=>`<li>${btn(name,'zoom',level,(l===5?4:l)===level?'current':'',`${level>state.deepest?'disabled':''} ${(l===5?4:l)===level?'aria-current="step"':''}`)}</li>`).join('')}</ol>${l>=4?conceptMenu():''}${state.drawer?drawer():`<section class="observation-panel"><div class="observation-title"><h1 tabindex="-1">${titles[l]||titles[4]}</h1><p>${caption}</p></div><div class="explorer-layout"><div class="lens-stage"><div class="lens-viewport"><div class="world">${scene}</div></div>${l>=4?`<div class="particle-readout">${particlePicker()}<div class="particle-detail" aria-live="polite">${particleExplanation()}</div></div>`:''}</div></div><div class="lens-controls">${btn('− 한 단계 밖으로','zoom',back,'secondary',l===0?'disabled':'')}${l>=4?btn(l===5?'원자 전체 보기':'원자핵 확대 ＋','zoom',l===5?4:5,'secondary'):''}${l===5?btn(exploded?'다시 모으기':'입자 펼쳐 보기','explode','','secondary'):''}</div></section>`}<p class="model-caption">${l===0?'확대하면 실제 모습을 바탕으로 한 일러스트에서 입자 모형으로 바뀝니다.':l>=4?'선택한 원자를 중성 원자로 단순화한 모형입니다. 위치·크기·간격은 실제와 다르며, 전자의 위치는 고정되어 있지 않아요.' :'색·크기·간격은 이해를 돕기 위한 모형입니다.'}${l>=4&&a.z>20?` ${a.name}의 구성 입자는 일부만 그렸으며 수는 따로 표시합니다.`:''}${l===1&&array?' 실제 입체 배열을 평면으로 단순화했습니다.':''}</p></section>`;
+ return `<section class="explorer-workspace"><div class="workspace-bar">${btn('← 물질 선택','home','','text-button')}<div class="material-switch"><select id="material-select" data-change="material" aria-label="다른 물질 선택">${Object.entries(MATERIALS).map(([id,v])=>`<option value="${id}" ${id===state.material?'selected':''}>${v.name} · ${v.formula}</option>`).join('')}</select></div></div><ol class="breadcrumb" aria-label="확대 위치">${steps.map(([name,level])=>`<li>${btn(name,'zoom',level,(l===5?4:l)===level?'current':'',`${level>state.deepest?'disabled':''} ${(l===5?4:l)===level?'aria-current="step"':''}`)}</li>`).join('')}</ol>${l>=4?conceptMenu():''}${state.drawer?drawer():`<section class="observation-panel"><div class="observation-toolbar">${btn("⛶ 관찰 화면 크게 보기","present","observation","present-open")}</div><div class="observation-title"><h1 tabindex="-1">${titles[l]||titles[4]}</h1><p>${caption}</p>${l===0?`<div class="sample-state">상온의 ${m.name} ${stateBadge(m.roomState)}</div>`:""}</div><div class="explorer-layout"><div class="lens-stage"><div class="lens-viewport"><div class="world">${scene}</div></div>${l>=4?`<div class="particle-readout">${particlePicker()}<div class="particle-detail" aria-live="polite">${particleExplanation()}</div></div>`:''}</div></div><div class="lens-controls">${btn('− 한 단계 밖으로','zoom',back,'secondary',l===0?'disabled':'')}${l>=4?btn(l===5?'원자 전체 보기':'원자핵 확대 ＋','zoom',l===5?4:5,'secondary'):''}${l===5?btn(exploded?'다시 모으기':'입자 펼쳐 보기','explode','','secondary'):''}</div></section>`}<p class="model-caption">${l===0?'확대하면 실제 모습을 바탕으로 한 일러스트에서 입자 모형으로 바뀝니다.':l>=4?'선택한 원자를 중성 원자로 단순화한 모형입니다. 위치·크기·간격은 실제와 다르며, 전자의 위치는 고정되어 있지 않아요.' :'색·크기·간격은 이해를 돕기 위한 모형입니다.'}${l>=4&&a.z>20?` ${a.name}의 구성 입자는 일부만 그렸으며 수는 따로 표시합니다.`:''}${l===1&&array?' 실제 입체 배열을 평면으로 단순화했습니다.':''}</p></section>`;
 }
 function particlePicker(){const a=atom(state.z);return `<div class="particle-picker" role="group" aria-label="입자를 누르면 위치와 성질을 볼 수 있어요">${['p','n','e'].map(k=>btn(`<span class="dot ${k}">${PARTICLES[k].sign}</span><span>${PARTICLES[k].name}<b>${k==='n'?a.n:a.z}개</b></span>`,'particle',k,particle===k?'selected':'',`aria-pressed="${particle===k}"`)).join('')}</div>`;}
 function particleExplanation(){
@@ -67,7 +71,7 @@ function particleExplanation(){
 function counts(a,e=a.z){return `<dl class="particle-counts"><div><dt><span class="dot p">+</span> 양성자</dt><dd>${a.z}개</dd></div><div><dt><span class="dot n">0</span> 중성자 · 이 원자의 예</dt><dd>${a.n}개</dd></div><div><dt><span class="dot e">−</span> 전자</dt><dd>${e}개</dd></div></dl>`;}
 
 function conceptMenu(){return `<nav class="concept-menu" aria-label="관찰과 개념 선택">${btn('원자 관찰','close-drawer','',!state.drawer?'selected':'',`aria-pressed="${!state.drawer}"`)}${[['compare','원소 비교'],['number','주기율표'],['charge','전기적 중성']].map(([key,title])=>btn(title,'open-drawer',key,state.drawer===key?'selected':'',`aria-pressed="${state.drawer===key}"`)).join('')}</nav>`;}
-function drawer(){const titles={compare:'원소가 다르면 무엇이 다를까?',number:'주기율표에서 원소의 특징을 찾아보세요',charge:'양성자는 +인데, 원자는 왜 중성일까?'};return `<section class="concept-drawer" id="concept-drawer" aria-labelledby="drawer-title"><div class="drawer-heading"><h1 id="drawer-title" tabindex="-1">${titles[state.drawer]}</h1>${btn('원자 관찰로 돌아가기','close-drawer','','text-button')}</div>${{compare:compareDrawer,number:numberDrawer,charge:chargeDrawer}[state.drawer]()}</section>`;}
+function drawer(){const titles={compare:'원소가 다르면 무엇이 다를까?',number:'주기율표에서 원소의 특징을 찾아보세요',charge:'양성자는 +인데, 원자는 왜 중성일까?'};return `<section class="concept-drawer" id="concept-drawer" aria-labelledby="drawer-title"><div class="drawer-heading"><h1 id="drawer-title" tabindex="-1">${titles[state.drawer]}</h1>${state.drawer!=="number"?btn("⛶ 크게 보기","present","concept","present-open"):""}${btn('원자 관찰로 돌아가기','close-drawer','','text-button')}</div>${{compare:compareDrawer,number:numberDrawer,charge:chargeDrawer}[state.drawer]()}</section>`;}
 function compareDrawer(){const zs=state.z===26?[8,26,79]:[...new Set([1,state.z,8,79])].slice(0,3).sort((a,b)=>a-b);return `<p>${zs.map(z=>atom(z).name).join('·')}의 원자핵을 나란히 살펴보세요.</p><div class="compare-three">${zs.map(z=>{const a=atom(z);return `<section class="compare-specimen"><h2>${a.symbol} <span>${a.name}</span></h2>${atomSVG(z,{nucleus:true,interactive:false})}<p class="proton-count"><span class="dot p">+</span> 양성자 <b>${a.z}개</b></p><p>원자 번호 <b>${a.z}</b></p>${z>20?'<small>그림에는 일부만 표시</small>':''}</section>`;}).join('')}</div><p class="finding"><b>양성자 수가 다르면 원소의 종류가 달라져요.</b> 원자 번호는 양성자 수와 같아요.</p><details class="extension-panel"><summary>전자 수가 달라도 같은 원소일까?</summary><p>나트륨 원자 Na: 양성자 11개 / 전자 11개</p><p>나트륨 이온 Na⁺: 양성자 11개 / 전자 10개</p><p>양성자가 모두 11개이므로 같은 나트륨이에요.</p></details>${high()?'<details class="extension-panel"><summary>고등학교 확장 · 중성자 수가 다르다면?</summary><p>탄소-12: 양성자 6개 + 중성자 6개 → 질량수 12</p><p>탄소-13: 양성자 6개 + 중성자 7개 → 질량수 13</p><p>양성자 수가 같아서 모두 탄소이며, 이러한 원자들을 동위 원소라고 해요.</p></details>':''}`;}
 function numberDrawer(){return periodicExplorer({z:state.numberZ,observedZ:state.z,axis:state.tableAxis,playing:motionPlaying,reduced:reduceMotion()});}
 function chargePairs(p,e){const pairs=Math.min(p,e),net=p-e;return `<div class="charge-pairs"><p><b>+와 − ${pairs}쌍</b> · 서로 더하면 0</p><div aria-hidden="true">${Array.from({length:Math.min(pairs,20)},()=>'<span class="charge-pair">+ −</span>').join('')}</div>${pairs>20?'<p>그림은 20쌍만 표시합니다.</p>':''}<p class="remaining-charge">${net===0?'남는 전하 없음 → 전체적으로 중성':`${net>0?'+':'−'} 전하 1개가 남아요 → ${net>0?'양이온':'음이온'}`}</p></div>`;}
@@ -145,7 +149,7 @@ async function zoom(level,origin){
 }
 function selectMaterial(id){if(busy||!Object.hasOwn(MATERIALS,id))return;state.material=id;state.level=0;state.deepest=0;state.z=MATERIALS[id].defaultZ;state.selected=0;state.drawer='';add('visited',id);particle=null;exploded=false;render(true);}
 function openDrawer(key){if(!['compare','number','charge'].includes(key)||!state.material)return;state.drawer=key;if(key==='compare')record('compare');if(key==='number'){state.numberZ=state.z<=20?state.z:1;resetMotion();record('number');record('table');record('elementFeatures');}if(key==='charge')record('neutral');particle=null;render();$('#drawer-title')?.focus({preventScroll:true});document.querySelector('.concept-menu')?.scrollIntoView({block:'nearest'});}
-function selectNumber(value,reveal=false){const z=Number(value);if(!Number.isInteger(z)||z<1||z>20)return;state.numberZ=z;state.tableZ=z;add('tableSeen',z);resetMotion();record('elementFeatures');render();if(reveal&&matchMedia('(max-width:960px)').matches){$('#feature-name')?.focus({preventScroll:true});$('.element-feature')?.scrollIntoView({block:'start',behavior:reduceMotion()?'auto':'smooth'});}}
+function selectNumber(value,reveal=false){const z=Number(value);if(!Number.isInteger(z)||z<1||z>20)return;state.numberZ=z;state.tableZ=z;add('tableSeen',z);resetMotion();record('elementFeatures');render();if(reveal&&!presentation.active&&matchMedia('(max-width:960px)').matches){$('#feature-name')?.focus({preventScroll:true});$('.element-feature')?.scrollIntoView({block:'start',behavior:reduceMotion()?'auto':'smooth'});}}
 function selectTableAxis(axis){if(!['group','period'].includes(axis))return;state.tableAxis=axis;record(axis==='group'?'groups':'periods');resetMotion();render();}
 function selectTableLine(axis,value){
  const n=Number(value);if(axis==='group'?!SHOWN_GROUPS.includes(n):![1,2,3,4].includes(n))return;
@@ -158,8 +162,17 @@ function updateMotionControl(){
  if(stage){stage.style.setProperty('--motion-play',motionPlaying?'running':'paused');stage.classList.toggle('is-paused',!motionPlaying);}
  if(control){control.textContent=motionPlaying?'Ⅱ 일시정지':motionEnded?'▶ 다시 재생':'▶ 재생';control.setAttribute('aria-label','원소 특징 모션 '+(motionPlaying?'일시정지':'재생'));}
 }
+function seekMotion(value){
+ const step=Number(value);if(![0,1,2].includes(step))return;
+ const stage=$('.motion-stage');if(!stage)return;
+ motionPlaying=false;motionEnded=step===2;updateMotionControl();
+ stage.dataset.phase=String(step);
+ if(reduceMotion()){stage.classList.add('manual-phase');return;}
+ stage.getAnimations({subtree:true}).forEach(a=>{a.currentTime=[0,4200,8400][step];});
+}
 function toggleMotion(){if(reduceMotion())return;if(motionEnded){resetMotion();render();}else{motionPlaying=!motionPlaying;updateMotionControl();}}
 async function handle(action,value,el){
+ if(presentation.handle(action,value,el))return;
  if(busy)return;
  if(needsResume&&!['tools','resume','reset-confirm','reset','close','help','teacher-setup','learning-settings','choose-mode','switch-mode','copy-class-link'].includes(action)){say('본인의 관찰 기록인지 선택해 주세요.');return;}
  switch(action){
@@ -185,6 +198,7 @@ async function handle(action,value,el){
  case 'table-group':selectTableLine('group',value);break;
  case 'table-period':selectTableLine('period',value);break;
  case 'motion-toggle':toggleMotion();break;
+ case 'motion-step':seekMotion(value);break;
  case 'motion-replay':resetMotion();render();break;
  case 'charge-atom':if([11,17].includes(Number(value))){state.chargeZ=Number(value);state.chargeVariant='neutral';render();}break;
  case 'charge-variant':if(value==='neutral'||value==='lost'&&state.chargeZ===11||value==='gained'&&state.chargeZ===17){state.chargeVariant=value;render();}break;
@@ -202,6 +216,6 @@ document.addEventListener('animationend',e=>{if(e.animationName==='motion-progre
 document.addEventListener('submit',e=>{if(e.target.id==='teacher-form'){e.preventDefault();createClassLinks();}});
 document.addEventListener('click',e=>{const b=e.target.closest('[data-action]');if(b&&!b.disabled)handle(b.dataset.action,b.dataset.value||'',b);});
 document.addEventListener('keydown',e=>{const b=e.target.closest('svg [role="button"]');if(b&&(e.key==='Enter'||e.key===' ')){e.preventDefault();handle(b.dataset.action,b.dataset.value,b);}});
-document.addEventListener('change',e=>{if(e.target.dataset.change==='material')selectMaterial(e.target.value);});
+document.addEventListener('change',e=>{if(e.target.dataset.change==='material')selectMaterial(e.target.value);if(e.target.dataset.change==='presentation-element')selectNumber(e.target.value);});
 document.addEventListener('input',e=>{if(e.target.dataset.change==='number-atom')selectNumber(e.target.value);});
 render();if(!storageOK)say('관찰 기록을 저장할 수 없지만 확대 탐험은 계속할 수 있어요.');
