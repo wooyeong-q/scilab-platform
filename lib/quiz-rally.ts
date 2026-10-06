@@ -1,7 +1,7 @@
 import { createHash, randomBytes, randomInt, randomUUID, timingSafeEqual } from 'node:crypto';
 import { sql } from './db';
 import { QUESTION_MAP, QUIZ_QUESTIONS } from './quiz-rally-questions';
-import { validateQuestions, type CustomQuestion } from './quiz-rally-import';
+import { validateQuestions, type CustomQuestion } from './quiz-rally-bank';
 import { QuizError } from './quiz-rally-errors';
 export { QuizError } from './quiz-rally-errors';
 
@@ -108,14 +108,19 @@ export async function getQuizSnapshot(code:string,identity:QuizIdentity){
     assert(rows.length,'게임방을 찾을 수 없거나 이용 기간이 끝났습니다.',404);
     const r=rows[0];return {code,title:r.title,status:phase({status:r.status,endsAt:r.endsAt===null?null:Number(r.endsAt)}),count:r.count};
   }
-  const rows=await query(`SELECT code,teacher_key_hash,state-'players' AS room,
-    state #> ARRAY['players',$2] AS player,
-    question_bank -> (state #>> ARRAY['players',$2,'turn','id']) AS custom_question,
-    (SELECT COALESCE(jsonb_agg(jsonb_build_object('id',key,'nickname',value->'nickname','score',value->'score','correct',value->'correct','attempted',value->'attempted','shield',value->'shieldActive','protectedUntil',value->'protectedUntil')),'[]'::jsonb)
-     FROM jsonb_each(state->'players') WHERE NOT (value->>'removed')::boolean) AS ranking
-    FROM quiz_rally_sessions WHERE code=$1 AND expires_at>NOW()`,[code,identity.playerId||'']);
+  const rows=await query(`SELECT ${snapshotColumns} FROM quiz_rally_sessions WHERE code=$1 AND expires_at>NOW()`,[code,identity.playerId||'']);
   assert(rows.length,'게임방을 찾을 수 없거나 이용 기간이 끝났습니다.',404);
-  const r=rows[0],room=r.room as Room,p=r.player as Player|undefined;authenticate(r as Row,identity,p);
+  return snapshotFromRow(rows[0],identity);
+}
+
+// Used by SELECT and UPDATE RETURNING: return the newly committed snapshot in the same round trip.
+const snapshotColumns=`code,teacher_key_hash,state-'players' AS room,
+  state #> ARRAY['players',$2] AS player,
+  question_bank -> (state #>> ARRAY['players',$2,'turn','id']) AS custom_question,
+  (SELECT COALESCE(jsonb_agg(jsonb_build_object('id',key,'nickname',value->'nickname','score',value->'score','correct',value->'correct','attempted',value->'attempted','shield',value->'shieldActive','protectedUntil',value->'protectedUntil')),'[]'::jsonb)
+   FROM jsonb_each(state->'players') WHERE NOT (value->>'removed')::boolean) AS ranking`;
+async function snapshotFromRow(r:Record<string,any>,identity:QuizIdentity){
+  const code=r.code as string,room=r.room as Room,p=r.player as Player|undefined;authenticate(r as Row,identity,p);
   const now=Date.now(),ranking=(r.ranking as Array<{id:string;nickname:string;score:number;correct:number;attempted:number;shield:boolean;protectedUntil:number}>).sort((a,b)=>b.score-a.score||b.correct-a.correct||a.nickname.localeCompare(b.nickname,'ko'));
   const review=[];if(identity.role==='student'&&phase(room,now)==='ended'){
     const ids=Object.entries(p!.stats).filter(([,v])=>v[0]>v[1]).slice(0,6).map(([id])=>id);
@@ -141,16 +146,18 @@ function modifyPlayer(room:Room,p:Player,body:Record<string,unknown>,q:CustomQue
     p.score-=20;p.turn.retries=(p.turn.retries||0)+1;p.turn.answered=false;p.turn.selected=null;p.turn.correct=null;p.turn.points=0;p.turn.nonce=randomUUID();notice(p,'재도전 −20점 · 같은 문제를 다시 풀어 보세요.');return;
   }
   if(action==='answer'){
-    assert(body.nonce===p.turn.nonce&&!p.turn.answered,'이미 처리한 문제입니다. 화면을 새로 확인해 주세요.',409);
+    const retry=p.turn.answered&&p.turn.correct===false&&!p.turn.revealed;
+    assert(body.nonce===p.turn.nonce&&(!p.turn.answered||retry),'이미 처리한 문제입니다. 화면을 새로 확인해 주세요.',409);
     assert(Number.isInteger(body.choice)&&Number(body.choice)>=0&&Number(body.choice)<4,'보기를 선택해 주세요.');
     assert(!p.turn.eliminated.includes(Number(body.choice))&&!(p.turn.wrongChoices||[]).includes(Number(body.choice)),'남아 있는 보기를 선택해 주세요.');
+    if(retry){p.score-=20;p.turn.retries=(p.turn.retries||0)+1;}
     p.turn.answered=true;p.turn.selected=Number(body.choice);p.turn.correct=p.turn.order[p.turn.selected]===q.answer;
     p.attempted++;const s=p.stats[q.id]||[0,0];s[0]++;
     if(p.turn.correct){p.correct++;s[1]++;p.turn.points=p.boostActive?200:100;p.score+=p.turn.points;p.boostActive=false;
       const pool:Reward[]=room.stealEnabled?['bonus40','bonus70','boost','hint','shield','steal']:['bonus40','bonus70','boost','hint'];
       p.turn.rewards=shuffled(pool).slice(0,3);
     }
-    else p.turn.wrongChoices=[...(p.turn.wrongChoices||[]),p.turn.selected];
+    else {p.turn.wrongChoices=[...(p.turn.wrongChoices||[]),p.turn.selected];p.turn.nonce=randomUUID();}
     p.stats[q.id]=s;return;
   }
   if(action==='reward'){
@@ -201,8 +208,8 @@ export async function actQuizRoom(code:string,identity:QuizIdentity,body:Record<
       AND (state->>'metaRevision')::int=$5 AND state->>'status'='running'
       AND (state->>'endsAt')::bigint>(EXTRACT(EPOCH FROM clock_timestamp())*1000)::bigint`;
     if(target)statement+=` AND (state #>> ARRAY['players',$6,'version'])::int=$8`;
-    const result=await query(statement+' RETURNING code',params);
-    if(result.length)return getQuizSnapshot(code,identity);
+    const result=await query(statement+' RETURNING '+snapshotColumns,params);
+    if(result.length)return snapshotFromRow(result[0],identity);
   }
   throw new QuizError('동시에 요청이 많습니다. 같은 동작을 다시 시도해 주세요.',409);
 }

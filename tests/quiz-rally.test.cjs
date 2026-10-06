@@ -55,7 +55,7 @@ test('hint removes only wrong choices, boost survives wrong answer, stale nonce 
  await game.actQuizRoom(code,s,action('item',{item:'boost',nonce:p.turn.nonce}));
  const wrong=[0,1,2,3].find(i=>i!==right.choice&&!snap.player.turn.eliminated.includes(i));
  snap=await game.actQuizRoom(code,s,action('answer',{nonce:p.turn.nonce,choice:wrong}));assert.equal(snap.player.score,0);assert.equal(snap.player.boostActive,true);assert.equal(snap.player.turn.needsReward,false);
- snap=await game.actQuizRoom(code,s,action('next',{nonce:p.turn.nonce}));
+ snap=await game.actQuizRoom(code,s,action('next',{nonce:snap.player.turn.nonce}));
  snap=await game.actQuizRoom(code,s,await correct(h,game,code,s));assert.equal(snap.player.score,200);assert.equal(snap.player.boostActive,false);
 });
 

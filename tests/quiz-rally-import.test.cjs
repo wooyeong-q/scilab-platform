@@ -24,17 +24,25 @@ test('CSV quotes/newlines, 500 questions, invalid rows and zip size guards',asyn
  const bomb=zipSync({'xl/big.xml':new Uint8Array(11*1024*1024)});await assert.rejects(importer.importQuestionFile(bomb,'bad.xlsx'),/용량/);
  await assert.rejects(importer.importQuestionFile(zipSync({'xl/richData/a.xml':strToU8('<x/>')}),'inside.xlsx'),/셀 내부/);
 });
-test('retries deduct exactly 20 each, rotate nonce and hide answers until reveal',async t=>{
+test('direct reselection charges once, hides the answer and uses two database round trips',async t=>{
  const {h,game}=await setup(t),made=await game.createQuizRoom({questions:[sample],durationSeconds:300}),teacher={role:'teacher',token:made.teacherKey,playerId:''},s=student();
  await game.joinQuizRoom(made.code,s,{nickname:'재도전'});await game.actQuizRoom(made.code,teacher,action('start'));
  const internal=async()=>(await h.pg.query('SELECT state FROM quiz_rally_sessions WHERE code=$1',[made.code])).rows[0].state.players[s.playerId];
- let p=await internal();const right=p.turn.order.indexOf(1),wrong=[0,1,2,3].filter(i=>i!==right);
- let snap=await game.actQuizRoom(made.code,s,action('answer',{nonce:p.turn.nonce,choice:wrong[0]}));assert.equal(snap.player.turn.feedback.explanation,undefined);assert.equal(snap.player.turn.feedback.correctOption,undefined);assert.equal(snap.player.turn.canRetry,true);
- const retry=action('retry-question',{nonce:p.turn.nonce});await Promise.all([game.actQuizRoom(made.code,s,retry),game.actQuizRoom(made.code,s,retry)]);snap=await game.getQuizSnapshot(made.code,s);assert.equal(snap.player.score,-20);assert.notEqual(snap.player.turn.nonce,p.turn.nonce);
- await assert.rejects(game.actQuizRoom(made.code,s,action('answer',{nonce:p.turn.nonce,choice:right})),/이미/);
- p=await internal();await game.actQuizRoom(made.code,s,action('answer',{nonce:p.turn.nonce,choice:wrong[1]}));snap=await game.actQuizRoom(made.code,s,action('retry-question',{nonce:p.turn.nonce}));assert.equal(snap.player.score,-40);assert.equal(snap.player.turn.retries,2);
- snap=await game.actQuizRoom(made.code,s,action('answer',{nonce:snap.player.turn.nonce,choice:right}));assert.equal(snap.player.score,60);assert.equal(snap.player.correct,1);assert.equal(snap.player.attempted,3);assert.equal(snap.player.turn.feedback.correctOption,right);
- await game.actQuizRoom(made.code,s,action('reward',{nonce:snap.player.turn.nonce,chest:0}));snap=await game.actQuizRoom(made.code,s,action('next',{nonce:snap.player.turn.nonce}));p=await internal();const wrongNow=p.turn.order.findIndex(i=>i!==1);snap=await game.actQuizRoom(made.code,s,action('answer',{nonce:p.turn.nonce,choice:wrongNow}));snap=await game.actQuizRoom(made.code,s,action('reveal',{nonce:p.turn.nonce}));assert.equal(snap.player.turn.feedback.explanation,sample.explanation);await assert.rejects(game.actQuizRoom(made.code,s,action('retry-question',{nonce:p.turn.nonce})),/오답/);
+ let p=await internal();const right=p.turn.order.indexOf(1),wrong=[0,1,2,3].filter(i=>i!==right),initialNonce=p.turn.nonce;
+ let before=h.queries.length,snap=await game.actQuizRoom(made.code,s,action('answer',{nonce:initialNonce,choice:wrong[0]}));
+ assert.equal(h.queries.length-before,2);assert.equal(snap.player.score,0);assert.equal(snap.player.turn.feedback.explanation,undefined);assert.equal(snap.player.turn.feedback.correctOption,undefined);assert.equal(snap.player.turn.canRetry,true);assert.notEqual(snap.player.turn.nonce,initialNonce);
+ await assert.rejects(game.actQuizRoom(made.code,s,action('answer',{nonce:initialNonce,choice:right})),/이미/);
+ const retry=action('answer',{nonce:snap.player.turn.nonce,choice:wrong[1]});await Promise.all([game.actQuizRoom(made.code,s,retry),game.actQuizRoom(made.code,s,retry)]);
+ snap=await game.getQuizSnapshot(made.code,s);assert.equal(snap.player.score,-20);assert.equal(snap.player.attempted,2);assert.equal(snap.player.turn.retries,1);assert.equal(snap.player.turn.canRetry,true);
+ before=h.queries.length;snap=await game.actQuizRoom(made.code,s,action('answer',{nonce:snap.player.turn.nonce,choice:right}));assert.equal(h.queries.length-before,2);assert.equal(snap.player.score,60);assert.equal(snap.player.correct,1);assert.equal(snap.player.attempted,3);assert.equal(snap.player.turn.retries,2);assert.equal(snap.player.turn.feedback.correctOption,right);
+ await game.actQuizRoom(made.code,s,action('reward',{nonce:snap.player.turn.nonce,chest:0}));snap=await game.actQuizRoom(made.code,s,action('next',{nonce:snap.player.turn.nonce}));p=await internal();
+ snap=await game.actQuizRoom(made.code,s,action('answer',{nonce:p.turn.nonce,choice:p.turn.order.findIndex(i=>i!==1)}));const score=snap.player.score;snap=await game.actQuizRoom(made.code,s,action('reveal',{nonce:snap.player.turn.nonce}));assert.equal(snap.player.score,score);assert.equal(snap.player.turn.feedback.explanation,sample.explanation);
+ await assert.rejects(game.actQuizRoom(made.code,s,action('answer',{nonce:snap.player.turn.nonce,choice:p.turn.order.indexOf(1)})),/이미/);
+});
+test('two distinct concurrent retries cannot double-charge or count two answers',async t=>{
+ const {h,game}=await setup(t),made=await game.createQuizRoom({questions:[sample],durationSeconds:300}),teacher={role:'teacher',token:made.teacherKey,playerId:''},s=student();await game.joinQuizRoom(made.code,s,{nickname:'동시확인'});await game.actQuizRoom(made.code,teacher,action('start'));
+ const p=(await h.pg.query('SELECT state FROM quiz_rally_sessions WHERE code=$1',[made.code])).rows[0].state.players[s.playerId],wrong=p.turn.order.findIndex(i=>i!==1);let snap=await game.actQuizRoom(made.code,s,action('answer',{nonce:p.turn.nonce,choice:wrong}));const nonce=snap.player.turn.nonce,remaining=[0,1,2,3].filter(i=>i!==wrong&&p.turn.order[i]!==1);
+ const results=await Promise.allSettled(remaining.map(choice=>game.actQuizRoom(made.code,s,action('answer',{nonce,choice}))));assert.equal(results.filter(r=>r.status==='fulfilled').length,1);snap=await game.getQuizSnapshot(made.code,s);assert.equal(snap.player.score,-20);assert.equal(snap.player.attempted,2);assert.equal(snap.player.turn.retries,1);
 });
 test('custom banks and pictures stay isolated; snapshots exclude stored image bytes and all answer keys',async t=>{
  const {h,game,importer}=await setup(t),imported=await importer.importQuestionFile(fs.readFileSync('public/labs/quiz-rally/question-template.xlsx'),'그림.xlsx');
