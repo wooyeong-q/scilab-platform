@@ -1,6 +1,6 @@
 import { QuizError } from './quiz-rally-errors';
 
-const limits={head:6,chest:4,belly:4,back:4,headColor:6,chestColor:6,bellyColor:6,backColor:6} as const;
+const limits={head:12,chest:8,belly:8,back:8,headColor:6,chestColor:6,bellyColor:6,backColor:6} as const;
 export type RobotParts=Record<keyof typeof limits,number>;
 export function robotFor(value:unknown,avatar=0):RobotParts {
   const color=Number.isInteger(avatar)&&avatar>=0&&avatar<6?avatar:0;
