@@ -246,3 +246,13 @@ ALTER TABLE galaxy_voyage_players ADD COLUMN IF NOT EXISTS flight_at TIMESTAMPTZ
 ALTER TABLE galaxy_voyage_players ADD COLUMN IF NOT EXISTS attack_at TIMESTAMPTZ;
 ALTER TABLE galaxy_voyage_players ADD COLUMN IF NOT EXISTS shield_until TIMESTAMPTZ;
 ALTER TABLE galaxy_voyage_players ADD COLUMN IF NOT EXISTS disabled_until TIMESTAMPTZ;
+
+-- Quiz Rally: independently secured classroom rooms. Updates touch only changed player paths.
+CREATE TABLE IF NOT EXISTS quiz_rally_sessions (
+  code TEXT PRIMARY KEY,
+  teacher_key_hash TEXT NOT NULL,
+  state JSONB NOT NULL,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  expires_at TIMESTAMPTZ NOT NULL
+);
+CREATE INDEX IF NOT EXISTS quiz_rally_expiry_idx ON quiz_rally_sessions (expires_at);

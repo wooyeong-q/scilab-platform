@@ -4,7 +4,7 @@
   "private": true,
   "scripts": {
     "dev": "next dev",
-    "build": "npm run db:migrate && npm run db:check && next build && node scripts/register-atom-explorer.mjs && node scripts/register-matter-zoom.mjs",
+    "build": "npm run db:migrate && npm run db:check && next build && node scripts/register-atom-explorer.mjs && node scripts/register-matter-zoom.mjs && node scripts/register-quiz-rally.mjs",
     "start": "next start",
     "db:check": "node scripts/database.mjs --check",
     "db:migrate": "node scripts/database.mjs --migrate",
