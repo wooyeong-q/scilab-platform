@@ -13,3 +13,17 @@ dialog.crew-modal{width:1700px;max-width:96vw;max-height:95dvh;padding:24px;bord
 @media(prefers-reduced-motion:reduce){.city-crew,.city-crew *{animation:none!important;transition:none!important}}
 
 .crew-modal .dialog-body .crew-guide{color:#d4e1de}.crew-modal .dialog-body .crew-map-note{color:#a3bcc5}
+@media(min-width:1051px) and (max-height:850px){
+ .in-city .teacher-world>section:last-child{padding:17px 18px}
+ .in-city .teacher-world .leader-heading{margin-bottom:12px}
+ .in-city .teacher-world .leader-heading h2{font-size:23px}
+ .in-city .teacher-world .leader-heading p{font-size:12px;margin-top:5px}
+ .in-city .teacher-world .ranking-list{gap:9px}
+ .in-city .teacher-world .rank-row{padding:9px 11px;min-height:70px;gap:8px}
+ .in-city .teacher-world .rank-name{font-size:21px}
+ .in-city .teacher-world .rank-points{font-size:28px}
+ .in-city .teacher-world .rank-number{font-size:21px}
+ .in-city .teacher-world .crew-rank-name>.crew-icon{width:33px;height:42px}
+ .in-city .teacher-world .crew-rank-name>span{min-width:0;overflow:hidden;white-space:nowrap;text-overflow:ellipsis}
+ .in-city .teacher-world .crew-rank-name small{font-size:11px}
+}
