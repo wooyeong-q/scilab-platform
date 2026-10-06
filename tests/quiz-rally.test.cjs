@@ -106,3 +106,36 @@ test('competing transfers cannot overwrite a simultaneous answer or go below zer
  assert.equal(attempts.filter(r=>r.status==='fulfilled').length,2);const all=(await game.getQuizSnapshot(code,teacher)).ranking;
  assert.equal(all.reduce((sum,p)=>sum+p.score,0),400);assert.equal(all.find(p=>p.id===target.playerId).score,370);assert.ok(all.every(p=>p.score>=0));
 });
+
+test('crew characters persist across reconnects, reject invalid choices, and support old rooms',async t=>{
+ const {h,game,code,teacher,s}=await setup(t);
+ for(const avatar of [-1,6,1.5,'2','<svg>'])await assert.rejects(game.joinQuizRoom(code,student(),{nickname:'잘못된선택',avatar}),/캐릭터/);
+ const peers=Array.from({length:6},student);
+ for(let avatar=0;avatar<6;avatar++){
+   const p=peers[avatar],joined=await game.joinQuizRoom(code,p,{nickname:'로봇'+avatar,avatar});
+   assert.equal(joined.player.avatar,avatar);
+   // A repeated join must not reset progress or replace the chosen robot.
+   assert.equal((await game.joinQuizRoom(code,p,{nickname:'새이름',avatar:(avatar+1)%6})).player.avatar,avatar);
+ }
+ await h.pg.query(`UPDATE quiz_rally_sessions SET state=jsonb_set(state,ARRAY['players',$2],(state #> ARRAY['players',$2])-'avatar') WHERE code=$1`,[code,s.playerId]);
+ const before=await game.getQuizSnapshot(code,s),again=await game.getQuizSnapshot(code,s),teacherView=await game.getQuizSnapshot(code,teacher);
+ assert.equal(before.player.avatar,again.player.avatar);assert.ok(before.player.avatar>=0&&before.player.avatar<6);
+ assert.equal(teacherView.ranking.find(p=>p.id===s.playerId).avatar,before.player.avatar);
+ assert.deepEqual(teacherView.ranking.filter(p=>p.id!==s.playerId).map(p=>p.avatar).sort(),[0,1,2,3,4,5]);
+});
+
+test('classmates see progress and coarse activity without answers or credentials',async t=>{
+ const {h,game,code,teacher,s}=await setup(t),peer=student();await game.joinQuizRoom(code,peer,{nickname:'관찰자',avatar:3});
+ await game.actQuizRoom(code,teacher,action('start'));
+ const read=async()=>{const snap=await game.getQuizSnapshot(code,peer);const other=snap.ranking.find(p=>p.id===s.playerId);for(const key of ['turn','nonce','selected','wrongChoices','answer','tokenHash','inventory'])assert.equal(key in other,false);return other;};
+ let right=await correct(h,game,code,s);assert.equal((await read()).activity,'solving');
+ const wrong=await game.actQuizRoom(code,s,action('answer',{nonce:right.nonce,choice:(right.choice+1)%4}));
+ assert.equal((await read()).activity,'solving');assert.equal((await read()).correct,0);
+ right={...right,nonce:wrong.player.turn.nonce};const count=h.queries.length;
+ const solved=await game.actQuizRoom(code,s,right);assert.equal(h.queries.length-count,2,'no extra database round trip for avatars');
+ assert.equal((await read()).activity,'reward');assert.equal((await read()).correct,1);assert.equal((await read()).score,80);
+ await game.actQuizRoom(code,s,action('reward',{nonce:solved.player.turn.nonce,chest:0}));assert.equal((await read()).activity,'ready');
+ await game.actQuizRoom(code,s,action('next',{nonce:solved.player.turn.nonce}));assert.equal((await read()).activity,'solving');
+ const pub=await game.getQuizSnapshot(code,publicIdentity);assert.equal(pub.ranking,undefined);
+ await game.actQuizRoom(code,teacher,action('remove',{playerId:s.playerId}));assert.equal((await game.getQuizSnapshot(code,peer)).ranking.some(p=>p.id===s.playerId),false);
+});

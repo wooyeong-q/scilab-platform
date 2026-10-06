@@ -10,7 +10,7 @@ type Item = 'boost' | 'hint' | 'shield' | 'steal';
 type Reward = Item | 'bonus40' | 'bonus70';
 type Turn = { id: string; nonce: string; order: number[]; eliminated: number[]; answered: boolean; selected: number | null; correct: boolean | null; points: number; rewards: Reward[]; reward: {type: Reward; text: string} | null; retries?:number; revealed?:boolean; wrongChoices?:number[] };
 type Player = {
-  id: string; nickname: string; tokenHash: string; version: number; removed: boolean;
+  id: string; nickname: string; avatar?: number; tokenHash: string; version: number; removed: boolean;
   score: number; correct: number; attempted: number; inventory: Record<Item,number>;
   boostActive: boolean; shieldActive: boolean; protectedUntil: number;
   deck: string[]; turn: Turn; requests: string[]; stats: Record<string,[number,number]>;
@@ -37,6 +37,8 @@ function uuid(value:unknown): value is string {return typeof value==='string'&&/
 function shuffled<T>(list:T[]):T[]{const a=[...list];for(let i=a.length-1;i>0;i--){const j=randomInt(i+1);[a[i],a[j]]=[a[j],a[i]];}return a;}
 function deckFor(room:Room){return shuffled(room.questionIds||QUIZ_QUESTIONS.filter(q=>room.extension||!q.extension).map(q=>q.id));}
 function turnFor(id:string):Turn{return {id,nonce:randomUUID(),order:shuffled([0,1,2,3]),eliminated:[],answered:false,selected:null,correct:null,points:0,rewards:[],reward:null};}
+// Older rooms receive a stable character without changing their stored scores or turns.
+function avatarFor(p:{id:string;avatar?:number}){const value=p.avatar;return typeof value==='number'&&Number.isInteger(value)&&value>=0&&value<6?value:parseInt(hash(p.id).slice(0,8),16)%6;}
 function phase(room:Pick<Room,'status'|'endsAt'>,now=Date.now()):Phase{return room.status==='running'&&room.endsAt!==null&&room.endsAt<=now?'ended':room.status;}
 async function query(statement:string,params:unknown[]=[]):Promise<Record<string,any>[]>{
   if(!sql)throw new QuizError('게임 서버에 연결할 수 없습니다. 잠시 후 다시 시도해 주세요.',503);
@@ -62,7 +64,7 @@ function publicTurn(p:Player,q:CustomQuestion,code:string){const revealed=p.turn
   feedback:p.turn.answered?{correct:p.turn.correct,selected:p.turn.selected,...(revealed?{correctOption:p.turn.order.indexOf(q.answer),explanation:q.explanation}:{}),points:p.turn.points}:null,
   needsReward:p.turn.answered&&p.turn.correct&&!p.turn.reward,reward:p.turn.reward,
 };}
-function publicPlayer(p:Player,q:CustomQuestion,code:string,review:unknown[]=[]){return {review,id:p.id,nickname:p.nickname,score:p.score,correct:p.correct,attempted:p.attempted,inventory:p.inventory,boostActive:p.boostActive,shieldActive:p.shieldActive,protectedUntil:p.protectedUntil,turn:publicTurn(p,q,code),notice:p.notice,noticeId:p.noticeId};}
+function publicPlayer(p:Player,q:CustomQuestion,code:string,review:unknown[]=[]){return {review,id:p.id,nickname:p.nickname,avatar:avatarFor(p),score:p.score,correct:p.correct,attempted:p.attempted,inventory:p.inventory,boostActive:p.boostActive,shieldActive:p.shieldActive,protectedUntil:p.protectedUntil,turn:publicTurn(p,q,code),notice:p.notice,noticeId:p.noticeId};}
 
 export async function createQuizRoom(body:Record<string,unknown>){
   const duration=Number(body.durationSeconds??480);assert([300,480,600,900].includes(duration),'게임 시간을 다시 선택해 주세요.');
@@ -84,8 +86,9 @@ export async function joinQuizRoom(code:string,identity:QuizIdentity,body:Record
   const nickname=textValue(body.nickname,12);assert(nickname.length>0&&/^[\p{L}\p{N} _-]+$/u.test(nickname),'닉네임은 글자와 숫자로 1~12자 입력해 주세요.');
   const row=await readRoom(code,[identity.playerId]),existing=row.state.players[identity.playerId];
   if(existing){authenticate(row,identity,existing);return getQuizSnapshot(code,identity);}
+  assert(body.avatar===undefined||(Number.isInteger(body.avatar)&&Number(body.avatar)>=0&&Number(body.avatar)<6),'캐릭터를 다시 선택해 주세요.');
   assert(phase(row.state)!=='ended','이미 끝난 게임입니다. 다음 게임에 참여해 주세요.',409);
-  const deck=deckFor(row.state),p:Player={id:identity.playerId,nickname,tokenHash:hash(identity.token),version:0,removed:false,score:0,correct:0,attempted:0,inventory:{boost:0,hint:1,shield:0,steal:0},boostActive:false,shieldActive:false,protectedUntil:0,deck,turn:turnFor(deck.shift()!),requests:[],stats:{},notice:'',noticeId:''};
+  const deck=deckFor(row.state),p:Player={id:identity.playerId,nickname,avatar:body.avatar===undefined?avatarFor({id:identity.playerId}):Number(body.avatar),tokenHash:hash(identity.token),version:0,removed:false,score:0,correct:0,attempted:0,inventory:{boost:0,hint:1,shield:0,steal:0},boostActive:false,shieldActive:false,protectedUntil:0,deck,turn:turnFor(deck.shift()!),requests:[],stats:{},notice:'',noticeId:''};
   const rows=await query(`UPDATE quiz_rally_sessions SET state=jsonb_set(state,ARRAY['players',$2],$3::jsonb,true)
     WHERE code=$1 AND expires_at>NOW() AND state->>'status'<>'ended'
     AND (state->>'status'<>'running' OR (state->>'endsAt')::bigint>(EXTRACT(EPOCH FROM clock_timestamp())*1000)::bigint)
@@ -117,11 +120,12 @@ export async function getQuizSnapshot(code:string,identity:QuizIdentity){
 const snapshotColumns=`code,teacher_key_hash,state-'players' AS room,
   state #> ARRAY['players',$2] AS player,
   question_bank -> (state #>> ARRAY['players',$2,'turn','id']) AS custom_question,
-  (SELECT COALESCE(jsonb_agg(jsonb_build_object('id',key,'nickname',value->'nickname','score',value->'score','correct',value->'correct','attempted',value->'attempted','shield',value->'shieldActive','protectedUntil',value->'protectedUntil')),'[]'::jsonb)
+  (SELECT COALESCE(jsonb_agg(jsonb_build_object('id',key,'nickname',value->'nickname','avatar',value->'avatar','score',value->'score','correct',value->'correct','attempted',value->'attempted','shield',value->'shieldActive','protectedUntil',value->'protectedUntil',
+    'activity',CASE WHEN value #>> '{turn,correct}'='true' THEN CASE WHEN value #>> '{turn,reward}' IS NULL THEN 'reward' ELSE 'ready' END WHEN value #>> '{turn,revealed}'='true' THEN 'review' ELSE 'solving' END)),'[]'::jsonb)
    FROM jsonb_each(state->'players') WHERE NOT (value->>'removed')::boolean) AS ranking`;
 async function snapshotFromRow(r:Record<string,any>,identity:QuizIdentity){
   const code=r.code as string,room=r.room as Room,p=r.player as Player|undefined;authenticate(r as Row,identity,p);
-  const now=Date.now(),ranking=(r.ranking as Array<{id:string;nickname:string;score:number;correct:number;attempted:number;shield:boolean;protectedUntil:number}>).sort((a,b)=>b.score-a.score||b.correct-a.correct||a.nickname.localeCompare(b.nickname,'ko'));
+  const now=Date.now(),ranking=(r.ranking as Array<{id:string;nickname:string;avatar?:number;activity:string;score:number;correct:number;attempted:number;shield:boolean;protectedUntil:number}>).map(p=>({...p,avatar:avatarFor(p)})).sort((a,b)=>b.score-a.score||b.correct-a.correct||a.nickname.localeCompare(b.nickname,'ko'));
   const review=[];if(identity.role==='student'&&phase(room,now)==='ended'){
     const ids=Object.entries(p!.stats).filter(([,v])=>v[0]>v[1]).slice(0,6).map(([id])=>id);
     const custom=room.questionIds&&ids.length?await query(`SELECT value AS q FROM quiz_rally_sessions,jsonb_each(question_bank) WHERE code=$1 AND key=ANY($2::text[])`,[code,ids]):[];
