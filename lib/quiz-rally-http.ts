@@ -5,11 +5,11 @@ export function quizIdentity(request:Request):QuizIdentity {
   const token=(request.headers.get('authorization')||'').replace(/^Bearer /,'');
   return {role:!token?'public':request.headers.get('x-quiz-role')==='teacher'?'teacher':'student',token,playerId:request.headers.get('x-player-id')||''};
 }
-export async function quizBody(request:Request):Promise<Record<string,unknown>>{
+export async function quizBody(request:Request,maxBytes=4096):Promise<Record<string,unknown>>{
   const origin=request.headers.get('origin');
   if(origin&&origin!==new URL(request.url).origin)throw new QuizError('같은 사이트에서 참여해 주세요.',403);
-  if(Number(request.headers.get('content-length')||0)>4096)throw new QuizError('요청이 너무 큽니다.',413);
-  const raw=await request.text();if(raw.length>4096)throw new QuizError('요청이 너무 큽니다.',413);
+  if(Number(request.headers.get('content-length')||0)>maxBytes)throw new QuizError('요청이 너무 큽니다. 그림 크기를 줄이거나 문제 파일을 나누어 주세요.',413);
+  const raw=await request.text();if(Buffer.byteLength(raw)>maxBytes)throw new QuizError('요청이 너무 큽니다. 그림 크기를 줄이거나 문제 파일을 나누어 주세요.',413);
   let body:unknown;try{body=JSON.parse(raw);}catch{throw new QuizError('요청 형식을 확인해 주세요.');}
   if(!body||typeof body!=='object'||Array.isArray(body))throw new QuizError('요청 형식을 확인해 주세요.');
   return body as Record<string,unknown>;

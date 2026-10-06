@@ -3,17 +3,19 @@
 <head>
 <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="theme-color" content="#183d32"><meta name="referrer" content="same-origin">
-<title>퀴즈 챌린지 · SciLab</title>
-<meta name="description" content="문제를 풀고, 보상 상자를 열고, 아이템으로 도전하는 우리 반 과학 퀴즈 게임">
-<link rel="stylesheet" href="./style.css?v=1">
+<title>도시 재가동 · SciLab</title>
+<meta name="description" content="문제를 해결해 정전된 도시를 복구하는 우리 반 퀴즈 게임. 엑셀 문제와 그림 업로드, 오답 재도전을 지원합니다.">
+<link rel="stylesheet" href="./style.css?v=2">
+<link rel="stylesheet" href="./city.css?v=2">
 </head>
 <body>
 <a class="skip-link" href="#main">본문으로 이동</a>
-<header class="site-header"><a class="brand" href="./index.html"><span class="brand-mark" aria-hidden="true">Q<span>+</span></span><span>퀴즈 챌린지<small>SCILAB CLASSROOM</small></span></a><div class="header-actions"><span class="connection" id="connection" role="status">우리 반 과학 게임</span><button class="icon-button" id="fullscreen" aria-label="전체 화면" title="전체 화면"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M8 3H3v5m13-5h5v5M3 16v5h5m13-5v5h-5"/></svg></button></div></header>
+<header class="site-header"><a class="brand" href="./index.html"><span class="brand-mark" aria-hidden="true">Q<span>+</span></span><span>도시 재가동<small>SCILAB CLASSROOM</small></span></a><div class="header-actions"><span class="connection" id="connection" role="status">우리 반 과학 게임</span><button class="icon-button" id="fullscreen" aria-label="전체 화면" title="전체 화면"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M8 3H3v5m13-5h5v5M3 16v5h5m13-5v5h-5"/></svg></button></div></header>
 <main id="main" tabindex="-1"><div class="loading">게임을 준비하고 있어요…</div></main>
 <div id="toast" role="status" aria-live="polite" class="toast" hidden></div>
 <dialog id="dialog" aria-labelledby="dialog-title"></dialog>
 <noscript>이 게임을 사용하려면 브라우저의 자바스크립트를 켜 주세요.</noscript>
-<script src="./app.js?v=1" defer></script>
+<script src="./city.js?v=2" defer></script>
+<script src="./app.js?v=2" defer></script>
 </body>
 </html>

@@ -256,3 +256,5 @@ CREATE TABLE IF NOT EXISTS quiz_rally_sessions (
   expires_at TIMESTAMPTZ NOT NULL
 );
 CREATE INDEX IF NOT EXISTS quiz_rally_expiry_idx ON quiz_rally_sessions (expires_at);
+ALTER TABLE quiz_rally_sessions ADD COLUMN IF NOT EXISTS question_bank JSONB;
+ALTER TABLE quiz_rally_sessions ADD COLUMN IF NOT EXISTS question_images JSONB;
