@@ -139,3 +139,31 @@ test('classmates see progress and coarse activity without answers or credentials
  const pub=await game.getQuizSnapshot(code,publicIdentity);assert.equal(pub.ranking,undefined);
  await game.actQuizRoom(code,teacher,action('remove',{playerId:s.playerId}));assert.equal((await game.getQuizSnapshot(code,peer)).ranking.some(p=>p.id===s.playerId),false);
 });
+
+const customRobot={head:4,chest:3,belly:1,back:2,headColor:2,chestColor:0,bellyColor:3,backColor:5};
+test('robot parts are validated, saved at join, and shared identically on reconnect',async t=>{
+ const {h,game,code,teacher,s}=await setup(t),peer=student();
+ for(const robot of [null,[],{},'robot',{...customRobot,head:6},{...customRobot,belly:-1},{...customRobot,back:4},{...customRobot,chestColor:'2'},{...customRobot,headColor:1.2},{...customRobot,url:'https://example.com'}])await assert.rejects(game.joinQuizRoom(code,student(),{nickname:'부품검사',robot}),/부품/);
+ const joined=await game.joinQuizRoom(code,peer,{nickname:'조합로봇',robot:customRobot});assert.deepEqual(joined.player.robot,customRobot);
+ assert.deepEqual((await game.getQuizSnapshot(code,peer)).player.robot,customRobot);
+ assert.deepEqual((await game.getQuizSnapshot(code,s)).ranking.find(p=>p.id===peer.playerId).robot,customRobot);
+ await h.pg.query(`UPDATE quiz_rally_sessions SET state=jsonb_set(state,ARRAY['players',$2],(state #> ARRAY['players',$2])-'robot') WHERE code=$1`,[code,s.playerId]);
+ const legacy=(await game.getQuizSnapshot(code,s)).player;assert.equal(legacy.robot.head,legacy.avatar);assert.equal(legacy.robot.headColor,legacy.avatar);assert.equal(legacy.robot.back,0);
+ const pub=await game.getQuizSnapshot(code,publicIdentity);assert.equal(pub.ranking,undefined);
+});
+
+test('cosmetic changes work in lobby and pause without altering turns, scores or another player',async t=>{
+ const {h,game,code,teacher,s}=await setup(t),peer=student();await game.joinQuizRoom(code,peer,{nickname:'다른학생'});const before=(await game.getQuizSnapshot(code,s)).player,other=(await game.getQuizSnapshot(code,peer)).player;
+ const request=action('customize',{robot:customRobot,playerId:peer.playerId});let snap=await game.actQuizRoom(code,s,request);assert.deepEqual(snap.player.robot,customRobot);assert.deepEqual(snap.player.turn,before.turn);assert.equal(snap.player.score,before.score);assert.deepEqual(snap.player.inventory,before.inventory);assert.deepEqual((await game.getQuizSnapshot(code,peer)).player,other);
+ await game.actQuizRoom(code,s,request);assert.deepEqual((await game.getQuizSnapshot(code,s)).player,snap.player);
+ await game.actQuizRoom(code,teacher,action('start'));await game.actQuizRoom(code,teacher,action('pause'));snap=await game.actQuizRoom(code,s,action('customize',{robot:{...customRobot,back:3}}));assert.equal(snap.player.robot.back,3);assert.equal(snap.status,'paused');
+ await game.actQuizRoom(code,teacher,action('end'));await assert.rejects(game.actQuizRoom(code,s,action('customize',{robot:customRobot})),/끝난/);
+ await assert.rejects(game.actQuizRoom(code,{...s,token:peer.token},action('customize',{robot:customRobot})),/참여 정보/);
+});
+
+test('concurrent answer and robot save both survive without extra score or DB reads',async t=>{
+ const {h,game,code,teacher,s}=await setup(t);await game.actQuizRoom(code,teacher,action('start'));
+ const answer=await correct(h,game,code,s);await Promise.all([game.actQuizRoom(code,s,answer),game.actQuizRoom(code,s,action('customize',{robot:customRobot}))]);
+ let snap=await game.getQuizSnapshot(code,s);assert.equal(snap.player.score,100);assert.equal(snap.player.correct,1);assert.equal(snap.player.turn.needsReward,true);assert.deepEqual(snap.player.robot,customRobot);
+ const count=h.queries.length;snap=await game.actQuizRoom(code,s,action('customize',{robot:{...customRobot,head:5}}));assert.equal(h.queries.length-count,2);assert.equal(snap.player.robot.head,5);assert.equal(snap.player.score,100);
+});

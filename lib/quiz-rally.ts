@@ -3,6 +3,7 @@ import { sql } from './db';
 import { QUESTION_MAP, QUIZ_QUESTIONS } from './quiz-rally-questions';
 import { validateQuestions, type CustomQuestion } from './quiz-rally-bank';
 import { QuizError } from './quiz-rally-errors';
+import { robotFor, validateRobot, type RobotParts } from './quiz-rally-robot';
 export { QuizError } from './quiz-rally-errors';
 
 type Phase = 'lobby' | 'running' | 'paused' | 'ended';
@@ -10,7 +11,7 @@ type Item = 'boost' | 'hint' | 'shield' | 'steal';
 type Reward = Item | 'bonus40' | 'bonus70';
 type Turn = { id: string; nonce: string; order: number[]; eliminated: number[]; answered: boolean; selected: number | null; correct: boolean | null; points: number; rewards: Reward[]; reward: {type: Reward; text: string} | null; retries?:number; revealed?:boolean; wrongChoices?:number[] };
 type Player = {
-  id: string; nickname: string; avatar?: number; tokenHash: string; version: number; removed: boolean;
+  id: string; nickname: string; avatar?: number; robot?:RobotParts; tokenHash: string; version: number; removed: boolean;
   score: number; correct: number; attempted: number; inventory: Record<Item,number>;
   boostActive: boolean; shieldActive: boolean; protectedUntil: number;
   deck: string[]; turn: Turn; requests: string[]; stats: Record<string,[number,number]>;
@@ -64,7 +65,7 @@ function publicTurn(p:Player,q:CustomQuestion,code:string){const revealed=p.turn
   feedback:p.turn.answered?{correct:p.turn.correct,selected:p.turn.selected,...(revealed?{correctOption:p.turn.order.indexOf(q.answer),explanation:q.explanation}:{}),points:p.turn.points}:null,
   needsReward:p.turn.answered&&p.turn.correct&&!p.turn.reward,reward:p.turn.reward,
 };}
-function publicPlayer(p:Player,q:CustomQuestion,code:string,review:unknown[]=[]){return {review,id:p.id,nickname:p.nickname,avatar:avatarFor(p),score:p.score,correct:p.correct,attempted:p.attempted,inventory:p.inventory,boostActive:p.boostActive,shieldActive:p.shieldActive,protectedUntil:p.protectedUntil,turn:publicTurn(p,q,code),notice:p.notice,noticeId:p.noticeId};}
+function publicPlayer(p:Player,q:CustomQuestion,code:string,review:unknown[]=[]){return {review,id:p.id,nickname:p.nickname,avatar:avatarFor(p),robot:robotFor(p.robot,avatarFor(p)),score:p.score,correct:p.correct,attempted:p.attempted,inventory:p.inventory,boostActive:p.boostActive,shieldActive:p.shieldActive,protectedUntil:p.protectedUntil,turn:publicTurn(p,q,code),notice:p.notice,noticeId:p.noticeId};}
 
 export async function createQuizRoom(body:Record<string,unknown>){
   const duration=Number(body.durationSeconds??480);assert([300,480,600,900].includes(duration),'게임 시간을 다시 선택해 주세요.');
@@ -89,6 +90,7 @@ export async function joinQuizRoom(code:string,identity:QuizIdentity,body:Record
   assert(body.avatar===undefined||(Number.isInteger(body.avatar)&&Number(body.avatar)>=0&&Number(body.avatar)<6),'캐릭터를 다시 선택해 주세요.');
   assert(phase(row.state)!=='ended','이미 끝난 게임입니다. 다음 게임에 참여해 주세요.',409);
   const deck=deckFor(row.state),p:Player={id:identity.playerId,nickname,avatar:body.avatar===undefined?avatarFor({id:identity.playerId}):Number(body.avatar),tokenHash:hash(identity.token),version:0,removed:false,score:0,correct:0,attempted:0,inventory:{boost:0,hint:1,shield:0,steal:0},boostActive:false,shieldActive:false,protectedUntil:0,deck,turn:turnFor(deck.shift()!),requests:[],stats:{},notice:'',noticeId:''};
+  p.robot=body.robot===undefined?robotFor(undefined,p.avatar):validateRobot(body.robot);
   const rows=await query(`UPDATE quiz_rally_sessions SET state=jsonb_set(state,ARRAY['players',$2],$3::jsonb,true)
     WHERE code=$1 AND expires_at>NOW() AND state->>'status'<>'ended'
     AND (state->>'status'<>'running' OR (state->>'endsAt')::bigint>(EXTRACT(EPOCH FROM clock_timestamp())*1000)::bigint)
@@ -120,12 +122,12 @@ export async function getQuizSnapshot(code:string,identity:QuizIdentity){
 const snapshotColumns=`code,teacher_key_hash,state-'players' AS room,
   state #> ARRAY['players',$2] AS player,
   question_bank -> (state #>> ARRAY['players',$2,'turn','id']) AS custom_question,
-  (SELECT COALESCE(jsonb_agg(jsonb_build_object('id',key,'nickname',value->'nickname','avatar',value->'avatar','score',value->'score','correct',value->'correct','attempted',value->'attempted','shield',value->'shieldActive','protectedUntil',value->'protectedUntil',
+  (SELECT COALESCE(jsonb_agg(jsonb_build_object('id',key,'nickname',value->'nickname','avatar',value->'avatar','robot',value->'robot','score',value->'score','correct',value->'correct','attempted',value->'attempted','shield',value->'shieldActive','protectedUntil',value->'protectedUntil',
     'activity',CASE WHEN value #>> '{turn,correct}'='true' THEN CASE WHEN value #>> '{turn,reward}' IS NULL THEN 'reward' ELSE 'ready' END WHEN value #>> '{turn,revealed}'='true' THEN 'review' ELSE 'solving' END)),'[]'::jsonb)
    FROM jsonb_each(state->'players') WHERE NOT (value->>'removed')::boolean) AS ranking`;
 async function snapshotFromRow(r:Record<string,any>,identity:QuizIdentity){
   const code=r.code as string,room=r.room as Room,p=r.player as Player|undefined;authenticate(r as Row,identity,p);
-  const now=Date.now(),ranking=(r.ranking as Array<{id:string;nickname:string;avatar?:number;activity:string;score:number;correct:number;attempted:number;shield:boolean;protectedUntil:number}>).map(p=>({...p,avatar:avatarFor(p)})).sort((a,b)=>b.score-a.score||b.correct-a.correct||a.nickname.localeCompare(b.nickname,'ko'));
+  const now=Date.now(),ranking=(r.ranking as Array<{id:string;nickname:string;avatar?:number;robot?:RobotParts;activity:string;score:number;correct:number;attempted:number;shield:boolean;protectedUntil:number}>).map(p=>({...p,avatar:avatarFor(p),robot:robotFor(p.robot,avatarFor(p))})).sort((a,b)=>b.score-a.score||b.correct-a.correct||a.nickname.localeCompare(b.nickname,'ko'));
   const review=[];if(identity.role==='student'&&phase(room,now)==='ended'){
     const ids=Object.entries(p!.stats).filter(([,v])=>v[0]>v[1]).slice(0,6).map(([id])=>id);
     const custom=room.questionIds&&ids.length?await query(`SELECT value AS q FROM quiz_rally_sessions,jsonb_each(question_bank) WHERE code=$1 AND key=ANY($2::text[])`,[code,ids]):[];
@@ -144,6 +146,7 @@ function notice(p:Player,message:string){p.notice=message;p.noticeId=randomUUID(
 function remember(p:Player,requestId:string){p.requests=[...p.requests.slice(-11),requestId];p.version++;}
 function modifyPlayer(room:Room,p:Player,body:Record<string,unknown>,q:CustomQuestion,target?:Player){
   const action=body.action;
+  if(action==='customize'){p.robot=validateRobot(body.robot);p.avatar=p.robot.headColor;return;}
   if(action==='retry-question'||action==='reveal'){
     assert(body.nonce===p.turn.nonce&&p.turn.answered&&p.turn.correct===false&&!p.turn.revealed,'다시 풀 수 있는 오답이 없습니다.',409);
     if(action==='reveal'){p.turn.revealed=true;return;}
@@ -202,15 +205,17 @@ export async function actQuizRoom(code:string,identity:QuizIdentity,body:Record<
   for(let attempt=0;attempt<8;attempt++){
     const row=await readRoom(code,[identity.playerId,...(uuid(body.targetId)?[body.targetId]:[])]),room=row.state,p=room.players[identity.playerId];authenticate(row,identity,p);
     if(p.requests.includes(requestId))return getQuizSnapshot(code,identity);
-    assert(phase(room)==='running',phase(room)==='paused'?'선생님이 게임을 잠시 멈췄습니다.':'진행 중인 게임에서 사용할 수 있습니다.',409);
+    const customizing=body.action==='customize';
+    if(customizing)assert(phase(room)!=='ended','끝난 게임에서는 로봇을 바꿀 수 없습니다.',409);
+    else assert(phase(room)==='running',phase(room)==='paused'?'선생님이 게임을 잠시 멈췄습니다.':'진행 중인 게임에서 사용할 수 있습니다.',409);
     const oldVersion=p.version,target=body.action==='item'&&body.item==='steal'?room.players[String(body.targetId)]:undefined,targetVersion=target?.version;
     modifyPlayer(room,p,body,row.custom_question||QUESTION_MAP.get(p.turn.id)!,target);remember(p,requestId);
     const params:unknown[]=[code,p.id,JSON.stringify(p),oldVersion,room.metaRevision];
     let statement=`UPDATE quiz_rally_sessions SET state=jsonb_set(state,ARRAY['players',$2],$3::jsonb)`;
     if(target){params.push(target.id,JSON.stringify(target),targetVersion);statement=`UPDATE quiz_rally_sessions SET state=jsonb_set(jsonb_set(state,ARRAY['players',$2],$3::jsonb),ARRAY['players',$6],$7::jsonb)`;}
     statement+=` WHERE code=$1 AND expires_at>NOW() AND (state #>> ARRAY['players',$2,'version'])::int=$4
-      AND (state->>'metaRevision')::int=$5 AND state->>'status'='running'
-      AND (state->>'endsAt')::bigint>(EXTRACT(EPOCH FROM clock_timestamp())*1000)::bigint`;
+      AND (state->>'metaRevision')::int=$5
+      AND ${customizing?"state->>'status' IN ('lobby','running','paused') AND (state->>'status'<>'running' OR (state->>'endsAt')::bigint>(EXTRACT(EPOCH FROM clock_timestamp())*1000)::bigint)":"state->>'status'='running' AND (state->>'endsAt')::bigint>(EXTRACT(EPOCH FROM clock_timestamp())*1000)::bigint"}`;
     if(target)statement+=` AND (state #>> ARRAY['players',$6,'version'])::int=$8`;
     const result=await query(statement+' RETURNING '+snapshotColumns,params);
     if(result.length)return snapshotFromRow(result[0],identity);
