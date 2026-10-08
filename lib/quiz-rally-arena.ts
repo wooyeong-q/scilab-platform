@@ -4,10 +4,10 @@ export type Arena={version:1|2;length:number;seed:number;combat:boolean;energy?:
 export type Gear='mine'|'missile'|'banana'|'field'|'shield'|'boost';
 export type Effect={id:string;type:Gear;owner:string;x:number;y:number;dx:number;dy:number;born:number;expires:number;victim?:string;hitAt?:number};
 export type Runner={x:number;y:number;z:number;vz:number;dx:number;dy:number;fx:number;fy:number;t:number;seq:number;inputUntil:number;jumpAt:number;diveAt:number;diveUntil:number;stunUntil:number;immuneUntil:number;boostUntil:number;shieldUntil:number;knockX:number;knockY:number;checkpoint:number;fallUntil:number;falls:number;open:boolean;boxes:number[];usedEffects:string[];hits:{id:string;t:number}[];finishAt?:number;energy?:number};
-export const GEAR_NAMES:Record<Gear,string>={mine:'지뢰',missile:'미사일',banana:'바나나',field:'감속 영역',shield:'보호막',boost:'질주'};
-export const GEAR_HELP:Record<Gear,string>={mine:'뒤에 설치 · 밟은 친구를 튕겨 냅니다',missile:'코스 정면으로 발사 · 옆으로 움직여도 방향 유지',banana:'뒤에 놓기 · 밟으면 미끄러집니다',field:'주변에 5초 동안 느려지는 영역을 만듭니다',shield:'4초 동안 공격을 막습니다',boost:'3초 동안 더 빠르게 달립니다'};
+export const GEAR_NAMES:Record<Gear,string>={mine:'폭탄',missile:'미사일',banana:'바나나',field:'감속 영역',shield:'보호막',boost:'질주'};
+export const GEAR_HELP:Record<Gear,string>={mine:'뒤에 설치 · 밟으면 밀려나고 0.85초 조작 불가',missile:'앞으로 발사 · 맞으면 밀려나고 0.85초 조작 불가',banana:'뒤에 놓기 · 밟으면 1.05초 미끄러집니다',field:'5초 유지 · 영역 안 친구의 이동 속도를 38%로 낮춤',shield:'4초 동안 공격을 막습니다',boost:'3초 동안 이동 속도 1.6배'};
 export const WIDTH=620, SPEED=145, RADIUS=18, COUNTDOWN=3000;
-export const ENERGY_DRAIN=1.5, ENERGY_CHARGE=45, MIN_ENERGY_SPEED=.55;
+export const ENERGY_DRAIN=4, ENERGY_CHARGE=45, MIN_ENERGY_SPEED=.55;
 export function energyValue(r:Runner){return Math.max(0,Math.min(100,r.energy??100));}
 export function energySpeed(r:Runner,arena:Arena){return arena.energy?MIN_ENERGY_SPEED+(1-MIN_ENERGY_SPEED)*energyValue(r)/100:1;}
 function drainEnergy(r:Runner,end:number,arena:Arena){

@@ -28,5 +28,18 @@ function missile(ctx,P,e,t,scale,position){const p=P(position.x,position.y,18),p
  ctx.fillStyle='#f7c269';ctx.beginPath();ctx.moveTo(-5,16);ctx.lineTo(0,29+Math.sin(t/45)*3);ctx.lineTo(5,16);ctx.fill();ctx.fillStyle='#fff4c2';ctx.beginPath();ctx.moveTo(-2.5,16);ctx.lineTo(0,23);ctx.lineTo(2.5,16);ctx.fill();ctx.fillStyle='#566ca8';ctx.beginPath();ctx.moveTo(-6,7);ctx.lineTo(-13,20);ctx.lineTo(-5,16);ctx.lineTo(5,16);ctx.lineTo(13,20);ctx.lineTo(6,7);ctx.fill();
  ctx.fillStyle='#f5f9ff';ctx.strokeStyle='#455a80';ctx.lineWidth=1.5;ctx.beginPath();ctx.moveTo(0,-23);ctx.bezierCurveTo(-9,-14,-9,10,-5,17);ctx.lineTo(5,17);ctx.bezierCurveTo(9,10,9,-14,0,-23);ctx.closePath();ctx.fill();ctx.stroke();ctx.fillStyle='#ed7994';ctx.beginPath();ctx.moveTo(0,-23);ctx.quadraticCurveTo(-6,-17,-7,-8);ctx.lineTo(7,-8);ctx.quadraticCurveTo(6,-17,0,-23);ctx.fill();ctx.fillStyle='#94dfeb';ctx.strokeStyle='#557395';ctx.beginPath();ctx.arc(0,1,3.5,0,TAU);ctx.fill();ctx.stroke();ctx.restore();}
 function burst(ctx,P,e,t,scale){const age=Math.max(0,t-(e.hitAt||t)),p=P(e.x,e.y,15),phase=age/500;ctx.save();ctx.globalAlpha=Math.max(0,1-phase);ctx.strokeStyle='#fff1b4';ctx.lineWidth=4*scale;ctx.beginPath();ctx.arc(p.x,p.y,(15+phase*45)*scale,0,TAU);ctx.stroke();for(let i=0;i<8;i++){const a=i*TAU/8,d=(20+phase*42)*scale;ctx.strokeStyle=i%2?'#fba58c':'#ffefb5';ctx.beginPath();ctx.moveTo(p.x+Math.cos(a)*d,p.y+Math.sin(a)*d);ctx.lineTo(p.x+Math.cos(a)*(d+12*scale),p.y+Math.sin(a)*(d+12*scale));ctx.stroke();}ctx.restore();}
-window.quizArenaFX={icon,field,shield,missile,burst};
+const trapImages=new Map();
+function trap(ctx,P,e,t,scale){
+ const p=P(e.x,e.y),armed=e.type!=='mine'||t>=e.born+500;
+ let img=trapImages.get(e.type);
+ if(!img){img=new Image();img.src='data:image/svg+xml,'+encodeURIComponent(icon(e.type).replace('<svg ','<svg xmlns="http://www.w3.org/2000/svg" ').replace('width="42" height="42"','width="96" height="96"'));trapImages.set(e.type,img);}
+ ctx.save();ctx.translate(p.x,p.y);ctx.scale(scale,scale);
+ ctx.fillStyle='#26395735';ctx.beginPath();ctx.ellipse(0,4,25,10,0,0,TAU);ctx.fill();
+ ctx.strokeStyle=armed?(e.type==='mine'?'#ffbc92b3':'#fff3a4b3'):'#f9e9c980';ctx.lineWidth=2;ctx.setLineDash([5,5]);ctx.beginPath();ctx.ellipse(0,0,e.type==='mine'?32:29,e.type==='mine'?24:22,0,0,TAU);ctx.stroke();ctx.setLineDash([]);
+ ctx.globalAlpha=armed?1:.55;
+ if(img.complete&&img.naturalWidth)ctx.drawImage(img,-27,-42,54,54);
+ ctx.fillStyle='#fffaf0';ctx.strokeStyle='#514871';ctx.lineWidth=3;ctx.lineJoin='round';ctx.font=`800 ${Math.max(10,10/scale)}px system-ui`;ctx.textAlign='center';
+ const label=e.type==='mine'?(armed?'폭탄':'설치 중'):'바나나';ctx.strokeText(label,0,23);ctx.fillText(label,0,23);ctx.restore();
+}
+window.quizArenaFX={icon,field,shield,missile,burst,trap};
 })();

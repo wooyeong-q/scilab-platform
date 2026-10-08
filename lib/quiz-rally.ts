@@ -15,7 +15,7 @@ type Finish = {place:number; bonus:number};
 type Turn = { finishBonus?:number; id: string; nonce: string; order: number[]; eliminated: number[]; answered: boolean; selected: number | null; correct: boolean | null; points: number; rewards: Reward[]; reward: {type: Reward; text: string} | null; retries?:number; revealed?:boolean; wrongChoices?:number[] };
 type Player = {
   id: string; nickname: string; avatar?: number; robot?:RobotParts; tokenHash: string; version: number; removed: boolean;
-  solvedIds?:string[]; finish?:Finish; racer?:Racer; runner?:Runner; gear?:Gear[]; useAt?:number; answerAt?:number;
+  solvedIds?:string[]; finish?:Finish; racer?:Racer; runner?:Runner; gear?:Gear[]; gearDeck?:Gear[]; useAt?:number; answerAt?:number;
   score: number; correct: number; attempted: number; inventory: Record<Item,number>;
   boostActive: boolean; shieldActive: boolean; protectedUntil: number;
   deck: string[]; turn: Turn; requests: string[]; stats: Record<string,[number,number]>;
@@ -227,7 +227,11 @@ function modifyArena(room:Room,p:Player,body:Record<string,unknown>,q:CustomQues
       const charged=room.arena!.energy?Math.min(ENERGY_CHARGE,100-energyValue(r)):0;
       if(room.arena!.energy)r.energy=Math.min(100,energyValue(r)+ENERGY_CHARGE);
       if((p.gear||[]).length<3){
-        const pool:Gear[]=room.arena!.combat?['mine','missile','banana','field','shield','boost']:['shield','boost'],gear=pool[randomInt(pool.length)];
+        const pool:Gear[]=room.arena!.combat?['mine','missile','banana','field','shield','boost']:['shield','boost'];
+        // Deal every eligible item once in a shuffled cycle. Only consume a
+        // draw when it fits in the bag, within the same idempotent player write.
+        if(!p.gearDeck?.length||p.gearDeck.some(g=>!pool.includes(g)))p.gearDeck=shuffled(pool);
+        const gear=p.gearDeck.shift()!;
         p.gear=[...(p.gear||[]),gear];p.turn.reward={type:'gear',text:GEAR_NAMES[gear]+' 획득!'};
         notice(p,'정답! '+(room.arena!.energy?`에너지 +${Math.round(charged)} · `:'')+GEAR_NAMES[gear]+' 획득');
       }else{

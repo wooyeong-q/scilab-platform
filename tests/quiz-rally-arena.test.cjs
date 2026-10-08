@@ -74,7 +74,7 @@ test('one continuous city has unique districts, scattered safe supplies and jump
 
 test('input batches preserve press/jump/release order and acknowledge the final event once',async t=>{
  const x=await setup(t),{game,h,code,s,M,C}=x,tick=clock(t),room=await read(h,code),now=C.gameClock(room),start={...M.freshRunner(now),x:0,y:300};await patch(h,code,s.playerId,{runner:start});tick(800);
- const inputs=[{seq:1,at:now+10,dx:0,dy:1,jump:false,dive:false},{seq:2,at:now+150,dx:0,dy:1,jump:true,dive:false},{seq:3,at:now+400,dx:0,dy:0,jump:false,dive:false}],packet=action('arena-input',{inputs});let snap=await game.actQuizRoom(code,s,packet);assert.equal(snap.player.runner.seq,3);assert.equal(snap.player.runner.jumpAt,now+150);assert.equal(snap.player.runner.dy,0);assert.ok(Math.abs(snap.player.runner.y-(300+.39*145))<.1);const y=snap.player.runner.y;tick(500);snap=await game.actQuizRoom(code,s,packet);assert.equal(snap.player.runner.y,y);await assert.rejects(game.actQuizRoom(code,s,action('arena-input',{inputs:[inputs[2],inputs[1]]})),/조작/);
+ const inputs=[{seq:1,at:now+10,dx:0,dy:1,jump:false,dive:false},{seq:2,at:now+150,dx:0,dy:1,jump:true,dive:false},{seq:3,at:now+400,dx:0,dy:0,jump:false,dive:false}],packet=action('arena-input',{inputs});let snap=await game.actQuizRoom(code,s,packet);assert.equal(snap.player.runner.seq,3);assert.equal(snap.player.runner.jumpAt,now+150);assert.equal(snap.player.runner.dy,0);assert.ok(Math.abs(snap.player.runner.y-(300+.39*145-145*.45/100*4*(.4**2-.01**2)/2))<1e-7);const y=snap.player.runner.y;tick(500);snap=await game.actQuizRoom(code,s,packet);assert.equal(snap.player.runner.y,y);await assert.rejects(game.actQuizRoom(code,s,action('arena-input',{inputs:[inputs[2],inputs[1]]})),/조작/);
 });
 
 test('late snapshots replay unacknowledged inputs and running clock corrections never go backwards',async t=>{
@@ -104,7 +104,7 @@ test('asymmetric latency never skips simulation time; jump height is independent
 test('an item used while running does not move the anchor past a jump queued during its response',async t=>{
  const {game,h,code,s,M,C}=await setup(t),tick=clock(t),room=await read(h,code),now=C.gameClock(room),a=room.arena,start={...M.freshRunner(now),x:0,y:300};await patch(h,code,s.playerId,{runner:start,gear:['mine','shield']});
  tick(300);await game.actQuizRoom(code,s,action('arena-input',{inputs:[{seq:1,at:now+10,dx:0,dy:1}]}));tick(600);
- let snap=await game.actQuizRoom(code,s,action('arena-use',{at:now+150,slot:0}));assert.equal(snap.player.runner.t,now+150);assert.equal(snap.arenaEffects[0].born,now+150);assert.ok(Math.abs(snap.player.runner.y-(320.3-145*.45/100*1.5*(.15**2-.01**2)/2))<1e-7);
+ let snap=await game.actQuizRoom(code,s,action('arena-use',{at:now+150,slot:0}));assert.equal(snap.player.runner.t,now+150);assert.equal(snap.arenaEffects[0].born,now+150);assert.ok(Math.abs(snap.player.runner.y-(320.3-145*.45/100*4*(.15**2-.01**2)/2))<1e-7);
  tick(500);snap=await game.actQuizRoom(code,s,action('arena-input',{inputs:[{seq:2,at:now+350,dx:0,dy:1,jump:true},{seq:3,at:now+650,dx:0,dy:0}]}));assert.equal(snap.player.runner.jumpAt,now+350);assert.equal(snap.player.runner.t,now+650);
  let expected=M.control(M.advanceRunner(start,now+10,a),0,1,false,false,now+10,1);expected=M.control(M.advanceRunner(expected,now+350,a),0,1,true,false,now+350,2);expected=M.control(M.advanceRunner(expected,now+650,a),0,0,false,false,now+650,3);
  for(const k of ['x','y','z','vz'])assert.ok(Math.abs(snap.player.runner[k]-expected[k])<1e-7,k);

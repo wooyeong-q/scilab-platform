@@ -167,10 +167,10 @@ exports.control = control;
 exports.advanceRunner = advanceRunner;
 exports.progress = progress;
 const quiz_rally_city_1 = require("./quiz-rally-city");
-exports.GEAR_NAMES = { mine: '지뢰', missile: '미사일', banana: '바나나', field: '감속 영역', shield: '보호막', boost: '질주' };
-exports.GEAR_HELP = { mine: '뒤에 설치 · 밟은 친구를 튕겨 냅니다', missile: '코스 정면으로 발사 · 옆으로 움직여도 방향 유지', banana: '뒤에 놓기 · 밟으면 미끄러집니다', field: '주변에 5초 동안 느려지는 영역을 만듭니다', shield: '4초 동안 공격을 막습니다', boost: '3초 동안 더 빠르게 달립니다' };
+exports.GEAR_NAMES = { mine: '폭탄', missile: '미사일', banana: '바나나', field: '감속 영역', shield: '보호막', boost: '질주' };
+exports.GEAR_HELP = { mine: '뒤에 설치 · 밟으면 밀려나고 0.85초 조작 불가', missile: '앞으로 발사 · 맞으면 밀려나고 0.85초 조작 불가', banana: '뒤에 놓기 · 밟으면 1.05초 미끄러집니다', field: '5초 유지 · 영역 안 친구의 이동 속도를 38%로 낮춤', shield: '4초 동안 공격을 막습니다', boost: '3초 동안 이동 속도 1.6배' };
 exports.WIDTH = 620, exports.SPEED = 145, exports.RADIUS = 18, exports.COUNTDOWN = 3000;
-exports.ENERGY_DRAIN = 1.5, exports.ENERGY_CHARGE = 45, exports.MIN_ENERGY_SPEED = .55;
+exports.ENERGY_DRAIN = 4, exports.ENERGY_CHARGE = 45, exports.MIN_ENERGY_SPEED = .55;
 function energyValue(r) { return Math.max(0, Math.min(100, r.energy ?? 100)); }
 function energySpeed(r, arena) { return arena.energy ? exports.MIN_ENERGY_SPEED + (1 - exports.MIN_ENERGY_SPEED) * energyValue(r) / 100 : 1; }
 function drainEnergy(r, end, arena) {
