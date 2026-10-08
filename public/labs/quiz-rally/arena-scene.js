@@ -24,9 +24,18 @@ function block(c,P,x,y,w,d,z,colors,s,baseZ=0){
  poly(c,[P(a,y,z),P(b,y,z),P(b,y+d,z),P(a,y+d,z)],colors[2],'#ffffff60',s);
 }
 function cloud(c,x,y,k,alpha){c.save();c.globalAlpha=alpha;ellipse(c,x+6*k,y+12*k,71*k,18*k,'#8da8c72b');for(const [dx,dy,r] of [[-43,0,28],[-12,-12,38],[28,-6,32],[51,7,22],[0,11,58]])ellipse(c,x+dx*k,y+dy*k,r*k,r*k*.56,'#ffffff');c.restore();}
+let skyLayer;
 function background(c,w,h,camX,camY,M,a){
- const q=theme(M,a,camY);c.fillStyle=gradient(c,0,0,h,q.sky);c.fillRect(0,0,w,h);
- const sun=c.createRadialGradient(w*.77,h*.22,4,w*.77,h*.22,h*.4);sun.addColorStop(0,'#fff7cebb');sun.addColorStop(1,'#fff7ce00');c.fillStyle=sun;c.fillRect(0,0,w,h);
+ const q=theme(M,a,camY),key=w+':'+h+':'+q.sky.join(',');
+ // Rasterize the full-screen sky and glow once per district/viewport.
+ // Keep moving scenery separate so parallax remains smooth on slower devices.
+ if(skyLayer?.key!==key){
+  const layer=document.createElement('canvas');layer.width=w;layer.height=h;const sky=layer.getContext('2d',{alpha:false});
+  sky.fillStyle=gradient(sky,0,0,h,q.sky);sky.fillRect(0,0,w,h);
+  const sun=sky.createRadialGradient(w*.77,h*.22,4,w*.77,h*.22,h*.4);sun.addColorStop(0,'#fff7cebb');sun.addColorStop(1,'#fff7ce00');sky.fillStyle=sun;sky.fillRect(0,0,w,h);
+  skyLayer={key,layer};
+ }
+ c.drawImage(skyLayer.layer,0,0,w,h);
  // Distant districts move slowly beneath the suspended raceway.
  for(let i=0;i<13;i++){
   const bw=45+noise(i+5)*72,bh=60+noise(i+12)*165;
