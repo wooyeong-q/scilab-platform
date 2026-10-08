@@ -5,7 +5,7 @@ import { validateQuestions, type CustomQuestion } from './quiz-rally-bank';
 import { QuizError } from './quiz-rally-errors';
 import { robotFor, validateRobot, type RobotParts } from './quiz-rally-robot';
 import { advance, capsuleAt, freshRacer, gameClock, CHARGE, type Course, type Racer } from './quiz-rally-course';
-import { advanceRunner, control, freshRunner,raceLength, boxes, GEAR_NAMES, type Arena, type Runner, type Gear, type Effect } from './quiz-rally-arena';
+import { advanceRunner, control, freshRunner,raceLength, couldFinish, missileDirection, boxes, GEAR_NAMES, type Arena, type Runner, type Gear, type Effect } from './quiz-rally-arena';
 export { QuizError } from './quiz-rally-errors';
 
 type Phase = 'lobby' | 'running' | 'paused' | 'ended';
@@ -79,7 +79,7 @@ export async function createQuizRoom(body:Record<string,unknown>){
   const custom=body.questions!==undefined?validateQuestions(body.questions):null;
   const state:Room={title,durationSeconds:duration,extension:body.extension===true,stealEnabled:body.stealEnabled===true,status:'lobby',endsAt:null,remainingMs:duration*1000,metaRevision:0,requests:[],players:{}};
   if(custom){state.questionIds=Object.keys(custom.bank);state.questionSetTitle=textValue(body.questionSetTitle,80,'직접 넣은 문제');state.extension=false;}
-  state.raceGoal=state.questionIds?.length||QUIZ_QUESTIONS.filter(q=>state.extension||!q.extension).length;state.finishers=[];state.arena={version:1,length:raceLength(duration),seed:randomInt(100000),combat:body.stealEnabled!==false};state.arenaEffects=[];state.arenaRevision=0;
+  state.raceGoal=state.questionIds?.length||QUIZ_QUESTIONS.filter(q=>state.extension||!q.extension).length;state.finishers=[];state.arena={version:2,length:raceLength(duration),seed:randomInt(100000),combat:body.stealEnabled!==false};state.arenaEffects=[];state.arenaRevision=0;
   for(let i=0;i<6;i++){
     const code=Array.from({length:6},()=>codeChars[randomInt(codeChars.length)]).join('');
     const rows=await query('INSERT INTO quiz_rally_sessions(code,teacher_key_hash,state,expires_at,question_bank,question_images) VALUES($1,$2,$3::jsonb,NOW()+INTERVAL \'14 days\',$4::jsonb,$5::jsonb) ON CONFLICT(code) DO NOTHING RETURNING code',[code,hash(teacherKey),JSON.stringify(state),custom?JSON.stringify(custom.bank):null,custom?JSON.stringify(custom.images):null]);
@@ -127,7 +127,7 @@ export async function getQuizSnapshot(code:string,identity:QuizIdentity){
   if(row.room.course&&(row.ranking as Array<{racer?:Racer;finish?:Finish}>).some(p=>p.racer&&!p.finish&&advance(p.racer,gameClock(row.room),row.room.course).finishAt!==undefined)){
     await settleCourse(code);row=(await query(`SELECT ${snapshotColumns} FROM quiz_rally_sessions WHERE code=$1 AND expires_at>NOW()`,[code,identity.playerId||'']))[0];
   }
-  if(row.room.arena&&(row.ranking as Array<{runner?:Runner;finish?:Finish;id:string}>).some(p=>p.runner&&!p.finish&&advanceRunner(p.runner,gameClock(row.room),row.room.arena,row.room.arenaEffects||[],p.id).finishAt!==undefined)){
+  if(row.room.arena&&(row.ranking as Array<{runner?:Runner;finish?:Finish;id:string}>).some(p=>p.runner&&!p.finish&&couldFinish(p.runner,gameClock(row.room),row.room.arena)&&advanceRunner(p.runner,gameClock(row.room),row.room.arena,row.room.arenaEffects||[],p.id).finishAt!==undefined)){
     await settleArena(code);row=(await query(`SELECT ${snapshotColumns} FROM quiz_rally_sessions WHERE code=$1 AND expires_at>NOW()`,[code,identity.playerId||'']))[0];
   }
   return snapshotFromRow(row,identity);
@@ -143,7 +143,7 @@ const snapshotColumns=`code,teacher_key_hash,state-'players' AS room,
 async function snapshotFromRow(r:Record<string,any>,identity:QuizIdentity){
   const code=r.code as string,room=r.room as Room,p=r.player as Player|undefined;authenticate(r as Row,identity,p);
   const now=Date.now(),ranking=(r.ranking as Array<{id:string;nickname:string;avatar?:number;robot?:RobotParts;activity:string;racer?:Racer;runner?:Runner;finish?:Finish;score:number;correct:number;attempted:number;shield:boolean;protectedUntil:number}>).map(p=>({...p,avatar:avatarFor(p),robot:robotFor(p.robot,avatarFor(p))})).sort((a,b)=>b.score-a.score||b.correct-a.correct||a.nickname.localeCompare(b.nickname,'ko'));
-  if(room.arena){const positions=new Map(ranking.map(p=>[p.id,advanceRunner(p.runner!,gameClock(room,now),room.arena!,room.arenaEffects||[],p.id).y]));ranking.sort((a,b)=>{if(a.finish||b.finish)return(a.finish?.place||999)-(b.finish?.place||999);return positions.get(b.id)!-positions.get(a.id)!||a.nickname.localeCompare(b.nickname,'ko');});}
+  if(room.arena){const positions=new Map(ranking.map(p=>[p.id,phase(room,now)==='ended'?advanceRunner(p.runner!,gameClock(room,now),room.arena!,room.arenaEffects||[],p.id).y:p.runner!.y]));ranking.sort((a,b)=>{if(a.finish||b.finish)return(a.finish?.place||999)-(b.finish?.place||999);return positions.get(b.id)!-positions.get(a.id)!||a.nickname.localeCompare(b.nickname,'ko');});}
   const review=[];if(identity.role==='student'&&phase(room,now)==='ended'){
     const ids=Object.entries(p!.stats).filter(([,v])=>v[0]>v[1]).slice(0,6).map(([id])=>id);
     const custom=room.questionIds&&ids.length?await query(`SELECT value AS q FROM quiz_rally_sessions,jsonb_each(question_bank) WHERE code=$1 AND key=ANY($2::text[])`,[code,ids]):[];
@@ -179,7 +179,7 @@ function modifyArena(room:Room,p:Player,body:Record<string,unknown>,q:CustomQues
   assert(p.runner&&!p.finish,'이미 완주했어요. 친구들의 경주를 지켜봐 주세요.',409);
   const now=gameClock(room),action=body.action;
   if(action==='arena-input'||((action==='arena-collect'||action==='arena-use')&&Array.isArray(body.inputs))){
-    const batch=Array.isArray(body.inputs)?body.inputs:[body];assert(batch.length>0&&batch.length<=24,'조작 값을 확인해 주세요.');
+    const batch=Array.isArray(body.inputs)?body.inputs:[body];assert((batch.length>0||action!=='arena-input')&&batch.length<=24,'조작 값을 확인해 주세요.');
     let last=-1;
     for(const value of batch){assert(value&&typeof value==='object'&&!Array.isArray(value),'조작 값을 확인해 주세요.');const input=value as Record<string,unknown>;
       const dx=Number(input.dx),dy=Number(input.dy),seq=Number(input.seq);assert(Number.isFinite(dx)&&Number.isFinite(dy)&&Math.abs(dx)<=1&&Math.abs(dy)<=1&&Number.isSafeInteger(seq)&&seq>=0&&seq>last,'조작 값을 확인해 주세요.');last=seq;
@@ -221,8 +221,8 @@ function modifyArena(room:Room,p:Player,body:Record<string,unknown>,q:CustomQues
     const slot=Number(body.slot);assert(Number.isInteger(slot)&&slot>=0&&slot<(p.gear||[]).length,'아이템을 선택해 주세요.');const gear=p.gear![slot];
     if(gear==='shield')r.shieldUntil=actionClock+4000;
     else if(gear==='boost')r.boostUntil=actionClock+3000;
-    else {const effects=(room.arenaEffects||[]).filter(e=>e.expires>now-5000);assert(effects.length<200,'경기의 아이템이 많아요. 잠깐 뒤 사용해 주세요.');const behind=gear==='mine'||gear==='banana',offset=behind?-55:gear==='missile'?45:0;
-      effects.push({id:randomUUID(),type:gear,owner:p.id,x:r.x+r.fx*offset,y:r.y+r.fy*offset,dx:r.fx,dy:r.fy,born:actionClock,expires:actionClock+(gear==='missile'?2200:gear==='field'?5000:14000)});room.arenaEffects=effects;
+    else {const effects=(room.arenaEffects||[]).filter(e=>e.expires>now-5000);assert(effects.length<200,'경기의 아이템이 많아요. 잠깐 뒤 사용해 주세요.');const behind=gear==='mine'||gear==='banana',offset=behind?-55:gear==='missile'?45:0,direction=gear==='missile'?missileDirection():{dx:r.fx,dy:r.fy};
+      effects.push({id:randomUUID(),type:gear,owner:p.id,x:r.x+direction.dx*offset,y:r.y+direction.dy*offset,dx:direction.dx,dy:direction.dy,born:actionClock,expires:actionClock+(gear==='missile'?2200:gear==='field'?5000:14000)});room.arenaEffects=effects;
     }
     p.gear!.splice(slot,1);p.useAt=now;notice(p,GEAR_NAMES[gear]+' 사용!');return;
   }
@@ -344,7 +344,7 @@ export async function actQuizRoom(code:string,identity:QuizIdentity,body:Record<
     if(customizing)assert(phase(room)!=='ended','끝난 게임에서는 로봇을 바꿀 수 없습니다.',409);
     else assert(phase(room)==='running',phase(room)==='paused'?'선생님이 게임을 잠시 멈췄습니다.':'진행 중인 게임에서 사용할 수 있습니다.',409);
     if(room.course&&p.racer&&!p.finish){p.racer=advance(p.racer,gameClock(room),room.course);if(p.racer.finishAt!==undefined){await settleCourse(code);return getQuizSnapshot(code,identity);}}
-    if(room.arena&&p.runner){if(p.finish&&body.action==='arena-input')return getQuizSnapshot(code,identity);if(!p.finish&&advanceRunner(p.runner,gameClock(room),room.arena,room.arenaEffects||[],p.id).finishAt!==undefined){await settleArena(code);return getQuizSnapshot(code,identity);}}
+    if(room.arena&&p.runner){if(p.finish&&body.action==='arena-input')return getQuizSnapshot(code,identity);if(!p.finish&&couldFinish(p.runner,gameClock(room),room.arena)&&advanceRunner(p.runner,gameClock(room),room.arena,room.arenaEffects||[],p.id).finishAt!==undefined){await settleArena(code);return getQuizSnapshot(code,identity);}}
     const priorArenaEffects=JSON.stringify(room.arenaEffects||[]),arenaRevision=room.arenaRevision||0;
     const oldVersion=p.version,target=body.action==='item'&&body.item==='steal'?room.players[String(body.targetId)]:undefined,targetVersion=target?.version;
     if(room.course&&target?.racer&&!target.finish&&advance(target.racer,gameClock(room),room.course).finishAt!==undefined){await settleCourse(code);continue;}
