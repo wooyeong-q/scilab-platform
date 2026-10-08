@@ -3,7 +3,7 @@ import { quizBody,quizFailure,quizIdentity,quizJson } from '@/lib/quiz-rally-htt
 export const runtime='nodejs';
 export const dynamic='force-dynamic';
 type Context={params:Promise<{code:string}>};
-export async function GET(request:Request,context:Context){try{return quizJson(await getQuizSnapshot((await context.params).code,quizIdentity(request)));}catch(error){return quizFailure(error);}}
+export async function GET(request:Request,context:Context){const started=performance.now();try{const response=quizJson(await getQuizSnapshot((await context.params).code,quizIdentity(request)));response.headers.set('Server-Timing',`quiz;dur=${Math.round(performance.now()-started)}`);return response;}catch(error){return quizFailure(error);}}
 export async function POST(request:Request,context:Context){
   const started=performance.now();let action='unknown';
   try{const {code}=await context.params,body=await quizBody(request),identity=quizIdentity(request);action=String(body.action||'unknown');

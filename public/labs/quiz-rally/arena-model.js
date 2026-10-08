@@ -2,9 +2,15 @@
 (()=>{const exports={};
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.center = exports.STAGES = exports.CHECKPOINTS = exports.COUNTDOWN = exports.RADIUS = exports.SPEED = exports.WIDTH = exports.GEAR_HELP = exports.GEAR_NAMES = void 0;
+exports.ROUND_LENGTH = exports.center = exports.STAGES = exports.CHECKPOINTS = exports.COUNTDOWN = exports.RADIUS = exports.SPEED = exports.WIDTH = exports.GEAR_HELP = exports.GEAR_NAMES = void 0;
 exports.freshRunner = freshRunner;
+exports.raceLength = raceLength;
+exports.stageAt = stageAt;
 exports.boxes = boxes;
+exports.checkpoints = checkpoints;
+exports.gaps = gaps;
+exports.conveyors = conveyors;
+exports.tileRows = tileRows;
 exports.gates = gates;
 exports.spinners = spinners;
 exports.balls = balls;
@@ -23,25 +29,29 @@ exports.STAGES = ['출발 광장', '움직이는 문', '회전봉 정원', '점�
 const center = (y) => Math.sin(y / 660) * 65;
 exports.center = center;
 function freshRunner(clock = 0, slot = 0) { return { x: (0, exports.center)(100) + (slot % 8 - 3.5) * 48, y: 100 - Math.floor(slot / 8) * 20, z: 0, vz: 0, dx: 0, dy: 0, fx: 0, fy: 1, t: clock, seq: 0, inputUntil: 0, jumpAt: -2000, diveAt: -3000, diveUntil: 0, stunUntil: 0, immuneUntil: 0, boostUntil: 0, shieldUntil: 0, knockX: 0, knockY: 0, checkpoint: 100, fallUntil: 0, falls: 0, open: false, boxes: [], usedEffects: [], hits: [] }; }
-function boxes() { return [270, 640, 1270, 1950, 2590, 3220, 3900, 4480].flatMap((y, i) => [-150, 150].map((x, j) => ({ id: i * 2 + j, x: (0, exports.center)(y) + x, y, r: 27 }))); }
-function gates(clock) { return [830, 1010, 1190].map((y, i) => ({ y, gap: (0, exports.center)(y) + Math.sin(clock / 1100 + i * 1.9) * 160, width: 180 })); }
-function spinners(clock) { return [1530, 1770].map((y, i) => ({ x: (0, exports.center)(y) + (i ? 100 : -95), y, angle: clock / (i ? 850 : -1000) + i, length: 185, r: 15 })); }
-function balls(clock) { return [3510, 3690, 3850].map((y, i) => ({ x: (0, exports.center)(y) + Math.sin(clock / (900 + i * 180) + i * 2) * 250, y, r: 34 })); }
-function bumpers() { return [{ x: -180, y: 2850 }, { x: 165, y: 3030 }, { x: -120, y: 3100 }].map(p => ({ ...p, x: p.x + (0, exports.center)(p.y), r: 32 })); }
+exports.ROUND_LENGTH = 4700;
+function raceLength(durationSeconds) { return exports.ROUND_LENGTH * Math.max(1, Math.round(durationSeconds / 45)); }
+function stageAt(y) { const round = Math.max(0, Math.floor(y / exports.ROUND_LENGTH)), stage = Math.min(6, Math.floor((y - round * exports.ROUND_LENGTH) / 670)); return { round, stage, index: round * 7 + stage }; }
+function bases(arena, near = 0, far = arena?.length || exports.ROUND_LENGTH) { const length = arena?.length || exports.ROUND_LENGTH, first = Math.max(0, Math.floor(near / exports.ROUND_LENGTH)), last = Math.min(Math.ceil(length / exports.ROUND_LENGTH) - 1, Math.floor(far / exports.ROUND_LENGTH)); return Array.from({ length: Math.max(0, last - first + 1) }, (_, i) => (first + i) * exports.ROUND_LENGTH); }
+function boxes(arena, near = 0, far = arena?.length || exports.ROUND_LENGTH) { return bases(arena, near, far).flatMap(base => [270, 640, 1270, 1950, 2590, 3220, 3900, 4480].flatMap((local, i) => [-150, 150].map((x, j) => { const y = base + local; return { id: base / exports.ROUND_LENGTH * 16 + i * 2 + j, x: (0, exports.center)(y) + x, y, r: 27 }; }))).filter(b => b.y >= near && b.y <= far); }
+function checkpoints(arena, near = 0, far = arena?.length || exports.ROUND_LENGTH) { return bases(arena, near, far).flatMap(base => exports.CHECKPOINTS.map(y => base + y)).filter(y => y >= near && y <= far); }
+function gaps(arena, near = 0, far = arena?.length || exports.ROUND_LENGTH) { return bases(arena, near, far).flatMap(base => [[2170, 2240], [2420, 2490]].map(([a, b]) => ({ start: base + a, end: base + b }))).filter(g => g.end >= near && g.start <= far); }
+function conveyors(arena, near = 0, far = arena?.length || exports.ROUND_LENGTH) { return bases(arena, near, far).map(base => ({ start: base + 2800, end: base + 3140 })).filter(g => g.end >= near && g.start <= far); }
+function tileRows(arena, near = 0, far = arena?.length || exports.ROUND_LENGTH) { return bases(arena, near, far).flatMap(base => [0, 1, 2].map(row => ({ y: base + 4130 + row * 95, row }))).filter(r => r.y + 95 >= near && r.y <= far); }
+function gates(clock, arena, near = 0, far = arena?.length || exports.ROUND_LENGTH) { return bases(arena, near, far).flatMap(base => [830, 1010, 1190].map((v, i) => { const y = base + v; return { y, gap: (0, exports.center)(y) + Math.sin(clock / 1100 + i * 1.9 + base / exports.ROUND_LENGTH) * 160, width: 180 }; })).filter(g => g.y >= near && g.y <= far); }
+function spinners(clock, arena, near = 0, far = arena?.length || exports.ROUND_LENGTH) { return bases(arena, near - 200, far + 200).flatMap(base => [1530, 1770].map((v, i) => { const y = base + v; return { x: (0, exports.center)(y) + (i ? 100 : -95), y, angle: clock / (i ? 850 : -1000) + i + base / exports.ROUND_LENGTH, length: 185, r: 15 }; })).filter(g => g.y + 200 >= near && g.y - 200 <= far); }
+function balls(clock, arena, near = 0, far = arena?.length || exports.ROUND_LENGTH) { return bases(arena, near, far).flatMap(base => [3510, 3690, 3850].map((v, i) => { const y = base + v; return { x: (0, exports.center)(y) + Math.sin(clock / (900 + i * 180) + i * 2 + base / exports.ROUND_LENGTH) * 250, y, r: 34 }; })).filter(g => g.y >= near && g.y <= far); }
+function bumpers(arena, near = 0, far = arena?.length || exports.ROUND_LENGTH) { return bases(arena, near, far).flatMap(base => [{ x: -180, y: 2850 }, { x: 165, y: 3030 }, { x: -120, y: 3100 }].map(p => { const y = base + p.y; return { x: p.x + (0, exports.center)(y), y, r: 32 }; })).filter(g => g.y >= near && g.y <= far); }
 function floorAt(x, y, clock) {
     if (y < 5 || Math.abs(x - (0, exports.center)(y)) > exports.WIDTH / 2)
         return false;
-    if ((y > 2170 && y < 2240) || (y > 2420 && y < 2490))
+    const local = y % exports.ROUND_LENGTH;
+    if ((local > 2170 && local < 2240) || (local > 2420 && local < 2490))
         return false;
-    if (y > 4130 && y < 4410) {
-        const row = Math.floor((y - 4130) / 95), col = Math.max(0, Math.min(4, Math.floor((x - (0, exports.center)(y) + 310) / 124)));
-        if ((row + col) % 3 === 0 && ((clock / 1000 + row * .8 + col * .45) % 3.6) > 2.4)
-            return false;
-    }
-    return true;
+    return tileDanger(x, y, clock) !== 2;
 }
-function tileDanger(x, y, clock) { if (y < 4130 || y > 4410)
-    return 0; const row = Math.floor((y - 4130) / 95), col = Math.max(0, Math.min(4, Math.floor((x - (0, exports.center)(y) + 310) / 124))); if ((row + col) % 3 !== 0)
+function tileDanger(x, y, clock) { const local = y % exports.ROUND_LENGTH; if (local < 4130 || local > 4410)
+    return 0; const row = Math.floor((local - 4130) / 95), col = Math.max(0, Math.min(4, Math.floor((x - (0, exports.center)(y) + 310) / 124))); if ((row + col) % 3 !== 0)
     return 0; const phase = (clock / 1000 + row * .8 + col * .45) % 3.6; return phase > 2.4 ? 2 : phase > 1.8 ? 1 : 0; }
 function effectPosition(e, t) { const dt = Math.max(0, t - e.born) / 1000; return e.type === 'missile' ? { x: e.x + e.dx * 460 * dt, y: e.y + e.dy * 460 * dt } : { x: e.x, y: e.y }; }
 function segmentDistance(x, y, ax, ay, bx, by) { const dx = bx - ax, dy = by - ay, k = Math.max(0, Math.min(1, ((x - ax) * dx + (y - ay) * dy) / (dx * dx + dy * dy || 1))); return Math.hypot(x - ax - k * dx, y - ay - k * dy); }
@@ -84,6 +94,10 @@ function advanceRunner(source, clock, arena, effects = [], id = '') {
         r.dy = 0;
         return r;
     }
+    if (!r.dx && !r.dy && !r.vz && !r.z && !r.knockX && !r.knockY && !r.fallUntil && r.diveUntil <= r.t && r.y % exports.ROUND_LENGTH < 700 && floorAt(r.x, r.y, end) && effects.every(e => e.owner === id || e.expires <= r.t || e.born > end)) {
+        r.t = end;
+        return r;
+    }
     // No active input survives a disconnect. Skip long idle periods without thousands of steps.
     if (end - t > 6000 && r.inputUntil < t + 2500 && !r.open) {
         const cutoff = Math.min(end, t + 5000);
@@ -115,13 +129,13 @@ function advanceRunner(source, clock, arena, effects = [], id = '') {
                 continue;
             }
         }
-        const grounded = r.z <= 0;
+        const groundY = r.y % exports.ROUND_LENGTH, grounded = r.z <= 0;
         let slow = 1;
         for (const e of effects) {
             if (e.type === 'field' && e.owner !== id && e.born <= t && e.expires > t && t >= r.shieldUntil && Math.hypot(r.x - e.x, r.y - e.y) < 145)
                 slow = .38;
         }
-        if (r.y > 2800 && r.y < 3140 && r.x < (0, exports.center)(r.y) - 40 && grounded)
+        if (groundY > 2800 && groundY < 3140 && r.x < (0, exports.center)(r.y) - 40 && grounded)
             slow = Math.min(slow, .65);
         const active = t < r.inputUntil && t >= r.stunUntil, fast = t < r.boostUntil ? 1.6 : 1, dive = t < r.diveUntil;
         let vx = (active ? r.dx : 0) * exports.SPEED * fast * slow, vy = (active ? r.dy : 0) * exports.SPEED * fast * slow;
@@ -129,8 +143,8 @@ function advanceRunner(source, clock, arena, effects = [], id = '') {
             vx = r.fx * exports.SPEED * 2;
             vy = r.fy * exports.SPEED * 2;
         }
-        if (grounded && r.y > 2800 && r.y < 3140)
-            vx += Math.floor((r.y - 2800) / 110) % 2 ? 75 : -75;
+        if (grounded && groundY > 2800 && groundY < 3140)
+            vx += Math.floor((groundY - 2800) / 110) % 2 ? 75 : -75;
         const previousY = r.y;
         r.x += (vx + r.knockX) * dt;
         r.y += (vy + r.knockY) * dt;
@@ -141,17 +155,17 @@ function advanceRunner(source, clock, arena, effects = [], id = '') {
         if (r.z === 0)
             r.vz = 0;
         // Tall sliding gates cannot be jumped; find the moving opening.
-        for (const gate of gates(t))
+        for (const gate of gates(t, arena, r.y - 70, r.y + 70))
             if (Math.abs(r.y - gate.y) < exports.RADIUS + 16 && Math.abs(r.x - gate.gap) > gate.width / 2 - exports.RADIUS) {
-                r.y = vy >= 0 ? gate.y - exports.RADIUS - 17 : gate.y + exports.RADIUS + 17;
+                r.y = previousY <= gate.y ? gate.y - exports.RADIUS - 17 : gate.y + exports.RADIUS + 17;
             }
         if (r.z < 32) {
-            for (const s of spinners(t)) {
+            for (const s of spinners(t, arena, r.y - 40, r.y + 40)) {
                 const a = Math.cos(s.angle) * s.length, b = Math.sin(s.angle) * s.length;
                 if (segmentDistance(r.x, r.y, s.x - a, s.y - b, s.x + a, s.y + b) < exports.RADIUS + s.r)
                     knock(r, s.x, s.y, t, 230);
             }
-            for (const b of [...balls(t), ...bumpers()])
+            for (const b of [...balls(t, arena, r.y - 70, r.y + 70), ...bumpers(arena, r.y - 70, r.y + 70)])
                 if (Math.hypot(r.x - b.x, r.y - b.y) < exports.RADIUS + b.r)
                     knock(r, b.x, b.y, t, 240);
         }
@@ -181,7 +195,7 @@ function advanceRunner(source, clock, arena, effects = [], id = '') {
             continue;
         }
         if (r.z < 2) {
-            for (const cp of exports.CHECKPOINTS)
+            for (const cp of checkpoints(arena, r.y - 80, r.y))
                 if (r.y >= cp && r.y < cp + 80 && cp > r.checkpoint)
                     r.checkpoint = cp;
         }
