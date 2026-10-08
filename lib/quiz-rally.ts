@@ -9,9 +9,11 @@ export { QuizError } from './quiz-rally-errors';
 type Phase = 'lobby' | 'running' | 'paused' | 'ended';
 type Item = 'boost' | 'hint' | 'shield' | 'steal';
 type Reward = Item | 'bonus40' | 'bonus70';
-type Turn = { id: string; nonce: string; order: number[]; eliminated: number[]; answered: boolean; selected: number | null; correct: boolean | null; points: number; rewards: Reward[]; reward: {type: Reward; text: string} | null; retries?:number; revealed?:boolean; wrongChoices?:number[] };
+type Finish = {place:number; bonus:number};
+type Turn = { finishBonus?:number; id: string; nonce: string; order: number[]; eliminated: number[]; answered: boolean; selected: number | null; correct: boolean | null; points: number; rewards: Reward[]; reward: {type: Reward; text: string} | null; retries?:number; revealed?:boolean; wrongChoices?:number[] };
 type Player = {
   id: string; nickname: string; avatar?: number; robot?:RobotParts; tokenHash: string; version: number; removed: boolean;
+  solvedIds?:string[]; finish?:Finish;
   score: number; correct: number; attempted: number; inventory: Record<Item,number>;
   boostActive: boolean; shieldActive: boolean; protectedUntil: number;
   deck: string[]; turn: Turn; requests: string[]; stats: Record<string,[number,number]>;
@@ -21,6 +23,7 @@ type Room = {
   title: string; durationSeconds: number; extension: boolean; stealEnabled: boolean;
   status: Phase; endsAt: number | null; remainingMs: number; metaRevision: number;
   requests: string[]; players: Record<string,Player>;
+  raceGoal?:number; finishers?:string[];
   questionIds?: string[]; questionSetTitle?: string; cityTarget?:number;
 };
 type Row = { code: string; teacher_key_hash: string; state: Room; expires_at: string; custom_question?:CustomQuestion };
@@ -36,7 +39,7 @@ function codeValue(code:string){const value=code.toUpperCase();assert(/^[A-HJ-NP
 function textValue(value:unknown,max:number,fallback=''){return (typeof value==='string'?value.normalize('NFKC').trim().replace(/\s+/g,' '):fallback).slice(0,max);}
 function uuid(value:unknown): value is string {return typeof value==='string'&&/^[a-f0-9]{8}-[a-f0-9]{4}-4[a-f0-9]{3}-[89ab][a-f0-9]{3}-[a-f0-9]{12}$/i.test(value);}
 function shuffled<T>(list:T[]):T[]{const a=[...list];for(let i=a.length-1;i>0;i--){const j=randomInt(i+1);[a[i],a[j]]=[a[j],a[i]];}return a;}
-function deckFor(room:Room){return shuffled(room.questionIds||QUIZ_QUESTIONS.filter(q=>room.extension||!q.extension).map(q=>q.id));}
+function deckFor(room:Room,solved:string[]=[]){return shuffled((room.questionIds||QUIZ_QUESTIONS.filter(q=>room.extension||!q.extension).map(q=>q.id)).filter(id=>!room.raceGoal||!solved.includes(id)));}
 function turnFor(id:string):Turn{return {id,nonce:randomUUID(),order:shuffled([0,1,2,3]),eliminated:[],answered:false,selected:null,correct:null,points:0,rewards:[],reward:null};}
 // Older rooms receive a stable character without changing their stored scores or turns.
 function avatarFor(p:{id:string;avatar?:number}){const value=p.avatar;return typeof value==='number'&&Number.isInteger(value)&&value>=0&&value<6?value:parseInt(hash(p.id).slice(0,8),16)%6;}
@@ -63,9 +66,9 @@ function publicTurn(p:Player,q:CustomQuestion,code:string){const revealed=p.turn
   options:p.turn.order.map(i=>q.options[i]),eliminated:[...new Set([...p.turn.eliminated,...(p.turn.wrongChoices||[])])],
   answered:p.turn.answered,retries:p.turn.retries||0,revealed,canRetry:p.turn.answered&&p.turn.correct===false&&!revealed,
   feedback:p.turn.answered?{correct:p.turn.correct,selected:p.turn.selected,...(revealed?{correctOption:p.turn.order.indexOf(q.answer),explanation:q.explanation}:{}),points:p.turn.points}:null,
-  needsReward:p.turn.answered&&p.turn.correct&&!p.turn.reward,reward:p.turn.reward,
+  finishBonus:p.turn.finishBonus||0,needsReward:p.turn.answered&&p.turn.correct&&!p.turn.reward,reward:p.turn.reward,
 };}
-function publicPlayer(p:Player,q:CustomQuestion,code:string,review:unknown[]=[]){return {review,id:p.id,nickname:p.nickname,avatar:avatarFor(p),robot:robotFor(p.robot,avatarFor(p)),score:p.score,correct:p.correct,attempted:p.attempted,inventory:p.inventory,boostActive:p.boostActive,shieldActive:p.shieldActive,protectedUntil:p.protectedUntil,turn:publicTurn(p,q,code),notice:p.notice,noticeId:p.noticeId};}
+function publicPlayer(p:Player,q:CustomQuestion,code:string,review:unknown[]=[]){return {review,finish:p.finish||null,id:p.id,nickname:p.nickname,avatar:avatarFor(p),robot:robotFor(p.robot,avatarFor(p)),score:p.score,correct:p.correct,attempted:p.attempted,inventory:p.inventory,boostActive:p.boostActive,shieldActive:p.shieldActive,protectedUntil:p.protectedUntil,turn:publicTurn(p,q,code),notice:p.notice,noticeId:p.noticeId};}
 
 export async function createQuizRoom(body:Record<string,unknown>){
   const duration=Number(body.durationSeconds??480);assert([300,480,600,900].includes(duration),'게임 시간을 다시 선택해 주세요.');
@@ -74,6 +77,7 @@ export async function createQuizRoom(body:Record<string,unknown>){
   const custom=body.questions!==undefined?validateQuestions(body.questions):null;
   const state:Room={title,durationSeconds:duration,extension:body.extension===true,stealEnabled:body.stealEnabled===true,status:'lobby',endsAt:null,remainingMs:duration*1000,metaRevision:0,requests:[],players:{}};
   if(custom){state.questionIds=Object.keys(custom.bank);state.questionSetTitle=textValue(body.questionSetTitle,80,'직접 넣은 문제');state.extension=false;}
+  state.raceGoal=state.questionIds?.length||QUIZ_QUESTIONS.filter(q=>state.extension||!q.extension).length;state.finishers=[];
   for(let i=0;i<6;i++){
     const code=Array.from({length:6},()=>codeChars[randomInt(codeChars.length)]).join('');
     const rows=await query('INSERT INTO quiz_rally_sessions(code,teacher_key_hash,state,expires_at,question_bank,question_images) VALUES($1,$2,$3::jsonb,NOW()+INTERVAL \'14 days\',$4::jsonb,$5::jsonb) ON CONFLICT(code) DO NOTHING RETURNING code',[code,hash(teacherKey),JSON.stringify(state),custom?JSON.stringify(custom.bank):null,custom?JSON.stringify(custom.images):null]);
@@ -122,7 +126,7 @@ export async function getQuizSnapshot(code:string,identity:QuizIdentity){
 const snapshotColumns=`code,teacher_key_hash,state-'players' AS room,
   state #> ARRAY['players',$2] AS player,
   question_bank -> (state #>> ARRAY['players',$2,'turn','id']) AS custom_question,
-  (SELECT COALESCE(jsonb_agg(jsonb_build_object('id',key,'nickname',value->'nickname','avatar',value->'avatar','robot',value->'robot','score',value->'score','correct',value->'correct','attempted',value->'attempted','shield',value->'shieldActive','protectedUntil',value->'protectedUntil',
+  (SELECT COALESCE(jsonb_agg(jsonb_build_object('id',key,'nickname',value->'nickname','avatar',value->'avatar','robot',value->'robot','finish',value->'finish','score',value->'score','correct',value->'correct','attempted',value->'attempted','shield',value->'shieldActive','protectedUntil',value->'protectedUntil',
     'activity',CASE WHEN value #>> '{turn,correct}'='true' THEN CASE WHEN value #>> '{turn,reward}' IS NULL THEN 'reward' ELSE 'ready' END WHEN value #>> '{turn,revealed}'='true' THEN 'review' ELSE 'solving' END)),'[]'::jsonb)
    FROM jsonb_each(state->'players') WHERE NOT (value->>'removed')::boolean) AS ranking`;
 async function snapshotFromRow(r:Record<string,any>,identity:QuizIdentity){
@@ -133,7 +137,7 @@ async function snapshotFromRow(r:Record<string,any>,identity:QuizIdentity){
     const custom=room.questionIds&&ids.length?await query(`SELECT value AS q FROM quiz_rally_sessions,jsonb_each(question_bank) WHERE code=$1 AND key=ANY($2::text[])`,[code,ids]):[];
     for(const id of ids){const q=QUESTION_MAP.get(id)||custom.find(x=>x.q.id===id)?.q;if(q)review.push({prompt:q.prompt,answer:q.options[q.answer],explanation:q.explanation});}
   }
-  return {code,title:room.title,status:phase(room,now),durationSeconds:room.durationSeconds,endsAt:room.endsAt,remainingMs:room.remainingMs,serverNow:now,stealEnabled:room.stealEnabled,extension:room.extension,questionCount:room.questionIds?.length||QUIZ_QUESTIONS.filter(q=>room.extension||!q.extension).length,questionSetTitle:room.questionSetTitle||'중2 과학 · 물질의 구성',cityTarget:room.cityTarget||Math.max(1,ranking.length)*Math.max(3,Math.round(room.durationSeconds/80)),ranking,player:identity.role==='student'?publicPlayer(p!,r.custom_question||QUESTION_MAP.get(p!.turn.id)!,code,review):null};
+  return {code,raceGoal:room.raceGoal||null,finishers:room.finishers||[],finishPrizes:room.raceGoal?[room.raceGoal*50,room.raceGoal*30,room.raceGoal*15]:[],title:room.title,status:phase(room,now),durationSeconds:room.durationSeconds,endsAt:room.endsAt,remainingMs:room.remainingMs,serverNow:now,stealEnabled:room.stealEnabled,extension:room.extension,questionCount:room.questionIds?.length||QUIZ_QUESTIONS.filter(q=>room.extension||!q.extension).length,questionSetTitle:room.questionSetTitle||'중2 과학 · 물질의 구성',cityTarget:room.cityTarget||Math.max(1,ranking.length)*Math.max(3,Math.round(room.durationSeconds/80)),ranking,player:identity.role==='student'?publicPlayer(p!,r.custom_question||QUESTION_MAP.get(p!.turn.id)!,code,review):null};
 }
 
 export async function getQuizImage(code:string,id:string){
@@ -147,6 +151,7 @@ function remember(p:Player,requestId:string){p.requests=[...p.requests.slice(-11
 function modifyPlayer(room:Room,p:Player,body:Record<string,unknown>,q:CustomQuestion,target?:Player){
   const action=body.action;
   if(action==='customize'){p.robot=validateRobot(body.robot);p.avatar=p.robot.headColor;return;}
+  assert(!p.finish||action==='reward','이미 완주했어요. 친구들의 도전을 지켜봐 주세요.',409);
   if(action==='retry-question'||action==='reveal'){
     assert(body.nonce===p.turn.nonce&&p.turn.answered&&p.turn.correct===false&&!p.turn.revealed,'다시 풀 수 있는 오답이 없습니다.',409);
     if(action==='reveal'){p.turn.revealed=true;return;}
@@ -163,6 +168,8 @@ function modifyPlayer(room:Room,p:Player,body:Record<string,unknown>,q:CustomQue
     if(p.turn.correct){p.correct++;s[1]++;p.turn.points=p.boostActive?200:100;p.score+=p.turn.points;p.boostActive=false;
       const pool:Reward[]=room.stealEnabled?['bonus40','bonus70','boost','hint','shield','steal']:['bonus40','bonus70','boost','hint'];
       p.turn.rewards=shuffled(pool).slice(0,3);
+      if(room.raceGoal){p.solvedIds=[...new Set([...(p.solvedIds||[]),q.id])];if(p.solvedIds.length>=room.raceGoal){const winners=room.finishers||[],place=winners.length<3?winners.length+1:0,bonus=place?room.raceGoal*[50,30,15][place-1]:0;p.finish={place,bonus};p.turn.finishBonus=bonus;p.score+=bonus;if(place)room.finishers=[...winners,p.id];notice(p,place?`최종 결승 ${place}등! 추가 +${bonus}점!`:'모든 문제 해결! 최종 결승선에 도착했어요.');}}
+
     }
     else {p.turn.wrongChoices=[...(p.turn.wrongChoices||[]),p.turn.selected];p.turn.nonce=randomUUID();}
     p.stats[q.id]=s;return;
@@ -178,7 +185,7 @@ function modifyPlayer(room:Room,p:Player,body:Record<string,unknown>,q:CustomQue
   }
   if(action==='next'){
     assert(body.nonce===p.turn.nonce&&p.turn.answered&&(!p.turn.correct||p.turn.reward),'해설과 보상을 확인해 주세요.',409);
-    if(!p.deck.length){p.deck=deckFor(room);if(p.deck[0]===p.turn.id)p.deck.push(p.deck.shift()!);}
+    if(!p.deck.length){p.deck=deckFor(room,p.solvedIds);if(p.deck[0]===p.turn.id)p.deck.push(p.deck.shift()!);}
     p.turn=turnFor(p.deck.shift()!);return;
   }
   assert(action==='item','지원하지 않는 동작입니다.');
@@ -189,7 +196,7 @@ function modifyPlayer(room:Room,p:Player,body:Record<string,unknown>,q:CustomQue
   if(item==='shield'){assert(room.stealEnabled,'이 게임에서는 점수 가져오기를 사용하지 않습니다.');assert(!p.shieldActive,'방어막이 이미 켜져 있습니다.');p.shieldActive=true;notice(p,'다음 점수 가져오기를 한 번 막아 줍니다.');}
   if(item==='steal'){
     assert(room.stealEnabled,'이 게임에서는 점수 가져오기를 사용하지 않습니다.');
-    assert(target&&!target.removed&&target.id!==p.id&&target.score>p.score&&target.score>0,'나보다 점수가 높고 점수가 남아 있는 친구를 골라 주세요.',409);
+    assert(target&&!target.removed&&target.id!==p.id&&target.score>p.score&&target.score>0&&!target.finish,'나보다 점수가 높고 점수가 남아 있는 친구를 골라 주세요.',409);
     assert(target.protectedUntil<=Date.now(),'이 친구는 잠시 보호 중입니다. 다른 친구를 골라 주세요.',409);
     if(target.shieldActive){target.shieldActive=false;notice(target,'방어막이 점수 가져오기를 막았어요!');notice(p,`${target.nickname}의 방어막이 막았어요.`);}
     else{const points=Math.min(randomInt(5,16)*10,target.score);target.score-=points;p.score+=points;target.protectedUntil=Date.now()+30000;notice(target,`친구가 ${points}점을 가져갔어요. 30초 동안 보호됩니다.`);notice(p,`${target.nickname}에게서 +${points}점!`);}
@@ -209,14 +216,18 @@ export async function actQuizRoom(code:string,identity:QuizIdentity,body:Record<
     if(customizing)assert(phase(room)!=='ended','끝난 게임에서는 로봇을 바꿀 수 없습니다.',409);
     else assert(phase(room)==='running',phase(room)==='paused'?'선생님이 게임을 잠시 멈췄습니다.':'진행 중인 게임에서 사용할 수 있습니다.',409);
     const oldVersion=p.version,target=body.action==='item'&&body.item==='steal'?room.players[String(body.targetId)]:undefined,targetVersion=target?.version;
+    const wasFinished=!!p.finish,priorFinishers=room.finishers||[];
     modifyPlayer(room,p,body,row.custom_question||QUESTION_MAP.get(p.turn.id)!,target);remember(p,requestId);
     const params:unknown[]=[code,p.id,JSON.stringify(p),oldVersion,room.metaRevision];
     let statement=`UPDATE quiz_rally_sessions SET state=jsonb_set(state,ARRAY['players',$2],$3::jsonb)`;
     if(target){params.push(target.id,JSON.stringify(target),targetVersion);statement=`UPDATE quiz_rally_sessions SET state=jsonb_set(jsonb_set(state,ARRAY['players',$2],$3::jsonb),ARRAY['players',$6],$7::jsonb)`;}
+    const finishClaim=!wasFinished&&p.finish&&p.finish.place>0;
+    if(finishClaim){params.push(JSON.stringify(room.finishers),JSON.stringify(priorFinishers));statement=`UPDATE quiz_rally_sessions SET state=jsonb_set(jsonb_set(state,ARRAY['players',$2],$3::jsonb),'{finishers}',$6::jsonb)`;}
     statement+=` WHERE code=$1 AND expires_at>NOW() AND (state #>> ARRAY['players',$2,'version'])::int=$4
       AND (state->>'metaRevision')::int=$5
       AND ${customizing?"state->>'status' IN ('lobby','running','paused') AND (state->>'status'<>'running' OR (state->>'endsAt')::bigint>(EXTRACT(EPOCH FROM clock_timestamp())*1000)::bigint)":"state->>'status'='running' AND (state->>'endsAt')::bigint>(EXTRACT(EPOCH FROM clock_timestamp())*1000)::bigint"}`;
     if(target)statement+=` AND (state #>> ARRAY['players',$6,'version'])::int=$8`;
+    if(finishClaim)statement+=` AND COALESCE(state->'finishers','[]'::jsonb)=$7::jsonb`;
     const result=await query(statement+' RETURNING '+snapshotColumns,params);
     if(result.length)return snapshotFromRow(result[0],identity);
   }

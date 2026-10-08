@@ -171,3 +171,25 @@ test('concurrent answer and robot save both survive without extra score or DB re
  test('random steal caps transfer at the target balance',async t=>{
  const {h,game,code,teacher,s}=await setup(t),target=student();await game.joinQuizRoom(code,target,{nickname:'잔액확인'});await game.actQuizRoom(code,teacher,action('start'));await setPlayer(h,code,s.playerId,{inventory:{boost:0,hint:0,shield:0,steal:1}});await setPlayer(h,code,target.playerId,{score:20});const snap=await game.getQuizSnapshot(code,s);await game.actQuizRoom(code,s,action('item',{item:'steal',targetId:target.playerId,nonce:snap.player.turn.nonce,points:99999}));assert.equal((await game.getQuizSnapshot(code,s)).player.score,20);assert.equal((await game.getQuizSnapshot(code,target)).player.score,0);
  });
+
+test('30 simultaneous final finishes claim only three prizes and never repay on retries',async t=>{
+ const {h,game,code,teacher,s}=await setup(t),players=[s,...Array.from({length:29},student)];await Promise.all(players.slice(1).map((x,i)=>game.joinQuizRoom(code,x,{nickname:'완주'+i})));await game.actQuizRoom(code,teacher,action('start'));
+ const before=await internal(h,code),ids=h.load('lib/quiz-rally-questions.ts').QUIZ_QUESTIONS.filter(q=>!q.extension).map(q=>q.id);
+ for(const x of players)await setPlayer(h,code,x.playerId,{correct:23,attempted:23,score:2300,solvedIds:ids.filter(id=>id!==before.players[x.playerId].turn.id)});
+ const answers=await Promise.all(players.map(x=>correct(h,game,code,x)));await Promise.all(players.map((x,i)=>game.actQuizRoom(code,x,answers[i])));
+ const state=await internal(h,code);assert.equal(state.finishers.length,3);assert.equal(new Set(state.finishers).size,3);assert.equal(Object.values(state.players).filter(p=>p.finish).length,30);
+ for(let i=0;i<3;i++){const p=state.players[state.finishers[i]];assert.deepEqual(p.finish,{place:i+1,bonus:[1200,720,360][i]});assert.equal(p.score,2400+p.finish.bonus);}
+ assert.equal(Object.values(state.players).reduce((n,p)=>n+p.score,0),74280);
+ await Promise.all(players.map((x,i)=>game.actQuizRoom(code,x,answers[i])));assert.deepEqual((await internal(h,code)).finishers,state.finishers);assert.equal((await game.getQuizSnapshot(code,teacher)).ranking.reduce((n,p)=>n+p.score,0),74280);
+ await assert.rejects(game.actQuizRoom(code,s,action('next',{nonce:state.players[s.playerId].turn.nonce})),/완주/);await assert.rejects(game.actQuizRoom(code,s,action('item',{item:'hint',nonce:state.players[s.playerId].turn.nonce})),/완주/);
+ await game.actQuizRoom(code,teacher,action('remove',{playerId:state.finishers[0]}));assert.deepEqual((await internal(h,code)).finishers,state.finishers);
+});
+test('only unresolved questions return and completion scales prizes to the whole uploaded bank',async t=>{
+ const questions=[1,2].map(n=>({prompt:'문제 '+n,options:['정답','오답1','오답2','오답3'],answer:0,topic:'검증',explanation:'정답 설명입니다.'}));const {game,code,teacher,s}=await setup(t,{questions});await game.actQuizRoom(code,teacher,action('start'));let snap=await game.getQuizSnapshot(code,s);assert.equal(snap.raceGoal,2);assert.deepEqual(snap.finishPrizes,[100,60,30]);const first=snap.player.turn.prompt;
+ snap=await game.actQuizRoom(code,s,action('answer',{nonce:snap.player.turn.nonce,choice:snap.player.turn.options.indexOf('오답1')}));snap=await game.actQuizRoom(code,s,action('next',{nonce:snap.player.turn.nonce}));assert.notEqual(snap.player.turn.prompt,first);
+ snap=await game.actQuizRoom(code,s,action('answer',{nonce:snap.player.turn.nonce,choice:snap.player.turn.options.indexOf('정답')}));assert.equal(snap.player.finish,null);snap=await game.actQuizRoom(code,s,action('reward',{nonce:snap.player.turn.nonce,chest:0}));snap=await game.actQuizRoom(code,s,action('next',{nonce:snap.player.turn.nonce}));assert.equal(snap.player.turn.prompt,first);
+ snap=await game.actQuizRoom(code,s,action('answer',{nonce:snap.player.turn.nonce,choice:snap.player.turn.options.indexOf('정답')}));assert.deepEqual(snap.player.finish,{place:1,bonus:100});assert.equal(snap.player.correct,2);assert.equal(snap.status,'running');snap=await game.actQuizRoom(code,s,action('reward',{nonce:snap.player.turn.nonce,chest:0}));assert.equal(snap.player.turn.needsReward,false);
+});
+test('legacy games keep their existing endless route without retroactive finish prizes',async t=>{
+ const {h,game,code,teacher,s}=await setup(t);await h.pg.query("UPDATE quiz_rally_sessions SET state=state-'raceGoal'-'finishers' WHERE code=$1",[code]);await game.actQuizRoom(code,teacher,action('start'));await setPlayer(h,code,s.playerId,{correct:23,score:2300});const r=await game.actQuizRoom(code,s,await correct(h,game,code,s));assert.equal(r.raceGoal,null);assert.equal(r.player.finish,null);assert.equal(r.player.score,2400);
+});

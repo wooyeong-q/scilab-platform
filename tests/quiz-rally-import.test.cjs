@@ -25,7 +25,7 @@ test('CSV quotes/newlines, 500 questions, invalid rows and zip size guards',asyn
  await assert.rejects(importer.importQuestionFile(zipSync({'xl/richData/a.xml':strToU8('<x/>')}),'inside.xlsx'),/셀 내부/);
 });
 test('direct reselection charges once, hides the answer and uses two database round trips',async t=>{
- const {h,game}=await setup(t),made=await game.createQuizRoom({questions:[sample],durationSeconds:300}),teacher={role:'teacher',token:made.teacherKey,playerId:''},s=student();
+ const {h,game}=await setup(t),made=await game.createQuizRoom({questions:[sample,{...sample,prompt:sample.prompt+' 두 번째'}],durationSeconds:300}),teacher={role:'teacher',token:made.teacherKey,playerId:''},s=student();
  await game.joinQuizRoom(made.code,s,{nickname:'재도전'});await game.actQuizRoom(made.code,teacher,action('start'));
  const internal=async()=>(await h.pg.query('SELECT state FROM quiz_rally_sessions WHERE code=$1',[made.code])).rows[0].state.players[s.playerId];
  let p=await internal();const right=p.turn.order.indexOf(1),wrong=[0,1,2,3].filter(i=>i!==right),initialNonce=p.turn.nonce;

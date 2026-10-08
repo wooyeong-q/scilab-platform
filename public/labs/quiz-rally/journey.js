@@ -3,7 +3,7 @@
 const themes=['주거 거리','상점가','강변 공원','항구','연구 지구','하늘 정원'];
 const path=[[80,590],[80,360],[80,130],[310,130],[540,130],[770,130],[1000,130],[1000,360],[1000,590],[770,590],[540,590]];
 const count=p=>Math.max(0,Math.floor(Number(p?.correct)||0));
-const zone=p=>Math.floor(count(p)/10),step=p=>count(p)%10;
+const zone=p=>Math.floor((count(p)-(p?.finish&&count(p)%10===0?1:0))/10),step=p=>p?.finish&&count(p)%10===0?10:count(p)%10;
 const title=z=>`${z+1}구역 · ${themes[z%themes.length]}`;
 const ordered=s=>[...(s?.ranking||[])].sort((a,b)=>count(b)-count(a)||a.nickname.localeCompare(b.nickname,'ko',{numeric:true})||a.id.localeCompare(b.id));
 const rank=(s,p)=>1+(s?.ranking||[]).filter(x=>count(x)>count(p)).length;
