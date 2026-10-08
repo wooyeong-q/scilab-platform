@@ -5,9 +5,9 @@ export type Gear='mine'|'missile'|'banana'|'field'|'shield'|'boost';
 export type Effect={id:string;type:Gear;owner:string;x:number;y:number;dx:number;dy:number;born:number;expires:number;victim?:string;hitAt?:number};
 export type Runner={x:number;y:number;z:number;vz:number;dx:number;dy:number;fx:number;fy:number;t:number;seq:number;inputUntil:number;jumpAt:number;diveAt:number;diveUntil:number;stunUntil:number;immuneUntil:number;boostUntil:number;shieldUntil:number;knockX:number;knockY:number;checkpoint:number;fallUntil:number;falls:number;open:boolean;boxes:number[];usedEffects:string[];hits:{id:string;t:number}[];finishAt?:number;energy?:number};
 export const GEAR_NAMES:Record<Gear,string>={mine:'폭탄',missile:'미사일',banana:'바나나',field:'감속 영역',shield:'보호막',boost:'질주'};
-export const GEAR_HELP:Record<Gear,string>={mine:'뒤에 설치 · 밟으면 밀려나고 0.85초 조작 불가',missile:'앞으로 발사 · 맞으면 밀려나고 0.85초 조작 불가',banana:'뒤에 놓기 · 밟으면 1.05초 미끄러집니다',field:'5초 유지 · 영역 안 친구의 이동 속도를 38%로 낮춤',shield:'4초 동안 공격을 막습니다',boost:'3초 동안 이동 속도 1.6배'};
-export const WIDTH=620, SPEED=145, RADIUS=18, COUNTDOWN=3000;
-export const ENERGY_DRAIN=4, ENERGY_CHARGE=45, MIN_ENERGY_SPEED=.55;
+export const GEAR_HELP:Record<Gear,string>={mine:'뒤에 설치 · 밟으면 밀려나고 0.85초 조작 불가',missile:'앞으로 발사 · 맞으면 밀려나고 0.85초 조작 불가',banana:'뒤에 놓기 · 밟으면 1.05초 미끄러집니다',field:'5초 유지 · 영역 안 친구의 이동 속도를 38%로 낮춤',shield:'4초 동안 공격을 막습니다',boost:'3초 동안 이동 속도 2배'};
+export const WIDTH=620, SPEED=175, RADIUS=18, COUNTDOWN=3000;
+export const ENERGY_DRAIN=4, ENERGY_CHARGE=45, MIN_ENERGY_SPEED=.35;
 export function energyValue(r:Runner){return Math.max(0,Math.min(100,r.energy??100));}
 export function energySpeed(r:Runner,arena:Arena){return arena.energy?MIN_ENERGY_SPEED+(1-MIN_ENERGY_SPEED)*energyValue(r)/100:1;}
 function drainEnergy(r:Runner,end:number,arena:Arena){
@@ -64,10 +64,13 @@ export function advanceRunner(source:Runner,clock:number,arena:Arena,effects:Eff
   if(r.fallUntil){if(t>=r.fallUntil){r.x=trackAt(r.checkpoint,arena).center;r.y=r.checkpoint;r.z=0;r.vz=0;r.knockX=0;r.knockY=0;r.fallUntil=0;r.immuneUntil=t+1100;}else{r.z-=dt*140;continue;}}
   const groundY=r.y%ROUND_LENGTH,grounded=r.z<=0,belt=conveyors(arena,r.y,r.y)[0];let slow=1;for(const e of effects){if(e.type==='field'&&e.owner!==id&&e.born<=t&&e.expires>t&&t>=r.shieldUntil&&Math.hypot(r.x-e.x,r.y-e.y)<145)slow=.38;}
   if(arena.version===1&&belt&&r.x<center(r.y)-40&&grounded)slow=Math.min(slow,.65);
-  const active=t<r.inputUntil&&t>=r.stunUntil,fast=t<r.boostUntil?1.6:1,dive=t<r.diveUntil;
-  // Low charge slows running progressively. Keep a small minimum leap range
-  // so an empty battery never makes a required gap impossible to clear.
-  const drive=arena.energy?Math.max((r.z>0||r.vz>0)?.92:0,MIN_ENERGY_SPEED+(1-MIN_ENERGY_SPEED)*averageEnergy/100):1;
+  const active=t<r.inputUntil&&t>=r.stunUntil,fast=t<r.boostUntil?2:1,dive=t<r.diveUntil;
+  // Charge affects running, diving, sprinting and ordinary airborne movement.
+  // A local gap assist preserves required leaps without bypassing low charge
+  // through repeated jumps on flat ground.
+  const energyDrive=arena.energy?MIN_ENERGY_SPEED+(1-MIN_ENERGY_SPEED)*averageEnergy/100:1;
+  const gapAssist=energyDrive<.78&&(r.z>0||r.vz>0)&&gaps(arena,r.y-15,r.y+35).some(g=>r.y>=g.start-35&&r.y<=g.end+15);
+  const drive=gapAssist ? .78 : energyDrive;
   let vx=(active?r.dx:0)*SPEED*fast*slow*drive,vy=(active?r.dy:0)*SPEED*fast*slow*drive;
   if(dive){vx=r.fx*SPEED*2*drive;vy=r.fy*SPEED*2*drive;}
   if(grounded&&belt){vx+=arena.version===1?(Math.floor((groundY-2800)/110)%2?75:-75):belt.vx;vy+=belt.vy;}

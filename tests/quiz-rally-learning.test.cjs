@@ -18,7 +18,16 @@ test('energy drains over game time, smoothly slows running, and freezes during q
  assert.ok(Math.abs(M.advanceRunner(r,19000,a).energy-40)<1e-9);assert.equal(M.advanceRunner(r,29000,a).energy,0);
  assert.equal(M.advanceRunner({...r,energy:20,open:true},44000,a).energy,20);
  const full=M.advanceRunner(M.control(r,0,1,false,false,4000,1),4500,a),low=M.advanceRunner(M.control({...r,energy:10},0,1,false,false,4000,1),4500,a),empty=M.advanceRunner(M.control({...r,energy:0},0,1,false,false,4000,1),4500,a);
- assert.ok(full.y>low.y&&low.y>empty.y&&empty.y>300);assert.ok(Math.abs(empty.y-339.875)<1e-7);assert.ok(Math.abs(low.energy-8)<1e-9);
+ assert.ok(full.y>low.y&&low.y>empty.y&&empty.y>300);assert.ok(Math.abs(empty.y-330.625)<1e-7);assert.ok(Math.abs(low.energy-8)<1e-9);
+ // Actual travel, including sprinting and flat-ground jumps, follows charge.
+ for(const energy of [100,50,0])for(const boost of [false,true]){
+  const source={...r,energy,boostUntil:boost?7000:0},powered=Math.min(.5,energy/4),factor=boost?2:1;
+  const distance=175*factor*(.35*.5+.65*(energy*powered-2*powered*powered)/100);
+  const run=M.advanceRunner(M.control(source,0,1,false,false,4000,1),4500,a),leap=M.advanceRunner(M.control(source,0,1,true,false,4000,1),4500,a);
+  assert.ok(Math.abs(run.y-300-distance)<1e-7,`${energy} charge, sprint ${boost}`);
+  assert.ok(Math.abs(leap.y-run.y)<1e-7,'Jumping on flat ground must not bypass depleted energy');
+ }
+ assert.equal(M.energySpeed({...r,energy:0},a),.35);assert.equal(M.energySpeed({...r,energy:50},a),.675);
  const start=M.control(r,0,1,true,false,4000,1),expected=M.advanceRunner(start,4750,a);
  for(const fps of [30,60,120]){let p=start;for(let at=4000+1000/fps;at<4750;at+=1000/fps)p=M.advanceRunner(p,at,a);p=M.advanceRunner(p,4750,a);for(const key of ['x','y','z','energy'])assert.ok(Math.abs(p[key]-expected[key])<1e-7,`${fps}fps ${key}`);}
  for(const gap of M.gaps(a)){const y=gap.start-11,start={...r,energy:0,x:M.trackAt(y,a).center,y,checkpoint:100},jumped=M.advanceRunner(M.control(start,0,1,true,false,4000,1),4900,a);assert.equal(jumped.falls,0,'An empty battery must not make a required gap impossible');assert.ok(jumped.y>gap.end);}

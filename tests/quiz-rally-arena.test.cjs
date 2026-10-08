@@ -12,7 +12,7 @@ function clock(t){const real=Date.now;let n=real()+4000;Date.now=()=>n;t.after((
 
 test('manual physics: 40 safe spawn positions, no auto drive, normalized input, expiry, jump, holes and shared parity',async t=>{
  const {M}=await setup(t),a={version:1,length:4700,seed:1,combat:true};for(let i=0;i<40;i++){const r=M.freshRunner(4000,i);assert.ok(M.floorAt(r.x,r.y,4000));assert.equal(M.advanceRunner(r,6000,a).y,r.y);}
- const r={...M.freshRunner(4000),x:0,y:300};const n=M.control(r,1,1,false,false,4000,1);assert.ok(Math.abs(Math.hypot(n.dx,n.dy)-1)<1e-9);const moved=M.advanceRunner(M.control(r,0,1,false,false,4000,1),4500,a);assert.ok(Math.abs(moved.y-372.5)<.1);assert.equal(M.advanceRunner(r,10000,a).y,300);
+ const r={...M.freshRunner(4000),x:0,y:300};const n=M.control(r,1,1,false,false,4000,1);assert.ok(Math.abs(Math.hypot(n.dx,n.dy)-1)<1e-9);const moved=M.advanceRunner(M.control(r,0,1,false,false,4000,1),4500,a);assert.ok(Math.abs(moved.y-387.5)<.1);assert.equal(M.advanceRunner(r,10000,a).y,300);
  const expired=M.advanceRunner(M.control(r,1,0,false,false,4000,1),9000,a);assert.equal(expired.inputUntil,6200);assert.ok(expired.x<400);
  const jump=M.advanceRunner(M.control(r,0,1,true,false,4000,1),4200,a);assert.ok(jump.z>35);assert.equal(M.control(jump,0,1,true,false,4200,2).jumpAt,4000);
  const start={...r,x:M.center(2140),y:2140,checkpoint:2060};const fell=M.advanceRunner(M.control(start,0,1,false,false,4000,1),4800,a);assert.ok(fell.fallUntil);const respawn=M.advanceRunner(fell,5700,a);assert.equal(respawn.y,2060);assert.equal(respawn.falls,1);
@@ -23,6 +23,7 @@ test('manual physics: 40 safe spawn positions, no auto drive, normalized input, 
 test('race items: slowing field, airborne dodging, shield, single-victim traps, owner immunity and missile motion',async t=>{
  const {M}=await setup(t),a={version:1,length:4700,seed:1,combat:true},r={...M.freshRunner(4000),x:0,y:350},base={id:'trap',owner:'other',x:0,y:350,dx:0,dy:1,born:3000,expires:15000};
  const field={...base,type:'field'},moving=M.control(r,0,1,false,false,4000,1);assert.ok(M.advanceRunner(moving,4500,a,[field],'me').y<M.advanceRunner(moving,4500,a,[],'me').y-35);
+ const boosted=M.advanceRunner({...moving,boostUntil:7000},4500,a);assert.ok(Math.abs(boosted.y-525)<1e-7);assert.ok(Math.abs((boosted.y-r.y)/(M.advanceRunner(moving,4500,a).y-r.y)-2)<1e-7);
  const mine={...base,type:'mine'},hit=M.advanceRunner(r,4020,a,[mine],'me');assert.equal(hit.hits.length,1);assert.ok(hit.stunUntil>4020);assert.equal(M.advanceRunner(hit,4200,a,[mine],'me').hits.length,1);
  assert.equal(M.advanceRunner(r,4020,a,[{...mine,victim:'someone'}],'me').hits.length,0);assert.equal(M.advanceRunner(r,4020,a,[mine],'other').hits.length,0);
  assert.equal(M.advanceRunner({...r,z:60,vz:0},4020,a,[mine],'me').hits.length,0);assert.equal(M.advanceRunner({...r,shieldUntil:5000},4020,a,[mine],'me').stunUntil,0);
@@ -74,12 +75,12 @@ test('one continuous city has unique districts, scattered safe supplies and jump
 
 test('input batches preserve press/jump/release order and acknowledge the final event once',async t=>{
  const x=await setup(t),{game,h,code,s,M,C}=x,tick=clock(t),room=await read(h,code),now=C.gameClock(room),start={...M.freshRunner(now),x:0,y:300};await patch(h,code,s.playerId,{runner:start});tick(800);
- const inputs=[{seq:1,at:now+10,dx:0,dy:1,jump:false,dive:false},{seq:2,at:now+150,dx:0,dy:1,jump:true,dive:false},{seq:3,at:now+400,dx:0,dy:0,jump:false,dive:false}],packet=action('arena-input',{inputs});let snap=await game.actQuizRoom(code,s,packet);assert.equal(snap.player.runner.seq,3);assert.equal(snap.player.runner.jumpAt,now+150);assert.equal(snap.player.runner.dy,0);assert.ok(Math.abs(snap.player.runner.y-(300+.39*145-145*.45/100*4*(.4**2-.01**2)/2))<1e-7);const y=snap.player.runner.y;tick(500);snap=await game.actQuizRoom(code,s,packet);assert.equal(snap.player.runner.y,y);await assert.rejects(game.actQuizRoom(code,s,action('arena-input',{inputs:[inputs[2],inputs[1]]})),/조작/);
+ const inputs=[{seq:1,at:now+10,dx:0,dy:1,jump:false,dive:false},{seq:2,at:now+150,dx:0,dy:1,jump:true,dive:false},{seq:3,at:now+400,dx:0,dy:0,jump:false,dive:false}],packet=action('arena-input',{inputs});let snap=await game.actQuizRoom(code,s,packet);assert.equal(snap.player.runner.seq,3);assert.equal(snap.player.runner.jumpAt,now+150);assert.equal(snap.player.runner.dy,0);assert.ok(Math.abs(snap.player.runner.y-(300+.39*175-175*.65/100*4*(.4**2-.01**2)/2))<1e-7);const y=snap.player.runner.y;tick(500);snap=await game.actQuizRoom(code,s,packet);assert.equal(snap.player.runner.y,y);await assert.rejects(game.actQuizRoom(code,s,action('arena-input',{inputs:[inputs[2],inputs[1]]})),/조작/);
 });
 
 test('late snapshots replay unacknowledged inputs and running clock corrections never go backwards',async t=>{
  const {M}=await setup(t),ctx={window:{},performance:{now:()=>0}};vm.runInNewContext(fs.readFileSync('public/labs/quiz-rally/arena-sync.js','utf8'),ctx);const N=ctx.window.quizArenaSync,a={version:1,length:4700,seed:1,combat:true},start={...M.freshRunner(4000),x:0,y:300},press={seq:1,at:4010,dx:0,dy:1,jump:false,dive:false},jump={seq:2,at:4200,dx:0,dy:1,jump:true,dive:false},release={seq:3,at:4400,dx:0,dy:0,jump:false,dive:false};
- const server=M.advanceRunner(M.control(M.advanceRunner(start,press.at,a),press.dx,press.dy,false,false,press.at,press.seq),4100,a),replayed=N.reconcile(M,server,[press,jump,release],4600,a,[],'me');assert.equal(replayed.seq,3);assert.equal(replayed.jumpAt,4200);assert.equal(replayed.dy,0);assert.ok(replayed.z>40);assert.ok(Math.abs(replayed.y-356.55)<.1);
+ const server=M.advanceRunner(M.control(M.advanceRunner(start,press.at,a),press.dx,press.dy,false,false,press.at,press.seq),4100,a),replayed=N.reconcile(M,server,[press,jump,release],4600,a,[],'me');assert.equal(replayed.seq,3);assert.equal(replayed.jumpAt,4200);assert.equal(replayed.dy,0);assert.ok(replayed.z>40);assert.ok(Math.abs(replayed.y-368.25)<.1);
  const timeline=new N.Timeline();timeline.sync(4000,'running',200,1000);const before=timeline.now(1600);timeline.sync(4400,'running',200,1600);assert.equal(timeline.now(1600),before);assert.ok(timeline.now(1700)>before);timeline.sync(4700,'paused',200,1750);assert.equal(timeline.now(5000),4700);timeline.sync(4700,'running',200,5050);assert.equal(timeline.now(5100),4750);
 });
 
@@ -104,7 +105,7 @@ test('asymmetric latency never skips simulation time; jump height is independent
 test('an item used while running does not move the anchor past a jump queued during its response',async t=>{
  const {game,h,code,s,M,C}=await setup(t),tick=clock(t),room=await read(h,code),now=C.gameClock(room),a=room.arena,start={...M.freshRunner(now),x:0,y:300};await patch(h,code,s.playerId,{runner:start,gear:['mine','shield']});
  tick(300);await game.actQuizRoom(code,s,action('arena-input',{inputs:[{seq:1,at:now+10,dx:0,dy:1}]}));tick(600);
- let snap=await game.actQuizRoom(code,s,action('arena-use',{at:now+150,slot:0}));assert.equal(snap.player.runner.t,now+150);assert.equal(snap.arenaEffects[0].born,now+150);assert.ok(Math.abs(snap.player.runner.y-(320.3-145*.45/100*4*(.15**2-.01**2)/2))<1e-7);
+ let snap=await game.actQuizRoom(code,s,action('arena-use',{at:now+150,slot:0}));assert.equal(snap.player.runner.t,now+150);assert.equal(snap.arenaEffects[0].born,now+150);assert.ok(Math.abs(snap.player.runner.y-(324.5-175*.65/100*4*(.15**2-.01**2)/2))<1e-7);
  tick(500);snap=await game.actQuizRoom(code,s,action('arena-input',{inputs:[{seq:2,at:now+350,dx:0,dy:1,jump:true},{seq:3,at:now+650,dx:0,dy:0}]}));assert.equal(snap.player.runner.jumpAt,now+350);assert.equal(snap.player.runner.t,now+650);
  let expected=M.control(M.advanceRunner(start,now+10,a),0,1,false,false,now+10,1);expected=M.control(M.advanceRunner(expected,now+350,a),0,1,true,false,now+350,2);expected=M.control(M.advanceRunner(expected,now+650,a),0,0,false,false,now+650,3);
  for(const k of ['x','y','z','vz'])assert.ok(Math.abs(snap.player.runner[k]-expected[k])<1e-7,k);

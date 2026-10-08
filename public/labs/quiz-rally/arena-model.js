@@ -168,9 +168,9 @@ exports.advanceRunner = advanceRunner;
 exports.progress = progress;
 const quiz_rally_city_1 = require("./quiz-rally-city");
 exports.GEAR_NAMES = { mine: '폭탄', missile: '미사일', banana: '바나나', field: '감속 영역', shield: '보호막', boost: '질주' };
-exports.GEAR_HELP = { mine: '뒤에 설치 · 밟으면 밀려나고 0.85초 조작 불가', missile: '앞으로 발사 · 맞으면 밀려나고 0.85초 조작 불가', banana: '뒤에 놓기 · 밟으면 1.05초 미끄러집니다', field: '5초 유지 · 영역 안 친구의 이동 속도를 38%로 낮춤', shield: '4초 동안 공격을 막습니다', boost: '3초 동안 이동 속도 1.6배' };
-exports.WIDTH = 620, exports.SPEED = 145, exports.RADIUS = 18, exports.COUNTDOWN = 3000;
-exports.ENERGY_DRAIN = 4, exports.ENERGY_CHARGE = 45, exports.MIN_ENERGY_SPEED = .55;
+exports.GEAR_HELP = { mine: '뒤에 설치 · 밟으면 밀려나고 0.85초 조작 불가', missile: '앞으로 발사 · 맞으면 밀려나고 0.85초 조작 불가', banana: '뒤에 놓기 · 밟으면 1.05초 미끄러집니다', field: '5초 유지 · 영역 안 친구의 이동 속도를 38%로 낮춤', shield: '4초 동안 공격을 막습니다', boost: '3초 동안 이동 속도 2배' };
+exports.WIDTH = 620, exports.SPEED = 175, exports.RADIUS = 18, exports.COUNTDOWN = 3000;
+exports.ENERGY_DRAIN = 4, exports.ENERGY_CHARGE = 45, exports.MIN_ENERGY_SPEED = .35;
 function energyValue(r) { return Math.max(0, Math.min(100, r.energy ?? 100)); }
 function energySpeed(r, arena) { return arena.energy ? exports.MIN_ENERGY_SPEED + (1 - exports.MIN_ENERGY_SPEED) * energyValue(r) / 100 : 1; }
 function drainEnergy(r, end, arena) {
@@ -319,10 +319,13 @@ function advanceRunner(source, clock, arena, effects = [], id = '') {
         }
         if (arena.version === 1 && belt && r.x < (0, exports.center)(r.y) - 40 && grounded)
             slow = Math.min(slow, .65);
-        const active = t < r.inputUntil && t >= r.stunUntil, fast = t < r.boostUntil ? 1.6 : 1, dive = t < r.diveUntil;
-        // Low charge slows running progressively. Keep a small minimum leap range
-        // so an empty battery never makes a required gap impossible to clear.
-        const drive = arena.energy ? Math.max((r.z > 0 || r.vz > 0) ? .92 : 0, exports.MIN_ENERGY_SPEED + (1 - exports.MIN_ENERGY_SPEED) * averageEnergy / 100) : 1;
+        const active = t < r.inputUntil && t >= r.stunUntil, fast = t < r.boostUntil ? 2 : 1, dive = t < r.diveUntil;
+        // Charge affects running, diving, sprinting and ordinary airborne movement.
+        // A local gap assist preserves required leaps without bypassing low charge
+        // through repeated jumps on flat ground.
+        const energyDrive = arena.energy ? exports.MIN_ENERGY_SPEED + (1 - exports.MIN_ENERGY_SPEED) * averageEnergy / 100 : 1;
+        const gapAssist = energyDrive < .78 && (r.z > 0 || r.vz > 0) && gaps(arena, r.y - 15, r.y + 35).some(g => r.y >= g.start - 35 && r.y <= g.end + 15);
+        const drive = gapAssist ? .78 : energyDrive;
         let vx = (active ? r.dx : 0) * exports.SPEED * fast * slow * drive, vy = (active ? r.dy : 0) * exports.SPEED * fast * slow * drive;
         if (dive) {
             vx = r.fx * exports.SPEED * 2 * drive;
