@@ -192,7 +192,7 @@ function modifyPlayer(room:Room,p:Player,body:Record<string,unknown>,q:CustomQue
     assert(target&&!target.removed&&target.id!==p.id&&target.score>p.score&&target.score>0,'나보다 점수가 높고 점수가 남아 있는 친구를 골라 주세요.',409);
     assert(target.protectedUntil<=Date.now(),'이 친구는 잠시 보호 중입니다. 다른 친구를 골라 주세요.',409);
     if(target.shieldActive){target.shieldActive=false;notice(target,'방어막이 점수 가져오기를 막았어요!');notice(p,`${target.nickname}의 방어막이 막았어요.`);}
-    else{const points=Math.min(30,target.score);target.score-=points;p.score+=points;target.protectedUntil=Date.now()+30000;notice(target,`친구가 ${points}점을 가져갔어요. 30초 동안 보호됩니다.`);notice(p,`${target.nickname}에게서 +${points}점!`);}
+    else{const points=Math.min(randomInt(5,16)*10,target.score);target.score-=points;p.score+=points;target.protectedUntil=Date.now()+30000;notice(target,`친구가 ${points}점을 가져갔어요. 30초 동안 보호됩니다.`);notice(p,`${target.nickname}에게서 +${points}점!`);}
     target.version++;
   }
   p.inventory[item]--;

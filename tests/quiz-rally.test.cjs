@@ -59,13 +59,13 @@ test('hint removes only wrong choices, boost survives wrong answer, stale nonce 
  snap=await game.actQuizRoom(code,s,await correct(h,game,code,s));assert.equal(snap.player.score,200);assert.equal(snap.player.boostActive,false);
 });
 
-test('steal atomically transfers 30, shields block once and cross-room targets fail',async t=>{
+test('steal atomically transfers random 50–150, shields block once and cross-room targets fail',async t=>{
  const {h,game,code,teacher,s}=await setup(t);const target=student();await game.joinQuizRoom(code,target,{nickname:'친구'});await game.actQuizRoom(code,teacher,action('start'));
- await setPlayer(h,code,s.playerId,{inventory:{boost:0,hint:1,shield:0,steal:3}});await setPlayer(h,code,target.playerId,{score:200,shieldActive:true});
+ await setPlayer(h,code,s.playerId,{inventory:{boost:0,hint:1,shield:0,steal:3}});await setPlayer(h,code,target.playerId,{score:500,shieldActive:true});
  let snap=await game.getQuizSnapshot(code,s);const attack=()=>action('item',{item:'steal',targetId:target.playerId,nonce:snap.player.turn.nonce});
- await game.actQuizRoom(code,s,attack());assert.equal((await game.getQuizSnapshot(code,target)).player.score,200);assert.equal((await game.getQuizSnapshot(code,target)).player.shieldActive,false);
+ await game.actQuizRoom(code,s,attack());assert.equal((await game.getQuizSnapshot(code,target)).player.score,500);assert.equal((await game.getQuizSnapshot(code,target)).player.shieldActive,false);
  const req=attack();await Promise.all([game.actQuizRoom(code,s,req),game.actQuizRoom(code,s,req)]);
- const a=(await game.getQuizSnapshot(code,s)).player,b=(await game.getQuizSnapshot(code,target)).player;assert.equal(a.score,30);assert.equal(b.score,170);assert.equal(a.score+b.score,200);assert.equal(a.inventory.steal,1);
+ const a=(await game.getQuizSnapshot(code,s)).player,b=(await game.getQuizSnapshot(code,target)).player;assert.ok(a.score>=50&&a.score<=150);assert.equal(a.score%10,0);assert.equal(b.score,500-a.score);assert.equal(a.score+b.score,500);assert.equal(a.inventory.steal,1);
  await assert.rejects(game.actQuizRoom(code,s,attack()),/보호 중/);
  await assert.rejects(game.actQuizRoom(code,s,action('item',{item:'steal',targetId:randomUUID(),nonce:snap.player.turn.nonce})),/친구/);
 });
@@ -104,7 +104,7 @@ test('competing transfers cannot overwrite a simultaneous answer or go below zer
  await setPlayer(h,code,target.playerId,{score:300});const state=await internal(h,code),answer=await correct(h,game,code,target);
  const attempts=await Promise.allSettled([s,b].map(x=>game.actQuizRoom(code,x,action('item',{item:'steal',targetId:target.playerId,nonce:state.players[x.playerId].turn.nonce}))).concat(game.actQuizRoom(code,target,answer)));
  assert.equal(attempts.filter(r=>r.status==='fulfilled').length,2);const all=(await game.getQuizSnapshot(code,teacher)).ranking;
- assert.equal(all.reduce((sum,p)=>sum+p.score,0),400);assert.equal(all.find(p=>p.id===target.playerId).score,370);assert.ok(all.every(p=>p.score>=0));
+ assert.equal(all.reduce((sum,p)=>sum+p.score,0),400);assert.ok(all.find(p=>p.id===target.playerId).score>=250&&all.find(p=>p.id===target.playerId).score<=350);assert.ok(all.every(p=>p.score>=0));
 });
 
 test('crew characters persist across reconnects, reject invalid choices, and support old rooms',async t=>{
@@ -167,3 +167,7 @@ test('concurrent answer and robot save both survive without extra score or DB re
  let snap=await game.getQuizSnapshot(code,s);assert.equal(snap.player.score,100);assert.equal(snap.player.correct,1);assert.equal(snap.player.turn.needsReward,true);assert.deepEqual(snap.player.robot,customRobot);
  const count=h.queries.length;snap=await game.actQuizRoom(code,s,action('customize',{robot:{...customRobot,head:5}}));assert.equal(h.queries.length-count,2);assert.equal(snap.player.robot.head,5);assert.equal(snap.player.score,100);
 });
+
+ test('random steal caps transfer at the target balance',async t=>{
+ const {h,game,code,teacher,s}=await setup(t),target=student();await game.joinQuizRoom(code,target,{nickname:'잔액확인'});await game.actQuizRoom(code,teacher,action('start'));await setPlayer(h,code,s.playerId,{inventory:{boost:0,hint:0,shield:0,steal:1}});await setPlayer(h,code,target.playerId,{score:20});const snap=await game.getQuizSnapshot(code,s);await game.actQuizRoom(code,s,action('item',{item:'steal',targetId:target.playerId,nonce:snap.player.turn.nonce,points:99999}));assert.equal((await game.getQuizSnapshot(code,s)).player.score,20);assert.equal((await game.getQuizSnapshot(code,target)).player.score,0);
+ });
