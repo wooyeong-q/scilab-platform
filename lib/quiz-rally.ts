@@ -4,16 +4,17 @@ import { QUESTION_MAP, QUIZ_QUESTIONS } from './quiz-rally-questions';
 import { validateQuestions, type CustomQuestion } from './quiz-rally-bank';
 import { QuizError } from './quiz-rally-errors';
 import { robotFor, validateRobot, type RobotParts } from './quiz-rally-robot';
+import { advance, capsuleAt, freshRacer, gameClock, CHARGE, type Course, type Racer } from './quiz-rally-course';
 export { QuizError } from './quiz-rally-errors';
 
 type Phase = 'lobby' | 'running' | 'paused' | 'ended';
 type Item = 'boost' | 'hint' | 'shield' | 'steal';
-type Reward = Item | 'bonus40' | 'bonus70';
+type Reward = Item | 'bonus40' | 'bonus70' | 'energy';
 type Finish = {place:number; bonus:number};
 type Turn = { finishBonus?:number; id: string; nonce: string; order: number[]; eliminated: number[]; answered: boolean; selected: number | null; correct: boolean | null; points: number; rewards: Reward[]; reward: {type: Reward; text: string} | null; retries?:number; revealed?:boolean; wrongChoices?:number[] };
 type Player = {
   id: string; nickname: string; avatar?: number; robot?:RobotParts; tokenHash: string; version: number; removed: boolean;
-  solvedIds?:string[]; finish?:Finish;
+  solvedIds?:string[]; finish?:Finish; racer?:Racer;
   score: number; correct: number; attempted: number; inventory: Record<Item,number>;
   boostActive: boolean; shieldActive: boolean; protectedUntil: number;
   deck: string[]; turn: Turn; requests: string[]; stats: Record<string,[number,number]>;
@@ -23,7 +24,7 @@ type Room = {
   title: string; durationSeconds: number; extension: boolean; stealEnabled: boolean;
   status: Phase; endsAt: number | null; remainingMs: number; metaRevision: number;
   requests: string[]; players: Record<string,Player>;
-  raceGoal?:number; finishers?:string[];
+  raceGoal?:number; finishers?:string[]; course?:Course; stoppedClock?:number;
   questionIds?: string[]; questionSetTitle?: string; cityTarget?:number;
 };
 type Row = { code: string; teacher_key_hash: string; state: Room; expires_at: string; custom_question?:CustomQuestion };
@@ -39,7 +40,7 @@ function codeValue(code:string){const value=code.toUpperCase();assert(/^[A-HJ-NP
 function textValue(value:unknown,max:number,fallback=''){return (typeof value==='string'?value.normalize('NFKC').trim().replace(/\s+/g,' '):fallback).slice(0,max);}
 function uuid(value:unknown): value is string {return typeof value==='string'&&/^[a-f0-9]{8}-[a-f0-9]{4}-4[a-f0-9]{3}-[89ab][a-f0-9]{3}-[a-f0-9]{12}$/i.test(value);}
 function shuffled<T>(list:T[]):T[]{const a=[...list];for(let i=a.length-1;i>0;i--){const j=randomInt(i+1);[a[i],a[j]]=[a[j],a[i]];}return a;}
-function deckFor(room:Room,solved:string[]=[]){return shuffled((room.questionIds||QUIZ_QUESTIONS.filter(q=>room.extension||!q.extension).map(q=>q.id)).filter(id=>!room.raceGoal||!solved.includes(id)));}
+function deckFor(room:Room,solved:string[]=[]){return shuffled((room.questionIds||QUIZ_QUESTIONS.filter(q=>room.extension||!q.extension).map(q=>q.id)).filter(id=>room.course||!room.raceGoal||!solved.includes(id)));}
 function turnFor(id:string):Turn{return {id,nonce:randomUUID(),order:shuffled([0,1,2,3]),eliminated:[],answered:false,selected:null,correct:null,points:0,rewards:[],reward:null};}
 // Older rooms receive a stable character without changing their stored scores or turns.
 function avatarFor(p:{id:string;avatar?:number}){const value=p.avatar;return typeof value==='number'&&Number.isInteger(value)&&value>=0&&value<6?value:parseInt(hash(p.id).slice(0,8),16)%6;}
@@ -68,7 +69,7 @@ function publicTurn(p:Player,q:CustomQuestion,code:string){const revealed=p.turn
   feedback:p.turn.answered?{correct:p.turn.correct,selected:p.turn.selected,...(revealed?{correctOption:p.turn.order.indexOf(q.answer),explanation:q.explanation}:{}),points:p.turn.points}:null,
   finishBonus:p.turn.finishBonus||0,needsReward:p.turn.answered&&p.turn.correct&&!p.turn.reward,reward:p.turn.reward,
 };}
-function publicPlayer(p:Player,q:CustomQuestion,code:string,review:unknown[]=[]){return {review,finish:p.finish||null,id:p.id,nickname:p.nickname,avatar:avatarFor(p),robot:robotFor(p.robot,avatarFor(p)),score:p.score,correct:p.correct,attempted:p.attempted,inventory:p.inventory,boostActive:p.boostActive,shieldActive:p.shieldActive,protectedUntil:p.protectedUntil,turn:publicTurn(p,q,code),notice:p.notice,noticeId:p.noticeId};}
+function publicPlayer(p:Player,q:CustomQuestion,code:string,review:unknown[]=[]){return {review,racer:p.racer||null,finish:p.finish||null,id:p.id,nickname:p.nickname,avatar:avatarFor(p),robot:robotFor(p.robot,avatarFor(p)),score:p.score,correct:p.correct,attempted:p.attempted,inventory:p.inventory,boostActive:p.boostActive,shieldActive:p.shieldActive,protectedUntil:p.protectedUntil,turn:publicTurn(p,q,code),notice:p.notice,noticeId:p.noticeId};}
 
 export async function createQuizRoom(body:Record<string,unknown>){
   const duration=Number(body.durationSeconds??480);assert([300,480,600,900].includes(duration),'게임 시간을 다시 선택해 주세요.');
@@ -77,7 +78,7 @@ export async function createQuizRoom(body:Record<string,unknown>){
   const custom=body.questions!==undefined?validateQuestions(body.questions):null;
   const state:Room={title,durationSeconds:duration,extension:body.extension===true,stealEnabled:body.stealEnabled===true,status:'lobby',endsAt:null,remainingMs:duration*1000,metaRevision:0,requests:[],players:{}};
   if(custom){state.questionIds=Object.keys(custom.bank);state.questionSetTitle=textValue(body.questionSetTitle,80,'직접 넣은 문제');state.extension=false;}
-  state.raceGoal=state.questionIds?.length||QUIZ_QUESTIONS.filter(q=>state.extension||!q.extension).length;state.finishers=[];
+  state.raceGoal=state.questionIds?.length||QUIZ_QUESTIONS.filter(q=>state.extension||!q.extension).length;state.finishers=[];state.course={version:1,length:Math.max(2400,Math.min(state.raceGoal*650,duration*38)),seed:randomInt(100000)};
   for(let i=0;i<6;i++){
     const code=Array.from({length:6},()=>codeChars[randomInt(codeChars.length)]).join('');
     const rows=await query('INSERT INTO quiz_rally_sessions(code,teacher_key_hash,state,expires_at,question_bank,question_images) VALUES($1,$2,$3::jsonb,NOW()+INTERVAL \'14 days\',$4::jsonb,$5::jsonb) ON CONFLICT(code) DO NOTHING RETURNING code',[code,hash(teacherKey),JSON.stringify(state),custom?JSON.stringify(custom.bank):null,custom?JSON.stringify(custom.images):null]);
@@ -94,6 +95,7 @@ export async function joinQuizRoom(code:string,identity:QuizIdentity,body:Record
   assert(body.avatar===undefined||(Number.isInteger(body.avatar)&&Number(body.avatar)>=0&&Number(body.avatar)<6),'캐릭터를 다시 선택해 주세요.');
   assert(phase(row.state)!=='ended','이미 끝난 게임입니다. 다음 게임에 참여해 주세요.',409);
   const deck=deckFor(row.state),p:Player={id:identity.playerId,nickname,avatar:body.avatar===undefined?avatarFor({id:identity.playerId}):Number(body.avatar),tokenHash:hash(identity.token),version:0,removed:false,score:0,correct:0,attempted:0,inventory:{boost:0,hint:1,shield:0,steal:0},boostActive:false,shieldActive:false,protectedUntil:0,deck,turn:turnFor(deck.shift()!),requests:[],stats:{},notice:'',noticeId:''};
+  if(row.state.course)p.racer=freshRacer(gameClock(row.state));
   p.robot=body.robot===undefined?robotFor(undefined,p.avatar):validateRobot(body.robot);
   const rows=await query(`UPDATE quiz_rally_sessions SET state=jsonb_set(state,ARRAY['players',$2],$3::jsonb,true)
     WHERE code=$1 AND expires_at>NOW() AND state->>'status'<>'ended'
@@ -119,25 +121,47 @@ export async function getQuizSnapshot(code:string,identity:QuizIdentity){
   }
   const rows=await query(`SELECT ${snapshotColumns} FROM quiz_rally_sessions WHERE code=$1 AND expires_at>NOW()`,[code,identity.playerId||'']);
   assert(rows.length,'게임방을 찾을 수 없거나 이용 기간이 끝났습니다.',404);
-  return snapshotFromRow(rows[0],identity);
+  let row=rows[0];authenticate(row as Row,identity,row.player);
+  if(row.room.course&&(row.ranking as Array<{racer?:Racer;finish?:Finish}>).some(p=>p.racer&&!p.finish&&advance(p.racer,gameClock(row.room),row.room.course).finishAt!==undefined)){
+    await settleCourse(code);row=(await query(`SELECT ${snapshotColumns} FROM quiz_rally_sessions WHERE code=$1 AND expires_at>NOW()`,[code,identity.playerId||'']))[0];
+  }
+  return snapshotFromRow(row,identity);
 }
 
 // Used by SELECT and UPDATE RETURNING: return the newly committed snapshot in the same round trip.
 const snapshotColumns=`code,teacher_key_hash,state-'players' AS room,
   state #> ARRAY['players',$2] AS player,
   question_bank -> (state #>> ARRAY['players',$2,'turn','id']) AS custom_question,
-  (SELECT COALESCE(jsonb_agg(jsonb_build_object('id',key,'nickname',value->'nickname','avatar',value->'avatar','robot',value->'robot','finish',value->'finish','score',value->'score','correct',value->'correct','attempted',value->'attempted','shield',value->'shieldActive','protectedUntil',value->'protectedUntil',
+  (SELECT COALESCE(jsonb_agg(jsonb_build_object('id',key,'nickname',value->'nickname','avatar',value->'avatar','robot',value->'robot','finish',value->'finish','racer',value->'racer','score',value->'score','correct',value->'correct','attempted',value->'attempted','shield',value->'shieldActive','protectedUntil',value->'protectedUntil',
     'activity',CASE WHEN value #>> '{turn,correct}'='true' THEN CASE WHEN value #>> '{turn,reward}' IS NULL THEN 'reward' ELSE 'ready' END WHEN value #>> '{turn,revealed}'='true' THEN 'review' ELSE 'solving' END)),'[]'::jsonb)
    FROM jsonb_each(state->'players') WHERE NOT (value->>'removed')::boolean) AS ranking`;
 async function snapshotFromRow(r:Record<string,any>,identity:QuizIdentity){
   const code=r.code as string,room=r.room as Room,p=r.player as Player|undefined;authenticate(r as Row,identity,p);
-  const now=Date.now(),ranking=(r.ranking as Array<{id:string;nickname:string;avatar?:number;robot?:RobotParts;activity:string;score:number;correct:number;attempted:number;shield:boolean;protectedUntil:number}>).map(p=>({...p,avatar:avatarFor(p),robot:robotFor(p.robot,avatarFor(p))})).sort((a,b)=>b.score-a.score||b.correct-a.correct||a.nickname.localeCompare(b.nickname,'ko'));
+  const now=Date.now(),ranking=(r.ranking as Array<{id:string;nickname:string;avatar?:number;robot?:RobotParts;activity:string;racer?:Racer;finish?:Finish;score:number;correct:number;attempted:number;shield:boolean;protectedUntil:number}>).map(p=>({...p,avatar:avatarFor(p),robot:robotFor(p.robot,avatarFor(p))})).sort((a,b)=>b.score-a.score||b.correct-a.correct||a.nickname.localeCompare(b.nickname,'ko'));
   const review=[];if(identity.role==='student'&&phase(room,now)==='ended'){
     const ids=Object.entries(p!.stats).filter(([,v])=>v[0]>v[1]).slice(0,6).map(([id])=>id);
     const custom=room.questionIds&&ids.length?await query(`SELECT value AS q FROM quiz_rally_sessions,jsonb_each(question_bank) WHERE code=$1 AND key=ANY($2::text[])`,[code,ids]):[];
     for(const id of ids){const q=QUESTION_MAP.get(id)||custom.find(x=>x.q.id===id)?.q;if(q)review.push({prompt:q.prompt,answer:q.options[q.answer],explanation:q.explanation});}
   }
-  return {code,raceGoal:room.raceGoal||null,finishers:room.finishers||[],finishPrizes:room.raceGoal?[room.raceGoal*50,room.raceGoal*30,room.raceGoal*15]:[],title:room.title,status:phase(room,now),durationSeconds:room.durationSeconds,endsAt:room.endsAt,remainingMs:room.remainingMs,serverNow:now,stealEnabled:room.stealEnabled,extension:room.extension,questionCount:room.questionIds?.length||QUIZ_QUESTIONS.filter(q=>room.extension||!q.extension).length,questionSetTitle:room.questionSetTitle||'중2 과학 · 물질의 구성',cityTarget:room.cityTarget||Math.max(1,ranking.length)*Math.max(3,Math.round(room.durationSeconds/80)),ranking,player:identity.role==='student'?publicPlayer(p!,r.custom_question||QUESTION_MAP.get(p!.turn.id)!,code,review):null};
+  return {code,course:room.course||null,raceClock:gameClock(room,now),raceGoal:room.raceGoal||null,finishers:room.finishers||[],finishPrizes:room.raceGoal?(room.course?[20,12,8]:[50,30,15]).map(n=>(room.course?Math.min(room.raceGoal!,Math.ceil(room.course.length/650)):room.raceGoal!)*n):[],title:room.title,status:phase(room,now),durationSeconds:room.durationSeconds,endsAt:room.endsAt,remainingMs:room.remainingMs,serverNow:now,stealEnabled:room.stealEnabled,extension:room.extension,questionCount:room.questionIds?.length||QUIZ_QUESTIONS.filter(q=>room.extension||!q.extension).length,questionSetTitle:room.questionSetTitle||'중2 과학 · 물질의 구성',cityTarget:room.cityTarget||Math.max(1,ranking.length)*Math.max(3,Math.round(room.durationSeconds/80)),ranking,player:identity.role==='student'?publicPlayer(p!,r.custom_question||QUESTION_MAP.get(p!.turn.id)!,code,review):null};
+}
+
+async function settleCourse(code:string){
+  for(let attempt=0;attempt<8;attempt++){
+    const row=await readRoom(code),room=row.state;if(!room.course)return;
+    const clock=gameClock(room),arrivals=Object.values(room.players).filter(p=>!p.removed&&!p.finish&&p.racer).map(p=>({p,r:advance(p.racer!,clock,room.course!)})).filter(x=>x.r.finishAt!==undefined).sort((a,b)=>a.r.finishAt!-b.r.finishAt!||a.p.id.localeCompare(b.p.id));
+    if(!arrivals.length)return;
+    const winners=[...(room.finishers||[])],patch:Record<string,Player>={},params:unknown[]=[code,room.metaRevision,JSON.stringify(winners)];let guards='';
+    for(const {p,r} of arrivals){const place=winners.length<3?winners.length+1:0,bonus=place?Math.min(room.raceGoal||0,Math.ceil(room.course.length/650))*[20,12,8][place-1]:0;
+      params.push(p.id,p.version);guards+=` AND (state #>> ARRAY['players',$${params.length-1},'version'])::int=$${params.length}`;
+      p.racer={...r,open:false};p.finish={place,bonus};p.score+=bonus;p.version++;if(place)winners.push(p.id);notice(p,place?`최종 결승 ${place}등! +${bonus}점`:'결승선 통과! 친구들을 응원해 주세요.');patch[p.id]=p;
+    }
+    params.push(JSON.stringify(patch),JSON.stringify(winners));
+    const result=await query(`UPDATE quiz_rally_sessions SET state=jsonb_set(jsonb_set(state,'{players}',(state->'players') || $${params.length-1}::jsonb),'{finishers}',$${params.length}::jsonb) || jsonb_build_object('metaRevision',(state->>'metaRevision')::int+1)
+      WHERE code=$1 AND expires_at>NOW() AND (state->>'metaRevision')::int=$2 AND COALESCE(state->'finishers','[]'::jsonb)=$3::jsonb ${guards} RETURNING code`,params);
+    if(result.length)return;
+  }
+  throw new QuizError('결승 순위를 확인 중입니다. 잠시 후 다시 연결합니다.',409);
 }
 
 export async function getQuizImage(code:string,id:string){
@@ -152,6 +176,21 @@ function modifyPlayer(room:Room,p:Player,body:Record<string,unknown>,q:CustomQue
   const action=body.action;
   if(action==='customize'){p.robot=validateRobot(body.robot);p.avatar=p.robot.headColor;return;}
   assert(!p.finish||action==='reward','이미 완주했어요. 친구들의 도전을 지켜봐 주세요.',409);
+  if(room.course&&p.racer){
+    const r=p.racer;
+    if(action==='race-lane'){assert(Number.isInteger(body.lane)&&Number(body.lane)>=0&&Number(body.lane)<5,'이동할 차선을 확인해 주세요.');r.lane=Number(body.lane);return;}
+    if(action==='race-close'){r.open=false;return;}
+    if(action==='race-collect'){
+      assert(!r.open,'지금 열린 문제를 먼저 확인해 주세요.',409);
+      const index=Number(body.capsule);assert(Number.isInteger(index)&&index>=0&&index>r.capsule,'이미 지난 캡슐입니다.',409);
+      const cap=capsuleAt(index,room.course);assert(cap.d<room.course.length&&Math.abs(r.d-cap.d)<=120&&r.lane===cap.lane,'같은 차선의 가까운 문제 캡슐을 획득할 수 있어요.',409);
+      if(p.turn.correct||p.turn.revealed){if(!p.deck.length)p.deck=deckFor(room);if(p.deck.length>1&&p.deck[0]===p.turn.id)p.deck.push(p.deck.shift()!);p.turn=turnFor(p.deck.shift()!);}
+      r.capsule=index;r.open=true;return;
+    }
+    if(action==='next'){assert(p.turn.answered,'먼저 문제를 확인해 주세요.');r.open=false;return;}
+    if(action==='answer'||action==='reveal'||action==='retry-question')assert(r.open,'코스의 문제 캡슐을 먼저 획득해 주세요.',409);
+    if(action==='item'&&body.item==='hint')assert(r.open,'문제 캡슐을 연 다음 사용해 주세요.');
+  }
   if(action==='retry-question'||action==='reveal'){
     assert(body.nonce===p.turn.nonce&&p.turn.answered&&p.turn.correct===false&&!p.turn.revealed,'다시 풀 수 있는 오답이 없습니다.',409);
     if(action==='reveal'){p.turn.revealed=true;return;}
@@ -168,7 +207,13 @@ function modifyPlayer(room:Room,p:Player,body:Record<string,unknown>,q:CustomQue
     if(p.turn.correct){p.correct++;s[1]++;p.turn.points=p.boostActive?200:100;p.score+=p.turn.points;p.boostActive=false;
       const pool:Reward[]=room.stealEnabled?['bonus40','bonus70','boost','hint','shield','steal']:['bonus40','bonus70','boost','hint'];
       p.turn.rewards=shuffled(pool).slice(0,3);
-      if(room.raceGoal){p.solvedIds=[...new Set([...(p.solvedIds||[]),q.id])];if(p.solvedIds.length>=room.raceGoal){const winners=room.finishers||[],place=winners.length<3?winners.length+1:0,bonus=place?room.raceGoal*[50,30,15][place-1]:0;p.finish={place,bonus};p.turn.finishBonus=bonus;p.score+=bonus;if(place)room.finishers=[...winners,p.id];notice(p,place?`최종 결승 ${place}등! 추가 +${bonus}점!`:'모든 문제 해결! 최종 결승선에 도착했어요.');}}
+      if(room.course&&p.racer){
+        p.racer.e=Math.min(100,p.racer.e+CHARGE);p.turn.rewards=[];
+        let text='에너지 +45 충전 (최대 100)';let type:Reward='energy';
+        if(randomInt(100)<30){const available:Item[]=room.stealEnabled?items:['boost','hint'];type=available[randomInt(available.length)];if(p.inventory[type]<3){p.inventory[type]++;text+=` · ${itemNames[type]} 획득!`;}else{p.score+=40;text+=' · 가방이 가득 차서 +40점!';}}
+        p.turn.reward={type,text};notice(p,text);
+      }
+      if(room.raceGoal&&!room.course){p.solvedIds=[...new Set([...(p.solvedIds||[]),q.id])];if(p.solvedIds.length>=room.raceGoal){const winners=room.finishers||[],place=winners.length<3?winners.length+1:0,bonus=place?room.raceGoal*[50,30,15][place-1]:0;p.finish={place,bonus};p.turn.finishBonus=bonus;p.score+=bonus;if(place)room.finishers=[...winners,p.id];notice(p,place?`최종 결승 ${place}등! 추가 +${bonus}점!`:'모든 문제 해결! 최종 결승선에 도착했어요.');}}
 
     }
     else {p.turn.wrongChoices=[...(p.turn.wrongChoices||[]),p.turn.selected];p.turn.nonce=randomUUID();}
@@ -179,6 +224,7 @@ function modifyPlayer(room:Room,p:Player,body:Record<string,unknown>,q:CustomQue
     assert(Number.isInteger(body.chest)&&Number(body.chest)>=0&&Number(body.chest)<3,'상자를 하나 골라 주세요.');
     const type=p.turn.rewards[Number(body.chest)];assert(type,'상자를 다시 확인해 주세요.');let text='';
     if(type==='bonus40'||type==='bonus70'){const points=type==='bonus40'?40:70;p.score+=points;text=`보너스 +${points}점`;}
+    else if(type==='energy'){text='에너지 충전';}
     else if(p.inventory[type]>=3){p.score+=40;text=`${itemNames[type]} 가방이 가득 차서 +40점`;}
     else{p.inventory[type]++;text=`${itemNames[type]} 아이템 +1`;}
     p.turn.reward={type,text};p.turn.rewards=[];return;
@@ -215,7 +261,9 @@ export async function actQuizRoom(code:string,identity:QuizIdentity,body:Record<
     const customizing=body.action==='customize';
     if(customizing)assert(phase(room)!=='ended','끝난 게임에서는 로봇을 바꿀 수 없습니다.',409);
     else assert(phase(room)==='running',phase(room)==='paused'?'선생님이 게임을 잠시 멈췄습니다.':'진행 중인 게임에서 사용할 수 있습니다.',409);
+    if(room.course&&p.racer&&!p.finish){p.racer=advance(p.racer,gameClock(room),room.course);if(p.racer.finishAt!==undefined){await settleCourse(code);return getQuizSnapshot(code,identity);}}
     const oldVersion=p.version,target=body.action==='item'&&body.item==='steal'?room.players[String(body.targetId)]:undefined,targetVersion=target?.version;
+    if(room.course&&target?.racer&&!target.finish&&advance(target.racer,gameClock(room),room.course).finishAt!==undefined){await settleCourse(code);continue;}
     const wasFinished=!!p.finish,priorFinishers=room.finishers||[];
     modifyPlayer(room,p,body,row.custom_question||QUESTION_MAP.get(p.turn.id)!,target);remember(p,requestId);
     const params:unknown[]=[code,p.id,JSON.stringify(p),oldVersion,room.metaRevision];
@@ -244,7 +292,7 @@ async function controlRoom(code:string,identity:QuizIdentity,body:Record<string,
       case 'start':assert(current==='lobby','이미 시작한 게임입니다.',409);assert(Object.values(room.players).some(p=>!p.removed),'학생이 참여하면 시작할 수 있습니다.');Object.assign(patch,{status:'running',endsAt:now+room.durationSeconds*1000,cityTarget:Object.values(room.players).filter(p=>!p.removed).length*Math.max(3,Math.round(room.durationSeconds/80))});break;
       case 'pause':assert(current==='running','진행 중인 게임을 멈출 수 있습니다.',409);Object.assign(patch,{status:'paused',remainingMs:Math.max(0,room.endsAt!-now),endsAt:null});break;
       case 'resume':assert(current==='paused','멈춘 게임을 다시 시작할 수 있습니다.',409);Object.assign(patch,{status:'running',endsAt:now+room.remainingMs});break;
-      case 'end':Object.assign(patch,{status:'ended',remainingMs:0,endsAt:now});break;
+      case 'end':Object.assign(patch,{status:'ended',remainingMs:0,endsAt:now,stoppedClock:gameClock(room,now)});break;
       case 'remove':assert(uuid(body.playerId),'참여자를 확인해 주세요.');player=room.players[body.playerId];assert(player&&!player.removed,'참여자를 찾을 수 없습니다.',404);version=player.version;player.removed=true;player.version++;break;
       default:throw new QuizError('지원하지 않는 교사 동작입니다.');
     }

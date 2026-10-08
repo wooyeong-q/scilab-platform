@@ -6,7 +6,8 @@ process.env.DATABASE_URL='postgres://test';
 const publicIdentity={role:'public',token:'',playerId:''};
 const student=()=>({role:'student',token:randomBytes(32).toString('base64url'),playerId:randomUUID()});
 const action=(a,extra={})=>({action:a,requestId:randomUUID(),...extra});
-async function setup(t,opts={}){const h=await harness();t.after(()=>h.close());const game=h.load('lib/quiz-rally.ts');const made=await game.createQuizRoom({title:'테스트 반',durationSeconds:300,stealEnabled:true,...opts});const teacher={role:'teacher',token:made.teacherKey,playerId:''};const s=student();await game.joinQuizRoom(made.code,s,{nickname:'첫학생'});return {h,game,code:made.code,teacher,s};}
+async function setup(t,opts={}){const h=await harness();t.after(()=>h.close());const game=h.load('lib/quiz-rally.ts');const made=await game.createQuizRoom({title:'테스트 반',durationSeconds:300,stealEnabled:true,...opts});// Keep pre-course rooms as regression fixtures. New course mode is covered separately.
+await h.pg.query("UPDATE quiz_rally_sessions SET state=state-'course' WHERE code=$1",[made.code]);const teacher={role:'teacher',token:made.teacherKey,playerId:''};const s=student();await game.joinQuizRoom(made.code,s,{nickname:'첫학생'});return {h,game,code:made.code,teacher,s};}
 async function internal(h,code){return (await h.pg.query('SELECT state FROM quiz_rally_sessions WHERE code=$1',[code])).rows[0].state;}
 async function setPlayer(h,code,id,patch){await h.pg.query(`UPDATE quiz_rally_sessions SET state=jsonb_set(state,ARRAY['players',$2],(state #> ARRAY['players',$2]) || $3::jsonb) WHERE code=$1`,[code,id,JSON.stringify(patch)]);}
 async function correct(h,game,code,s){const state=await internal(h,code),p=state.players[s.playerId],q=h.load('lib/quiz-rally-questions.ts').QUESTION_MAP.get(p.turn.id);return action('answer',{nonce:p.turn.nonce,choice:p.turn.order.indexOf(q.answer)});}

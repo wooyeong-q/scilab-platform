@@ -6,7 +6,7 @@ process.env.DATABASE_URL='postgres://test';
 const student=()=>({role:'student',token:randomBytes(32).toString('base64url'),playerId:randomUUID()});
 const action=(action,extra={})=>({action,requestId:randomUUID(),...extra});
 const sample={prompt:'새 단원 문제',options:['가','나','다','라'],answer:1,explanation:'나가 정답인 이유입니다.',topic:'새 단원'};
-async function setup(t){const h=await harness();t.after(()=>h.close());return {h,game:h.load('lib/quiz-rally.ts'),importer:h.load('lib/quiz-rally-import.ts')};}
+async function setup(t){const h=await harness();t.after(()=>h.close());const game=h.load('lib/quiz-rally.ts'),create=game.createQuizRoom;const legacy={...game,createQuizRoom:async body=>{const made=await create(body);await h.pg.query("UPDATE quiz_rally_sessions SET state=state-'course' WHERE code=$1",[made.code]);return made;}};return {h,game:legacy,importer:h.load('lib/quiz-rally-import.ts')};}
 test('actual Excel template imports cells and its anchored embedded PNG',async t=>{
  const {importer}=await setup(t),bytes=fs.readFileSync('public/labs/quiz-rally/question-template.xlsx');
  const got=await importer.importQuestionFile(bytes,'우리반.xlsx');assert.equal(got.questions.length,3);assert.equal(got.questions[1].answer,2);assert.equal(got.questions[2].image.mime,'image/png');assert.equal(got.questions[0].image,undefined);assert.equal(got.warnings.length,0);assert.equal(got.questions[2].row,4);

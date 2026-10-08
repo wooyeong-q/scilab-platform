@@ -10,6 +10,10 @@ export async function registerQuizRally(sql,p){
  await sql.query(`UPDATE programs SET title=$2,summary=$3,description=$4,tags=$5::jsonb,icon=$6
  WHERE id=$1 AND title='퀴즈 챌린지' AND summary='정답을 맞히고 보상 상자를 열어 아이템을 모으는, 우리 반 함께 과학 퀴즈 게임'`,
  [p.id,p.title,p.summary,p.description,JSON.stringify(p.tags),p.icon],{fetchOptions:{signal:AbortSignal.timeout(15000)}});
+ // Migrate the untouched earlier city description, without replacing administrator edits.
+ await sql.query(`UPDATE programs SET summary=$2,description=$3,tags=$4::jsonb
+ WHERE id=$1 AND title='도시 재가동' AND summary='문제를 해결해 정전된 도시를 밝히는 학급 게임. 엑셀·그림 문제와 오답 재도전 지원'`,
+ [p.id,p.summary,p.description,JSON.stringify(p.tags)],{fetchOptions:{signal:AbortSignal.timeout(15000)}});
 }
 async function main(){
  if(process.env.VERCEL_ENV&&process.env.VERCEL_ENV!=='production'){console.log('Preview: Quiz Rally registration deferred to production.');return;}
