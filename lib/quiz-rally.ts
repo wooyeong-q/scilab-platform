@@ -184,12 +184,20 @@ function modifyArena(room:Room,p:Player,body:Record<string,unknown>,q:CustomQues
     for(const value of batch){assert(value&&typeof value==='object'&&!Array.isArray(value),'조작 값을 확인해 주세요.');const input=value as Record<string,unknown>;
       const dx=Number(input.dx),dy=Number(input.dy),seq=Number(input.seq);assert(Number.isFinite(dx)&&Number.isFinite(dy)&&Math.abs(dx)<=1&&Math.abs(dy)<=1&&Number.isSafeInteger(seq)&&seq>=0&&seq>last,'조작 값을 확인해 주세요.');last=seq;
       if(seq<=p.runner.seq)continue;
-      const at=Number(input.at),clock=Number.isFinite(at)?Math.max(p.runner.t,Math.min(now,Math.max(now-2000,at))):now;
+      const at=Number(input.at),clock=Number.isFinite(at)?Math.max(p.runner.t,Math.min(now,Math.max(now-6000,at))):now;
       const r=advanceArenaPlayer(room,p,clock);p.runner=control(r,dx,dy,input.jump===true,input.dive===true,clock,seq);
     }
-    if(action==='arena-input'){advanceArenaPlayer(room,p,now);return;}
+    // Persist the last acknowledged input, not its extrapolation to request time.
+    // New inputs may already have happened while this response is in flight.
+    // Advancing this anchor to `now` would push those inputs (including jumps)
+    // into the future on the next request and repeatedly rewind the client.
+    // Snapshots and arrival settlement still project the runner to current time.
+    if(action==='arena-input')return;
   }
-  const r=advanceArenaPlayer(room,p,now);
+  // Item/popup actions share the input timeline, including when they waited
+  // behind another request. Keep validation/cooldown time authoritative.
+  const at=Number(body.at),actionClock=Number.isFinite(at)?Math.max(p.runner.t,Math.min(now,Math.max(now-6000,at))):now;
+  const r=advanceArenaPlayer(room,p,actionClock);
   if(action==='arena-close'){r.open=false;r.dx=0;r.dy=0;r.inputUntil=now;return;}
   if(action==='arena-collect'){
     assert(!r.open&&!r.fallUntil&&r.z<25,'지금은 문제 상자를 열 수 없어요.',409);assert((p.gear||[]).length<3,'아이템을 먼저 사용해 가방을 비워 주세요.');
@@ -211,10 +219,10 @@ function modifyArena(room:Room,p:Player,body:Record<string,unknown>,q:CustomQues
   if(action==='arena-use'){
     assert(!r.open&&!r.fallUntil,'코스에서 아이템을 사용해 주세요.',409);assert(now-(p.useAt??-5000)>=900,'잠시 뒤 다음 아이템을 사용해 주세요.',409);
     const slot=Number(body.slot);assert(Number.isInteger(slot)&&slot>=0&&slot<(p.gear||[]).length,'아이템을 선택해 주세요.');const gear=p.gear![slot];
-    if(gear==='shield')r.shieldUntil=now+4000;
-    else if(gear==='boost')r.boostUntil=now+3000;
+    if(gear==='shield')r.shieldUntil=actionClock+4000;
+    else if(gear==='boost')r.boostUntil=actionClock+3000;
     else {const effects=(room.arenaEffects||[]).filter(e=>e.expires>now-5000);assert(effects.length<200,'경기의 아이템이 많아요. 잠깐 뒤 사용해 주세요.');const behind=gear==='mine'||gear==='banana',offset=behind?-55:gear==='missile'?45:0;
-      effects.push({id:randomUUID(),type:gear,owner:p.id,x:r.x+r.fx*offset,y:r.y+r.fy*offset,dx:r.fx,dy:r.fy,born:now,expires:now+(gear==='missile'?2200:gear==='field'?5000:14000)});room.arenaEffects=effects;
+      effects.push({id:randomUUID(),type:gear,owner:p.id,x:r.x+r.fx*offset,y:r.y+r.fy*offset,dx:r.fx,dy:r.fy,born:actionClock,expires:actionClock+(gear==='missile'?2200:gear==='field'?5000:14000)});room.arenaEffects=effects;
     }
     p.gear!.splice(slot,1);p.useAt=now;notice(p,GEAR_NAMES[gear]+' 사용!');return;
   }

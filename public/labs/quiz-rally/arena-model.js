@@ -150,8 +150,10 @@ function advanceRunner(source, clock, arena, effects = [], id = '') {
         r.y += (vy + r.knockY) * dt;
         r.knockX *= Math.pow(.04, dt);
         r.knockY *= Math.pow(.04, dt);
+        // Integrate height analytically so 30/60/120 Hz rendering and server batches
+        // produce the same jump arc, rather than a different height at every sync.
+        r.z = Math.max(0, r.z + r.vz * dt - 340 * dt * dt);
         r.vz -= 680 * dt;
-        r.z = Math.max(0, r.z + r.vz * dt);
         if (r.z === 0)
             r.vz = 0;
         // Tall sliding gates cannot be jumped; find the moving opening.

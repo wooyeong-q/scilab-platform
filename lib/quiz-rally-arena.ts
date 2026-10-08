@@ -52,7 +52,9 @@ export function advanceRunner(source:Runner,clock:number,arena:Arena,effects:Eff
   if(grounded&&groundY>2800&&groundY<3140)vx+=Math.floor((groundY-2800)/110)%2?75:-75;
   const previousY=r.y;
   r.x+=(vx+r.knockX)*dt;r.y+=(vy+r.knockY)*dt;r.knockX*=Math.pow(.04,dt);r.knockY*=Math.pow(.04,dt);
-  r.vz-=680*dt;r.z=Math.max(0,r.z+r.vz*dt);if(r.z===0)r.vz=0;
+  // Integrate height analytically so 30/60/120 Hz rendering and server batches
+  // produce the same jump arc, rather than a different height at every sync.
+  r.z=Math.max(0,r.z+r.vz*dt-340*dt*dt);r.vz-=680*dt;if(r.z===0)r.vz=0;
   // Tall sliding gates cannot be jumped; find the moving opening.
   for(const gate of gates(t,arena,r.y-70,r.y+70))if(Math.abs(r.y-gate.y)<RADIUS+16&&Math.abs(r.x-gate.gap)>gate.width/2-RADIUS){r.y=previousY<=gate.y?gate.y-RADIUS-17:gate.y+RADIUS+17;}
   if(r.z<32){for(const s of spinners(t,arena,r.y-40,r.y+40)){const a=Math.cos(s.angle)*s.length,b=Math.sin(s.angle)*s.length;if(segmentDistance(r.x,r.y,s.x-a,s.y-b,s.x+a,s.y+b)<RADIUS+s.r)knock(r,s.x,s.y,t,230);}

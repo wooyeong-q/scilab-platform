@@ -76,5 +76,33 @@ test('input batches preserve press/jump/release order and acknowledge the final 
 test('late snapshots replay unacknowledged inputs and running clock corrections never go backwards',async t=>{
  const {M}=await setup(t),ctx={window:{},performance:{now:()=>0}};vm.runInNewContext(fs.readFileSync('public/labs/quiz-rally/arena-sync.js','utf8'),ctx);const N=ctx.window.quizArenaSync,a={version:1,length:4700,seed:1,combat:true},start={...M.freshRunner(4000),x:0,y:300},press={seq:1,at:4010,dx:0,dy:1,jump:false,dive:false},jump={seq:2,at:4200,dx:0,dy:1,jump:true,dive:false},release={seq:3,at:4400,dx:0,dy:0,jump:false,dive:false};
  const server=M.advanceRunner(M.control(M.advanceRunner(start,press.at,a),press.dx,press.dy,false,false,press.at,press.seq),4100,a),replayed=N.reconcile(M,server,[press,jump,release],4600,a,[],'me');assert.equal(replayed.seq,3);assert.equal(replayed.jumpAt,4200);assert.equal(replayed.dy,0);assert.ok(replayed.z>40);assert.ok(Math.abs(replayed.y-356.55)<.1);
- const timeline=new N.Timeline();timeline.sync(4000,'running',200,1000);const before=timeline.now(1600);timeline.sync(4400,'running',200,1600);assert.ok(timeline.now(1600)>=before);assert.ok(timeline.now(1700)>before);timeline.sync(4700,'paused',200,1750);assert.equal(timeline.now(5000),4700);timeline.sync(4700,'running',200,5050);assert.ok(timeline.now(5100)>=4900);
+ const timeline=new N.Timeline();timeline.sync(4000,'running',200,1000);const before=timeline.now(1600);timeline.sync(4400,'running',200,1600);assert.equal(timeline.now(1600),before);assert.ok(timeline.now(1700)>before);timeline.sync(4700,'paused',200,1750);assert.equal(timeline.now(5000),4700);timeline.sync(4700,'running',200,5050);assert.equal(timeline.now(5100),4750);
+});
+
+test('in-flight direction changes and jumps keep their original time across separate server requests',async t=>{
+ const {game,h,code,s,M,C}=await setup(t),tick=clock(t),room=await read(h,code),now=C.gameClock(room),a=room.arena,start={...M.freshRunner(now),x:0,y:300};await patch(h,code,s.playerId,{runner:start});
+ const inputs=[{seq:1,at:now+10,dx:0,dy:1,jump:false,dive:false},{seq:2,at:now+120,dx:1,dy:1,jump:true,dive:false},{seq:3,at:now+360,dx:0,dy:0,jump:false,dive:false}];
+ tick(350);let snap=await game.actQuizRoom(code,s,action('arena-input',{inputs:inputs.slice(0,1)}));assert.equal(snap.player.runner.t,inputs[0].at,'The persisted anchor must not run ahead of unreceived controls');
+ tick(500);snap=await game.actQuizRoom(code,s,action('arena-input',{inputs:inputs.slice(1)}));assert.equal(snap.player.runner.jumpAt,inputs[1].at);assert.equal(snap.player.runner.t,inputs[2].at);
+ let expected=start;for(const e of inputs)expected=M.control(M.advanceRunner(expected,e.at,a),e.dx,e.dy,e.jump,e.dive,e.at,e.seq);expected=M.advanceRunner(expected,now+850,a);const actual=M.advanceRunner(snap.player.runner,now+850,a);
+ for(const k of ['x','y','z','vz'])assert.ok(Math.abs(actual[k]-expected[k])<1e-7,`${k}: late packets must follow the same trajectory`);
+ tick(2600);snap=await game.actQuizRoom(code,s,action('arena-input',{inputs:[{seq:4,at:now+1100,dx:0,dy:0,jump:true,dive:false}]}));assert.equal(snap.player.runner.jumpAt,now+1100,'A slow classroom connection must not retime a queued jump');
+});
+
+test('asymmetric latency never skips simulation time; jump height is independent of render frame rate',async t=>{
+ const {M}=await setup(t),ctx={window:{},performance:{now:()=>0}};vm.runInNewContext(fs.readFileSync('public/labs/quiz-rally/arena-sync.js','utf8'),ctx);const N=ctx.window.quizArenaSync,timeline=new N.Timeline();
+ assert.equal(timeline.sync(4000,'running',750,1000),4000,'Half RTT must not put inputs in the future');
+ for(const [at,server,rtt] of [[1700,5400,450],[2500,5600,900],[4000,7700,50],[5200,7200,800]]){const before=timeline.now(at);assert.equal(timeline.sync(server,'running',rtt,at),before);const elapsed=timeline.now(at+100)-before;assert.ok(elapsed>=98&&elapsed<=102);}
+ const a={version:1,length:4700,seed:1,combat:true},start=M.control({...M.freshRunner(4000),x:0,y:300},0,1,true,false,4000,1),expected=M.advanceRunner(start,4750,a);
+ for(const fps of [30,60,120]){let r=start;for(let at=4000+1000/fps;at<4750;at+=1000/fps)r=M.advanceRunner(r,at,a);r=M.advanceRunner(r,4750,a);for(const k of ['x','y','z','vz'])assert.ok(Math.abs(r[k]-expected[k])<1e-7,`${fps} fps: ${k}`);}
+});
+
+test('an item used while running does not move the anchor past a jump queued during its response',async t=>{
+ const {game,h,code,s,M,C}=await setup(t),tick=clock(t),room=await read(h,code),now=C.gameClock(room),a=room.arena,start={...M.freshRunner(now),x:0,y:300};await patch(h,code,s.playerId,{runner:start,gear:['mine','shield']});
+ tick(300);await game.actQuizRoom(code,s,action('arena-input',{inputs:[{seq:1,at:now+10,dx:0,dy:1}]}));tick(600);
+ let snap=await game.actQuizRoom(code,s,action('arena-use',{at:now+150,slot:0}));assert.equal(snap.player.runner.t,now+150);assert.equal(snap.arenaEffects[0].born,now+150);assert.ok(Math.abs(snap.player.runner.y-320.3)<1e-7);
+ tick(500);snap=await game.actQuizRoom(code,s,action('arena-input',{inputs:[{seq:2,at:now+350,dx:0,dy:1,jump:true},{seq:3,at:now+650,dx:0,dy:0}]}));assert.equal(snap.player.runner.jumpAt,now+350);assert.equal(snap.player.runner.t,now+650);
+ let expected=M.control(M.advanceRunner(start,now+10,a),0,1,false,false,now+10,1);expected=M.control(M.advanceRunner(expected,now+350,a),0,1,true,false,now+350,2);expected=M.control(M.advanceRunner(expected,now+650,a),0,0,false,false,now+650,3);
+ for(const k of ['x','y','z','vz'])assert.ok(Math.abs(snap.player.runner[k]-expected[k])<1e-7,k);
+ await assert.rejects(game.actQuizRoom(code,s,action('arena-use',{at:now+5000,slot:0})),/잠시 뒤/,'Client timestamps must not bypass the server item cooldown');
 });
