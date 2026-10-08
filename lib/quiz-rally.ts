@@ -345,7 +345,7 @@ export async function actQuizRoom(code:string,identity:QuizIdentity,body:Record<
     else assert(phase(room)==='running',phase(room)==='paused'?'선생님이 게임을 잠시 멈췄습니다.':'진행 중인 게임에서 사용할 수 있습니다.',409);
     if(room.course&&p.racer&&!p.finish){p.racer=advance(p.racer,gameClock(room),room.course);if(p.racer.finishAt!==undefined){await settleCourse(code);return getQuizSnapshot(code,identity);}}
     if(room.arena&&p.runner){if(p.finish&&body.action==='arena-input')return getQuizSnapshot(code,identity);if(!p.finish&&couldFinish(p.runner,gameClock(room),room.arena)&&advanceRunner(p.runner,gameClock(room),room.arena,room.arenaEffects||[],p.id).finishAt!==undefined){await settleArena(code);return getQuizSnapshot(code,identity);}}
-    const priorArenaEffects=JSON.stringify(room.arenaEffects||[]),arenaRevision=room.arenaRevision||0;
+    const priorArenaEffects=JSON.stringify(room.arenaEffects||[]);
     const oldVersion=p.version,target=body.action==='item'&&body.item==='steal'?room.players[String(body.targetId)]:undefined,targetVersion=target?.version;
     if(room.course&&target?.racer&&!target.finish&&advance(target.racer,gameClock(room),room.course).finishAt!==undefined){await settleCourse(code);continue;}
     const wasFinished=!!p.finish,priorFinishers=room.finishers||[];
@@ -356,13 +356,39 @@ export async function actQuizRoom(code:string,identity:QuizIdentity,body:Record<
     const finishClaim=!wasFinished&&p.finish&&p.finish.place>0;
     if(finishClaim){params.push(JSON.stringify(room.finishers),JSON.stringify(priorFinishers));statement=`UPDATE quiz_rally_sessions SET state=jsonb_set(jsonb_set(state,ARRAY['players',$2],$3::jsonb),'{finishers}',$6::jsonb)`;}
     const arenaChanged=!!room.arena&&JSON.stringify(room.arenaEffects||[])!==priorArenaEffects;
-    if(arenaChanged){params.push(JSON.stringify(room.arenaEffects),arenaRevision+1);statement=`UPDATE quiz_rally_sessions SET state=jsonb_set(jsonb_set(jsonb_set(state,ARRAY['players',$2],$3::jsonb),'{arenaEffects}',$6::jsonb),'{arenaRevision}',to_jsonb($7::int))`;}
+    let arenaGuards='';
+    if(arenaChanged){
+      // Merge only this action's additions and claims into the current row.
+      // Replacing the entire effects snapshot forces unrelated students to
+      // compete for a room-wide version and exhaust retries during item bursts.
+      const previous=new Map((JSON.parse(priorArenaEffects) as Effect[]).map(e=>[e.id,e]));
+      const added=(room.arenaEffects||[]).filter(e=>!previous.has(e.id));
+      const claims=Object.fromEntries((room.arenaEffects||[])
+        .filter(e=>previous.has(e.id)&&e.victim&&!previous.get(e.id)!.victim)
+        .map(e=>[e.id,{victim:e.victim,hitAt:e.hitAt}]));
+      params.push(JSON.stringify(added),JSON.stringify(claims),added.length?gameClock(room)-5000:-1);
+      const additions=`$${params.length-2}::jsonb`,claimed=`$${params.length-1}::jsonb`,cutoff=`$${params.length}::double precision`;
+      const saved=`jsonb_array_elements(COALESCE(state->'arenaEffects','[]'::jsonb))`;
+      const merged=`COALESCE((SELECT jsonb_agg(effect || COALESCE(${claimed}->(effect->>'id'),'{}'::jsonb) ORDER BY ordinal)
+        FROM ${saved} WITH ORDINALITY AS current_effects(effect,ordinal)
+        WHERE (effect->>'expires')::double precision>${cutoff}),'[]'::jsonb) || ${additions}`;
+      statement=`UPDATE quiz_rally_sessions SET state=jsonb_set(jsonb_set(state,ARRAY['players',$2],$3::jsonb),'{arenaEffects}',(${merged}))
+        || jsonb_build_object('arenaRevision',COALESCE((state->>'arenaRevision')::int,0)+1)`;
+      // A trap can still be claimed by exactly one student. A losing claim
+      // retries from current state before saving either its damage or inventory.
+      if(Object.keys(claims).length)arenaGuards+=` AND NOT EXISTS (
+        SELECT 1 FROM jsonb_each(${claimed}) AS claim WHERE NOT EXISTS (
+          SELECT 1 FROM ${saved} AS existing(effect)
+          WHERE effect->>'id'=claim.key AND effect->>'victim' IS NULL))`;
+      if(added.length)arenaGuards+=` AND (SELECT COUNT(*) FROM ${saved} AS existing(effect)
+        WHERE (effect->>'expires')::double precision>${cutoff})+jsonb_array_length(${additions})<=200`;
+    }
     statement+=` WHERE code=$1 AND expires_at>NOW() AND (state #>> ARRAY['players',$2,'version'])::int=$4
       AND (state->>'metaRevision')::int=$5
       AND ${customizing?"state->>'status' IN ('lobby','running','paused') AND (state->>'status'<>'running' OR (state->>'endsAt')::bigint>(EXTRACT(EPOCH FROM clock_timestamp())*1000)::bigint)":"state->>'status'='running' AND (state->>'endsAt')::bigint>(EXTRACT(EPOCH FROM clock_timestamp())*1000)::bigint"}`;
     if(target)statement+=` AND (state #>> ARRAY['players',$6,'version'])::int=$8`;
     if(finishClaim)statement+=` AND COALESCE(state->'finishers','[]'::jsonb)=$7::jsonb`;
-    if(room.arena){params.push(arenaRevision);statement+=` AND COALESCE((state->>'arenaRevision')::int,0)=$${params.length}`;}
+    statement+=arenaGuards;
     const result=await query(statement+' RETURNING '+snapshotColumns,params);
     if(result.length)return snapshotFromRow(result[0],identity);
   }
