@@ -1,5 +1,5 @@
 // A single authored city route. Seeded supply caches vary by room, not by player.
-export type CityArena={version:1|2;length:number;seed:number;combat:boolean};
+export type CityArena={version:1|2;length:number;seed:number;combat:boolean;supplies?:2};
 type Strip={start:number;end:number;width:number;offset:number};
 type Gate={y:number;offset:number;width:number;amplitude:number;period:number;phase:number};
 type Rotor={x:number;y:number;length:number;r:number;period:number;phase:number;arms:number};
@@ -27,7 +27,7 @@ function random(seed:number){let n=seed|0;return()=>{n=(n+0x6D2B79F5)|0;let t=n;
 function track(layout:CityLayout,y:number){let width=620,offset=0;for(const s of layout.strips){if(y<s.start||y>s.end)continue;const blend=smooth(Math.min(y-s.start,s.end-y)/Math.min(150,(s.end-s.start)/3));width=620+(s.width-620)*blend;offset=s.offset*blend;break;}return{center:center(y)+offset,width};}
 export function cityRegion(y:number,arena:CityArena){const reference=y/arena.length*CITY_LENGTH;let i=CITY_REGIONS.length-1;while(i>0&&reference<CITY_REGIONS[i].start)i--;return{...CITY_REGIONS[i],stage:i,index:i,round:0};}
 export function cityLayout(arena:CityArena):CityLayout{
- const key=arena.length+':'+arena.seed;if(cache.has(key))return cache.get(key)!;
+ const key=arena.length+':'+arena.seed+':'+(arena.supplies||1);if(cache.has(key))return cache.get(key)!;
  const scale=arena.length/CITY_LENGTH,Y=(y:number)=>Math.round(y*scale),X=(x:number,y:number)=>center(Y(y))+x;
  const l:CityLayout={strips:[],gates:[],rotors:[],balls:[],walls:[],pistons:[],fans:[],belts:[],tiles:[],gaps:[],checkpoints:[],boxes:[]};
  const strip=(a:number,b:number,w:number,offset=0)=>l.strips.push({start:Y(a),end:Y(b),width:w,offset});
@@ -77,12 +77,12 @@ export function cityLayout(arena:CityArena):CityLayout{
  cache.set(key,l);if(cache.size>24)cache.delete(cache.keys().next().value!);
  const rng=random(arena.seed^0x5ca1ab);let cursor=300;
  while(cursor<arena.length-280){
-  for(let attempt=0;attempt<9;attempt++){
+  for(let attempt=0;attempt<(arena.supplies===2?16:9);attempt++){
    const y=cursor+attempt*19,road=track(l,y),x=road.center+(rng()-.5)*Math.max(0,road.width-150);
    const unsafe=l.gaps.some(g=>y>g.start-105&&y<g.end+105)||l.gates.some(g=>Math.abs(g.y-y)<130)||l.walls.some(w=>Math.abs(w.y-y)<120&&Math.abs(w.x-x)<w.w/2+85)||l.rotors.some(s=>Math.hypot(s.x-x,s.y-y)<s.length+95)||l.pistons.some(p=>Math.hypot(p.x-x,p.y-y)<p.r+95)||l.tiles.some(t=>y>t.y-85&&y<t.y+160)||l.fans.some(f=>y>f.start-80&&y<f.end+80)||l.belts.some(b=>y>b.start-60&&y<b.end+60);
-   if(!unsafe&&y<arena.length-220){l.boxes.push({id:l.boxes.length,x,y,r:27});break;}
+   if(!unsafe&&y<arena.length-220&&(!l.boxes.length||Math.hypot(x-l.boxes.at(-1)!.x,y-l.boxes.at(-1)!.y)>135)){l.boxes.push({id:l.boxes.length,x,y,r:27});break;}
   }
-  cursor+=300+rng()*340;
+  cursor+=arena.supplies===2?170+rng()*180:300+rng()*340;
  }
  return l;
 }

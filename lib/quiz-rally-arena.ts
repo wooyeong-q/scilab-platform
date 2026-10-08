@@ -1,16 +1,25 @@
 import { cityLayout, cityTrack, cityRegion, cityTileDanger, cityPistons } from './quiz-rally-city';
 // Deterministic top-down obstacle race. Shared by the authoritative server and client prediction.
-export type Arena={version:1|2;length:number;seed:number;combat:boolean};
+export type Arena={version:1|2;length:number;seed:number;combat:boolean;energy?:boolean;supplies?:2};
 export type Gear='mine'|'missile'|'banana'|'field'|'shield'|'boost';
 export type Effect={id:string;type:Gear;owner:string;x:number;y:number;dx:number;dy:number;born:number;expires:number;victim?:string;hitAt?:number};
-export type Runner={x:number;y:number;z:number;vz:number;dx:number;dy:number;fx:number;fy:number;t:number;seq:number;inputUntil:number;jumpAt:number;diveAt:number;diveUntil:number;stunUntil:number;immuneUntil:number;boostUntil:number;shieldUntil:number;knockX:number;knockY:number;checkpoint:number;fallUntil:number;falls:number;open:boolean;boxes:number[];usedEffects:string[];hits:{id:string;t:number}[];finishAt?:number};
+export type Runner={x:number;y:number;z:number;vz:number;dx:number;dy:number;fx:number;fy:number;t:number;seq:number;inputUntil:number;jumpAt:number;diveAt:number;diveUntil:number;stunUntil:number;immuneUntil:number;boostUntil:number;shieldUntil:number;knockX:number;knockY:number;checkpoint:number;fallUntil:number;falls:number;open:boolean;boxes:number[];usedEffects:string[];hits:{id:string;t:number}[];finishAt?:number;energy?:number};
 export const GEAR_NAMES:Record<Gear,string>={mine:'지뢰',missile:'미사일',banana:'바나나',field:'감속 영역',shield:'보호막',boost:'질주'};
 export const GEAR_HELP:Record<Gear,string>={mine:'뒤에 설치 · 밟은 친구를 튕겨 냅니다',missile:'코스 정면으로 발사 · 옆으로 움직여도 방향 유지',banana:'뒤에 놓기 · 밟으면 미끄러집니다',field:'주변에 5초 동안 느려지는 영역을 만듭니다',shield:'4초 동안 공격을 막습니다',boost:'3초 동안 더 빠르게 달립니다'};
 export const WIDTH=620, SPEED=145, RADIUS=18, COUNTDOWN=3000;
+export const ENERGY_DRAIN=1.5, ENERGY_CHARGE=45, MIN_ENERGY_SPEED=.55;
+export function energyValue(r:Runner){return Math.max(0,Math.min(100,r.energy??100));}
+export function energySpeed(r:Runner,arena:Arena){return arena.energy?MIN_ENERGY_SPEED+(1-MIN_ENERGY_SPEED)*energyValue(r)/100:1;}
+function drainEnergy(r:Runner,end:number,arena:Arena){
+ if(!arena.energy||r.open||r.finishAt!==undefined)return energyValue(r);
+ const seconds=Math.max(0,end-Math.max(r.t,COUNTDOWN))/1000,start=energyValue(r),powered=Math.min(seconds,start/ENERGY_DRAIN);
+ r.energy=Math.max(0,start-seconds*ENERGY_DRAIN);
+ return seconds?(start*powered-ENERGY_DRAIN*powered*powered/2)/seconds:start;
+}
 export const CHECKPOINTS=[100,690,1350,2060,2700,3350,4010];
 export const STAGES=['출발 광장','움직이는 문','회전봉 정원','점프 브리지','컨베이어 길','볼링 대로','사라지는 발판'];
 export const center=(y:number)=>Math.sin(y/660)*65;
-export function freshRunner(clock=0,slot=0):Runner{return{x:center(100)+(slot%8-3.5)*48,y:100-Math.floor(slot/8)*20,z:0,vz:0,dx:0,dy:0,fx:0,fy:1,t:clock,seq:0,inputUntil:0,jumpAt:-2000,diveAt:-3000,diveUntil:0,stunUntil:0,immuneUntil:0,boostUntil:0,shieldUntil:0,knockX:0,knockY:0,checkpoint:100,fallUntil:0,falls:0,open:false,boxes:[],usedEffects:[],hits:[]};}
+export function freshRunner(clock=0,slot=0):Runner{return{x:center(100)+(slot%8-3.5)*48,y:100-Math.floor(slot/8)*20,z:0,vz:0,dx:0,dy:0,fx:0,fy:1,t:clock,seq:0,inputUntil:0,jumpAt:-2000,diveAt:-3000,diveUntil:0,stunUntil:0,immuneUntil:0,boostUntil:0,shieldUntil:0,knockX:0,knockY:0,checkpoint:100,fallUntil:0,falls:0,open:false,boxes:[],usedEffects:[],hits:[],energy:100};}
 export const ROUND_LENGTH=4700;
 export function raceLength(durationSeconds:number){return Math.round(14000+(durationSeconds-300)*13000/600);}
 export function stageAt(y:number,arena?:Arena){if(arena?.version===2)return cityRegion(y,arena);const round=Math.max(0,Math.floor(y/ROUND_LENGTH)),stage=Math.min(6,Math.floor((y-round*ROUND_LENGTH)/670));return{round,stage,index:round*7+stage,name:STAGES[stage],hint:"결승선을 향해!",color:stage};}
@@ -48,16 +57,19 @@ export function control(source:Runner,dx:number,dy:number,jump:boolean,dive:bool
 export function advanceRunner(source:Runner,clock:number,arena:Arena,effects:Effect[]=[],id=''):Runner{
  const r={...source,boxes:[...source.boxes],usedEffects:[...source.usedEffects],hits:[...source.hits]};if(r.finishAt!==undefined)return r;
  const end=Math.max(r.t,clock);let t=r.t;if(r.open){r.t=end;r.dx=0;r.dy=0;return r;}
- if(!r.dx&&!r.dy&&!r.vz&&!r.z&&!r.knockX&&!r.knockY&&!r.fallUntil&&r.diveUntil<=r.t&&(arena.version===2?r.y/(arena.length/27000):r.y%ROUND_LENGTH)<700&&floorAt(r.x,r.y,end,arena)&&effects.every(e=>e.owner===id||e.expires<=r.t||e.born>end)){r.t=end;return r;}
+ if(!r.dx&&!r.dy&&!r.vz&&!r.z&&!r.knockX&&!r.knockY&&!r.fallUntil&&r.diveUntil<=r.t&&(arena.version===2?r.y/(arena.length/27000):r.y%ROUND_LENGTH)<700&&floorAt(r.x,r.y,end,arena)&&effects.every(e=>e.owner===id||e.expires<=r.t||e.born>end)){drainEnergy(r,end,arena);r.t=end;return r;}
  // No active input survives a disconnect. Skip long idle periods without thousands of steps.
- if(end-t>6000&&r.inputUntil<t+2500&&!r.open){const cutoff=Math.min(end,t+5000);const first=advanceRunner(r,cutoff,arena,effects,id);return advanceRunner({...first,t:Math.max(cutoff,end-1000)},end,arena,effects,id);}
- while(t<end-.001){const dt=Math.min(20,end-t)/1000;t+=dt*1000;r.t=t;if(t<COUNTDOWN||r.open){r.dx=0;r.dy=0;continue;}
+ if(end-t>6000&&r.inputUntil<t+2500&&!r.open){const cutoff=Math.min(end,t+5000);const first=advanceRunner(r,cutoff,arena,effects,id),resume=Math.max(cutoff,end-1000);drainEnergy(first,resume,arena);return advanceRunner({...first,t:resume},end,arena,effects,id);}
+ while(t<end-.001){const dt=Math.min(20,end-t)/1000;t+=dt*1000;const averageEnergy=drainEnergy(r,t,arena);r.t=t;if(t<COUNTDOWN||r.open){r.dx=0;r.dy=0;continue;}
   if(r.fallUntil){if(t>=r.fallUntil){r.x=trackAt(r.checkpoint,arena).center;r.y=r.checkpoint;r.z=0;r.vz=0;r.knockX=0;r.knockY=0;r.fallUntil=0;r.immuneUntil=t+1100;}else{r.z-=dt*140;continue;}}
   const groundY=r.y%ROUND_LENGTH,grounded=r.z<=0,belt=conveyors(arena,r.y,r.y)[0];let slow=1;for(const e of effects){if(e.type==='field'&&e.owner!==id&&e.born<=t&&e.expires>t&&t>=r.shieldUntil&&Math.hypot(r.x-e.x,r.y-e.y)<145)slow=.38;}
   if(arena.version===1&&belt&&r.x<center(r.y)-40&&grounded)slow=Math.min(slow,.65);
   const active=t<r.inputUntil&&t>=r.stunUntil,fast=t<r.boostUntil?1.6:1,dive=t<r.diveUntil;
-  let vx=(active?r.dx:0)*SPEED*fast*slow,vy=(active?r.dy:0)*SPEED*fast*slow;
-  if(dive){vx=r.fx*SPEED*2;vy=r.fy*SPEED*2;}
+  // Low charge slows running progressively. Keep a small minimum leap range
+  // so an empty battery never makes a required gap impossible to clear.
+  const drive=arena.energy?Math.max((r.z>0||r.vz>0)?.92:0,MIN_ENERGY_SPEED+(1-MIN_ENERGY_SPEED)*averageEnergy/100):1;
+  let vx=(active?r.dx:0)*SPEED*fast*slow*drive,vy=(active?r.dy:0)*SPEED*fast*slow*drive;
+  if(dive){vx=r.fx*SPEED*2*drive;vy=r.fy*SPEED*2*drive;}
   if(grounded&&belt){vx+=arena.version===1?(Math.floor((groundY-2800)/110)%2?75:-75):belt.vx;vy+=belt.vy;}
   for(const wind of fans(arena,r.y,r.y))vx+=wind.force*(.7+.3*Math.sin(t/700+wind.phase))*(grounded?1:.65);
   const previousY=r.y,previousX=r.x;

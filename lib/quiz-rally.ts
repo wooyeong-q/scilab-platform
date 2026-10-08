@@ -5,7 +5,7 @@ import { validateQuestions, type CustomQuestion } from './quiz-rally-bank';
 import { QuizError } from './quiz-rally-errors';
 import { robotFor, validateRobot, type RobotParts } from './quiz-rally-robot';
 import { advance, capsuleAt, freshRacer, gameClock, CHARGE, type Course, type Racer } from './quiz-rally-course';
-import { advanceRunner, control, freshRunner,raceLength, couldFinish, missileDirection, boxes, GEAR_NAMES, type Arena, type Runner, type Gear, type Effect } from './quiz-rally-arena';
+import { advanceRunner, control, freshRunner,raceLength, couldFinish, missileDirection, boxes, GEAR_NAMES, ENERGY_CHARGE, energyValue, type Arena, type Runner, type Gear, type Effect } from './quiz-rally-arena';
 export { QuizError } from './quiz-rally-errors';
 
 type Phase = 'lobby' | 'running' | 'paused' | 'ended';
@@ -29,6 +29,10 @@ type Room = {
   questionIds?: string[]; questionSetTitle?: string; cityTarget?:number;
 };
 type Row = { code: string; teacher_key_hash: string; state: Room; expires_at: string; custom_question?:CustomQuestion };
+// A recent authenticated question can answer without another database read
+// on a warm worker. The guarded UPDATE still checks the player and room;
+// stale snapshots fall back to a fresh read before any result is returned.
+const answerSnapshots=new Map<string,{at:number;row:Row}>();
 export type QuizIdentity = { role: 'teacher' | 'student' | 'public'; token: string; playerId: string };
 const codeChars='ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
 const items: Item[]=['boost','hint','shield','steal'];
@@ -79,7 +83,7 @@ export async function createQuizRoom(body:Record<string,unknown>){
   const custom=body.questions!==undefined?validateQuestions(body.questions):null;
   const state:Room={title,durationSeconds:duration,extension:body.extension===true,stealEnabled:body.stealEnabled===true,status:'lobby',endsAt:null,remainingMs:duration*1000,metaRevision:0,requests:[],players:{}};
   if(custom){state.questionIds=Object.keys(custom.bank);state.questionSetTitle=textValue(body.questionSetTitle,80,'직접 넣은 문제');state.extension=false;}
-  state.raceGoal=state.questionIds?.length||QUIZ_QUESTIONS.filter(q=>state.extension||!q.extension).length;state.finishers=[];state.arena={version:2,length:raceLength(duration),seed:randomInt(100000),combat:body.stealEnabled!==false};state.arenaEffects=[];state.arenaRevision=0;
+  state.raceGoal=state.questionIds?.length||QUIZ_QUESTIONS.filter(q=>state.extension||!q.extension).length;state.finishers=[];state.arena={version:2,length:raceLength(duration),seed:randomInt(100000),combat:body.stealEnabled!==false,energy:true,supplies:2};state.arenaEffects=[];state.arenaRevision=0;
   for(let i=0;i<6;i++){
     const code=Array.from({length:6},()=>codeChars[randomInt(codeChars.length)]).join('');
     const rows=await query('INSERT INTO quiz_rally_sessions(code,teacher_key_hash,state,expires_at,question_bank,question_images) VALUES($1,$2,$3::jsonb,NOW()+INTERVAL \'14 days\',$4::jsonb,$5::jsonb) ON CONFLICT(code) DO NOTHING RETURNING code',[code,hash(teacherKey),JSON.stringify(state),custom?JSON.stringify(custom.bank):null,custom?JSON.stringify(custom.images):null]);
@@ -142,6 +146,13 @@ const snapshotColumns=`code,teacher_key_hash,state-'players' AS room,
    FROM jsonb_each(state->'players') WHERE NOT (value->>'removed')::boolean) AS ranking`;
 async function snapshotFromRow(r:Record<string,any>,identity:QuizIdentity){
   const code=r.code as string,room=r.room as Room,p=r.player as Player|undefined;authenticate(r as Row,identity,p);
+  if(identity.role==='student'){
+    const key=code+':'+identity.playerId;answerSnapshots.delete(key);
+    if(room.arena&&p?.runner?.open&&phase(room)==='running'){
+      answerSnapshots.set(key,{at:Date.now(),row:structuredClone({code,teacher_key_hash:r.teacher_key_hash,expires_at:r.expires_at,state:{...room,players:{[p.id]:p}},custom_question:r.custom_question})});
+      if(answerSnapshots.size>256)answerSnapshots.delete(answerSnapshots.keys().next().value!);
+    }
+  }
   const now=Date.now(),ranking=(r.ranking as Array<{id:string;nickname:string;avatar?:number;robot?:RobotParts;activity:string;racer?:Racer;runner?:Runner;finish?:Finish;score:number;correct:number;attempted:number;shield:boolean;protectedUntil:number}>).map(p=>({...p,avatar:avatarFor(p),robot:robotFor(p.robot,avatarFor(p))})).sort((a,b)=>b.score-a.score||b.correct-a.correct||a.nickname.localeCompare(b.nickname,'ko'));
   if(room.arena){const positions=new Map(ranking.map(p=>[p.id,phase(room,now)==='ended'?advanceRunner(p.runner!,gameClock(room,now),room.arena!,room.arenaEffects||[],p.id).y:p.runner!.y]));ranking.sort((a,b)=>{if(a.finish||b.finish)return(a.finish?.place||999)-(b.finish?.place||999);return positions.get(b.id)!-positions.get(a.id)!||a.nickname.localeCompare(b.nickname,'ko');});}
   const review=[];if(identity.role==='student'&&phase(room,now)==='ended'){
@@ -200,7 +211,7 @@ function modifyArena(room:Room,p:Player,body:Record<string,unknown>,q:CustomQues
   const r=advanceArenaPlayer(room,p,actionClock);
   if(action==='arena-close'){r.open=false;r.dx=0;r.dy=0;r.inputUntil=now;return;}
   if(action==='arena-collect'){
-    assert(!r.open&&!r.fallUntil&&r.z<25,'지금은 문제 상자를 열 수 없어요.',409);assert((p.gear||[]).length<3,'아이템을 먼저 사용해 가방을 비워 주세요.');
+    assert(!r.open&&!r.fallUntil&&r.z<25,'지금은 문제 상자를 열 수 없어요.',409);
     const b=boxes(room.arena, r.y-100,r.y+100).find(b=>b.id===body.box);assert(b&&!r.boxes.includes(b.id)&&Math.hypot(b.x-r.x,b.y-r.y)<100,'가까운 문제 상자를 찾아 주세요.',409);
     if(p.turn.correct||p.turn.revealed){if(!p.deck.length)p.deck=deckFor(room);if(p.deck.length>1&&p.deck[0]===p.turn.id)p.deck.push(p.deck.shift()!);p.turn=turnFor(p.deck.shift()!);}
     r.boxes.push(b.id);r.open=true;r.dx=0;r.dy=0;r.z=0;r.vz=0;r.knockX=0;r.knockY=0;r.inputUntil=now;return;
@@ -211,7 +222,20 @@ function modifyArena(room:Room,p:Player,body:Record<string,unknown>,q:CustomQues
     const choice=Number(body.choice);assert(Number.isInteger(choice)&&choice>=0&&choice<4&&!p.turn.wrongChoices?.includes(choice),'남아 있는 보기를 골라 주세요.');
     p.turn.answered=true;p.turn.selected=choice;p.turn.correct=p.turn.order[choice]===q.answer;p.turn.points=0;p.attempted++;if(retry)p.turn.retries=(p.turn.retries||0)+1;
     const stat=p.stats[q.id]||[0,0];stat[0]++;
-    if(p.turn.correct){p.correct++;stat[1]++;const pool:Gear[]=room.arena!.combat?['mine','missile','banana','field','shield','boost']:['shield','boost'];const gear=pool[randomInt(pool.length)];p.gear=[...(p.gear||[]),gear];p.turn.reward={type:'gear',text:GEAR_NAMES[gear]+' 획득!'};r.open=false;r.dx=0;r.dy=0;r.inputUntil=now;notice(p,'정답! '+GEAR_NAMES[gear]+' 획득');}
+    if(p.turn.correct){
+      p.correct++;stat[1]++;
+      const charged=room.arena!.energy?Math.min(ENERGY_CHARGE,100-energyValue(r)):0;
+      if(room.arena!.energy)r.energy=Math.min(100,energyValue(r)+ENERGY_CHARGE);
+      if((p.gear||[]).length<3){
+        const pool:Gear[]=room.arena!.combat?['mine','missile','banana','field','shield','boost']:['shield','boost'],gear=pool[randomInt(pool.length)];
+        p.gear=[...(p.gear||[]),gear];p.turn.reward={type:'gear',text:GEAR_NAMES[gear]+' 획득!'};
+        notice(p,'정답! '+(room.arena!.energy?`에너지 +${Math.round(charged)} · `:'')+GEAR_NAMES[gear]+' 획득');
+      }else{
+        p.turn.reward={type:'energy',text:room.arena!.energy?'에너지 충전 완료':'정답 확인 완료'};
+        notice(p,'정답! '+(room.arena!.energy?`에너지 +${Math.round(charged)} · `:'')+'가방의 아이템 3개는 그대로 유지');
+      }
+      r.open=false;r.dx=0;r.dy=0;r.inputUntil=now;
+    }
     else{p.turn.wrongChoices=[...(p.turn.wrongChoices||[]),choice];p.turn.nonce=randomUUID();p.answerAt=now+1000;}
     p.stats[q.id]=stat;return;
   }
@@ -338,7 +362,9 @@ export async function actQuizRoom(code:string,identity:QuizIdentity,body:Record<
   if(identity.role==='teacher')return controlRoom(code,identity,body,requestId);
   assert(uuid(identity.playerId),'참여 정보를 확인해 주세요.',403);
   for(let attempt=0;attempt<8;attempt++){
-    const row=await readRoom(code,[identity.playerId,...(uuid(body.targetId)?[body.targetId]:[])]),room=row.state,p=room.players[identity.playerId];authenticate(row,identity,p);
+    const cached=attempt===0&&body.action==='answer'?answerSnapshots.get(code+':'+identity.playerId):undefined;
+    const canUseCache=cached&&Date.now()-cached.at<90000&&cached.row.state.players[identity.playerId]?.turn.nonce===body.nonce;
+    const row=canUseCache?structuredClone(cached.row):await readRoom(code,[identity.playerId,...(uuid(body.targetId)?[body.targetId]:[])]),room=row.state,p=room.players[identity.playerId];authenticate(row,identity,p);
     if(p.requests.includes(requestId))return getQuizSnapshot(code,identity);
     const customizing=body.action==='customize';
     if(customizing)assert(phase(room)!=='ended','끝난 게임에서는 로봇을 바꿀 수 없습니다.',409);

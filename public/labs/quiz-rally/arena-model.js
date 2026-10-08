@@ -33,7 +33,7 @@ function track(layout, y) { let width = 620, offset = 0; for (const s of layout.
 function cityRegion(y, arena) { const reference = y / arena.length * exports.CITY_LENGTH; let i = exports.CITY_REGIONS.length - 1; while (i > 0 && reference < exports.CITY_REGIONS[i].start)
     i--; return { ...exports.CITY_REGIONS[i], stage: i, index: i, round: 0 }; }
 function cityLayout(arena) {
-    const key = arena.length + ':' + arena.seed;
+    const key = arena.length + ':' + arena.seed + ':' + (arena.supplies || 1);
     if (cache.has(key))
         return cache.get(key);
     const scale = arena.length / exports.CITY_LENGTH, Y = (y) => Math.round(y * scale), X = (x, y) => center(Y(y)) + x;
@@ -118,15 +118,15 @@ function cityLayout(arena) {
     const rng = random(arena.seed ^ 0x5ca1ab);
     let cursor = 300;
     while (cursor < arena.length - 280) {
-        for (let attempt = 0; attempt < 9; attempt++) {
+        for (let attempt = 0; attempt < (arena.supplies === 2 ? 16 : 9); attempt++) {
             const y = cursor + attempt * 19, road = track(l, y), x = road.center + (rng() - .5) * Math.max(0, road.width - 150);
             const unsafe = l.gaps.some(g => y > g.start - 105 && y < g.end + 105) || l.gates.some(g => Math.abs(g.y - y) < 130) || l.walls.some(w => Math.abs(w.y - y) < 120 && Math.abs(w.x - x) < w.w / 2 + 85) || l.rotors.some(s => Math.hypot(s.x - x, s.y - y) < s.length + 95) || l.pistons.some(p => Math.hypot(p.x - x, p.y - y) < p.r + 95) || l.tiles.some(t => y > t.y - 85 && y < t.y + 160) || l.fans.some(f => y > f.start - 80 && y < f.end + 80) || l.belts.some(b => y > b.start - 60 && y < b.end + 60);
-            if (!unsafe && y < arena.length - 220) {
+            if (!unsafe && y < arena.length - 220 && (!l.boxes.length || Math.hypot(x - l.boxes.at(-1).x, y - l.boxes.at(-1).y) > 135)) {
                 l.boxes.push({ id: l.boxes.length, x, y, r: 27 });
                 break;
             }
         }
-        cursor += 300 + rng() * 340;
+        cursor += arena.supplies === 2 ? 170 + rng() * 180 : 300 + rng() * 340;
     }
     return l;
 }
@@ -139,7 +139,9 @@ function cityPistons(t, a, near, far) { return cityLayout(a).pistons.filter(p =>
 })(city);const exports={},require=name=>{if(name==="./quiz-rally-city")return city;throw Error("Unknown arena module");};
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.ROUND_LENGTH = exports.center = exports.STAGES = exports.CHECKPOINTS = exports.COUNTDOWN = exports.RADIUS = exports.SPEED = exports.WIDTH = exports.GEAR_HELP = exports.GEAR_NAMES = void 0;
+exports.ROUND_LENGTH = exports.center = exports.STAGES = exports.CHECKPOINTS = exports.MIN_ENERGY_SPEED = exports.ENERGY_CHARGE = exports.ENERGY_DRAIN = exports.COUNTDOWN = exports.RADIUS = exports.SPEED = exports.WIDTH = exports.GEAR_HELP = exports.GEAR_NAMES = void 0;
+exports.energyValue = energyValue;
+exports.energySpeed = energySpeed;
 exports.freshRunner = freshRunner;
 exports.raceLength = raceLength;
 exports.stageAt = stageAt;
@@ -168,11 +170,21 @@ const quiz_rally_city_1 = require("./quiz-rally-city");
 exports.GEAR_NAMES = { mine: '지뢰', missile: '미사일', banana: '바나나', field: '감속 영역', shield: '보호막', boost: '질주' };
 exports.GEAR_HELP = { mine: '뒤에 설치 · 밟은 친구를 튕겨 냅니다', missile: '코스 정면으로 발사 · 옆으로 움직여도 방향 유지', banana: '뒤에 놓기 · 밟으면 미끄러집니다', field: '주변에 5초 동안 느려지는 영역을 만듭니다', shield: '4초 동안 공격을 막습니다', boost: '3초 동안 더 빠르게 달립니다' };
 exports.WIDTH = 620, exports.SPEED = 145, exports.RADIUS = 18, exports.COUNTDOWN = 3000;
+exports.ENERGY_DRAIN = 1.5, exports.ENERGY_CHARGE = 45, exports.MIN_ENERGY_SPEED = .55;
+function energyValue(r) { return Math.max(0, Math.min(100, r.energy ?? 100)); }
+function energySpeed(r, arena) { return arena.energy ? exports.MIN_ENERGY_SPEED + (1 - exports.MIN_ENERGY_SPEED) * energyValue(r) / 100 : 1; }
+function drainEnergy(r, end, arena) {
+    if (!arena.energy || r.open || r.finishAt !== undefined)
+        return energyValue(r);
+    const seconds = Math.max(0, end - Math.max(r.t, exports.COUNTDOWN)) / 1000, start = energyValue(r), powered = Math.min(seconds, start / exports.ENERGY_DRAIN);
+    r.energy = Math.max(0, start - seconds * exports.ENERGY_DRAIN);
+    return seconds ? (start * powered - exports.ENERGY_DRAIN * powered * powered / 2) / seconds : start;
+}
 exports.CHECKPOINTS = [100, 690, 1350, 2060, 2700, 3350, 4010];
 exports.STAGES = ['출발 광장', '움직이는 문', '회전봉 정원', '점프 브리지', '컨베이어 길', '볼링 대로', '사라지는 발판'];
 const center = (y) => Math.sin(y / 660) * 65;
 exports.center = center;
-function freshRunner(clock = 0, slot = 0) { return { x: (0, exports.center)(100) + (slot % 8 - 3.5) * 48, y: 100 - Math.floor(slot / 8) * 20, z: 0, vz: 0, dx: 0, dy: 0, fx: 0, fy: 1, t: clock, seq: 0, inputUntil: 0, jumpAt: -2000, diveAt: -3000, diveUntil: 0, stunUntil: 0, immuneUntil: 0, boostUntil: 0, shieldUntil: 0, knockX: 0, knockY: 0, checkpoint: 100, fallUntil: 0, falls: 0, open: false, boxes: [], usedEffects: [], hits: [] }; }
+function freshRunner(clock = 0, slot = 0) { return { x: (0, exports.center)(100) + (slot % 8 - 3.5) * 48, y: 100 - Math.floor(slot / 8) * 20, z: 0, vz: 0, dx: 0, dy: 0, fx: 0, fy: 1, t: clock, seq: 0, inputUntil: 0, jumpAt: -2000, diveAt: -3000, diveUntil: 0, stunUntil: 0, immuneUntil: 0, boostUntil: 0, shieldUntil: 0, knockX: 0, knockY: 0, checkpoint: 100, fallUntil: 0, falls: 0, open: false, boxes: [], usedEffects: [], hits: [], energy: 100 }; }
 exports.ROUND_LENGTH = 4700;
 function raceLength(durationSeconds) { return Math.round(14000 + (durationSeconds - 300) * 13000 / 600); }
 function stageAt(y, arena) { if (arena?.version === 2)
@@ -262,18 +274,21 @@ function advanceRunner(source, clock, arena, effects = [], id = '') {
         return r;
     }
     if (!r.dx && !r.dy && !r.vz && !r.z && !r.knockX && !r.knockY && !r.fallUntil && r.diveUntil <= r.t && (arena.version === 2 ? r.y / (arena.length / 27000) : r.y % exports.ROUND_LENGTH) < 700 && floorAt(r.x, r.y, end, arena) && effects.every(e => e.owner === id || e.expires <= r.t || e.born > end)) {
+        drainEnergy(r, end, arena);
         r.t = end;
         return r;
     }
     // No active input survives a disconnect. Skip long idle periods without thousands of steps.
     if (end - t > 6000 && r.inputUntil < t + 2500 && !r.open) {
         const cutoff = Math.min(end, t + 5000);
-        const first = advanceRunner(r, cutoff, arena, effects, id);
-        return advanceRunner({ ...first, t: Math.max(cutoff, end - 1000) }, end, arena, effects, id);
+        const first = advanceRunner(r, cutoff, arena, effects, id), resume = Math.max(cutoff, end - 1000);
+        drainEnergy(first, resume, arena);
+        return advanceRunner({ ...first, t: resume }, end, arena, effects, id);
     }
     while (t < end - .001) {
         const dt = Math.min(20, end - t) / 1000;
         t += dt * 1000;
+        const averageEnergy = drainEnergy(r, t, arena);
         r.t = t;
         if (t < exports.COUNTDOWN || r.open) {
             r.dx = 0;
@@ -305,10 +320,13 @@ function advanceRunner(source, clock, arena, effects = [], id = '') {
         if (arena.version === 1 && belt && r.x < (0, exports.center)(r.y) - 40 && grounded)
             slow = Math.min(slow, .65);
         const active = t < r.inputUntil && t >= r.stunUntil, fast = t < r.boostUntil ? 1.6 : 1, dive = t < r.diveUntil;
-        let vx = (active ? r.dx : 0) * exports.SPEED * fast * slow, vy = (active ? r.dy : 0) * exports.SPEED * fast * slow;
+        // Low charge slows running progressively. Keep a small minimum leap range
+        // so an empty battery never makes a required gap impossible to clear.
+        const drive = arena.energy ? Math.max((r.z > 0 || r.vz > 0) ? .92 : 0, exports.MIN_ENERGY_SPEED + (1 - exports.MIN_ENERGY_SPEED) * averageEnergy / 100) : 1;
+        let vx = (active ? r.dx : 0) * exports.SPEED * fast * slow * drive, vy = (active ? r.dy : 0) * exports.SPEED * fast * slow * drive;
         if (dive) {
-            vx = r.fx * exports.SPEED * 2;
-            vy = r.fy * exports.SPEED * 2;
+            vx = r.fx * exports.SPEED * 2 * drive;
+            vy = r.fy * exports.SPEED * 2 * drive;
         }
         if (grounded && belt) {
             vx += arena.version === 1 ? (Math.floor((groundY - 2800) / 110) % 2 ? 75 : -75) : belt.vx;
