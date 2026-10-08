@@ -12,7 +12,7 @@ export async function registerQuizRally(sql,p){
  [p.id,p.title,p.summary,p.description,JSON.stringify(p.tags),p.icon],{fetchOptions:{signal:AbortSignal.timeout(15000)}});
  // Migrate the untouched earlier city description, without replacing administrator edits.
  await sql.query(`UPDATE programs SET summary=$2,description=$3,tags=$4::jsonb
- WHERE id=$1 AND title='도시 재가동' AND summary='문제를 해결해 정전된 도시를 밝히는 학급 게임. 엑셀·그림 문제와 오답 재도전 지원'`,
+ WHERE id=$1 AND title='도시 재가동' AND summary IN ('문제를 해결해 정전된 도시를 밝히는 학급 게임. 엑셀·그림 문제와 오답 재도전 지원','도시 코스의 문제 캡슐을 획득해 에너지를 충전하는 학급 레이스. 엑셀·그림 문제 지원')`,
  [p.id,p.summary,p.description,JSON.stringify(p.tags)],{fetchOptions:{signal:AbortSignal.timeout(15000)}});
 }
 async function main(){

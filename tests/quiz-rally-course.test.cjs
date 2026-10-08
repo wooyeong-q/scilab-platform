@@ -4,7 +4,8 @@ process.env.DATABASE_URL='postgres://test';
 const student=()=>({role:'student',token:randomBytes(32).toString('base64url'),playerId:randomUUID()});
 const action=(action,extra={})=>({action,requestId:randomUUID(),...extra});
 const question={prompt:'원소의 종류를 결정하는 것은?',options:['양성자 수','중성자 수','질량','크기'],answer:0,topic:'물질의 구성',explanation:'양성자 수로 원소의 종류를 구분합니다.'};
-async function setup(t){const h=await harness();t.after(()=>h.close());const game=h.load('lib/quiz-rally.ts'),M=h.load('lib/quiz-rally-course.ts');const made=await game.createQuizRoom({questions:[question,{...question,prompt:'양성자의 전하는?',options:['양전하','음전하','중성','없음']}],durationSeconds:300,stealEnabled:true});const code=made.code,teacher={role:'teacher',token:made.teacherKey,playerId:''},s=student();await game.joinQuizRoom(code,s,{nickname:'충전로봇'});await game.actQuizRoom(code,teacher,action('start'));return {h,game,M,code,teacher,s};}
+async function setup(t){const h=await harness();t.after(()=>h.close());const game=h.load('lib/quiz-rally.ts'),M=h.load('lib/quiz-rally-course.ts');const made=await game.createQuizRoom({questions:[question,{...question,prompt:'양성자의 전하는?',options:['양전하','음전하','중성','없음']}],durationSeconds:300,stealEnabled:true});await energyFixture(h,made.code,1300);const code=made.code,teacher={role:'teacher',token:made.teacherKey,playerId:''},s=student();await game.joinQuizRoom(code,s,{nickname:'충전로봇'});await game.actQuizRoom(code,teacher,action('start'));return {h,game,M,code,teacher,s};}
+async function energyFixture(h,code,length){await h.pg.query("UPDATE quiz_rally_sessions SET state=(state-'arena'-'arenaEffects'-'arenaRevision') || $2::jsonb WHERE code=$1",[code,JSON.stringify({course:{version:1,length:Math.max(2400,length),seed:3}})]);}
 const read=async(h,code)=>(await h.pg.query('SELECT state FROM quiz_rally_sessions WHERE code=$1',[code])).rows[0].state;
 const patch=async(h,code,id,p)=>h.pg.query(`UPDATE quiz_rally_sessions SET state=jsonb_set(state,ARRAY['players',$2],(state #> ARRAY['players',$2]) || $3::jsonb) WHERE code=$1`,[code,id,JSON.stringify(p)]);
 async function collect(x,index=0){const room=await read(x.h,x.code),p=room.players[x.s.playerId],cap=x.M.capsuleAt(index,room.course);await patch(x.h,x.code,p.id,{racer:{...p.racer,d:cap.d,lane:cap.lane,e:10,t:x.M.gameClock(room),open:false}});return x.game.actQuizRoom(x.code,x.s,action('race-collect',{capsule:index}));}
@@ -50,5 +51,5 @@ test('30 simultaneous players: independent lane updates and atomic, time-ordered
 });
 
  test('large imported banks keep finish bonuses proportional to the timed course',async t=>{
- const {game}=await setup(t);const made=await game.createQuizRoom({questions:Array.from({length:500},()=>question),durationSeconds:300});const snap=await game.getQuizSnapshot(made.code,{role:'teacher',token:made.teacherKey,playerId:''});assert.equal(snap.questionCount,500);assert.equal(snap.course.length,11400);assert.deepEqual(snap.finishPrizes,[360,216,144]);
+ const {game,h}=await setup(t);const made=await game.createQuizRoom({questions:Array.from({length:500},()=>question),durationSeconds:300});await energyFixture(h,made.code,11400);const snap=await game.getQuizSnapshot(made.code,{role:'teacher',token:made.teacherKey,playerId:''});assert.equal(snap.questionCount,500);assert.equal(snap.course.length,11400);assert.deepEqual(snap.finishPrizes,[360,216,144]);
 });
