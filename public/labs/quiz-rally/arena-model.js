@@ -128,6 +128,13 @@ function cityLayout(arena) {
         }
         cursor += arena.supplies === 2 ? 170 + rng() * 180 : 300 + rng() * 340;
     }
+    // A failed wind crossing always has a refill at its preceding safe checkpoint.
+    // Append IDs so existing rooms keep the identity of every scattered box.
+    for (const wind of l.fans) {
+        const y = l.checkpoints.filter(cp => cp < wind.start).at(-1), x = track(l, y).center;
+        if (!l.boxes.some(b => Math.hypot(b.x - x, b.y - y) < 100))
+            l.boxes.push({ id: l.boxes.length, x, y, r: 27 });
+    }
     return l;
 }
 function cityTrack(y, a) { return track(cityLayout(a), y); }
@@ -139,9 +146,11 @@ function cityPistons(t, a, near, far) { return cityLayout(a).pistons.filter(p =>
 })(city);const exports={},require=name=>{if(name==="./quiz-rally-city")return city;throw Error("Unknown arena module");};
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.ROUND_LENGTH = exports.center = exports.STAGES = exports.CHECKPOINTS = exports.MIN_ENERGY_SPEED = exports.ENERGY_CHARGE = exports.ENERGY_DRAIN = exports.COUNTDOWN = exports.RADIUS = exports.SPEED = exports.WIDTH = exports.GEAR_HELP = exports.GEAR_NAMES = void 0;
+exports.ROUND_LENGTH = exports.center = exports.STAGES = exports.CHECKPOINTS = exports.BOX_RESPAWN = exports.DASH_ENERGY_DRAIN = exports.DASH_SPEED = exports.MIN_ENERGY_SPEED = exports.ENERGY_CHARGE = exports.ENERGY_DRAIN = exports.COUNTDOWN = exports.RADIUS = exports.SPEED = exports.WIDTH = exports.GEAR_HELP = exports.GEAR_NAMES = void 0;
 exports.energyValue = energyValue;
 exports.energySpeed = energySpeed;
+exports.isDashing = isDashing;
+exports.boxWait = boxWait;
 exports.freshRunner = freshRunner;
 exports.raceLength = raceLength;
 exports.stageAt = stageAt;
@@ -171,20 +180,24 @@ exports.GEAR_NAMES = { mine: '폭탄', missile: '미사일', banana: '바나나'
 exports.GEAR_HELP = { mine: '뒤에 설치 · 밟으면 밀려나고 0.85초 조작 불가', missile: '앞으로 발사 · 맞으면 밀려나고 0.85초 조작 불가', banana: '뒤에 놓기 · 밟으면 1.05초 미끄러집니다', field: '5초 유지 · 영역 안 친구의 이동 속도를 38%로 낮춤', shield: '4초 동안 공격을 막습니다', boost: '3초 동안 이동 속도 2배' };
 exports.WIDTH = 620, exports.SPEED = 175, exports.RADIUS = 18, exports.COUNTDOWN = 3000;
 exports.ENERGY_DRAIN = 4, exports.ENERGY_CHARGE = 45, exports.MIN_ENERGY_SPEED = .35;
+exports.DASH_SPEED = 1.4, exports.DASH_ENERGY_DRAIN = 10, exports.BOX_RESPAWN = 8000;
 function energyValue(r) { return Math.max(0, Math.min(100, r.energy ?? 100)); }
 function energySpeed(r, arena) { return arena.energy ? exports.MIN_ENERGY_SPEED + (1 - exports.MIN_ENERGY_SPEED) * energyValue(r) / 100 : 1; }
-function drainEnergy(r, end, arena) {
+function isDashing(r, arena, clock = r.t) { return !!r.dash && (!!r.dx || !!r.dy) && clock >= exports.COUNTDOWN && clock < r.inputUntil && clock >= r.stunUntil && !r.open && !r.fallUntil && r.finishAt === undefined && (!arena.energy || energyValue(r) > 1e-8); }
+// Legacy runners have no timestamps: their old one-use boxes become available.
+function boxWait(r, id, clock) { return r.open && r.questionBox === id ? exports.BOX_RESPAWN : Math.max(0, (r.boxReadyAt?.[id] ?? 0) - clock); }
+function drainEnergy(r, end, arena, rate = exports.ENERGY_DRAIN) {
     if (!arena.energy || r.open || r.finishAt !== undefined)
         return energyValue(r);
-    const seconds = Math.max(0, end - Math.max(r.t, exports.COUNTDOWN)) / 1000, start = energyValue(r), powered = Math.min(seconds, start / exports.ENERGY_DRAIN);
-    r.energy = Math.max(0, start - seconds * exports.ENERGY_DRAIN);
-    return seconds ? (start * powered - exports.ENERGY_DRAIN * powered * powered / 2) / seconds : start;
+    const seconds = Math.max(0, end - Math.max(r.t, exports.COUNTDOWN)) / 1000, start = energyValue(r), powered = Math.min(seconds, start / rate);
+    r.energy = Math.max(0, start - seconds * rate);
+    return seconds ? (start * powered - rate * powered * powered / 2) / seconds : start;
 }
 exports.CHECKPOINTS = [100, 690, 1350, 2060, 2700, 3350, 4010];
 exports.STAGES = ['출발 광장', '움직이는 문', '회전봉 정원', '점프 브리지', '컨베이어 길', '볼링 대로', '사라지는 발판'];
 const center = (y) => Math.sin(y / 660) * 65;
 exports.center = center;
-function freshRunner(clock = 0, slot = 0) { return { x: (0, exports.center)(100) + (slot % 8 - 3.5) * 48, y: 100 - Math.floor(slot / 8) * 20, z: 0, vz: 0, dx: 0, dy: 0, fx: 0, fy: 1, t: clock, seq: 0, inputUntil: 0, jumpAt: -2000, diveAt: -3000, diveUntil: 0, stunUntil: 0, immuneUntil: 0, boostUntil: 0, shieldUntil: 0, knockX: 0, knockY: 0, checkpoint: 100, fallUntil: 0, falls: 0, open: false, boxes: [], usedEffects: [], hits: [], energy: 100 }; }
+function freshRunner(clock = 0, slot = 0) { return { x: (0, exports.center)(100) + (slot % 8 - 3.5) * 48, y: 100 - Math.floor(slot / 8) * 20, z: 0, vz: 0, dx: 0, dy: 0, fx: 0, fy: 1, t: clock, seq: 0, inputUntil: 0, jumpAt: -2000, diveAt: -3000, diveUntil: 0, dash: false, stunUntil: 0, immuneUntil: 0, boostUntil: 0, shieldUntil: 0, knockX: 0, knockY: 0, checkpoint: 100, fallUntil: 0, falls: 0, open: false, boxes: [], boxReadyAt: {}, usedEffects: [], hits: [], energy: 100 }; }
 exports.ROUND_LENGTH = 4700;
 function raceLength(durationSeconds) { return Math.round(14000 + (durationSeconds - 300) * 13000 / 600); }
 function stageAt(y, arena) { if (arena?.version === 2)
@@ -236,7 +249,7 @@ function effectPosition(e, t) { const dt = Math.max(0, t - e.born) / 1000; retur
 function segmentDistance(x, y, ax, ay, bx, by) { const dx = bx - ax, dy = by - ay, k = Math.max(0, Math.min(1, ((x - ax) * dx + (y - ay) * dy) / (dx * dx + dy * dy || 1))); return Math.hypot(x - ax - k * dx, y - ay - k * dy); }
 function knock(r, x, y, t, force = 190, stun = 600) { if (t < r.immuneUntil || r.open)
     return; const d = Math.hypot(r.x - x, r.y - y) || 1; r.knockX = (r.x - x) / d * force; r.knockY = (r.y - y) / d * force - 55; r.stunUntil = t + stun; r.immuneUntil = t + 1050; }
-function control(source, dx, dy, jump, dive, clock, seq) {
+function control(source, dx, dy, jump, dash, clock, seq) {
     const r = { ...source };
     r.seq = seq;
     if (r.open || r.finishAt !== undefined)
@@ -253,16 +266,13 @@ function control(source, dx, dy, jump, dive, clock, seq) {
         r.vz = 300;
         r.jumpAt = clock;
     }
-    if (dive && clock >= r.stunUntil && !r.fallUntil && clock - r.diveAt >= 1800) {
-        r.diveAt = clock;
-        r.diveUntil = clock + 360;
-        if (r.z > 0)
-            r.vz = Math.min(r.vz, 20);
-    }
+    // Dash changes horizontal speed only; it never cuts a jump's vertical arc.
+    r.dash = dash;
+    r.diveUntil = 0;
     return r;
 }
 function advanceRunner(source, clock, arena, effects = [], id = '') {
-    const r = { ...source, boxes: [...source.boxes], usedEffects: [...source.usedEffects], hits: [...source.hits] };
+    const r = { ...source, boxes: [...source.boxes], boxReadyAt: { ...source.boxReadyAt }, usedEffects: [...source.usedEffects], hits: [...source.hits] };
     if (r.finishAt !== undefined)
         return r;
     const end = Math.max(r.t, clock);
@@ -286,11 +296,15 @@ function advanceRunner(source, clock, arena, effects = [], id = '') {
         return advanceRunner({ ...first, t: resume }, end, arena, effects, id);
     }
     while (t < end - .001) {
-        const dt = Math.min(20, end - t) / 1000;
-        t += dt * 1000;
-        const averageEnergy = drainEnergy(r, t, arena);
+        const start = t, dashing = isDashing(r, arena, t), boundaries = [exports.COUNTDOWN, r.inputUntil, r.stunUntil, r.boostUntil];
+        if (dashing && arena.energy)
+            boundaries.push(t + energyValue(r) / exports.DASH_ENERGY_DRAIN * 1000);
+        // Split at input expiry and depletion so render cadence cannot extend a dash.
+        t = Math.min(end, t + 20, ...boundaries.filter(at => at > start + .000001));
+        const dt = (t - start) / 1000;
+        const averageEnergy = drainEnergy(r, t, arena, dashing ? exports.DASH_ENERGY_DRAIN : exports.ENERGY_DRAIN);
         r.t = t;
-        if (t < exports.COUNTDOWN || r.open) {
+        if (start < exports.COUNTDOWN || r.open) {
             r.dx = 0;
             r.dy = 0;
             continue;
@@ -319,24 +333,21 @@ function advanceRunner(source, clock, arena, effects = [], id = '') {
         }
         if (arena.version === 1 && belt && r.x < (0, exports.center)(r.y) - 40 && grounded)
             slow = Math.min(slow, .65);
-        const active = t < r.inputUntil && t >= r.stunUntil, fast = t < r.boostUntil ? 2 : 1, dive = t < r.diveUntil;
-        // Charge affects running, diving, sprinting and ordinary airborne movement.
+        const active = start < r.inputUntil && start >= r.stunUntil, fast = (start < r.boostUntil ? 2 : 1) * (dashing ? exports.DASH_SPEED : 1);
+        // Charge affects running, dashing, sprinting and ordinary airborne movement.
         // A local gap assist preserves required leaps without bypassing low charge
         // through repeated jumps on flat ground.
         const energyDrive = arena.energy ? exports.MIN_ENERGY_SPEED + (1 - exports.MIN_ENERGY_SPEED) * averageEnergy / 100 : 1;
         const gapAssist = energyDrive < .78 && (r.z > 0 || r.vz > 0) && gaps(arena, r.y - 15, r.y + 35).some(g => r.y >= g.start - 35 && r.y <= g.end + 15);
         const drive = gapAssist ? .78 : energyDrive;
         let vx = (active ? r.dx : 0) * exports.SPEED * fast * slow * drive, vy = (active ? r.dy : 0) * exports.SPEED * fast * slow * drive;
-        if (dive) {
-            vx = r.fx * exports.SPEED * 2 * drive;
-            vy = r.fy * exports.SPEED * 2 * drive;
-        }
         if (grounded && belt) {
             vx += arena.version === 1 ? (Math.floor((groundY - 2800) / 110) % 2 ? 75 : -75) : belt.vx;
             vy += belt.vy;
         }
+        // Keep crosswind steerable when a depleted battery reduces player control.
         for (const wind of fans(arena, r.y, r.y))
-            vx += wind.force * (.7 + .3 * Math.sin(t / 700 + wind.phase)) * (grounded ? 1 : .65);
+            vx += wind.force * (.7 + .3 * Math.sin(t / 700 + wind.phase)) * (grounded ? 1 : .65) * energyDrive;
         const previousY = r.y, previousX = r.x;
         r.x += (vx + r.knockX) * dt;
         r.y += (vy + r.knockY) * dt;

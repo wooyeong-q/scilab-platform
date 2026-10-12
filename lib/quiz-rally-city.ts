@@ -84,6 +84,11 @@ export function cityLayout(arena:CityArena):CityLayout{
   }
   cursor+=arena.supplies===2?170+rng()*180:300+rng()*340;
  }
+ // A failed wind crossing always has a refill at its preceding safe checkpoint.
+ // Append IDs so existing rooms keep the identity of every scattered box.
+ for(const wind of l.fans){const y=l.checkpoints.filter(cp=>cp<wind.start).at(-1)!,x=track(l,y).center;
+  if(!l.boxes.some(b=>Math.hypot(b.x-x,b.y-y)<100))l.boxes.push({id:l.boxes.length,x,y,r:27});
+ }
  return l;
 }
 export function cityTrack(y:number,a:CityArena){return track(cityLayout(a),y);}

@@ -5,7 +5,7 @@ import { validateQuestions, type CustomQuestion } from './quiz-rally-bank';
 import { QuizError } from './quiz-rally-errors';
 import { robotFor, validateRobot, type RobotParts } from './quiz-rally-robot';
 import { advance, capsuleAt, freshRacer, gameClock, CHARGE, type Course, type Racer } from './quiz-rally-course';
-import { advanceRunner, control, freshRunner,raceLength, couldFinish, missileDirection, boxes, GEAR_NAMES, ENERGY_CHARGE, energyValue, type Arena, type Runner, type Gear, type Effect } from './quiz-rally-arena';
+import { advanceRunner, control, freshRunner,raceLength, couldFinish, missileDirection, boxes, boxWait, BOX_RESPAWN, GEAR_NAMES, ENERGY_CHARGE, energyValue, type Arena, type Runner, type Gear, type Effect } from './quiz-rally-arena';
 export { QuizError } from './quiz-rally-errors';
 
 type Phase = 'lobby' | 'running' | 'paused' | 'ended';
@@ -186,6 +186,11 @@ function advanceArenaPlayer(room:Room,p:Player,clock:number){
   for(const hit of r.hits)if(!previous.has(hit.id)){const e=room.arenaEffects?.find(e=>e.id===hit.id);if(e&&!e.victim){e.victim=p.id;e.hitAt=hit.t;}}
   p.runner=r;return r;
 }
+function closeArenaQuestion(r:Runner,clock:number){
+  const id=r.questionBox??r.boxes.at(-1); // Also close questions opened before respawn timestamps existed.
+  if(r.open&&id!==undefined)r.boxReadyAt={...r.boxReadyAt,[id]:clock+BOX_RESPAWN};
+  delete r.questionBox;r.open=false;r.dash=false;r.dx=0;r.dy=0;r.inputUntil=clock;
+}
 function modifyArena(room:Room,p:Player,body:Record<string,unknown>,q:CustomQuestion){
   assert(p.runner&&!p.finish,'이미 완주했어요. 친구들의 경주를 지켜봐 주세요.',409);
   const now=gameClock(room),action=body.action;
@@ -196,7 +201,7 @@ function modifyArena(room:Room,p:Player,body:Record<string,unknown>,q:CustomQues
       const dx=Number(input.dx),dy=Number(input.dy),seq=Number(input.seq);assert(Number.isFinite(dx)&&Number.isFinite(dy)&&Math.abs(dx)<=1&&Math.abs(dy)<=1&&Number.isSafeInteger(seq)&&seq>=0&&seq>last,'조작 값을 확인해 주세요.');last=seq;
       if(seq<=p.runner.seq)continue;
       const at=Number(input.at),clock=Number.isFinite(at)?Math.max(p.runner.t,Math.min(now,Math.max(now-6000,at))):now;
-      const r=advanceArenaPlayer(room,p,clock);p.runner=control(r,dx,dy,input.jump===true,input.dive===true,clock,seq);
+      const r=advanceArenaPlayer(room,p,clock);p.runner=control(r,dx,dy,input.jump===true,input.dash===true||input.dive===true,clock,seq);
     }
     // Persist the last acknowledged input, not its extrapolation to request time.
     // New inputs may already have happened while this response is in flight.
@@ -209,12 +214,14 @@ function modifyArena(room:Room,p:Player,body:Record<string,unknown>,q:CustomQues
   // behind another request. Keep validation/cooldown time authoritative.
   const at=Number(body.at),actionClock=Number.isFinite(at)?Math.max(p.runner.t,Math.min(now,Math.max(now-6000,at))):now;
   const r=advanceArenaPlayer(room,p,actionClock);
-  if(action==='arena-close'){r.open=false;r.dx=0;r.dy=0;r.inputUntil=now;return;}
+  if(action==='arena-close'){closeArenaQuestion(r,actionClock);return;}
   if(action==='arena-collect'){
     assert(!r.open&&!r.fallUntil&&r.z<25,'지금은 문제 상자를 열 수 없어요.',409);
-    const b=boxes(room.arena, r.y-100,r.y+100).find(b=>b.id===body.box);assert(b&&!r.boxes.includes(b.id)&&Math.hypot(b.x-r.x,b.y-r.y)<100,'가까운 문제 상자를 찾아 주세요.',409);
+    const b=boxes(room.arena, r.y-100,r.y+100).find(b=>b.id===body.box);assert(b&&boxWait(r,b.id,actionClock)===0&&Math.hypot(b.x-r.x,b.y-r.y)<100,'가까운 문제 상자를 찾아 주세요. 사용한 상자는 8초 뒤 다시 생깁니다.',409);
     if(p.turn.correct||p.turn.revealed){if(!p.deck.length)p.deck=deckFor(room);if(p.deck.length>1&&p.deck[0]===p.turn.id)p.deck.push(p.deck.shift()!);p.turn=turnFor(p.deck.shift()!);}
-    r.boxes.push(b.id);r.open=true;r.dx=0;r.dy=0;r.z=0;r.vz=0;r.knockX=0;r.knockY=0;r.inputUntil=now;return;
+    if(!r.boxes.includes(b.id))r.boxes.push(b.id);
+    r.boxReadyAt={...Object.fromEntries(Object.entries(r.boxReadyAt||{}).filter(([,ready])=>ready>actionClock)),[b.id]:actionClock+BOX_RESPAWN};
+    r.questionBox=b.id;r.open=true;r.dash=false;r.dx=0;r.dy=0;r.z=0;r.vz=0;r.knockX=0;r.knockY=0;r.inputUntil=now;return;
   }
   if(action==='answer'){
     assert(r.open,'문제 상자를 먼저 획득해 주세요.',409);const retry=p.turn.answered&&p.turn.correct===false&&!p.turn.revealed;
@@ -238,7 +245,7 @@ function modifyArena(room:Room,p:Player,body:Record<string,unknown>,q:CustomQues
         p.turn.reward={type:'energy',text:room.arena!.energy?'에너지 충전 완료':'정답 확인 완료'};
         notice(p,'정답! '+(room.arena!.energy?`에너지 +${Math.round(charged)} · `:'')+'가방의 아이템 3개는 그대로 유지');
       }
-      r.open=false;r.dx=0;r.dy=0;r.inputUntil=now;
+      closeArenaQuestion(r,actionClock);
     }
     else{p.turn.wrongChoices=[...(p.turn.wrongChoices||[]),choice];p.turn.nonce=randomUUID();p.answerAt=now+1000;}
     p.stats[q.id]=stat;return;

@@ -15,6 +15,6 @@ class Timeline{
   this.received=at;this.running=running;this.ready=true;return this.now(at);
  }
 }
-function reconcile(M,source,pending,clock,arena,effects,id){let r=source;for(const event of pending){if(event.seq<=source.seq)continue;const at=Math.max(r.t,Math.min(clock,event.at));r=M.advanceRunner(r,at,arena,effects,id);r=M.control(r,event.dx,event.dy,event.jump,event.dive,at,event.seq);}return M.advanceRunner(r,clock,arena,effects,id);}
+function reconcile(M,source,pending,clock,arena,effects,id){let r=source;for(const event of pending){if(event.seq<=source.seq)continue;const at=Math.max(r.t,Math.min(clock,event.at));r=M.advanceRunner(r,at,arena,effects,id);r=M.control(r,event.dx,event.dy,event.jump,event.dash??event.dive,at,event.seq);}return M.advanceRunner(r,clock,arena,effects,id);}
 window.quizArenaSync={Timeline,reconcile};
 })();
