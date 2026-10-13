@@ -1,9 +1,9 @@
-import {glossaryView,ionsView,formulasView,contextDefinition,chemistryAction,CHEM_RECORDS,MOLECULES} from './chemistry.mjs?v=20261013b';
+import {glossaryView,ionsView,formulasView,contextDefinition,chemistryAction,CHEM_RECORDS,MOLECULES} from './chemistry.mjs?v=20261013c';
 import {ELEMENTS,atom,MATERIALS,PARTICLES,DISCOVERIES,MOLECULE_LAYOUTS,ATOM_COLORS} from './data.mjs';
 import {periodicExplorer,stateBadge} from './periodic-view.mjs';
 import {SHOWN_GROUPS} from './element-features.mjs';
 import {createPresentation} from './presentation.mjs';
-import {freshExplorer,restoreExplorer} from './exploration.mjs?v=20261013b';
+import {freshExplorer,restoreExplorer} from './exploration.mjs?v=20261013c';
 const MODE_INFO={middle:{label:'중학교 · 중2'},high:{label:'고등학교 · 확장'}};
 import {normalizeMode,readContext,makeLessonLink,storageKey} from './session.mjs';
 

@@ -1,4 +1,4 @@
-import {freshChem,restoreChem,CHEM_RECORDS} from './chemistry.mjs?v=20261013b';
+import {freshChem,restoreChem,CHEM_RECORDS} from './chemistry.mjs?v=20261013c';
 import {MATERIALS, DISCOVERIES} from './data.mjs';
 
 const modeOf = mode => mode === 'high' ? 'high' : 'middle';
