@@ -1,4 +1,3 @@
-import atomExplorer from '../public/labs/atom-explorer/program.json';
 import quizRally from '../public/labs/quiz-rally/program.json';
 import matterZoom from '../public/labs/matter-zoom/program.json';
 import type { ProgramAsset } from './program-assets';
@@ -30,4 +29,4 @@ export type Program = {
   likeCount?: number;
 };
 
-export const programs: Program[] = [atomExplorer, matterZoom, quizRally];
+export const programs: Program[] = [matterZoom, quizRally];

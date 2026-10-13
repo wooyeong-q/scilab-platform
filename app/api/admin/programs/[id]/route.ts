@@ -35,7 +35,7 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ id
       worksheet_url=${String(body.worksheetUrl || '')}, ppt_url=${String(body.pptUrl || '')},
       video_url=${String(body.videoUrl || '')}, source_url=${String(body.sourceUrl || '')},
       guide_url=${String(body.guideUrl || '')}, assets=COALESCE(${assetJson}::jsonb,assets), updated_at=NOW()
-    WHERE id=${id}
+    WHERE id=${id} AND deleted_at IS NULL
     RETURNING id
   `;
   if (!updated.length) return NextResponse.json({ error: '프로그램을 찾을 수 없습니다.' }, { status: 404 });
@@ -47,7 +47,16 @@ export async function DELETE(_request: Request, { params }: { params: Promise<{ 
   if (!(await isAdmin())) return NextResponse.json({ error: '인증이 필요합니다.' }, { status: 401 });
   const { id } = await params;
   await ensureDatabase();
-  await sql!`DELETE FROM programs WHERE id=${id}`;
+  // Preserve the unique ID as a deletion marker; remove attachment bytes atomically.
+  await sql!`
+    WITH deleted AS (
+      UPDATE programs SET deleted_at=COALESCE(deleted_at,NOW()), is_published=FALSE,
+        assets='[]'::jsonb, updated_at=NOW()
+      WHERE id=${id}
+      RETURNING id
+    )
+    DELETE FROM program_assets WHERE program_id IN (SELECT id FROM deleted)
+  `;
   revalidatePrograms();
   return NextResponse.json({ ok: true });
 }

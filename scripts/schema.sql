@@ -30,6 +30,9 @@ ALTER TABLE programs ADD COLUMN IF NOT EXISTS guide_url TEXT NOT NULL DEFAULT ''
 
 ALTER TABLE programs ADD COLUMN IF NOT EXISTS assets JSONB NOT NULL DEFAULT '[]'::jsonb;
 
+-- Keep a deletion marker so build-time registration cannot recreate a removed program.
+ALTER TABLE programs ADD COLUMN IF NOT EXISTS deleted_at TIMESTAMPTZ;
+
 CREATE TABLE IF NOT EXISTS program_assets (
     id TEXT PRIMARY KEY,
     program_id TEXT NOT NULL REFERENCES programs(id) ON DELETE CASCADE,

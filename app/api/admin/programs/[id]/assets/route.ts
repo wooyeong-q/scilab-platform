@@ -10,7 +10,7 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
   let metadata;
   try { const body = await request.json(); metadata = assetMetadata(body.name, body.size, body.kind); }
   catch (error) { return NextResponse.json({ error: error instanceof Error ? error.message : '파일 정보를 확인해 주세요.' }, { status: 400 }); }
-  const programs = await sql!`SELECT id FROM programs WHERE id=${id}`;
+  const programs = await sql!`SELECT id FROM programs WHERE id=${id} AND deleted_at IS NULL`;
   if (!programs.length) return NextResponse.json({ error: '프로그램을 찾을 수 없습니다.' }, { status: 404 });
   // Remove abandoned drafts only. Published references always survive cleanup.
   await sql!`DELETE FROM program_assets a WHERE a.program_id=${id} AND a.created_at < NOW() - INTERVAL '24 hours'

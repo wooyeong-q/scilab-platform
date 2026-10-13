@@ -8,11 +8,11 @@ export async function registerQuizRally(sql,p){
  {fetchOptions:{signal:AbortSignal.timeout(15000)}});
  // Upgrade only the untouched original catalog entry; preserve teacher/admin edits.
  await sql.query(`UPDATE programs SET title=$2,summary=$3,description=$4,tags=$5::jsonb,icon=$6
- WHERE id=$1 AND title='퀴즈 챌린지' AND summary='정답을 맞히고 보상 상자를 열어 아이템을 모으는, 우리 반 함께 과학 퀴즈 게임'`,
+ WHERE id=$1 AND deleted_at IS NULL AND title='퀴즈 챌린지' AND summary='정답을 맞히고 보상 상자를 열어 아이템을 모으는, 우리 반 함께 과학 퀴즈 게임'`,
  [p.id,p.title,p.summary,p.description,JSON.stringify(p.tags),p.icon],{fetchOptions:{signal:AbortSignal.timeout(15000)}});
  // Migrate the untouched earlier city description, without replacing administrator edits.
  await sql.query(`UPDATE programs SET summary=$2,description=$3,tags=$4::jsonb
- WHERE id=$1 AND title='도시 재가동' AND summary IN ('문제를 해결해 정전된 도시를 밝히는 학급 게임. 엑셀·그림 문제와 오답 재도전 지원','도시 코스의 문제 캡슐을 획득해 에너지를 충전하는 학급 레이스. 엑셀·그림 문제 지원')`,
+ WHERE id=$1 AND deleted_at IS NULL AND title='도시 재가동' AND summary IN ('문제를 해결해 정전된 도시를 밝히는 학급 게임. 엑셀·그림 문제와 오답 재도전 지원','도시 코스의 문제 캡슐을 획득해 에너지를 충전하는 학급 레이스. 엑셀·그림 문제 지원')`,
  [p.id,p.summary,p.description,JSON.stringify(p.tags)],{fetchOptions:{signal:AbortSignal.timeout(15000)}});
 }
 async function main(){
