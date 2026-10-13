@@ -1,16 +1,17 @@
+import {freshChem,restoreChem,CHEM_RECORDS} from './chemistry.mjs?v=20261013';
 import {MATERIALS, DISCOVERIES} from './data.mjs';
 
 const modeOf = mode => mode === 'high' ? 'high' : 'middle';
 const integer = (value, min, max) => Number.isInteger(value) && value >= min && value <= max;
 const elementNumber = value => integer(value, 1, 20);
 const observedAtoms = new Set(Object.values(MATERIALS).flatMap(m => m.atoms));
-const drawers = new Set(['', 'compare', 'number', 'charge']);
+const drawers = new Set(['', 'compare', 'number', 'charge', 'ions', 'formulas', 'definitions']);
 
 // This is an observation workspace. Opening a view never depends on a quiz,
 // a completed chapter, or a record inherited from the earlier lesson flow.
 export function freshExplorer(mode = 'middle') {
   return {
-    version: 5, mode: modeOf(mode), material: null, level: 0, deepest: 0,
+    version: 6, chem: freshChem(), mode: modeOf(mode), material: null, level: 0, deepest: 0,
     z: 8, selected: 0, visited: [], seen: [], records: [],
     tableZ: 8, tableSeen: [], numberZ: 8, compareZ: 8, tableAxis: 'group',
     chargeZ: 11, chargeVariant: 'neutral', drawer: '', upgraded: false,
@@ -23,7 +24,7 @@ export function restoreExplorer(raw, mode = 'middle') {
   let saved;
   try { saved = JSON.parse(raw); } catch { return state; }
   if (!saved || typeof saved !== 'object' || Array.isArray(saved) ||
-      ![2, 3, 4, 5].includes(saved.version) || saved.mode !== state.mode) return state;
+      ![2, 3, 4, 5, 6].includes(saved.version) || saved.mode !== state.mode) return state;
 
   const material = typeof saved.material === 'string' &&
     Object.hasOwn(MATERIALS, saved.material) ? saved.material : null;
@@ -48,7 +49,7 @@ export function restoreExplorer(raw, mode = 'middle') {
   const arrays = [
     ['visited', value => typeof value === 'string' && Object.hasOwn(MATERIALS, value)],
     ['seen', value => typeof value === 'string' && /^\d+:[pne]$/.test(value) && observedAtoms.has(Number(value.split(':')[0]))],
-    ['records', value => typeof value === 'string' && value !== 'final' && value !== 'shells' && Object.hasOwn(DISCOVERIES, value)],
+    ['records', value => typeof value === 'string' && value !== 'final' && value !== 'shells' && (Object.hasOwn(DISCOVERIES, value) || Object.hasOwn(CHEM_RECORDS, value))],
     ['tableSeen', elementNumber],
   ];
   for (const [key, valid] of arrays) {
@@ -70,6 +71,8 @@ export function restoreExplorer(raw, mode = 'middle') {
   }
   if (typeof saved.drawer === 'string' && drawers.has(saved.drawer)) state.drawer = saved.drawer;
   if (saved.tableAxis === 'group' || saved.tableAxis === 'period') state.tableAxis = saved.tableAxis;
+  state.chem = restoreChem(saved.chem);
   state.upgraded = saved.version < 5 || saved.upgraded === true;
   return state;
 }
+
