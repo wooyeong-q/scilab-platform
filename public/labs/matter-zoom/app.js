@@ -1,9 +1,9 @@
-import {glossaryView,ionsView,formulasView,contextDefinition,chemistryAction,CHEM_RECORDS,MOLECULES} from './chemistry.mjs?v=20261013c';
+import {glossaryView,ionsView,ionHelpView,formulasView,contextDefinition,chemistryAction,CHEM_RECORDS,MOLECULES} from './chemistry.mjs?v=20261013d';
 import {ELEMENTS,atom,MATERIALS,PARTICLES,DISCOVERIES,MOLECULE_LAYOUTS,ATOM_COLORS} from './data.mjs';
 import {periodicExplorer,stateBadge} from './periodic-view.mjs';
 import {SHOWN_GROUPS} from './element-features.mjs';
-import {createPresentation} from './presentation.mjs';
-import {freshExplorer,restoreExplorer} from './exploration.mjs?v=20261013c';
+import {createPresentation} from './presentation.mjs?v=20261013d';
+import {freshExplorer,restoreExplorer} from './exploration.mjs?v=20261013d';
 const MODE_INFO={middle:{label:'중학교 · 중2'},high:{label:'고등학교 · 확장'}};
 import {normalizeMode,readContext,makeLessonLink,storageKey} from './session.mjs';
 
@@ -37,18 +37,21 @@ function switchMode(mode){
  const url=new URL(location.href);url.search='';url.searchParams.set('mode',mode);history.replaceState(null,'',url);$('#dialog').close();particle=null;exploded=false;render(true);
 }
 function render(focus=false){
+ const viewport={top:window.scrollY,left:window.scrollX};
  const tableScroll=$('.periodic-scroll')?.scrollLeft;
  const expanded=new Set([...document.querySelectorAll('#app details[open]')].map(d=>d.querySelector('summary')?.textContent));
  const prior=document.activeElement,action=prior?.dataset?.action,value=prior?.dataset?.value,change=prior?.dataset?.change;
  presentation.beforeRender();
  $('#mode-label').textContent=high()?'고등학교 · 확장':'중학교 · 중2';$('.brand').href=location.pathname+location.search;
  $('#app').innerHTML=scopeStrip()+(needsResume?resumeScreen():state.material?workspace():landing());
+ document.body.classList.toggle('ion-lab-open',!needsResume&&Boolean(state.material)&&state.drawer==='ions');
  if(tableScroll!==undefined&&$('.periodic-scroll'))$('.periodic-scroll').scrollLeft=tableScroll;
  document.querySelectorAll('#app details').forEach(d=>{if(expanded.has(d.querySelector('summary')?.textContent))d.open=true;});
  presentation.afterRender();
  if(focus)$(presentation.active?'#presentation h1':'#app h1')?.focus({preventScroll:true});
  else if(action)document.querySelector(`${presentation.active?'#presentation':'#app'} ${prior?.tagName==='BUTTON'?'button':''}[data-action="${CSS.escape(action)}"][data-value="${CSS.escape(value||'')}"]`)?.focus({preventScroll:true});
  else if(change)document.querySelector(`[data-change="${CSS.escape(change)}"]`)?.focus({preventScroll:true});
+ if(!focus)window.scrollTo({...viewport,behavior:'instant'});
  save();
 }
 function landing(){return `<section class="explorer-landing">${question('확대! 물질 탐험 연구소','물질을 확대하면 무엇이 보일까?','물질을 고르고, 원자 속까지 들어가 보세요.')}<p class="landing-learning-note">확대 관찰 · 개념 사전 · 이온 형성 · 화학식과 이온식 만들기</p><div class="materials-choice">${Object.entries(MATERIALS).map(([id,m])=>btn(`${photo(id)}<div><div class="material-meta"><small>${m.formula}</small>${stateBadge(m.roomState)}</div><h2>${m.name}</h2><p>${m.card}</p><b>관찰 시작 ＋</b></div>`,'material',id,`material-choice ${id}`)).join('')}</div><p class="model-note-inline">상태 표시는 상온(20°C), 1기압 기준이에요. 원자와 전자는 맨눈으로 직접 볼 수 없어요. 확대 후에는 이해를 돕는 모형을 사용하며, 색·크기·간격은 실제와 다릅니다.</p></section>`;}
@@ -72,7 +75,7 @@ function particleExplanation(){
 function counts(a,e=a.z){return `<dl class="particle-counts"><div><dt><span class="dot p">+</span> 양성자</dt><dd>${a.z}개</dd></div><div><dt><span class="dot n">0</span> 중성자 · 이 원자의 예</dt><dd>${a.n}개</dd></div><div><dt><span class="dot e">−</span> 전자</dt><dd>${e}개</dd></div></dl>`;}
 
 function conceptMenu(){return `<nav class="concept-menu" aria-label="관찰과 개념 선택">${btn('확대 관찰','close-drawer','',!state.drawer?'selected':'',`aria-pressed="${!state.drawer}"`)}${[['compare','원소 비교'],['number','주기율표'],['charge','전기적 중성'],['ions','이온·이온식'],['formulas','화학식 만들기'],['definitions','개념 사전']].map(([key,title])=>btn(title,'open-drawer',key,state.drawer===key?'selected':'',`aria-pressed="${state.drawer===key}"`)).join('')}</nav>`;}
-function drawer(){const titles={compare:'원소가 다르면 무엇이 다를까?',number:'주기율표에서 원소의 특징을 찾아보세요',charge:'양성자는 +인데, 원자는 왜 중성일까?',ions:'전자를 바꾸고, 이온식으로 나타내기',formulas:'모형에서 화학식으로',definitions:'물질의 구성 · 개념 사전'};return `<section class="concept-drawer" id="concept-drawer" aria-labelledby="drawer-title"><div class="drawer-heading"><h1 id="drawer-title" tabindex="-1">${titles[state.drawer]}</h1>${state.drawer!=="number"?btn("⛶ 크게 보기","present","concept","present-open"):""}${btn('확대 관찰로 돌아가기','close-drawer','','text-button')}</div>${{compare:compareDrawer,number:numberDrawer,charge:chargeDrawer,ions:()=>ionsView(state.chem),formulas:()=>formulasView(state.chem),definitions:glossaryView}[state.drawer]()}</section>`;}
+function drawer(){const titles={compare:'원소가 다르면 무엇이 다를까?',number:'주기율표에서 원소의 특징을 찾아보세요',charge:'양성자는 +인데, 원자는 왜 중성일까?',ions:'전자 수를 바꾸어 이온 만들기',formulas:'모형에서 화학식으로',definitions:'물질의 구성 · 개념 사전'},ions=state.drawer==='ions';return `<section class="concept-drawer ${ions?'ion-drawer':''}" id="concept-drawer" aria-labelledby="drawer-title"><div class="drawer-heading"><h1 id="drawer-title" tabindex="-1">${titles[state.drawer]}</h1>${ions?btn('개념 설명','ion-help','','secondary'):state.drawer!=="number"?btn("⛶ 크게 보기","present","concept","present-open"):""}${btn(ions?'← 확대 관찰':'확대 관찰로 돌아가기','close-drawer','','text-button')}</div>${{compare:compareDrawer,number:numberDrawer,charge:chargeDrawer,ions:()=>ionsView(state.chem),formulas:()=>formulasView(state.chem),definitions:glossaryView}[state.drawer]()}</section>`;}
 function compareDrawer(){const zs=state.z===26?[8,26,79]:[...new Set([1,state.z,8,79])].slice(0,3).sort((a,b)=>a-b);return `<p>${zs.map(z=>atom(z).name).join('·')}의 원자핵을 나란히 살펴보세요.</p><div class="compare-three">${zs.map(z=>{const a=atom(z);return `<section class="compare-specimen"><h2>${a.symbol} <span>${a.name}</span></h2>${atomSVG(z,{nucleus:true,interactive:false})}<p class="proton-count"><span class="dot p">+</span> 양성자 <b>${a.z}개</b></p><p>원자 번호 <b>${a.z}</b></p>${z>20?'<small>그림에는 일부만 표시</small>':''}</section>`;}).join('')}</div><p class="finding"><b>양성자 수가 다르면 원소의 종류가 달라져요.</b> 원자 번호는 양성자 수와 같아요.</p><details class="extension-panel"><summary>전자 수가 달라도 같은 원소일까?</summary><p>나트륨 원자 Na: 양성자 11개 / 전자 11개</p><p>나트륨 이온 Na⁺: 양성자 11개 / 전자 10개</p><p>양성자가 모두 11개이므로 같은 나트륨이에요.</p></details>${high()?'<details class="extension-panel"><summary>고등학교 확장 · 중성자 수가 다르다면?</summary><p>탄소-12: 양성자 6개 + 중성자 6개 → 질량수 12</p><p>탄소-13: 양성자 6개 + 중성자 7개 → 질량수 13</p><p>양성자 수가 같아서 모두 탄소이며, 이러한 원자들을 동위 원소라고 해요.</p></details>':''}`;}
 function numberDrawer(){return periodicExplorer({z:state.numberZ,observedZ:state.z,axis:state.tableAxis,playing:motionPlaying,reduced:reduceMotion()});}
 function chargePairs(p,e){const pairs=Math.min(p,e),net=p-e;return `<div class="charge-pairs"><p><b>+와 − ${pairs}쌍</b> · 서로 더하면 0</p><div aria-hidden="true">${Array.from({length:Math.min(pairs,20)},()=>'<span class="charge-pair">+ −</span>').join('')}</div>${pairs>20?'<p>그림은 20쌍만 표시합니다.</p>':''}<p class="remaining-charge">${net===0?'남는 전하 없음 → 전체적으로 중성':`${net>0?'+':'−'} 전하 1개가 남아요 → ${net>0?'양이온':'음이온'}`}</p></div>`;}
@@ -193,6 +196,7 @@ async function handle(action,value,el){
  case 'particle':if(['p','n','e'].includes(value)){if(value==='e'&&state.level===5)await zoom(4);particle=value;add('seen',`${state.z}:${value}`);record('particles');render();}break;
  case 'explode':exploded=!exploded;render();break;
  case 'open-drawer':openDrawer(value);break;
+ case 'ion-help':modal(ionHelpView(state.chem));break;
  case 'learn-formula':value=value==='carbon-dioxide'?'co2':value;if(Object.hasOwn(MOLECULES,value))chemistryAction(state.chem,'chem-molecule',value);state.chem.formulaKind='molecule';openDrawer('formulas');break;
  case 'close-drawer':state.drawer='';render();document.querySelector('.concept-menu')?.scrollIntoView({block:'nearest'});break;
  case 'compare-atom':if([1,8,79].includes(Number(value))){state.compareZ=Number(value);render();}break;

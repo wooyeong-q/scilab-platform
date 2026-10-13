@@ -7,7 +7,7 @@ export function createPresentation(getState) {
   const toolbar=dialog.querySelector('.presentation-toolbar');
   const targets={observation:['.observation-panel','.model-caption'],table:['.table-axis-choices','.periodic-panel'],feature:['.element-feature'],concept:['.concept-drawer']};
   const titles={observation:'확대 관찰',table:'주기율표',feature:'원소 특징 관찰',concept:'함께 비교하기'};
-  let scope='',moved=[],opener=null,ownsFullscreen=false,fullscreenPending=false,large=false,scrollY=0;
+  let scope='',moved=[],opener=null,ownsFullscreen=false,fullscreenPending=false,large=false,scrollY=0,contentPosition={top:0,left:0};
   const button=(label,action,value='')=>`<button data-action="${action}" data-value="${value}">${label}</button>`;
   function move(node,parent,before=null){
     const times=node.getAnimations({subtree:true}).map(a=>({target:a.effect?.target,name:a.animationName,time:a.currentTime}));
@@ -75,8 +75,8 @@ export function createPresentation(getState) {
   });
   return {
     get active(){return scope;},
-    beforeRender:restore,
-    afterRender:attach,
+    beforeRender(){contentPosition={top:content.scrollTop,left:content.scrollLeft};restore();},
+    afterRender(){attach();if(scope){content.scrollTop=contentPosition.top;content.scrollLeft=contentPosition.left;}},
     handle(action,value,trigger){
       if(action==='present')open(value,trigger);
       else if(action==='presentation-close')close();
@@ -87,3 +87,4 @@ export function createPresentation(getState) {
     },
   };
 }
+

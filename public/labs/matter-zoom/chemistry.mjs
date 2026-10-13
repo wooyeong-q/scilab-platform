@@ -1,4 +1,4 @@
-import {particleModel,particleLegend,atomComparison,conceptComparison,notationComparison} from './chemistry-models.mjs?v=20261013c';
+import {particleModel,particleLegend,atomComparison,conceptComparison,notationComparison} from './chemistry-models.mjs?v=20261013d';
 // Learning models share the existing observation workspace. No electron shells.
 export const IONS={
  Na:{name:'나트륨',ionName:'나트륨 이온',p:11,n:12,charge:1},
@@ -85,28 +85,40 @@ export function contextDefinition(material,level,kind){
  return `<aside class="observation-definition">${terms.map(t=>{const [,d]=GLOSSARY.find(x=>x[0]===t);return `<p><b>${t}</b> ${d}</p>`;}).join('')}<div class="choice-row">${b('개념 사전','open-drawer','definitions','text-button')}${level===2?b('이 분자를 화학식으로 →','learn-formula',material,'secondary'):level>=4?b('전자를 바꾸면? 이온 만들기 →','open-drawer','ions','secondary'):''}</div></aside>`;
 }
 export function ionsView(s){
- const {a,e,q,atTarget}=ionState(s),charge=q>0?'+'+q:String(q);
- const actualName=q===0?`${a.name} 원자`:atTarget?a.ionName:`${a.name}의 전하 ${charge} 상태`;
- const target=ionFormula(s.ion),targetElectrons=a.p-a.charge;
- const status=q===0?'양성자와 전자 수가 같아 중성이에요.':q>0?`전자 ${q}개를 잃어 전체 전하가 +${q}인 양이온 상태예요.`:`전자 ${-q}개를 얻어 전체 전하가 ${q}인 음이온 상태예요.`;
- return `${definition('이온','원자 또는 원자단이 전자를 잃거나 얻어 전하를 띠게 된 입자. 전자 수를 바꾸면 모형과 이온식이 함께 바뀝니다.')}
- <div class="chem-choices" role="group" aria-label="이온이 될 원자 선택">${Object.entries(IONS).map(([key,v])=>b(`${v.name} ${key}`,'chem-ion',key,s.ion===key?'selected':'')).join('')}</div>
- ${steps(['전자 이동','전하 계산','이온식 쓰기'],s.ionStep,'chem-ion-step')}
- <div class="chem-split ion-workspace"><div>${atomComparison(s,a,ionFormula)}
- <p class="chem-model-note">왼쪽은 변화 전의 중성 원자, 오른쪽은 지금의 전자 수를 나타냅니다. 전자껍질을 생략한 모형이며, 점의 위치·크기·거리는 실제와 다릅니다.</p></div>
- <section class="chem-lab"><p class="eyebrow">전자 수 · 모형 · 이온식 함께 바꾸기</p><h2>${actualName}</h2>
- <dl class="chem-counts" aria-live="polite"><div><dt>양성자 <span>변하지 않음</span></dt><dd>${a.p}</dd></div><div><dt>전자 <span>모형 속 전자와 같은 수</span></dt><dd>${e}</dd></div><div><dt>전체 전하</dt><dd>${q===0?'0 · 중성':charge}</dd></div></dl>
- <div class="electron-edit-controls" role="group" aria-label="전자 개수 직접 바꾸기">${b('− 전자 1개 제거','chem-electron-adjust',-1,'secondary',e<=a.p-3)}${b('+ 전자 1개 추가','chem-electron-adjust',1,'primary',e>=a.p+3)}${b('중성 원자로','chem-neutral','','text-button')}</div>
- <p class="chem-message" role="status">${status}</p>
- ${s.ionStep===0?`<p>대표 이온 <b>${target}</b>의 전자 수는 <b>${targetElectrons}개</b>예요. 전자를 한 개씩 바꾸어 비교해 보세요.</p>${q!==0?b('전하 계산하기 →','chem-ion-step',1,'primary'):''}`:s.ionStep===1?`<div class="chem-equation">(+${a.p}) + (−${e}) = <b>${charge}</b></div><p>양성자 1개는 +1, 전자 1개는 −1로 세어요. 중성자의 전하는 0이에요.</p>${b('이온식과 비교하기 →','chem-ion-step',2,'primary')}`:`<p class="notation-label">지금 모형의 이온식${q===0?' · 중성이면 전하를 쓰지 않아요':''}</p>
- <div class="ion-notation" aria-label="현재 모형의 이온식">${b(s.ion,'chem-model-focus','protons','notation-part')}${q!==0?`<sup>${b(`${Math.abs(q)===1?'':Math.abs(q)}${q>0?'+':'−'}`,'chem-model-focus','charge','notation-part')}</sup>`:''}</div>
- <div class="chem-notation-controls"><fieldset><legend>전하의 크기</legend>${[1,2,3].map(n=>b(n,'chem-magnitude',n,Math.abs(q)===n?'selected':'')).join('')}</fieldset><fieldset><legend>전하의 부호</legend>${['+','−'].map(sign=>b(sign,'chem-sign',sign,q!==0&&s.sign===sign?'selected':'')).join('')}</fieldset></div>
- <p>전하를 선택해도 <b>전자 수와 모형이 함께 바뀌어요.</b> 위의 +는 전자가 부족함을, −는 전자가 더 많음을 뜻해요. 전하의 크기 1은 생략합니다.</p>
- ${b('대표 이온과 비교','chem-ion-check','','primary')}${s.ionFeedback?`<p class="chem-message" role="status">${s.ionFeedback}</p>`:''}`}
- </section></div>
- <p class="chem-footnote"><b>${a.name}의 대표 이온은 ${target}입니다.</b> 그 밖의 전하 선택은 전자 수와 전하의 관계를 살펴보는 비교용 모형이며, 모두 흔히 생성되는 이온이라는 뜻은 아닙니다. 양성자 ${a.p}개와 중성자 ${a.n}개는 유지됩니다. 중성자 수는 한 동위 원소의 예입니다.</p>
- <div class="chem-next">${b('이온끼리 비율을 맞추어 화학식 만들기 →','chem-go-salts','','secondary')}</div>`;
+ const {a,e,q,atTarget}=ionState(s),charge=q>0?'+'+q:q<0?'−'+Math.abs(q):'0';
+ const kind=q===0?'중성 원자':q>0?'양이온':'음이온';
+ const target=ionFormula(s.ion),status=q===0?'양성자 수 = 전자 수 → 중성':`전자 ${Math.abs(q)}개 ${q>0?'잃음':'얻음'} → ${kind}`;
+ return `<div class="ion-studio" data-ion="${s.ion}">
+  <nav class="ion-elements" aria-label="이온이 될 원자 선택">${Object.entries(IONS).map(([key,v])=>b(`<b>${key}</b><span>${v.name}</span>`,'chem-ion',key,s.ion===key?'selected':'',false,`aria-pressed="${s.ion===key}"`)).join('')}</nav>
+  <div class="ion-studio-main">
+   ${atomComparison(s,a,ionFormula)}
+   <section class="ion-console" aria-label="전자 수 조작과 이온식">
+    <section class="ion-electron-panel"><div class="ion-panel-heading"><h2><span>1</span> 전자 수 바꾸기</h2>${b('중성으로 초기화','chem-neutral','','text-button')}</div>
+     <div class="ion-electron-readout"><span>지금의 전자</span><output aria-label="현재 전자 수">${e}<small>개</small></output><span class="ion-delta">${a.p}개 → ${e}개</span></div>
+     <div class="ion-adjust-buttons" role="group" aria-label="전자 개수 직접 바꾸기">${b('<b aria-hidden="true">−</b><span>전자 1개 제거</span>','chem-electron-adjust',-1,'remove-electron',e<=a.p-3)}${b('<b aria-hidden="true">＋</b><span>전자 1개 추가</span>','chem-electron-adjust',1,'add-electron',e>=a.p+3)}</div>
+    </section>
+    <section class="ion-charge-panel"><h2><span>2</span> 전하 계산하기</h2><dl class="ion-charge-equation" aria-label="양성자 수 빼기 전자 수는 전체 전하"><div><dt>양성자</dt><dd>${a.p}</dd></div><span aria-hidden="true">−</span><div><dt>전자</dt><dd>${e}</dd></div><span aria-hidden="true">=</span><div class="ion-net-charge ${q===0?'neutral':q>0?'positive-ion':'negative-ion'}"><dt>전체 전하</dt><dd>${charge}</dd></div></dl></section>
+    <section class="ion-formula-panel ${q===0?'neutral':q>0?'positive-ion':'negative-ion'}"><div class="ion-panel-heading"><h2><span>3</span> ${q===0?'원소 기호':'이온식'}</h2><span class="ion-kind">${kind}</span></div>
+     <div class="ion-live-formula" aria-label="현재 모형의 이온식">${b(s.ion,'chem-model-focus','protons','notation-part')}${q!==0?`<sup>${b(`${Math.abs(q)===1?'':Math.abs(q)}${q>0?'+':'−'}`,'chem-model-focus','charge','notation-part')}</sup>`:''}</div>
+     <p class="ion-result" role="status">${status}</p>
+     <div class="ion-charge-presets" role="group" aria-label="전하를 선택하면 모형의 전자 수도 바뀝니다">${[-3,-2,-1,0,1,2,3].map(n=>b(n===0?'0':`${Math.abs(n)}${n>0?'+':'−'}`,'chem-charge',n,q===n?'selected':'',false,`aria-label="전하 ${n===0?'0, 중성':Math.abs(n)+(n>0?' 양전하':' 음전하')}" aria-pressed="${q===n}"`)).join('')}</div>
+    </section>
+   </section>
+  </div>
+  <footer class="ion-studio-footer"><div class="ion-target"><span>대표 이온 <b>${target}</b> · 전자 ${a.p-a.charge}개</span>${b('비교 확인','chem-ion-check','','secondary')}</div><p class="ion-studio-feedback" role="status">${s.ionFeedback||(atTarget?'대표 이온과 같은 전자 수예요.':'대표 이온 외의 전하는 전자 수와 전하를 비교하기 위한 모형입니다.')}</p>${b('화학식 만들기 →','chem-go-salts','','secondary')}</footer>
+ </div>`;
 }
+export function ionHelpView(s){
+ const {a}=ionState(s);
+ return `<h2>전자를 바꾸면 이온이 돼요</h2><div class="ion-help-content">${definition('이온','원자 또는 원자단이 전자를 잃거나 얻어 전하를 띠게 된 입자.')}
+ <p><b>전자 제거 → 양이온(+)</b><br>양성자보다 전자가 적어져 전체 전하가 양수가 됩니다.</p>
+ <p><b>전자 추가 → 음이온(−)</b><br>양성자보다 전자가 많아져 전체 전하가 음수가 됩니다.</p>
+ <p><b>전체 전하 = 양성자 수 − 전자 수</b><br>양성자는 +1, 전자는 −1로 계산합니다. 중성자는 전하가 0입니다.</p>
+ <p><b>이온식은 원소 기호 오른쪽 위에 전하를 표시합니다.</b><br>전하의 크기 1은 생략합니다. 예: Na⁺, Mg²⁺, O²⁻. 위 숫자는 원자의 개수가 아닙니다.</p>
+ <p>${a.name}의 대표 이온은 <b>${ionFormula(s.ion)}</b>입니다. 다른 전하도 비교용으로 선택할 수 있지만 모두 흔히 생성되는 이온이라는 뜻은 아닙니다.</p>
+ <p class="note">양성자 ${a.p}개와 중성자 ${a.n}개는 유지됩니다. 중성자 수는 한 동위 원소의 예입니다. 전자껍질을 생략한 모형으로, 점의 위치·크기·거리는 실제와 다릅니다.</p></div>`;
+}
+
 function moleculePicture(m,focus=''){const colors={H:'#e4f5fa',O:'#ffad99',C:'#a7bbce',N:'#9abfff'};return `<svg class="formula-scene" viewBox="0 0 460 285" role="group" aria-label="${m.name} 분자 하나: ${m.parts.map(([s,n])=>s+' 원자 '+n+'개').join(', ')}">${m.bonds.map(([a,b])=>`<line x1="${m.points[a][1]}" y1="${m.points[a][2]}" x2="${m.points[b][1]}" y2="${m.points[b][2]}" stroke="#668692" stroke-width="15"/>`).join('')}${m.points.map(([s,x,y])=>`<g class="model-molecule-atom ${focus===s?'is-emphasized':focus?'is-muted':''}" role="button" tabindex="0" data-action="chem-atom-focus" data-value="${s}" aria-label="${s} 원자를 모형과 식에서 강조"><circle cx="${x}" cy="${y}" r="33" fill="${colors[s]}"/><text x="${x}" y="${y+8}" text-anchor="middle" fill="#142d3b" font-size="25" font-weight="700">${s}</text></g>`).join('')}<text x="230" y="272" text-anchor="middle" fill="#aac5cf" font-size="17">${m.name} 분자 하나 · 원자 수를 세어 보세요</text></svg>`;}
 function counter(label,n,key){const plain=label.replace(/<[^>]*>/g,'');return `<div class="chem-counter"><span>${label}</span><div>${b('−','chem-count',key+':-1','',n<=1,`aria-label="${plain} 개수 줄이기"`)}<output aria-label="${plain} 개수">${n}</output>${b('+','chem-count',key+':1','',n>=6,`aria-label="${plain} 개수 늘리기"`)}</div></div>`;}
 function moleculesView(s){const m=MOLECULES[s.molecule];return `<div class="chem-choices" role="group" aria-label="분자 선택">${Object.entries(MOLECULES).map(([k,v])=>b(v.name,'chem-molecule',k,k===s.molecule?'selected':'')).join('')}</div>${steps(['종류 찾기','개수 세기','식으로 쓰기'],s.formulaStep,'chem-formula-step')}<div class="chem-split"><div>${moleculePicture(m,s.atomFocus)}<div class="model-formula-linked" aria-label="관찰 모형의 화학식">${m.parts.map(([symbol,n])=>b(symbol+sub(n),'chem-atom-focus',symbol,s.atomFocus===symbol?'selected':'',false,`aria-pressed="${s.atomFocus===symbol}"`)).join('')}</div><p class="model-explanation" role="status">${s.atomFocus?`모형에서 ${s.atomFocus} 원자 ${m.parts.find(([symbol])=>symbol===s.atomFocus)[1]}개를 강조했어요.`:'원자 또는 식의 기호·아래 숫자를 누르면 같은 원자들이 강조돼요.'}</p><p class="chem-model-note">원자의 색·크기·배열을 단순화한 모형이며, 선은 원자들이 연결되어 있음을 뜻해요.</p></div><section class="chem-lab"><h2>${['어떤 원소로 이루어져 있나요?','각 원자는 몇 개씩 있나요?','원소 기호 오른쪽 아래에 개수를 쓰세요'][s.formulaStep]}</h2>${s.formulaStep===0?`<div class="chem-symbols">${m.parts.map(([sym])=>b(sym,'chem-atom-focus',sym,s.atomFocus===sym?'selected':'')).join('')}</div><p>이 예의 원소 기호 순서는 <b>${m.parts.map(([sym])=>sym).join(' → ')}</b>입니다. 원소 기호의 대소문자를 구분해요.</p>${b('원자 수 세기 →','chem-formula-step',1,'primary')}`:`${m.parts.map(([sym],i)=>counter(sym+' 원자',s.counts[i],'m'+i)).join('')}<div class="chem-formula-preview">${s.formulaStep===2?m.parts.map(([symbol],i)=>b(symbol+sub(s.counts[i]),'chem-atom-focus',symbol,'notation-part')).join(''):m.parts.map(([sym],i)=>`${sym} × ${s.counts[i]}`).join(' + ')}</div><p>${s.formulaStep===2?'원자 수는 오른쪽 <b>아래</b>에 작게 써요. 원자 1개는 숫자 1을 생략해요.':'그림 속 분자 하나를 기준으로 원자 수를 맞춰 보세요.'}</p>${b(s.formulaStep===1?'개수 확인하고 식 만들기 →':'화학식 확인','chem-molecule-check','','primary')}<p class="chem-message" role="status">${s.formulaFeedback||'숫자를 바꾸어 모형과 연결해 보세요.'}</p>`}</section></div>${notationComparison(s.notationFocus)}<p class="chem-footnote">H₂O·CO₂처럼 분자를 이루는 원자의 실제 수를 나타내는 화학식을 <b>분자식</b>이라고 해요. 금(Au)·철(Fe)은 원자가 연결된 금속, 헬륨(He)은 원자가 따로 존재하는 기체이며 원소 기호로 나타내요.</p>`;}
@@ -125,9 +137,10 @@ export function chemistryAction(s,action,value){
  case 'chem-electron-adjust':if([-1,1].includes(i)){setIonElectrons(s,e+i);if(ionState(s).atTarget)result.record='ions';}break;
  case 'chem-neutral':setIonElectrons(s,a.p);break;
  case 'chem-ion-step':if([0,1,2].includes(i)){if(i===0||q!==0)s.ionStep=i;else result.message='전자를 추가하거나 제거해 이온을 만든 뒤 비교해 보세요.';}break;
+ case 'chem-charge':if(Number.isInteger(i)&&i>=-3&&i<=3){setIonElectrons(s,a.p-i);if(ionState(s).atTarget)result.record='ions';}break;
  case 'chem-magnitude':if([1,2,3].includes(i))setIonElectrons(s,a.p-(s.sign==='−'?-i:i));break;
  case 'chem-sign':if(['+','−'].includes(value))setIonElectrons(s,a.p-(value==='−'?-1:1)*(Math.abs(q)||1));break;
- case 'chem-ion-check':{s.ionFeedback=full?`맞아요! ${ionFormula(s.ion)} · 전자 ${e}개인 ${a.ionName}입니다.`:`지금 모형은 ${ionFormula(s.ion,q)}, 전자 ${e}개입니다. 대표 이온 ${ionFormula(s.ion)}은 전자 ${a.p-a.charge}개이므로 전자 수를 다시 비교해 보세요.`;if(full)result.record='ionNotation';break;}
+ case 'chem-ion-check':{s.ionFeedback=full?`맞아요! ${ionFormula(s.ion)} · 전자 ${e}개인 ${a.ionName}입니다.`:`지금 전자 ${e}개 · 대표 이온 ${ionFormula(s.ion)}은 ${a.p-a.charge}개. 다시 비교해 보세요.`;if(full)result.record='ionNotation';break;}
  case 'chem-go-salts':s.formulaKind='ionic';s.formulaFeedback='';result.drawer='formulas';break;
  case 'chem-kind':if(['molecule','ionic'].includes(value)){s.formulaKind=value;s.formulaFeedback='';}break;
  case 'chem-molecule':if(Object.hasOwn(MOLECULES,value)){s.molecule=value;s.atomFocus='';s.counts=MOLECULES[value].parts.map(()=>1);s.formulaStep=0;s.formulaFeedback='';}break;

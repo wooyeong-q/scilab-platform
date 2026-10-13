@@ -95,3 +95,11 @@ test('legacy ion answers migrate from actual electron movement, removing inconsi
  assertLiveModel(restored,10,1);assert.equal(restored.ionStep,2);
  const current=restoreChem({...restored,electronCount:13,moved:1,sign:'+',magnitude:1});assertLiveModel(current,13,-2);
 });
+test('single-screen charge buttons synchronize all models, including neutral',()=>{
+ const s=freshChem();
+ for(const symbol of Object.keys(IONS)){
+  chemistryAction(s,'chem-ion',symbol);
+  for(const q of [-3,-2,-1,0,1,2,3]){chemistryAction(s,'chem-charge',String(q));assertLiveModel(s,IONS[symbol].p-q,q);}
+ }
+ const before=s.electronCount;chemistryAction(s,'chem-charge','9');assert.equal(s.electronCount,before);
+});
