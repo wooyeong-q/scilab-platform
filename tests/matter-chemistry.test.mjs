@@ -24,3 +24,29 @@ test('all molecule builders use actual atom counts and omit one',()=>{
 });
 test('old observation records migrate and new learning progress survives reload',()=>{const s=freshExplorer();s.version=5;s.material='water';s.level=4;s.deepest=4;s.records=['structure'];delete s.chem;const restored=restoreExplorer(JSON.stringify(s));assert.equal(restored.level,4);assert.deepEqual(restored.records,['structure']);assert.equal(restored.chem.ion,'Na');restored.drawer='ions';restored.records.push('ionNotation');restored.chem.ion='Mg';restored.chem.moved=2;restored.chem.ionStep=2;const again=restoreExplorer(JSON.stringify(restored));assert.equal(again.drawer,'ions');assert.equal(again.chem.moved,2);assert.ok(again.records.includes('ionNotation'));});
 test('invalid stored/input state is bounded',()=>{const s=restoreChem({ion:'<script>',moved:999,ionStep:2,magnitude:-1,counts:[100],salt:'constructor'});assert.equal(s.ion,'Na');assert.equal(s.moved,0);assert.equal(s.ionStep,0);assert.deepEqual(s.counts,[1,1]);for(let i=0;i<20;i++)chemistryAction(s,'chem-count','positive:1');assert.equal(s.positive,6);chemistryAction(s,'chem-count','__proto__:1');assert.ok(!ionsView(s).includes('undefined'));assert.ok(glossaryView().includes('원소 기호'));});
+
+const {particleModel,conceptComparison,notationComparison}=await import('../public/labs/matter-zoom/chemistry-models.mjs');
+test('particle diagrams contain the exact proton, neutron and electron counts',()=>{
+ for(const [symbol,a] of Object.entries(IONS))for(const e of [a.p,a.p-a.charge]){
+  const svg=particleModel({symbol,p:a.p,n:a.n,e});
+  for(const [type,count] of [['protons',a.p],['neutrons',a.n],['electrons',e]])assert.equal((svg.match(new RegExp('data-particle-kind="'+type+'"','g'))||[]).length,count,symbol+' '+type);
+ }
+});
+test('charge emphasis identifies exactly the net charge without changing the nucleus',()=>{
+ for(const [symbol,a] of Object.entries(IONS)){
+  const svg=particleModel({symbol,p:a.p,n:a.n,e:a.p-a.charge,focus:'charge'});
+  assert.equal((svg.match(/is-emphasized/g)||[]).length,Math.abs(a.charge),symbol);
+ }
+});
+test('formula selections highlight matching atoms and preserve saved progress',()=>{
+ const s=freshChem();chemistryAction(s,'chem-atom-focus','H');assert.equal(s.atomFocus,'H');
+ const html=formulasView(s);assert.equal((html.match(/model-molecule-atom is-emphasized/g)||[]).length,2);
+ chemistryAction(s,'chem-notation-focus','coefficient');assert.equal(restoreChem(s).notationFocus,'coefficient');
+ chemistryAction(s,'chem-salt-focus','negative');s.formulaKind='ionic';assert.match(formulasView(s),/염화 이온 하나의 내부/);
+ chemistryAction(s,'chem-molecule','co2');assert.equal(s.atomFocus,'');
+ const restored=restoreChem({...s,atomFocus:'<script>',modelFocus:'bad',saltFocus:'bad'});assert.equal(restored.atomFocus,'');assert.equal(restored.modelFocus,'all');assert.equal(restored.saltFocus,'positive');
+});
+test('oxygen comparison distinguishes molecule subscript and ion superscript',()=>{
+ const html=conceptComparison();assert.ok(html.includes('O<sub>2</sub>'));assert.ok(html.includes('O<sup>2−</sup>'));assert.match(html,/원자 2개로 된 분자 1개/);assert.match(html,/이온 1개/);
+ assert.equal((notationComparison('coefficient').match(/class="water-unit"/g)||[]).length,3);
+});
