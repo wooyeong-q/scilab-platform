@@ -1,4 +1,7 @@
 /* Global responsive system */
+/* Let the platform use the viewport; keep program cards readable on wide screens. */
+.container{width:calc(100% - clamp(32px,4vw,64px))}
+.programGrid{grid-template-columns:repeat(auto-fill,minmax(300px,1fr))}
 html,body{max-width:100%;overflow-x:hidden}.mobileMenuButton{display:none;border:0;background:#f2f4f7;width:42px;height:42px;border-radius:12px;align-items:center;justify-content:center;color:var(--ink);cursor:pointer}.navLinks>a{display:flex;align-items:center;gap:6px}.programCard,.detailHero,.detailSection,.interactionPanel,.adminCard,.editModal{min-width:0}.adminInfo,.detailCopy,.cardBody{min-width:0}.adminInfo a,.editModal input,.editModal textarea{max-width:100%;overflow-wrap:anywhere}.resourceGrid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}.resourceCard{min-width:0}.footerInner{gap:20px}
 
 @media(max-width:1024px){
