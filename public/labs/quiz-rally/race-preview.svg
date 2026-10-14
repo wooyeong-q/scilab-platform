@@ -1,0 +1,29 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 720 440" fill="none">
+<defs>
+ <linearGradient id="sky" x2="0" y2="440" gradientUnits="userSpaceOnUse"><stop stop-color="#345367"/><stop offset="1" stop-color="#c0d3d7"/></linearGradient>
+ <linearGradient id="road" x1="360" y1="90" x2="260" y2="440" gradientUnits="userSpaceOnUse"><stop stop-color="#4b6475"/><stop offset="1" stop-color="#2a4353"/></linearGradient>
+ <pattern id="windows" width="18" height="22" patternUnits="userSpaceOnUse"><path d="M5 5h5v8H5z" fill="#accbd0" opacity=".5"/></pattern>
+ <g id="tower"><path d="M0 0h62v144H0z" fill="#526f7e"/><path d="m62 0 22-14v144l-22 14z" fill="#385664"/><path d="M0 0 22-14h62L62 0Z" fill="#9bb4bd"/><path d="M6 12h50v120H6z" fill="url(#windows)"/><path d="M13-7h25v-9H13z" fill="#70919f"/><path d="M38-16 9-5v9l-9 5z" fill="#476774"/></g>
+ <g id="crate"><path d="m0-23 13-7 21 0-13 7Z" fill="#9be9d9"/><path d="M0-23h21v24H0z" fill="#32757a" stroke="#8cdcd0"/><path d="m21-23 13-7v24L21 1Z" fill="#1e4b5c"/><path d="M7-17q1-4 6-3 6 3-1 8v3m0 4v2" stroke="#d3fff2" stroke-width="2.5"/></g>
+ <g id="runner"><ellipse cy="7" rx="18" ry="7" fill="#122f42" opacity=".5"/><path d="M-10-9v12h6V-9m8 0V3h6V-9" stroke="#193946" stroke-width="5"/><path d="M-13-28h26v21h-26z" fill="#72c5bb" stroke="#c0e8df" stroke-width="2"/><path d="M-19-29v19m38-19v19" stroke="#547d8d" stroke-width="5"/><path d="M-15-51h30v21h-30z" fill="#85cbbb" stroke="#bdded6" stroke-width="2"/><path d="M-11-46h22v11h-22z" fill="#193f50"/><path d="M-6-41h3m6 0h3" stroke="#c6f8f1" stroke-width="3"/><path d="M-3-56h6v5h-6z" fill="#bcd7d7"/><path d="M-5-23h10v10H-5z" fill="#1b5261"/><path d="m1-22-4 5h4l-2 4 5-6H0z" fill="#a3f0d9"/></g>
+</defs>
+<path fill="url(#sky)" d="M0 0h720v440H0z"/>
+<g opacity=".25" fill="#d0dce0"><path d="M20 164h40v133H20zm73-64h46v166H93zm72 57h36v130h-36zm362-97h53v216h-53zm74 79h38v149h-38zm60-24h42v170h-42z"/></g>
+<g opacity=".5"><use href="#tower" transform="translate(57 207) scale(.64)"/><use href="#tower" transform="translate(603 188) scale(.8)"/><use href="#tower" transform="translate(474 114) scale(.55)"/></g>
+<path d="m157 449 56-168 141-99 64-109h136l-81 151-150 91-27 134z" fill="#203e50" opacity=".25"/>
+<path d="m174 440 47-164 130-95 66-111h109l-68 145-149 92-30 133" fill="#173546"/>
+<path d="m174 420 47-164 130-95 66-111h109l-68 145-149 92-30 133" fill="url(#road)" stroke="#a9c7ce" stroke-width="3"/>
+<path d="m184 420 46-158 128-95L423 52m-154 368 31-139 148-92L518 52" stroke="#63c6c0" stroke-width="4"/>
+<path d="m211 362 70 2m-57-48 69 2m-35-95 58 50m-10-79 53 51m-13-82 61 39m-32-86 66 26" stroke="#91aeb9" stroke-opacity=".23"/>
+<path d="m234 382 13-60 19-41 87-61 45-55 47-88" stroke="#abc4ce" stroke-opacity=".36" stroke-width="2" stroke-dasharray="11 17"/>
+<path d="m179 420 100 0-4 18H175z" fill="#648690"/><path d="M196 419h14v6h-14zm28 0h14v6h-14zm28 0h14v6h-14zm-56 7h14v6h-14zm28 0h14v6h-14zm28 0h14v6h-14z" fill="#ecf3ed"/>
+<use href="#tower" transform="translate(81 274) scale(.86)"/><use href="#tower" transform="translate(478 263) scale(1.12)"/>
+<path d="M540 207v22m-13-7h26" stroke="#9dc1ca" stroke-width="3"/><path d="M479 272h66" stroke="#7bd4c5" stroke-width="3"/>
+<path d="m305 248 45-30v-27l-45 30Z" fill="#b97842" stroke="#edc596"/><path d="m305 221 45-30 6 4-44 30Z" fill="#f4c184"/><path d="m310 224 8-5v11l-8 5m20-24 8-5v11l-8 5" stroke="#413b35" stroke-width="3"/>
+<path d="m388 192 47-31v-24l-47 29Z" fill="#b97842" stroke="#edc596"/><path d="m394 168 8-5v10l-8 5m20-23 8-5v10l-8 5" stroke="#413b35" stroke-width="3"/>
+<use href="#crate" transform="translate(272 286) scale(.8)"/><use href="#crate" transform="translate(440 140) scale(.62)"/>
+<use href="#runner" transform="translate(232 365)"/><use href="#runner" transform="translate(362 213) scale(.68)"/>
+<g stroke="#9ce5d9" stroke-opacity=".6"><path d="m220 383-4 16m15-13-4 13m16-16-4 16"/></g>
+<path d="M36 383v20h28m592-360h28v20" stroke="#c3d6df" stroke-opacity=".45"/>
+<text x="574" y="401" fill="#31596b" font-family="system-ui,sans-serif" font-size="9" font-weight="600" letter-spacing="2">SECTOR 01 / 07</text>
+</svg>
