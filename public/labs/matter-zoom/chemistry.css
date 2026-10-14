@@ -12,11 +12,6 @@
 .electron-edit-controls{display:flex;flex-wrap:wrap;gap:9px;margin:14px 0}.electron-edit-controls button{font-size:16px;flex:1 1 160px}.electron-edit-controls button.primary{margin:0;font-size:16px}.electron-edit-controls .text-button{flex-basis:100%}
 
 /* The ion activity owns the available viewport, including inside the platform iframe. */
-body.ion-lab-open{overflow:hidden}
-body.ion-lab-open>.topbar,body.ion-lab-open #app>.scope-strip,
-body.ion-lab-open .explorer-workspace>:not(.ion-drawer){display:none}
-body.ion-lab-open #app{height:100dvh;width:100%;max-width:none;padding:0;margin:0}
-body.ion-lab-open .explorer-workspace{height:100%;min-height:0}
 .concept-drawer.ion-drawer{height:100%;min-height:0;display:flex;flex-direction:column;gap:10px;padding:12px 18px;border:0;border-radius:0;background:#091c29}
 .ion-drawer .drawer-heading{display:flex;flex-wrap:nowrap;gap:12px;margin:0;flex-shrink:0;min-height:44px}
 .ion-drawer .drawer-heading h1{font-size:clamp(20px,2vw,29px);line-height:1.2;flex:1}

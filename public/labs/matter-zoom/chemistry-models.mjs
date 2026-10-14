@@ -1,11 +1,11 @@
 // Schematic particle diagrams: no electron shells or literal particle sizes.
 export function particleModel({symbol,p,n,e,focus='all',label=''}){
- const q=p-e,positions=Array.from({length:e},(_,i)=>{const t=i*2.39996,r=82+(i%3)*10;return [170+Math.cos(t)*r,142+Math.sin(t)*r];});
+ const q=p-e,positions=Array.from({length:e},(_,i)=>{const t=i*2.39996,r=104+(i%3)*11;return [170+Math.cos(t)*r,142+Math.sin(t)*r];});
  const active=(type,index)=>focus==='all'||focus===type||(focus==='charge'&&(q>0?type==='protons'&&index>=e:type==='electrons'&&index>=p));
  const dot=(type,index,x,y,r,sign)=>`<g class="model-particle ${type} ${active(type,index)?'is-emphasized':'is-muted'}" data-particle-kind="${type}"><circle cx="${x.toFixed(2)}" cy="${y.toFixed(2)}" r="${r}"/><text x="${x.toFixed(2)}" y="${(y+r*.4).toFixed(2)}" font-size="${r*1.4}">${sign}</text></g>`;
- let nucleus='',ip=0,inn=0;
- for(let i=0;i<p+n;i++){const proton=(i%2===0&&ip<p)||inn>=n;const index=proton?ip++:inn++;const t=i*2.39996,r=7.6*Math.sqrt(i);nucleus+=dot(proton?'protons':'neutrons',index,170+Math.cos(t)*r,142+Math.sin(t)*r,5.7,proton?'+':'0');}
- return `<svg class="particle-model" viewBox="0 0 340 280" role="img" aria-label="${label||symbol} 모형: 양성자 ${p}개, 중성자 ${n}개, 전자 ${e}개, 전하 ${q}"><text class="model-caption-svg" x="170" y="20">원자핵 + 주변의 전자</text><circle cx="170" cy="142" r="55" class="nucleus-boundary"/>${nucleus}${positions.map(([x,y],i)=>dot('electrons',i,x,y,9,'−')).join('')}<text class="model-symbol-svg" x="170" y="267">${symbol} · ${e}개의 전자</text></svg>`;
+ let nucleus='',ip=0,inn=0;const particleRadius=Math.min(14,61/(1.85*Math.sqrt(Math.max(1,p+n))));
+ for(let i=0;i<p+n;i++){const proton=(i%2===0&&ip<p)||inn>=n;const index=proton?ip++:inn++;const t=i*2.39996,r=1.85*particleRadius*Math.sqrt(i);nucleus+=dot(proton?'protons':'neutrons',index,170+Math.cos(t)*r,142+Math.sin(t)*r,particleRadius,proton?'+':'0');}
+ return `<svg class="particle-model" viewBox="0 0 340 280" role="img" aria-label="${label||symbol} 모형: 양성자 ${p}개, 중성자 ${n}개, 전자 ${e}개, 전하 ${q}"><text class="model-caption-svg" x="170" y="20">원자핵 + 주변의 전자</text><circle cx="170" cy="142" r="72" class="nucleus-boundary"/>${nucleus}${positions.map(([x,y],i)=>dot('electrons',i,x,y,11,'−')).join('')}<text class="model-symbol-svg" x="170" y="267">${symbol} · ${e}개의 전자</text></svg>`;
 }
 const chip=(name,n,cls)=>`<span class="model-count ${cls}">${name} <b>${n}</b></span>`;
 const chargeText=q=>q===0?'0 · 중성':(q>0?'+':'−')+Math.abs(q);

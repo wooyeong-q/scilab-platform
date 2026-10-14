@@ -7,16 +7,17 @@
   <meta name="description" content="중학교·고등학교 수준을 선택하고 반별 링크로 일곱 가지 물질에서 원자 내부까지 독립적으로 탐험하는 과학 프로그램">
   <title>확대! 물질 탐험 연구소</title>
   <link rel="stylesheet" href="./style.css">
-  <script type="module" src="./app.js?v=20261013d"></script>
+  <script type="module" src="./app.js?v=20261014a"></script>
   <link rel="stylesheet" href="./periodic.css">
   <link rel="stylesheet" href="./element-motion.css">
   <link rel="stylesheet" href="./classroom.css">
-  <link rel="stylesheet" href="./chemistry.css?v=20261013d">
+  <link rel="stylesheet" href="./chemistry.css?v=20261014a">
+  <link rel="stylesheet" href="./board.css?v=20261014a">
 </head>
-<body class="explorer-app">
+<body class="explorer-app teaching-board">
   <header class="topbar">
     <a class="brand" href="./index.html" aria-label="확대! 물질 탐험 연구소"><span class="brand-mark" aria-hidden="true">⌕</span><span>확대! <strong>물질 탐험 연구소</strong><small>MATTER EXPLORATION LAB</small></span></a>
-    <div class="tools"><button class="grade" id="mode-label" data-action="learning-settings">중학교 · 중2</button><button data-action="tools" aria-label="학습 도구와 수업 링크">메뉴 ☰</button></div>
+    <div class="tools"><button data-action="board-fullscreen">⛶ 전체 화면</button><button class="grade" id="mode-label" data-action="learning-settings">중학교 · 중2</button><button data-action="tools" aria-label="학습 도구와 수업 링크">메뉴 ☰</button></div>
   </header>
   <main id="app"></main>
   <div id="feedback" role="status" aria-live="polite" aria-atomic="true"></div>

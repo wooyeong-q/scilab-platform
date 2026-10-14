@@ -1,4 +1,4 @@
-import {freshChem,restoreChem,CHEM_RECORDS} from './chemistry.mjs?v=20261013d';
+import {freshChem,restoreChem,CHEM_RECORDS} from './chemistry.mjs?v=20261014a';
 import {MATERIALS, DISCOVERIES} from './data.mjs';
 
 const modeOf = mode => mode === 'high' ? 'high' : 'middle';
@@ -14,7 +14,7 @@ export function freshExplorer(mode = 'middle') {
     version: 6, chem: freshChem(), mode: modeOf(mode), material: null, level: 0, deepest: 0,
     z: 8, selected: 0, visited: [], seen: [], records: [],
     tableZ: 8, tableSeen: [], numberZ: 8, compareZ: 8, tableAxis: 'group',
-    chargeZ: 11, chargeVariant: 'neutral', drawer: '', upgraded: false,
+    chargeZ: 11, chargeVariant: 'neutral', chargeView:'atom', tableView:'table', compareView:'elements', drawer: '', upgraded: false,
   };
 }
 
@@ -63,14 +63,15 @@ export function restoreExplorer(raw, mode = 'middle') {
   // Start an absent/invalid number selection from the currently observed atom.
   if (!elementNumber(saved.numberZ) && elementNumber(state.z)) state.numberZ = state.z;
 
-  if (saved.chargeZ === 11 || saved.chargeZ === 17) state.chargeZ = saved.chargeZ;
-  if (saved.chargeVariant === 'neutral' ||
-      saved.chargeVariant === 'lost' && state.chargeZ === 11 ||
-      saved.chargeVariant === 'gained' && state.chargeZ === 17) {
+  if ([1,8,11,12,17].includes(saved.chargeZ)) state.chargeZ = saved.chargeZ;
+  if (['neutral','lost','gained'].includes(saved.chargeVariant)) {
     state.chargeVariant = saved.chargeVariant;
   }
   if (typeof saved.drawer === 'string' && drawers.has(saved.drawer)) state.drawer = saved.drawer;
   if (saved.tableAxis === 'group' || saved.tableAxis === 'period') state.tableAxis = saved.tableAxis;
+  if (['table','feature','number'].includes(saved.tableView)) state.tableView=saved.tableView;
+  if (['elements','electrons','isotopes'].includes(saved.compareView)) state.compareView=saved.compareView;
+  if (saved.chargeView==='pairs') state.chargeView='pairs';
   state.chem = restoreChem(saved.chem);
   state.upgraded = saved.version < 5 || saved.upgraded === true;
   return state;
