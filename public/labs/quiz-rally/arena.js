@@ -1,12 +1,12 @@
 /* Manual movement, a full-screen arena and question-only modal. */
 (()=>{'use strict';
 const M=window.quizArenaModel,N=window.quizArenaSync,FX=window.quizArenaFX,SCN=window.quizArenaScene,esc=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
-let state=null,root,send,isBusy,questionHTML,received=0,canvas,ctx,raf=0,lastDraw=0,local=null,visual=null,keys=new Set(),touch={x:0,y:0},touchDash=false,dashPointer=null,lastSend=0,lastInput='',seq=0,queuedUse=null,usingItem=null,queuedClose=false,picking=-1,pickAt=0,focus='',room='',role='',popupKey='',lastStage=-1,bannerUntil=0,rosterAt=0,camY=0,camX=0;
+let state=null,root,send,isBusy,questionHTML,received=0,canvas,ctx,raf=0,lastDraw=0,local=null,visual=null,keyboard=new N.Keyboard(),touch={x:0,y:0},touchDash=false,dashPointer=null,lastSend=0,lastInput='',seq=0,queuedUse=null,usingItem=null,queuedClose=false,picking=-1,pickAt=0,focus='',room='',role='',popupKey='',lastStage=-1,bannerUntil=0,rosterAt=0,camY=0,camX=0;
 let simulated=new Map(),pending=[],timeline=new N.Timeline(),lastQueued=0,lastAck=0,connectionLost=false,renderDt=16;const remoteVisual=new Map(),remoteAnchors=new Map();const images=new Map(),dialog=document.createElement('dialog');dialog.id='arena-question';dialog.className='arena-question-popup';dialog.setAttribute('aria-labelledby','question-title');document.body.append(dialog);
 function clock(){return Math.min(state.durationSeconds*1000,timeline.now());}
 function predicted(p,t=clock()){return M.advanceRunner(p.runner,t,state.arena,state.arenaEffects,p.id);}
-function clearControls(){keys.clear();touch={x:0,y:0};touchDash=false;dashPointer=null;lastInput='';queuedUse=null;}
-function controls(){return{x:touch.x+(keys.has('ArrowRight')||keys.has('d')?1:0)-(keys.has('ArrowLeft')||keys.has('a')?1:0),y:-touch.y+(keys.has('ArrowUp')||keys.has('w')?1:0)-(keys.has('ArrowDown')||keys.has('s')?1:0),dash:touchDash||keys.has('ShiftLeft')||keys.has('ShiftRight')};}
+function clearControls(){keyboard.clear();touch={x:0,y:0};touchDash=false;dashPointer=null;lastInput='';queuedUse=null;}
+function controls(){const k=keyboard.controls();return{x:touch.x+k.x,y:-touch.y+k.y,dash:touchDash||k.dash};}
 function clamp(v){return Math.max(-1,Math.min(1,v));}
 function nudge(j=false,heartbeat=false){if(!local||!state||state.status!=='running'||state.player?.finish||dialog.open||connectionLost)return;const c=controls(),dx=Math.round(clamp(c.x)*100)/100,dy=Math.round(clamp(c.y)*100)/100,d=c.dash,input=dx+','+dy+','+Number(d);if(!j&&!heartbeat&&input===lastInput)return;const at=Math.round(clock()),event={dx,dy,jump:j,dash:d,at,seq:++seq};lastInput=input;lastQueued=performance.now();pending.push(event);if(pending.length>96)pending=pending.slice(-96);local=M.control(M.advanceRunner(local,at,state.arena,state.arenaEffects,state.player.id),dx,dy,j,d,at,event.seq);}
 function ranked(){return state.ranking.map(p=>{const r=M.advanceRunner(simulated.get(p.id)||p.runner,clock(),state.arena,state.arenaEffects,p.id);simulated.set(p.id,r);return {p,r};}).sort((a,b)=>a.p.finish||b.p.finish?(a.p.finish?.place||999)-(b.p.finish?.place||999):b.r.y-a.r.y||a.p.nickname.localeCompare(b.p.nickname,'ko'));}
@@ -80,8 +80,14 @@ function frame(){raf=0;if(!state?.arena||!canvas?.isConnected||state.status==='e
  raf=requestAnimationFrame(frame);
 }
 function use(slot){if(!canUseItem()||queuedUse||usingItem||!Number.isInteger(slot)||slot<0||slot>2||!state.player.gear[slot])return;queuedUse={slot,gear:state.player.gear.join(',')};renderBag();}
-document.addEventListener('keydown',e=>{if(e.ctrlKey||e.metaKey||e.altKey||!canvas?.isConnected||!state?.arena||state.status!=='running'||!state.player||state.player.finish||dialog.open||document.querySelector('#dialog[open]')||/INPUT|SELECT|TEXTAREA/.test(document.activeElement?.tagName||''))return;const k=e.key.length===1?e.key.toLowerCase():e.key;if(['w','a','s','d','ArrowUp','ArrowLeft','ArrowDown','ArrowRight'].includes(k)){e.preventDefault();if(!keys.has(k)){keys.add(k);nudge();}}if(e.repeat)return;if(e.code==='Space'){e.preventDefault();nudge(true);}if(e.key==='Shift'){e.preventDefault();keys.add(e.code);nudge();}if(/^[1-3]$/.test(k)){e.preventDefault();use(Number(k)-1);}});
-document.addEventListener('keyup',e=>{const k=e.key.length===1?e.key.toLowerCase():e.key;if(keys.delete(e.key==='Shift'?e.code:k))nudge();});
+document.addEventListener('keydown',e=>{if(e.ctrlKey||e.metaKey||e.altKey||!canvas?.isConnected||!state?.arena||state.status!=='running'||!state.player||state.player.finish||dialog.open||document.querySelector('#dialog[open]')||/INPUT|SELECT|TEXTAREA/.test(document.activeElement?.tagName||''))return;
+ const moving=keyboard.update(e,true),shift=e.code==='ShiftLeft'||e.code==='ShiftRight'||e.key==='Shift';
+ if(moving||shift)e.preventDefault();nudge();
+ if(e.code==='Space')e.preventDefault();if(e.repeat)return;
+ if(e.code==='Space')nudge(true);
+ const digit=/^Digit([1-3])$/.exec(e.code)?.[1]||(/^[1-3]$/.test(e.key)?e.key:'');if(digit){e.preventDefault();use(Number(digit)-1);}
+});
+document.addEventListener('keyup',e=>{keyboard.update(e,false);nudge();});
 window.addEventListener('blur',()=>{clearControls();nudge();});document.addEventListener('visibilitychange',()=>{if(document.hidden){clearControls();nudge();}});
 dialog.addEventListener('cancel',e=>{e.preventDefault();queuedClose=true;});
 document.addEventListener('click',async e=>{const slot=e.target.closest('[data-arena-slot]');if(slot){if(!slot.disabled)use(Number(slot.dataset.arenaSlot));return;}const who=e.target.closest('[data-arena-focus]');if(who){focus=who.dataset.arenaFocus;visual=null;return;}const b=e.target.closest('[data-arena-action]');if(!b)return;const a=b.dataset.arenaAction;if(a==='close-question')queuedClose=true;if(a==='roster'){const el=root.querySelector('[data-arena-roster]');el.hidden=!el.hidden;}if(a==='jump'&&e.detail===0){nudge(true);}if(a==='fullscreen'){try{document.fullscreenElement?await document.exitFullscreen():await document.documentElement.requestFullscreen();}catch{document.body.classList.toggle('arena-expanded');}}if(a==='csv')download();});
