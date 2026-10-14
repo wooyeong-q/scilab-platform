@@ -21,6 +21,22 @@ test('dash distance, energy depletion and input expiry are independent of render
  }
 });
 
+test('diagonal dash stays on the same side of a barrier at client and server frame rates',()=>{
+ const a={version:2,length:27000,seed:7,combat:true,energy:true};
+ for(const wall of M.barriers(a).slice(0,6))for(const side of [-1,1])for(const dy of [-1,1]){
+  const start={...runner(),x:wall.x+side*(wall.w/2+M.RADIUS-30),y:wall.y-dy*80};
+  if(!M.floorAt(start.x,start.y,4000,a))continue;
+  const pressed=M.control(start,-side,dy,false,true,4000,1),expected=M.advanceRunner(pressed,4650,a);
+  for(const fps of [30,60,120]){let r=pressed;
+   for(let at=4000+1000/fps;at<4650;at+=1000/fps)r=M.advanceRunner(r,at,a);
+   r=M.advanceRunner(r,4650,a);
+   assert.ok(Math.hypot(r.x-expected.x,r.y-expected.y)<1,`${fps}fps diagonal barrier ${wall.y}: prediction must not snap to another face`);
+   assert.equal(M.isDashing(r,a),true,'contact does not release held dash');
+   assert.ok((wall.y-r.y)*dy>=wall.depth/2+M.RADIUS,'front contact cannot teleport behind the wall');
+  }
+ }
+});
+
 test('every wind checkpoint has a stable refill and an empty runner can steer against peak crosswind',()=>{
  for(const duration of [300,480,600,900])for(const seed of [1,42]){const a={version:2,length:M.raceLength(duration),seed,combat:true,energy:true,supplies:2};
   for(const fan of M.fans(a)){const cp=M.checkpoints(a).filter(y=>y<fan.start).at(-1),box=M.boxes(a).find(b=>Math.hypot(b.x-M.trackAt(cp,a).center,b.y-cp)<100);assert.ok(box,'refill reachable from checkpoint');assert.ok(M.floorAt(box.x,box.y,4000,a));

@@ -366,10 +366,13 @@ function advanceRunner(source, clock, arena, effects = [], id = '') {
             }
         for (const wall of barriers(arena, r.y - 40, r.y + 40))
             if (r.z < wall.height && Math.abs(r.x - wall.x) < wall.w / 2 + exports.RADIUS && Math.abs(r.y - wall.y) < wall.depth / 2 + exports.RADIUS) {
-                const edge = wall.depth / 2 + exports.RADIUS + .5;
-                if (previousY <= wall.y - edge)
+                const contact = wall.depth / 2 + exports.RADIUS, edge = contact + .5;
+                // Classify the entering face at the collision boundary, not the padded
+                // resting position. A frame can start in that 0.5px gap: treating it as a
+                // side hit teleports a diagonal runner and disagrees with server steps.
+                if (previousY <= wall.y - contact)
                     r.y = wall.y - edge;
-                else if (previousY >= wall.y + edge)
+                else if (previousY >= wall.y + contact)
                     r.y = wall.y + edge;
                 else
                     r.x = wall.x + (previousX <= wall.x ? -1 : 1) * (wall.w / 2 + exports.RADIUS + .5);

@@ -92,7 +92,15 @@ export function advanceRunner(source:Runner,clock:number,arena:Arena,effects:Eff
   r.z=Math.max(0,r.z+r.vz*dt-340*dt*dt);r.vz-=680*dt;if(r.z===0)r.vz=0;
   // Tall sliding gates cannot be jumped; find the moving opening.
   for(const gate of gates(t,arena,r.y-70,r.y+70))if(Math.abs(r.y-gate.y)<RADIUS+16&&Math.abs(r.x-gate.gap)>gate.width/2-RADIUS){r.y=previousY<=gate.y?gate.y-RADIUS-17:gate.y+RADIUS+17;}
-  for(const wall of barriers(arena,r.y-40,r.y+40))if(r.z<wall.height&&Math.abs(r.x-wall.x)<wall.w/2+RADIUS&&Math.abs(r.y-wall.y)<wall.depth/2+RADIUS){const edge=wall.depth/2+RADIUS+.5;if(previousY<=wall.y-edge)r.y=wall.y-edge;else if(previousY>=wall.y+edge)r.y=wall.y+edge;else r.x=wall.x+(previousX<=wall.x?-1:1)*(wall.w/2+RADIUS+.5);}
+  for(const wall of barriers(arena,r.y-40,r.y+40))if(r.z<wall.height&&Math.abs(r.x-wall.x)<wall.w/2+RADIUS&&Math.abs(r.y-wall.y)<wall.depth/2+RADIUS){
+   const contact=wall.depth/2+RADIUS,edge=contact+.5;
+   // Classify the entering face at the collision boundary, not the padded
+   // resting position. A frame can start in that 0.5px gap: treating it as a
+   // side hit teleports a diagonal runner and disagrees with server steps.
+   if(previousY<=wall.y-contact)r.y=wall.y-edge;
+   else if(previousY>=wall.y+contact)r.y=wall.y+edge;
+   else r.x=wall.x+(previousX<=wall.x?-1:1)*(wall.w/2+RADIUS+.5);
+  }
   for(const press of pistons(t,arena,r.y-90,r.y+90))if(press.state===2&&Math.hypot(r.x-press.x,r.y-press.y)<press.r+RADIUS)knock(r,press.x,press.y,t,265,780);
   if(r.z<32){for(const s of spinners(t,arena,r.y-40,r.y+40)){for(let arm=0;arm<s.arms;arm++){const angle=s.angle+arm*Math.PI/2,a=Math.cos(angle)*s.length,b=Math.sin(angle)*s.length;if(segmentDistance(r.x,r.y,s.x-a,s.y-b,s.x+a,s.y+b)<RADIUS+s.r)knock(r,s.x,s.y,t,230);}}
    for(const b of [...balls(t,arena,r.y-70,r.y+70),...bumpers(arena,r.y-70,r.y+70)])if(Math.hypot(r.x-b.x,r.y-b.y)<RADIUS+b.r)knock(r,b.x,b.y,t,240);
