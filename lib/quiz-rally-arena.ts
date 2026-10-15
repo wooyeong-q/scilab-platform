@@ -9,7 +9,7 @@ export const GEAR_HELP:Record<Gear,string>={mine:'뒤에 설치 · 밟으면 밀
 export const WIDTH=620, SPEED=175, RADIUS=18, COUNTDOWN=3000;
 export const ENERGY_DRAIN=4, ENERGY_CHARGE=45, MIN_ENERGY_SPEED=.35;
 export const DASH_SPEED=1.4, DASH_ENERGY_DRAIN=10, BOX_RESPAWN=8000;
-export const MISSILE_SPEED=460, MISSILE_RADIUS=10, MISSILE_HALF_LENGTH=22, MISSILE_CLEARANCE=50;
+export const MISSILE_SPEED=460, MISSILE_RADIUS=10, MISSILE_HALF_LENGTH=16, MISSILE_CENTER_OFFSET=4, MISSILE_CLEARANCE=50;
 export function energyValue(r:Runner){return Math.max(0,Math.min(100,r.energy??100));}
 export function energySpeed(r:Runner,arena:Arena){return arena.energy?MIN_ENERGY_SPEED+(1-MIN_ENERGY_SPEED)*energyValue(r)/100:1;}
 export function isMoving(r:Runner,clock=r.t){return (!!r.dx||!!r.dy)&&clock>=COUNTDOWN&&clock<r.inputUntil&&clock>=r.stunUntil&&!r.open&&!r.fallUntil&&r.finishAt===undefined;}
@@ -56,7 +56,7 @@ export function effectPosition(e:Effect,t:number){const dt=Math.max(0,Math.min(t
 export function missileContact(e:Effect,start:number,end:number,from:Pick<Runner,'x'|'y'|'z'|'vz'>,to:Pick<Runner,'x'|'y'>):number|null{
  const first=Math.max(start,e.born),last=Math.min(end,e.expires,e.hitAt??Infinity);if(last<first||end<=start)return null;
  const n=Math.hypot(e.dx,e.dy)||1,dx=e.dx/n,dy=e.dy/n,side=RADIUS+MISSILE_RADIUS,along=side+MISSILE_HALF_LENGTH;
- const point=(t:number)=>{const k=(t-start)/(end-start),p=effectPosition(e,t),x=from.x+(to.x-from.x)*k-p.x,y=from.y+(to.y-from.y)*k-p.y;return{x:(x*dy-y*dx)/side,y:(x*dx+y*dy)/along};};
+ const point=(t:number)=>{const k=(t-start)/(end-start),p=effectPosition(e,t),x=from.x+(to.x-from.x)*k-p.x-dx*MISSILE_CENTER_OFFSET,y=from.y+(to.y-from.y)*k-p.y-dy*MISSILE_CENTER_OFFSET;return{x:(x*dy-y*dx)/side,y:(x*dx+y*dy)/along};};
  const a=point(first),b=point(last),vx=b.x-a.x,vy=b.y-a.y,A=vx*vx+vy*vy,B=2*(a.x*vx+a.y*vy),C=a.x*a.x+a.y*a.y-1;let lo=0,hi=1;
  if(A<1e-12){if(C>0)return null;}else{const disc=B*B-4*A*C;if(disc<0)return null;const root=Math.sqrt(disc);lo=Math.max(0,(-B-root)/(2*A));hi=Math.min(1,(-B+root)/(2*A));if(lo>hi)return null;}
  let at=first+(last-first)*lo;const until=first+(last-first)*hi,seconds=(at-start)/1000;
@@ -138,7 +138,7 @@ export function advanceRunner(source:Runner,clock:number,arena:Arena,effects:Eff
   for(const e of effects){if(e.owner===id||e.born>t||e.expires<=start||e.victim&&e.victim!==id||r.usedEffects.includes(e.id)||e.type==='field'||e.type==='boost'||e.type==='shield')continue;
    if(e.type==='mine'&&t<e.born+500)continue;
    const hitAt=e.type==='missile'?missileContact(e,start,t,{x:previousX,y:previousY,z:previousZ,vz:previousVz},r):r.z<=25&&Math.hypot(r.x-e.x,r.y-e.y)<RADIUS+(e.type==='mine'?32:29)?t:null;
-   if(hitAt!==null){const p=effectPosition(e,hitAt);r.usedEffects.push(e.id);r.usedEffects=r.usedEffects.slice(-80);r.hits.push({id:e.id,t:hitAt});r.hits=r.hits.slice(-12);if(hitAt>=r.shieldUntil)knock(r,p.x,p.y,hitAt,e.type==='banana'?115:280,e.type==='banana'?1050:850);}
+   if(hitAt!==null){const p=effectPosition(e,hitAt);r.usedEffects.push(e.id);r.usedEffects=r.usedEffects.slice(-200);r.hits.push({id:e.id,t:hitAt});r.hits=r.hits.slice(-200);if(hitAt>=r.shieldUntil)knock(r,p.x,p.y,hitAt,e.type==='banana'?115:280,e.type==='banana'?1050:850);}
   }
   if(!floorAt(r.x,r.y,t,arena)&&r.z<=3){r.fallUntil=t+850;r.falls++;r.dx=0;r.dy=0;r.vz=0;r.jumpQueuedUntil=0;continue;}
   if(r.z<2){for(const cp of checkpoints(arena,r.y-80,r.y))if(r.y>=cp&&r.y<cp+80&&cp>r.checkpoint)r.checkpoint=cp;}

@@ -7,7 +7,7 @@ const rocket=(extra={})=>({id:'rocket',type:'missile',owner:'shooter',x:0,y:345,
 const sleep=ms=>new Promise(r=>setTimeout(r,ms));
 
 test('rocket body hits, visible side misses, shield, jump clearance and owner immunity agree at 30/60/120 fps',()=>{
- const e=rocket(),expected=4000+(600-50-345)/460*1000;
+ const e=rocket(),expected=4000+(600-48-345)/460*1000;
  for(const fps of [30,60,120]){
   let r=runner();for(let t=4000+1000/fps;t<4800;t+=1000/fps)r=M.advanceRunner(r,t,arena,[e],'target');
   assert.equal(r.hits.length,1);assert.ok(Math.abs(r.hits[0].t-expected)<.0001);assert.ok(r.stunUntil>4800);
@@ -16,8 +16,14 @@ test('rocket body hits, visible side misses, shield, jump clearance and owner im
  assert.equal(M.advanceRunner(runner(),5000,arena,[e],'shooter').hits.length,0);
  const shield=M.advanceRunner(runner({shieldUntil:6000}),5000,arena,[e],'target');assert.equal(shield.hits.length,1);assert.equal(shield.stunUntil,0);
  const jump=M.control(runner({y:590}),0,0,true,false,4000,1);assert.equal(M.advanceRunner(jump,5000,arena,[e],'target').hits.length,0);
- const early=M.control(runner(),0,0,true,false,4000,1);assert.equal(M.advanceRunner(early,5000,arena,[e],'target').hits.length,1,'landing on the passing tail is still a hit');
+ const early=M.control(runner({y:610}),0,0,true,false,4000,1);assert.equal(M.advanceRunner(early,5000,arena,[e],'target').hits.length,1,'landing on the passing tail is still a hit');
  assert.equal(M.advanceRunner(runner({open:true}),5000,arena,[e],'target').hits.length,0);
+});
+
+test('a classroom volley retains every contact, and launching beside classmates does not hit behind the muzzle',()=>{
+ const effects=Array.from({length:30},(_,i)=>rocket({id:'volley-'+i})),target=M.advanceRunner(runner(),5000,arena,effects,'target');
+ assert.equal(target.hits.length,30);assert.equal(new Set(target.hits.map(h=>h.id)).size,30);assert.equal(target.usedEffects.length,30);
+ const beside=M.advanceRunner(runner({y:300}),5000,arena,effects,'classmate');assert.equal(beside.hits.length,0);
 });
 
 test('relative sweep catches a fast diagonal crossing between samples without widening the rocket',()=>{
@@ -82,6 +88,14 @@ test('30 authenticated streams receive simultaneous launches and unique hits wit
   await until(()=>streams.every(s=>s.events.filter(e=>e.type==='effects').length===44));
   assert.ok(streams.every(s=>s.events.every(e=>e.type!=='refresh')));
   assert.ok(!JSON.stringify(streams[0].events).includes(students[1].token));
+  // A concentrated volley must not lose early claims to a short hit journal.
+  wall+=2000;
+  for(const [i,s]of students.entries())await h.pg.query("UPDATE quiz_rally_sessions SET state=jsonb_set(state,ARRAY['players',$2],(state #> ARRAY['players',$2]) || $3::jsonb) WHERE code=$1",[made.code,s.playerId,JSON.stringify({runner:runner({t:7000,seq:3,x:0,y:i===29?590:300}),gear:['missile']})]);
+  await Promise.all(students.slice(0,29).map(s=>game.actQuizRoom(made.code,s,{action:'arena-use',slot:0,at:7000,requestId:randomUUID()})));
+  wall+=1000;
+  const victim=students[29],hit=await game.actQuizRoom(made.code,victim,{action:'arena-input',inputs:[{seq:4,at:8000,dx:0,dy:0,jump:false,dash:false}],requestId:randomUUID()});
+  assert.equal(hit.player.runner.hits.length,29);assert.equal(hit.arenaEffects.filter(e=>e.born===7000&&e.victim===victim.playerId).length,29);
+  const bystander=await game.actQuizRoom(made.code,students[0],{action:'arena-input',inputs:[{seq:4,at:8000,dx:0,dy:0,jump:false,dash:false}],requestId:randomUUID()});assert.equal(bystander.player.runner.hits.length,0);
  }finally{Date.now=realNow;for(const s of streams)s.abort.abort();await Promise.all(streams.map(s=>s.read));await h.close();}
 });
 

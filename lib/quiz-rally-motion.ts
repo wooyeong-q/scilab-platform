@@ -63,7 +63,7 @@ export class MotionProjection{
     this.previous={...r};this.lastSent=t;this.lastSignature=signature;
     // Presentation hints accompany the same physics pose. They never claim a
     // persistent victim; the guarded game action still decides the result.
-    const hits=r.hits.filter(hit=>hit.t>=t-3000).slice(-4);
+    const hits=r.hits.filter(hit=>hit.t>=t-1500).slice(-32);
     return {type:'frame',code:this.access.code,id:this.id,roomRevision:this.access.roomRevision,arenaRevision:this.access.arenaRevision,pose,...(hits.length?{hits}:{})};
   }
 }

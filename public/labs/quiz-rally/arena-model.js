@@ -146,7 +146,7 @@ function cityPistons(t, a, near, far) { return cityLayout(a).pistons.filter(p =>
 })(city);const exports={},require=name=>{if(name==="./quiz-rally-city")return city;throw Error("Unknown arena module");};
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.ROUND_LENGTH = exports.center = exports.STAGES = exports.CHECKPOINTS = exports.MISSILE_CLEARANCE = exports.MISSILE_HALF_LENGTH = exports.MISSILE_RADIUS = exports.MISSILE_SPEED = exports.BOX_RESPAWN = exports.DASH_ENERGY_DRAIN = exports.DASH_SPEED = exports.MIN_ENERGY_SPEED = exports.ENERGY_CHARGE = exports.ENERGY_DRAIN = exports.COUNTDOWN = exports.RADIUS = exports.SPEED = exports.WIDTH = exports.GEAR_HELP = exports.GEAR_NAMES = void 0;
+exports.ROUND_LENGTH = exports.center = exports.STAGES = exports.CHECKPOINTS = exports.MISSILE_CLEARANCE = exports.MISSILE_CENTER_OFFSET = exports.MISSILE_HALF_LENGTH = exports.MISSILE_RADIUS = exports.MISSILE_SPEED = exports.BOX_RESPAWN = exports.DASH_ENERGY_DRAIN = exports.DASH_SPEED = exports.MIN_ENERGY_SPEED = exports.ENERGY_CHARGE = exports.ENERGY_DRAIN = exports.COUNTDOWN = exports.RADIUS = exports.SPEED = exports.WIDTH = exports.GEAR_HELP = exports.GEAR_NAMES = void 0;
 exports.energyValue = energyValue;
 exports.energySpeed = energySpeed;
 exports.isMoving = isMoving;
@@ -183,7 +183,7 @@ exports.GEAR_HELP = { mine: '뒤에 설치 · 밟으면 밀려나고 0.85초 조
 exports.WIDTH = 620, exports.SPEED = 175, exports.RADIUS = 18, exports.COUNTDOWN = 3000;
 exports.ENERGY_DRAIN = 4, exports.ENERGY_CHARGE = 45, exports.MIN_ENERGY_SPEED = .35;
 exports.DASH_SPEED = 1.4, exports.DASH_ENERGY_DRAIN = 10, exports.BOX_RESPAWN = 8000;
-exports.MISSILE_SPEED = 460, exports.MISSILE_RADIUS = 10, exports.MISSILE_HALF_LENGTH = 22, exports.MISSILE_CLEARANCE = 50;
+exports.MISSILE_SPEED = 460, exports.MISSILE_RADIUS = 10, exports.MISSILE_HALF_LENGTH = 16, exports.MISSILE_CENTER_OFFSET = 4, exports.MISSILE_CLEARANCE = 50;
 function energyValue(r) { return Math.max(0, Math.min(100, r.energy ?? 100)); }
 function energySpeed(r, arena) { return arena.energy ? exports.MIN_ENERGY_SPEED + (1 - exports.MIN_ENERGY_SPEED) * energyValue(r) / 100 : 1; }
 function isMoving(r, clock = r.t) { return (!!r.dx || !!r.dy) && clock >= exports.COUNTDOWN && clock < r.inputUntil && clock >= r.stunUntil && !r.open && !r.fallUntil && r.finishAt === undefined; }
@@ -257,7 +257,7 @@ function missileContact(e, start, end, from, to) {
     if (last < first || end <= start)
         return null;
     const n = Math.hypot(e.dx, e.dy) || 1, dx = e.dx / n, dy = e.dy / n, side = exports.RADIUS + exports.MISSILE_RADIUS, along = side + exports.MISSILE_HALF_LENGTH;
-    const point = (t) => { const k = (t - start) / (end - start), p = effectPosition(e, t), x = from.x + (to.x - from.x) * k - p.x, y = from.y + (to.y - from.y) * k - p.y; return { x: (x * dy - y * dx) / side, y: (x * dx + y * dy) / along }; };
+    const point = (t) => { const k = (t - start) / (end - start), p = effectPosition(e, t), x = from.x + (to.x - from.x) * k - p.x - dx * exports.MISSILE_CENTER_OFFSET, y = from.y + (to.y - from.y) * k - p.y - dy * exports.MISSILE_CENTER_OFFSET; return { x: (x * dy - y * dx) / side, y: (x * dx + y * dy) / along }; };
     const a = point(first), b = point(last), vx = b.x - a.x, vy = b.y - a.y, A = vx * vx + vy * vy, B = 2 * (a.x * vx + a.y * vy), C = a.x * a.x + a.y * a.y - 1;
     let lo = 0, hi = 1;
     if (A < 1e-12) {
@@ -466,9 +466,9 @@ function advanceRunner(source, clock, arena, effects = [], id = '') {
             if (hitAt !== null) {
                 const p = effectPosition(e, hitAt);
                 r.usedEffects.push(e.id);
-                r.usedEffects = r.usedEffects.slice(-80);
+                r.usedEffects = r.usedEffects.slice(-200);
                 r.hits.push({ id: e.id, t: hitAt });
-                r.hits = r.hits.slice(-12);
+                r.hits = r.hits.slice(-200);
                 if (hitAt >= r.shieldUntil)
                     knock(r, p.x, p.y, hitAt, e.type === 'banana' ? 115 : 280, e.type === 'banana' ? 1050 : 850);
             }
