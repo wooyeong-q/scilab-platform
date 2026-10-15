@@ -3,9 +3,10 @@ import { sql } from './db';
 import { QUESTION_MAP, QUIZ_QUESTIONS } from './quiz-rally-questions';
 import { validateQuestions, type CustomQuestion } from './quiz-rally-bank';
 import { QuizError } from './quiz-rally-errors';
+import { QuizWorldFeed } from './quiz-rally-combat';
 import { robotFor, validateRobot, type RobotParts } from './quiz-rally-robot';
 import { advance, capsuleAt, freshRacer, gameClock, CHARGE, type Course, type Racer } from './quiz-rally-course';
-import { advanceRunner, control, freshRunner,raceLength, couldFinish, missileDirection, boxes, boxWait, BOX_RESPAWN, GEAR_NAMES, ENERGY_CHARGE, energyValue, type Arena, type Runner, type Gear, type Effect } from './quiz-rally-arena';
+import { advanceRunner, control, freshRunner,raceLength, couldFinish, missileDirection, boxes, boxWait, BOX_RESPAWN, GEAR_NAMES, ENERGY_CHARGE, energyValue,withHistory,sampleRunner,runnerState,recordRunnerPatch,trimRunnerHistory, type Arena, type Runner, type Gear, type Effect } from './quiz-rally-arena';
 export { QuizError } from './quiz-rally-errors';
 
 type Phase = 'lobby' | 'running' | 'paused' | 'ended';
@@ -25,7 +26,7 @@ type Room = {
   title: string; durationSeconds: number; extension: boolean; stealEnabled: boolean;
   status: Phase; endsAt: number | null; remainingMs: number; metaRevision: number;
   requests: string[]; players: Record<string,Player>;
-  raceGoal?:number; finishers?:string[]; course?:Course; stoppedClock?:number; arena?:Arena; arenaEffects?:Effect[]; arenaRevision?:number;
+  raceGoal?:number; finishers?:string[]; course?:Course; stoppedClock?:number; arena?:Arena; arenaEffects?:Effect[]; arenaRevision?:number;arenaCombatAt?:number;
   questionIds?: string[]; questionSetTitle?: string; cityTarget?:number;
 };
 type Row = { code: string; teacher_key_hash: string; state: Room; expires_at: string; custom_question?:CustomQuestion };
@@ -103,7 +104,7 @@ function arenaNotice(motion=false,delta=''){
   const payload=`jsonb_build_object('type','${delta?'effects':motion?'motion':'refresh'}','code',code,
     'roomRevision',COALESCE((state->>'metaRevision')::int,0),'arenaRevision',COALESCE((state->>'arenaRevision')::int,0),
     'status',state->>'status'${motion||delta?`, 'id',$2::text,'version',(state #>> ARRAY['players',$2,'version'])::int,
-    'runner',(state #> ARRAY['players',$2,'runner']) - ARRAY['boxes','boxReadyAt','questionBox']::text[]`:''}${delta?`, 'delta',${delta}`:''})::text`;
+    'runner',(state #> ARRAY['players',$2,'runner']) - ARRAY['boxes','boxReadyAt','questionBox','history']::text[]`:''}${delta?`, 'delta',${delta}`:''})::text`;
   return `CASE WHEN state ? 'arena' THEN pg_notify('quiz_rally_' || lower(code),
     CASE WHEN octet_length(${payload})<7900 THEN ${payload} ELSE '{"type":"refresh"}' END) END AS realtime_notice`;
 }
@@ -141,7 +142,7 @@ export async function joinQuizRoom(code:string,identity:QuizIdentity,body:Record
   assert(body.avatar===undefined||(Number.isInteger(body.avatar)&&Number(body.avatar)>=0&&Number(body.avatar)<6),'캐릭터를 다시 선택해 주세요.');
   assert(phase(row.state)!=='ended','이미 끝난 게임입니다. 다음 게임에 참여해 주세요.',409);
   const deck=deckFor(row.state),p:Player={id:identity.playerId,nickname,avatar:body.avatar===undefined?avatarFor({id:identity.playerId}):Number(body.avatar),tokenHash:hash(identity.token),version:0,removed:false,score:0,correct:0,attempted:0,inventory:{boost:0,hint:1,shield:0,steal:0},boostActive:false,shieldActive:false,protectedUntil:0,deck,turn:turnFor(deck.shift()!),requests:[],stats:{},notice:'',noticeId:''};
-  if(row.state.arena){p.runner=freshRunner(gameClock(row.state),parseInt(hash(p.id).slice(0,4),16)%40);p.gear=[];}
+  if(row.state.arena){p.runner=withHistory(freshRunner(gameClock(row.state),parseInt(hash(p.id).slice(0,4),16)%40));p.gear=[];}
   if(row.state.course)p.racer=freshRacer(gameClock(row.state));
   p.robot=body.robot===undefined?robotFor(undefined,p.avatar):validateRobot(body.robot);
   const rows=await query(`UPDATE quiz_rally_sessions SET state=jsonb_set(state,ARRAY['players',$2],$3::jsonb,true)
@@ -169,6 +170,12 @@ export async function getQuizSnapshot(code:string,identity:QuizIdentity){
   const rows=await query(`SELECT ${snapshotColumns} FROM quiz_rally_sessions WHERE code=$1 AND expires_at>NOW()`,[code,identity.playerId||'']);
   assert(rows.length,'게임방을 찾을 수 없거나 이용 기간이 끝났습니다.',404);
   let row=rows[0];authenticate(row as Row,identity,row.player);
+  // HTTP-only clients still settle combat after a lost stream. This uses the
+  // same guarded commit; competing readers cannot choose a second victim.
+  if(row.room.arena&&Date.now()-(row.room.arenaFrameWall||0)>2000&&(row.room.arenaEffects||[]).some((e:Effect)=>e.shared&&!e.victim&&e.born+2500<gameClock(row.room))){
+    await new QuizWorldFeed(code,async(statement,params)=>({rows:await query(statement,params)})).publish();
+    row=(await query(`SELECT ${snapshotColumns} FROM quiz_rally_sessions WHERE code=$1 AND expires_at>NOW()`,[code,identity.playerId||'']))[0];
+  }
   if(row.room.course&&(row.ranking as Array<{racer?:Racer;finish?:Finish}>).some(p=>p.racer&&!p.finish&&advance(p.racer,gameClock(row.room),row.room.course).finishAt!==undefined)){
     await settleCourse(code);row=(await query(`SELECT ${snapshotColumns} FROM quiz_rally_sessions WHERE code=$1 AND expires_at>NOW()`,[code,identity.playerId||'']))[0];
   }
@@ -182,7 +189,7 @@ export async function getQuizSnapshot(code:string,identity:QuizIdentity){
 const snapshotColumns=`code,teacher_key_hash,state-'players' AS room,
   state #> ARRAY['players',$2] AS player,
   question_bank -> (state #>> ARRAY['players',$2,'turn','id']) AS custom_question,
-  (SELECT COALESCE(jsonb_agg(jsonb_build_object('id',key,'version',value->'version','nickname',value->'nickname','avatar',value->'avatar','robot',value->'robot','finish',value->'finish','racer',value->'racer','runner',value->'runner','score',value->'score','correct',value->'correct','attempted',value->'attempted','shield',value->'shieldActive','protectedUntil',value->'protectedUntil',
+  (SELECT COALESCE(jsonb_agg(jsonb_build_object('id',key,'version',value->'version','nickname',value->'nickname','avatar',value->'avatar','robot',value->'robot','finish',value->'finish','racer',value->'racer','runner',(value->'runner')-'history','score',value->'score','correct',value->'correct','attempted',value->'attempted','shield',value->'shieldActive','protectedUntil',value->'protectedUntil',
     'activity',CASE WHEN value #>> '{turn,correct}'='true' THEN CASE WHEN value #>> '{turn,reward}' IS NULL THEN 'reward' ELSE 'ready' END WHEN value #>> '{turn,revealed}'='true' THEN 'review' ELSE 'solving' END)),'[]'::jsonb)
    FROM jsonb_each(state->'players') WHERE NOT (value->>'removed')::boolean) AS ranking`;
 async function snapshotFromRow(r:Record<string,any>,identity:QuizIdentity){
@@ -224,7 +231,7 @@ async function settleCourse(code:string){
 
 function advanceArenaPlayer(room:Room,p:Player,clock:number){
   const previous=new Set(p.runner!.usedEffects),r=advanceRunner(p.runner!,clock,room.arena!,room.arenaEffects||[],p.id);
-  for(const hit of r.hits)if(!previous.has(hit.id)){const e=room.arenaEffects?.find(e=>e.id===hit.id);if(e&&!e.victim){e.victim=p.id;e.hitAt=hit.t;}}
+  for(const hit of r.hits)if(!previous.has(hit.id)){const e=room.arenaEffects?.find(e=>e.id===hit.id);if(e&&!e.victim&&!e.shared){e.victim=p.id;e.hitAt=hit.t;}}
   p.runner=r;return r;
 }
 function closeArenaQuestion(r:Runner,clock:number){
@@ -234,6 +241,7 @@ function closeArenaQuestion(r:Runner,clock:number){
 }
 function modifyArena(room:Room,p:Player,body:Record<string,unknown>,q:CustomQuestion){
   assert(p.runner&&!p.finish,'이미 완주했어요. 친구들의 경주를 지켜봐 주세요.',409);
+  p.runner=withHistory(p.runner);
   const now=gameClock(room),action=body.action;
   if(action==='arena-input'||((action==='arena-collect'||action==='arena-use')&&Array.isArray(body.inputs))){
     const batch=Array.isArray(body.inputs)?body.inputs:[body];assert((batch.length>0||action!=='arena-input')&&batch.length<=24,'조작 값을 확인해 주세요.');
@@ -241,7 +249,7 @@ function modifyArena(room:Room,p:Player,body:Record<string,unknown>,q:CustomQues
     for(const value of batch){assert(value&&typeof value==='object'&&!Array.isArray(value),'조작 값을 확인해 주세요.');const input=value as Record<string,unknown>;
       const dx=Number(input.dx),dy=Number(input.dy),seq=Number(input.seq);assert(Number.isFinite(dx)&&Number.isFinite(dy)&&Math.abs(dx)<=1&&Math.abs(dy)<=1&&Number.isSafeInteger(seq)&&seq>=0&&seq>last,'조작 값을 확인해 주세요.');last=seq;
       if(seq<=p.runner.seq)continue;
-      const at=Number(input.at),clock=Number.isFinite(at)?Math.max(p.runner.t,Math.min(now,Math.max(now-6000,at))):now;
+      const at=Number(input.at),clock=Number.isFinite(at)?Math.max(p.runner.t,room.arenaCombatAt||0,Math.min(now,Math.max(now-6000,at))):now;
       const r=advanceArenaPlayer(room,p,clock);p.runner=control(r,dx,dy,input.jump===true,input.dash===true||input.dive===true,clock,seq);
     }
     // Persist the last acknowledged input, not its extrapolation to request time.
@@ -253,8 +261,9 @@ function modifyArena(room:Room,p:Player,body:Record<string,unknown>,q:CustomQues
   }
   // Item/popup actions share the input timeline, including when they waited
   // behind another request. Keep validation/cooldown time authoritative.
-  const at=Number(body.at),actionClock=Number.isFinite(at)?Math.max(p.runner.t,Math.min(now,Math.max(now-6000,at))):now;
-  const r=advanceArenaPlayer(room,p,actionClock);
+  const at=Number(body.at),actionClock=Number.isFinite(at)?Math.max(p.runner.t,room.arenaCombatAt||0,Math.min(now,Math.max(now-6000,at))):now;
+  const r=advanceArenaPlayer(room,p,actionClock),before=runnerState(r);
+  try{
   if(action==='arena-close'){closeArenaQuestion(r,actionClock);return;}
   if(action==='arena-collect'){
     assert(!r.open&&!r.fallUntil&&r.z<25,'지금은 문제 상자를 열 수 없어요.',409);
@@ -302,20 +311,23 @@ function modifyArena(room:Room,p:Player,body:Record<string,unknown>,q:CustomQues
       // target's saved input anchor. Project the muzzle to acceptance time,
       // without advancing the owner's anchor past their queued jump inputs.
       const born=gear==='missile'?now:actionClock,origin=gear==='missile'?advanceRunner(r,born,room.arena!,effects,p.id):r;
-      effects.push({id:randomUUID(),type:gear,owner:p.id,x:origin.x+direction.dx*offset,y:origin.y+direction.dy*offset,dx:direction.dx,dy:direction.dy,born,expires:born+(gear==='missile'?2200:gear==='field'?5000:14000)});room.arenaEffects=effects;
+      effects.push({id:randomUUID(),type:gear,owner:p.id,x:origin.x+direction.dx*offset,y:origin.y+direction.dy*offset,dx:direction.dx,dy:direction.dy,born,expires:born+(gear==='missile'?2200:gear==='field'?5000:14000),shared:gear==='missile'});room.arenaEffects=effects;
     }
     p.gear!.splice(slot,1);p.useAt=now;notice(p,GEAR_NAMES[gear]+' 사용!');return;
   }
   throw new QuizError('이 경주에서는 사용할 수 없는 동작입니다.');
+  }finally{recordRunnerPatch(before,r);}
 }
 async function settleArena(code:string){
   for(let attempt=0;attempt<8;attempt++){
     const row=await readRoom(code),room=row.state;if(!room.arena)return;
-    const clock=gameClock(room),effects=room.arenaEffects||[],projected=Object.values(room.players).filter(p=>!p.removed&&!p.finish&&p.runner).map(p=>({p,r:advanceRunner(p.runner!,clock,room.arena!,effects,p.id)}));
+    const effects=room.arenaEffects||[],now=gameClock(room),waiting=effects.some(e=>e.shared&&!e.victim&&e.expires>(room.arenaCombatAt||0)&&e.born<=now),clock=waiting?Math.min(now,room.arenaCombatAt||0):now;
+    const project=(p:Player)=>waiting?sampleRunner(p.runner!,clock,room.arena!,effects,p.id):advanceRunner(p.runner!,clock,room.arena!,effects,p.id);
+    const projected=Object.values(room.players).filter(p=>!p.removed&&!p.finish&&p.runner).map(p=>({p,r:project(p)}));
     // Resolve a trap to one victim before deriving the final arrival order.
     const hits=projected.flatMap(({p,r})=>r.hits.filter(h=>!p.runner!.usedEffects.includes(h.id)).map(h=>({...h,id:h.id,playerId:p.id}))).sort((a,b)=>a.t-b.t||a.playerId.localeCompare(b.playerId));
     for(const hit of hits){const e=effects.find(e=>e.id===hit.id);if(e&&!e.victim){e.victim=hit.playerId;e.hitAt=hit.t;}}
-    const arrivals=projected.map(({p})=>({p,r:advanceRunner(p.runner!,clock,room.arena!,effects,p.id)})).filter(x=>x.r.finishAt!==undefined).sort((a,b)=>a.r.finishAt!-b.r.finishAt!||a.p.id.localeCompare(b.p.id));if(!arrivals.length)return;
+    const arrivals=projected.map(({p})=>({p,r:project(p)})).filter(x=>x.r.finishAt!==undefined).sort((a,b)=>a.r.finishAt!-b.r.finishAt!||a.p.id.localeCompare(b.p.id));if(!arrivals.length)return;
     const winners=[...(room.finishers||[])],patch:Record<string,Player>={},params:unknown[]=[code,room.metaRevision,room.arenaRevision||0];let guards='';
     for(const {p,r} of arrivals){params.push(p.id,p.version);guards+=` AND (state #>> ARRAY['players',$${params.length-1},'version'])::int=$${params.length}`;winners.push(p.id);p.runner={...r,open:false};p.finish={place:winners.length,bonus:0};p.version++;notice(p,`결승선 ${winners.length}등 통과!`);patch[p.id]=p;}
     params.push(JSON.stringify(patch),JSON.stringify(winners),JSON.stringify(effects));
@@ -431,7 +443,9 @@ export async function actQuizRoom(code:string,identity:QuizIdentity,body:Record<
     const oldVersion=p.version,target=body.action==='item'&&body.item==='steal'?room.players[String(body.targetId)]:undefined,targetVersion=target?.version;
     if(room.course&&target?.racer&&!target.finish&&advance(target.racer,gameClock(room),room.course).finishAt!==undefined){await settleCourse(code);continue;}
     const wasFinished=!!p.finish,priorFinishers=room.finishers||[];
-    modifyPlayer(room,p,body,row.custom_question||QUESTION_MAP.get(p.turn.id)!,target);remember(p,requestId);
+    modifyPlayer(room,p,body,row.custom_question||QUESTION_MAP.get(p.turn.id)!,target);
+    if(room.arena&&p.runner)p.runner=trimRunnerHistory(p.runner,room.arena,room.arenaEffects||[],p.id);
+    remember(p,requestId);
     const params:unknown[]=[code,p.id,JSON.stringify(p),oldVersion,room.metaRevision];
     let statement=`UPDATE quiz_rally_sessions SET state=jsonb_set(state,ARRAY['players',$2],$3::jsonb)`;
     if(target){params.push(target.id,JSON.stringify(target),targetVersion);statement=`UPDATE quiz_rally_sessions SET state=jsonb_set(jsonb_set(state,ARRAY['players',$2],$3::jsonb),ARRAY['players',$6],$7::jsonb)`;}
@@ -472,6 +486,7 @@ export async function actQuizRoom(code:string,identity:QuizIdentity,body:Record<
     if(target)statement+=` AND (state #>> ARRAY['players',$6,'version'])::int=$8`;
     if(finishClaim)statement+=` AND COALESCE(state->'finishers','[]'::jsonb)=$7::jsonb`;
     statement+=arenaGuards;
+    if(room.arena&&p.runner&&!customizing)statement+=` AND COALESCE((state->>'arenaCombatAt')::double precision,0)<=($3::jsonb #>> '{runner,t}')::double precision`;
     const result=await query(statement+' RETURNING '+snapshotColumns+','+arenaNotice(!arenaChanged&&!finishClaim&&!customizing,!finishClaim&&!customizing?effectDelta:''),params);
     if(result.length)return snapshotFromRow(result[0],identity);
   }

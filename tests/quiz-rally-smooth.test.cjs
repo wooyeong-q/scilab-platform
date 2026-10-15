@@ -124,3 +124,12 @@ test('presentation adapts to a 300 ms link without periodic braking or inflating
  assert.ok(track.delay>=360&&track.delay<=400);assert.ok(Math.min(...steps)>2.5);assert.ok(Math.max(...steps)<3.4);
  const delay=track.delay;track.push([17000,0,2400,0,0,0,0,0,1,0,2,0,-2000],17100);track.push([18000,0,2400,0,0,0,0,0,1,0,2,0,-2000],18100);assert.equal(track.delay,delay);
 });
+
+test('common pose batches stay smooth and never extrapolate into an unresolved contact',()=>{
+ const track=new PoseTrack(),steps=[];let next=4500,previous;
+ for(let clock=4000;clock<15000;clock+=1000/60){if(clock>=next){const through=next-200;for(let t=through-400;t<=through;t+=100)track.push([t,0,300+(t-4000)*.175,0,0,175,0,0,1,0,1,0,-2000],clock,through);next+=500;}
+  const shown=track.sample(clock,r());if(!shown)continue;assert.ok(shown.t<=track.samples.at(-1).t);
+  if(previous&&clock>10000)steps.push(shown.y-previous.y);previous=shown;
+ }
+ assert.ok(track.delay>=580&&track.delay<610);assert.ok(Math.min(...steps)>2.4);assert.ok(Math.max(...steps)<3.5);
+});

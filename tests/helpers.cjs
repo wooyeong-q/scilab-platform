@@ -8,16 +8,17 @@ async function harness() {
   const pg = await PGlite.create();
   await pg.exec(fs.readFileSync(path.join(root, 'scripts/schema.sql'), 'utf8'));
   const queries = [], paths = [], cookies = new Map(), cache = new Map(), modules = new Map();
-  const liveClients=new Set();
+  const liveClients=new Set(),leaders=new Map();
   class Listener extends require('node:events').EventEmitter {
     async connect(){liveClients.add(this);}
     async query(statement,params=[]){
+      if(statement.startsWith('SELECT pg_try_advisory_lock(70591')){const owner=leaders.get(params[0]);if(!owner)leaders.set(params[0],this);return {rows:[{leader:!owner||owner===this}]};}
       if(statement==='SELECT pg_notify($1,$2)')return pg.query(statement,params);
       const channel=/^LISTEN "([A-Za-z0-9_]+)"$/.exec(statement)?.[1];
-      if(!channel)throw new Error('Unexpected listener query');
+      if(!channel){queries.push({query:statement,params});if(fail)throw new Error('Simulated database outage');return pg.query(statement,params);}
       this.off=await pg.listen(channel,payload=>this.emit('notification',{channel,payload}));
     }
-    end(){return this.ending??=(async()=>{await this.off?.();liveClients.delete(this);this.emit('end');})();}
+    end(){return this.ending??=(async()=>{await this.off?.();liveClients.delete(this);for(const [code,owner]of leaders)if(owner===this)leaders.delete(code);this.emit('end');})();}
   }
   let fail = false;
   const sql = (strings, ...params) => sql.query(strings.reduce((s, part, i) => s + (i ? '$' + i : '') + part, ''), params);
@@ -52,7 +53,7 @@ async function harness() {
     new Function('require', 'module', 'exports', compiled)(localRequire, mod, mod.exports);
     return mod.exports;
   }
-  return { pg, sql, queries, paths, cookies, cache, load, liveClients,outage: value => { fail = value; }, close: async () => {await Promise.all([...liveClients].map(c=>c.end()));await pg.close();} };
+  return { pg, sql, queries, paths, cookies, cache, load, liveClients,leaders,outage: value => { fail = value; }, close: async () => {await Promise.all([...liveClients].map(c=>c.end()));await pg.close();} };
 }
 
 function request(body, method = 'POST') {

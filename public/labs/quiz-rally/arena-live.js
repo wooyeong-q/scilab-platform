@@ -7,6 +7,7 @@ class Live{
  stop(){this.key='';this.generation++;clearTimeout(this.timer);clearTimeout(this.inputTimer);this.inputTimer=0;this.abort?.abort();this.abort=null;for(const request of this.inputRequests)request.abort();this.inputRequests.clear();this.inputs=[];this.inputRevision='';this.dispatched=0;this.state(false);}
  reconnect(){if(!this.key)return;clearTimeout(this.timer);if(this.abort)this.abort.abort();else this.connect();}
  sendInput(input,revision){
+  if(this.world)return true; // The room feed uses the ordered durable input log.
   if(!this.fast||!this.key||this.who?.role!=='student'||!Number.isSafeInteger(revision?.roomRevision)||!Number.isSafeInteger(revision?.arenaRevision))return false;
   const key=revision.roomRevision+':'+revision.arenaRevision;
   if(key!==this.inputRevision){this.inputRevision=key;this.inputs=[];this.dispatched=0;}
@@ -32,14 +33,14 @@ class Live{
   if(!this.key)return;const generation=++this.generation,abort=new AbortController();this.abort=abort;let watchdog,reader;
   const arm=()=>{clearTimeout(watchdog);watchdog=setTimeout(()=>abort.abort(),20000);};arm();
   try{
-   const who=this.who,url=new URL(this.url,location.href);url.searchParams.set('motion','1');
+   const who=this.who,url=new URL(this.url,location.href);url.searchParams.set('motion','1');url.searchParams.set('world','1');
    const response=await fetch(url,{headers:{Authorization:'Bearer '+who.token,'X-Quiz-Role':who.role,'X-Player-Id':who.playerId||'',Accept:'text/event-stream'},cache:'no-store',signal:abort.signal});
    if(generation!==this.generation)return;
    if(!response.ok||!response.body||!response.headers.get('content-type')?.includes('text/event-stream'))throw new Error('stream unavailable');
    reader=response.body.getReader();const decoder=new TextDecoder();let buffer='';
    while(true){const{value,done}=await reader.read();if(done||generation!==this.generation)break;arm();buffer+=decoder.decode(value,{stream:true});if(buffer.length>131072)throw new Error('stream overflow');
     let end;while((end=buffer.indexOf('\n\n'))>=0){const block=buffer.slice(0,end);buffer=buffer.slice(end+2);const data=block.split('\n').filter(line=>line.startsWith('data:')).map(line=>line.slice(5).trimStart()).join('\n');if(!data)continue;
-     const event=JSON.parse(data);if(event.type==='ready'){this.attempt=0;this.state(true,event.motion===true);this.refresh();this.scheduleInput();}else if(event.type!=='ping')this.event(event);
+     const event=JSON.parse(data);if(event.type==='ready'){this.attempt=0;this.world=event.world===true;this.state(true,event.motion===true);this.refresh();this.scheduleInput();}else if(event.type!=='ping')this.event(event);
     }
    }
   }catch{}finally{clearTimeout(watchdog);try{await reader?.cancel();}catch{}

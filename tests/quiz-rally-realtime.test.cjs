@@ -68,7 +68,7 @@ test('live remote prediction crosses heartbeat gaps without pauses; stale versio
 test('fragmented streams reconnect, resync and never put credentials in URLs',async()=>{
  let requests=0,events=0,resyncs=0,states=[],current;const timers=new Set();
  const ctx={window:{},URL,location:{href:"http://localhost/"},AbortController,TextDecoder,setTimeout:(fn,ms)=>{const id=setTimeout(fn,ms);timers.add(id);return id;},clearTimeout,fetch:async(url,options)=>{
-  requests++;assert.equal(String(url),'http://localhost/events?motion=1');assert.equal(options.headers.Authorization,'Bearer private-token');
+  requests++;assert.equal(String(url),'http://localhost/events?motion=1&world=1');assert.equal(options.headers.Authorization,'Bearer private-token');
   const body=new ReadableStream({start(c){current=c;options.signal.addEventListener('abort',()=>{try{c.close();}catch{}});c.enqueue(new TextEncoder().encode('data: {"type":"rea'));c.enqueue(new TextEncoder().encode('dy"}\n\ndata: {"type":"motion"}\n\n'));}});
   return new Response(body,{headers:{'content-type':'text/event-stream'}});
  }};

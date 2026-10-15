@@ -2,16 +2,18 @@ import { Client } from '@neondatabase/serverless';
 import type { WebSocket } from 'ws';
 import { getQuizMotionAccess,type QuizIdentity } from './quiz-rally';
 import { MotionProjection } from './quiz-rally-motion';
+import { QuizWorldFeed } from './quiz-rally-combat';
 
 // Every live socket owns a bounded database session. PostgreSQL fan-out works
 // across instances; no sticky routing or process-local room membership.
 export type MotionPeer=Pick<WebSocket,'on'|'close'|'send'|'readyState'|'bufferedAmount'>;
-export function serveQuizSocket(ws:MotionPeer,code:string){
+export function serveQuizSocket(ws:MotionPeer,code:string,worldMode=false){
   let client:Client|undefined,identity:QuizIdentity|undefined,motion:MotionProjection|undefined;
   let closed=false,authenticating=false,refreshing=false,publishing=false,refreshAgain=false;
   let timer:ReturnType<typeof setInterval>|undefined,expiry:ReturnType<typeof setTimeout>|undefined;
   let lastPing=Date.now(),lastAuth=Date.now(),budget=100,budgetAt=Date.now();
   let waitingInputs:unknown[][]=[],authStage='waiting';
+  let world:QuizWorldFeed|undefined;
   const authDeadline=setTimeout(()=>{console.warn('Quiz realtime authentication timed out',{stage:authStage});close(1008,'auth timeout: '+authStage);},20000);
   const send=(data:unknown)=>{if(closed||ws.readyState!==1)return;if(ws.bufferedAmount>65536){close(1013);return;}ws.send(JSON.stringify(data));};
   function close(reason=1000,detail=''){
@@ -37,9 +39,9 @@ export function serveQuizSocket(ws:MotionPeer,code:string){
     if(closed||!motion||!client||refreshing)return;
     if(Date.now()-lastPing>10000){send({type:'ping'});lastPing=Date.now();}
     if(Date.now()-lastAuth>15000){void refresh().catch(()=>close(1008));return;}
-    if(publishing||identity?.role!=='student')return;
-    const frame=motion.frame();if(!frame)return;publishing=true;
-    try{await client.query('SELECT pg_notify($1,$2)',['quiz_rally_'+code.toLowerCase(),JSON.stringify(frame)]);}
+    if(publishing||!world)return;
+    publishing=true;
+    try{await world.tick();if(!worldMode&&identity?.role==='student'){const frame=motion.frame();if(frame)await client.query('SELECT pg_notify($1,$2)',['quiz_rally_'+code.toLowerCase(),JSON.stringify(frame)]);}}
     catch{close(1011);}finally{publishing=false;}
   }
   async function authenticate(value:Record<string,unknown>){
@@ -68,12 +70,14 @@ export function serveQuizSocket(ws:MotionPeer,code:string){
         }else if(!refreshing&&event.type==='motion'){
           if(event.id===identity?.playerId&&motion&&event.roomRevision===motion.access.roomRevision&&event.arenaRevision===motion.access.arenaRevision)motion.ack(event.runner,event.version);
           send(event);
-        }else if(!refreshing&&event.type==='frame'&&event.id!==identity?.playerId)send(event);
+        }else if(!refreshing&&event.type==='world'&&worldMode)send(event);
+        else if(!refreshing&&event.type==='frame'&&!worldMode&&event.id!==identity?.playerId)send(event);
       }catch{close(1011);}
     });
     authStage='connecting database';await client.connect();if(closed){await client.end();return;}
     authStage='subscribing';await client.query(`LISTEN "quiz_rally_${code.toLowerCase()}"`);authStage='rechecking access';await refresh();if(closed)return;
-    clearTimeout(authDeadline);authenticating=false;send({type:'ready',code,transport:'websocket'});
+    world=new QuizWorldFeed(code,(statement,params)=>client!.query(statement,params));
+    clearTimeout(authDeadline);authenticating=false;send({type:'ready',code,transport:'websocket',world:worldMode});
     timer=setInterval(()=>{void tick().catch(()=>close(1011));},100);
     expiry=setTimeout(()=>close(1012),240000+Math.random()*10000);
   }

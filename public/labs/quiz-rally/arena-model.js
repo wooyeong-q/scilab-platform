@@ -169,12 +169,18 @@ exports.barriers = barriers;
 exports.fans = fans;
 exports.pistons = pistons;
 exports.missileDirection = missileDirection;
+exports.localCombatEffects = localCombatEffects;
 exports.couldFinish = couldFinish;
 exports.floorAt = floorAt;
 exports.tileDanger = tileDanger;
 exports.effectPosition = effectPosition;
 exports.missileContact = missileContact;
+exports.runnerState = runnerState;
+exports.withHistory = withHistory;
 exports.control = control;
+exports.recordRunnerPatch = recordRunnerPatch;
+exports.sampleRunner = sampleRunner;
+exports.trimRunnerHistory = trimRunnerHistory;
 exports.advanceRunner = advanceRunner;
 exports.progress = progress;
 const quiz_rally_city_1 = require("./quiz-rally-city");
@@ -230,6 +236,17 @@ function barriers(arena, near = 0, far = arena.length) { return arena.version ==
 function fans(arena, near = 0, far = arena.length) { return arena.version === 2 ? (0, quiz_rally_city_1.cityLayout)(arena).fans.filter(b => b.end >= near && b.start <= far) : []; }
 function pistons(clock, arena, near = 0, far = arena.length) { return arena.version === 2 ? (0, quiz_rally_city_1.cityPistons)(clock, arena, near, far) : []; }
 function missileDirection() { return { dx: 0, dy: 1 }; }
+// Predict only an isolated incoming missile for the local player's immediate
+// dodge/impact response. Any possible classmate in the corridor disables that
+// prediction; crowded contacts always wait for the common room decision.
+function localCombatEffects(id, own, players, effects) {
+    return effects.map(e => {
+        if (!e.shared || e.victim || e.type !== 'missile' || e.owner === id)
+            return e;
+        const competing = players.some(p => p.id !== id && p.id !== e.owner && !p.finish && !p.runner.open && p.runner.y >= e.y - 80 && p.runner.y <= own.y + 600);
+        return competing ? e : { ...e, shared: false };
+    });
+}
 // A cheap conservative bound avoids simulating all classmates just to learn
 // that nobody near the start can have reached the finish yet.
 function couldFinish(r, clock, arena) { return r.finishAt !== undefined || Math.max(r.y, r.checkpoint) + (exports.SPEED * 3 + Math.abs(r.knockY)) * Math.min(6000, Math.max(0, clock - r.t)) / 1000 >= arena.length; }
@@ -304,7 +321,7 @@ function startQueuedJump(r, clock) {
         r.jumpQueuedUntil = 0;
     }
 }
-function control(source, dx, dy, jump, dash, clock, seq) {
+function controlState(source, dx, dy, jump, dash, clock, seq) {
     const r = { ...source };
     r.seq = seq;
     if (r.open || r.finishAt !== undefined)
@@ -325,7 +342,76 @@ function control(source, dx, dy, jump, dash, clock, seq) {
     r.diveUntil = 0;
     return r;
 }
+// Only accepted controls and explicit item/question changes enter this journal.
+// Render frames never append to it. It lets a common room clock sample between
+// inputs and replay a committed hit without moving a queued jump to a later time.
+function runnerState(source) { const { history, ...state } = source; return { ...state, boxes: [...state.boxes], boxReadyAt: { ...state.boxReadyAt }, usedEffects: [...state.usedEffects], hits: [...state.hits] }; }
+function withHistory(source) { return source.history ? source : { ...source, history: { base: runnerState(source), events: [] } }; }
+function control(source, dx, dy, jump, dash, clock, seq) {
+    const r = controlState(source, dx, dy, jump, dash, clock, seq);
+    if (source.history)
+        r.history = { base: source.history.base, events: [...source.history.events, { at: clock, input: { dx, dy, jump, dash, seq } }] };
+    return r;
+}
+function recordRunnerPatch(before, after) {
+    if (!after.history)
+        return after;
+    const state = runnerState(after), patch = {}, unset = [];
+    for (const key of new Set([...Object.keys(before), ...Object.keys(state)])) {
+        const k = key;
+        if (JSON.stringify(before[k]) === JSON.stringify(state[k]))
+            continue;
+        if (state[k] === undefined)
+            unset.push(key);
+        else
+            patch[key] = state[k];
+    }
+    if (Object.keys(patch).length || unset.length)
+        after.history = { base: after.history.base, events: [...after.history.events, { at: after.t, patch, unset }] };
+    return after;
+}
+function sampleRunner(source, clock, arena, effects = [], id = '', settled) {
+    const history = source.history;
+    if (!history)
+        return advanceState(source, Math.max(source.t, clock), arena, effects, id);
+    const from = settled && settled.t >= history.base.t && settled.t <= clock ? settled : history.base;
+    let r = { ...from };
+    for (const event of history.events) {
+        if (event.at > clock)
+            break;
+        if (event.at < from.t || event.input && event.input.seq <= r.seq)
+            continue;
+        r = advanceState(r, event.at, arena, effects, id);
+        if (event.input) {
+            const e = event.input;
+            r = controlState(r, e.dx, e.dy, e.jump, e.dash, event.at, e.seq);
+        }
+        if (event.patch)
+            r = { ...r, ...event.patch };
+        for (const key of event.unset || [])
+            delete r[key];
+    }
+    return advanceState(r, Math.max(r.t, clock), arena, effects, id);
+}
+function trimRunnerHistory(source, arena, effects, id) {
+    const h = source.history;
+    if (!h)
+        return source;
+    // Six seconds is the accepted input/reconnect window; keep two extra seconds.
+    const cutoff = Math.max(h.base.t, source.t - 8000, h.events.length > 256 ? h.events[h.events.length - 256].at : 0);
+    if (cutoff <= h.base.t)
+        return source;
+    return { ...source, history: { base: runnerState(sampleRunner(source, cutoff, arena, effects, id)), events: h.events.filter(e => e.at > cutoff) } };
+}
 function advanceRunner(source, clock, arena, effects = [], id = '') {
+    // A hit can be committed after this player's next input was saved. Replaying
+    // its journal applies the hit at contact time and preserves every later input.
+    const late = source.history && effects.some(e => e.shared && e.victim === id && e.hitAt !== undefined && e.hitAt <= source.t && !source.usedEffects.includes(e.id) && e.hitAt >= source.history.base.t);
+    if (late)
+        return { ...sampleRunner(source, Math.max(source.t, clock), arena, effects, id), history: source.history };
+    return advanceState(source, clock, arena, effects, id);
+}
+function advanceState(source, clock, arena, effects = [], id = '') {
     const r = { ...source, boxes: [...source.boxes], boxReadyAt: { ...source.boxReadyAt }, usedEffects: [...source.usedEffects], hits: [...source.hits] };
     if (r.finishAt !== undefined)
         return r;
@@ -347,13 +433,13 @@ function advanceRunner(source, clock, arena, effects = [], id = '') {
     // No active input survives a disconnect. Skip long idle periods without thousands of steps.
     if (end - t > 6000 && r.inputUntil < t + 2500 && !r.open) {
         const cutoff = Math.min(end, t + 5000);
-        const first = advanceRunner(r, cutoff, arena, effects, id), resume = Math.max(cutoff, end - 1000);
+        const first = advanceState(r, cutoff, arena, effects, id), resume = Math.max(cutoff, end - 1000);
         drainEnergy(first, resume, arena);
-        return advanceRunner({ ...first, t: resume }, end, arena, effects, id);
+        return advanceState({ ...first, t: resume }, end, arena, effects, id);
     }
     while (t < end - .001) {
         startQueuedJump(r, t);
-        const start = t, dashing = isDashing(r, arena, t), boundaries = [exports.COUNTDOWN, r.inputUntil, r.stunUntil, r.boostUntil];
+        const start = t, dashing = isDashing(r, arena, t), boundaries = [exports.COUNTDOWN, r.inputUntil, r.stunUntil, r.boostUntil, ...effects.filter(e => e.shared && e.victim === id && !r.usedEffects.includes(e.id)).map(e => e.hitAt ?? 0)];
         if (r.jumpQueuedUntil)
             boundaries.push(r.jumpAt + 880, r.jumpQueuedUntil);
         // Resolve landing at the same instant on every frame rate before consuming
@@ -458,18 +544,18 @@ function advanceRunner(source, clock, arena, effects = [], id = '') {
                     knock(r, b.x, b.y, t, 240);
         }
         for (const e of effects) {
-            if (e.owner === id || e.born > t || e.expires <= start || e.victim && e.victim !== id || r.usedEffects.includes(e.id) || e.type === 'field' || e.type === 'boost' || e.type === 'shield')
+            if (e.owner === id || e.born > t || e.expires <= start || e.victim && e.victim !== id || e.shared && !e.victim && !e.probe || r.usedEffects.includes(e.id) || e.type === 'field' || e.type === 'boost' || e.type === 'shield')
                 continue;
             if (e.type === 'mine' && t < e.born + 500)
                 continue;
-            const hitAt = e.type === 'missile' ? missileContact(e, start, t, { x: previousX, y: previousY, z: previousZ, vz: previousVz }, r) : r.z <= 25 && Math.hypot(r.x - e.x, r.y - e.y) < exports.RADIUS + (e.type === 'mine' ? 32 : 29) ? t : null;
+            const hitAt = e.shared && e.victim === id ? (e.hitAt !== undefined && e.hitAt >= start - .001 && e.hitAt <= t ? e.hitAt : null) : e.type === 'missile' ? missileContact(e, start, t, { x: previousX, y: previousY, z: previousZ, vz: previousVz }, r) : r.z <= 25 && Math.hypot(r.x - e.x, r.y - e.y) < exports.RADIUS + (e.type === 'mine' ? 32 : 29) ? t : null;
             if (hitAt !== null) {
                 const p = effectPosition(e, hitAt);
                 r.usedEffects.push(e.id);
                 r.usedEffects = r.usedEffects.slice(-200);
                 r.hits.push({ id: e.id, t: hitAt });
                 r.hits = r.hits.slice(-200);
-                if (hitAt >= r.shieldUntil)
+                if (!e.probe && hitAt >= r.shieldUntil)
                     knock(r, p.x, p.y, hitAt, e.type === 'banana' ? 115 : 280, e.type === 'banana' ? 1050 : 850);
             }
         }

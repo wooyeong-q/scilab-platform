@@ -2,8 +2,11 @@ import { cityLayout, cityTrack, cityRegion, cityTileDanger, cityPistons } from '
 // Deterministic top-down obstacle race. Shared by the authoritative server and client prediction.
 export type Arena={version:1|2;length:number;seed:number;combat:boolean;energy?:boolean;supplies?:2};
 export type Gear='mine'|'missile'|'banana'|'field'|'shield'|'boost';
-export type Effect={id:string;type:Gear;owner:string;x:number;y:number;dx:number;dy:number;born:number;expires:number;victim?:string;hitAt?:number};
-export type Runner={x:number;y:number;z:number;vz:number;dx:number;dy:number;fx:number;fy:number;t:number;seq:number;inputUntil:number;jumpAt:number;jumpQueuedUntil?:number;diveAt:number;diveUntil:number;dash?:boolean;stunUntil:number;immuneUntil:number;boostUntil:number;shieldUntil:number;knockX:number;knockY:number;checkpoint:number;fallUntil:number;falls:number;open:boolean;boxes:number[];boxReadyAt?:Record<string,number>;questionBox?:number;usedEffects:string[];hits:{id:string;t:number}[];finishAt?:number;energy?:number};
+export type Effect={id:string;type:Gear;owner:string;x:number;y:number;dx:number;dy:number;born:number;expires:number;victim?:string;hitAt?:number;shared?:boolean;probe?:boolean};
+export type Runner={x:number;y:number;z:number;vz:number;dx:number;dy:number;fx:number;fy:number;t:number;seq:number;inputUntil:number;jumpAt:number;jumpQueuedUntil?:number;diveAt:number;diveUntil:number;dash?:boolean;stunUntil:number;immuneUntil:number;boostUntil:number;shieldUntil:number;knockX:number;knockY:number;checkpoint:number;fallUntil:number;falls:number;open:boolean;boxes:number[];boxReadyAt?:Record<string,number>;questionBox?:number;usedEffects:string[];hits:{id:string;t:number}[];finishAt?:number;energy?:number;history?:RunnerHistory};
+type RunnerState=Omit<Runner,'history'>;
+type RunnerEvent={at:number;input?:{dx:number;dy:number;jump:boolean;dash:boolean;seq:number};patch?:Partial<RunnerState>;unset?:string[]};
+type RunnerHistory={base:RunnerState;events:RunnerEvent[]};
 export const GEAR_NAMES:Record<Gear,string>={mine:'폭탄',missile:'미사일',banana:'바나나',field:'감속 영역',shield:'보호막',boost:'질주'};
 export const GEAR_HELP:Record<Gear,string>={mine:'뒤에 설치 · 밟으면 밀려나고 0.85초 조작 불가',missile:'앞으로 발사 · 맞으면 밀려나고 0.85초 조작 불가',banana:'뒤에 놓기 · 밟으면 1.05초 미끄러집니다',field:'5초 유지 · 영역 안 친구의 이동 속도를 38%로 낮춤',shield:'4초 동안 공격을 막습니다',boost:'3초 동안 이동 속도 2배'};
 export const WIDTH=620, SPEED=175, RADIUS=18, COUNTDOWN=3000;
@@ -44,6 +47,16 @@ export function barriers(arena:Arena,near=0,far=arena.length){return arena.versi
 export function fans(arena:Arena,near=0,far=arena.length){return arena.version===2?cityLayout(arena).fans.filter(b=>b.end>=near&&b.start<=far):[];}
 export function pistons(clock:number,arena:Arena,near=0,far=arena.length){return arena.version===2?cityPistons(clock,arena,near,far):[];}
 export function missileDirection(){return{dx:0,dy:1};}
+// Predict only an isolated incoming missile for the local player's immediate
+// dodge/impact response. Any possible classmate in the corridor disables that
+// prediction; crowded contacts always wait for the common room decision.
+export function localCombatEffects(id:string,own:Runner,players:{id:string;runner:Runner;finish?:unknown}[],effects:Effect[]){
+ return effects.map(e=>{
+  if(!e.shared||e.victim||e.type!=='missile'||e.owner===id)return e;
+  const competing=players.some(p=>p.id!==id&&p.id!==e.owner&&!p.finish&&!p.runner.open&&p.runner.y>=e.y-80&&p.runner.y<=own.y+600);
+  return competing?e:{...e,shared:false};
+ });
+}
 // A cheap conservative bound avoids simulating all classmates just to learn
 // that nobody near the start can have reached the finish yet.
 export function couldFinish(r:Runner,clock:number,arena:Arena){return r.finishAt!==undefined||Math.max(r.y,r.checkpoint)+(SPEED*3+Math.abs(r.knockY))*Math.min(6000,Math.max(0,clock-r.t))/1000>=arena.length;}
@@ -75,7 +88,7 @@ function startQueuedJump(r:Runner,clock:number){
  if(clock>r.jumpQueuedUntil){r.jumpQueuedUntil=0;return;}
  if(clock>=COUNTDOWN&&r.z<=.0000001&&!r.fallUntil&&!r.open&&r.finishAt===undefined&&clock>=r.stunUntil&&clock-r.jumpAt>=880){r.vz=300;r.jumpAt=clock;r.jumpQueuedUntil=0;}
 }
-export function control(source:Runner,dx:number,dy:number,jump:boolean,dash:boolean,clock:number,seq:number):Runner{
+function controlState(source:Runner,dx:number,dy:number,jump:boolean,dash:boolean,clock:number,seq:number):Runner{
  const r={...source};r.seq=seq;if(r.open||r.finishAt!==undefined)return r;const n=Math.max(1,Math.hypot(dx,dy));r.dx=dx/n;r.dy=dy/n;r.inputUntil=clock+2200;
  if(dx||dy){r.fx=dx/n;r.fy=dy/n;}
  if(jump&&!r.fallUntil)r.jumpQueuedUntil=clock+150;startQueuedJump(r,clock);
@@ -83,16 +96,60 @@ export function control(source:Runner,dx:number,dy:number,jump:boolean,dash:bool
  r.dash=dash;r.diveUntil=0;
  return r;
 }
+// Only accepted controls and explicit item/question changes enter this journal.
+// Render frames never append to it. It lets a common room clock sample between
+// inputs and replay a committed hit without moving a queued jump to a later time.
+export function runnerState(source:Runner):RunnerState{const {history,...state}=source;return {...state,boxes:[...state.boxes],boxReadyAt:{...state.boxReadyAt},usedEffects:[...state.usedEffects],hits:[...state.hits]};}
+export function withHistory(source:Runner):Runner{return source.history?source:{...source,history:{base:runnerState(source),events:[]}};}
+export function control(source:Runner,dx:number,dy:number,jump:boolean,dash:boolean,clock:number,seq:number):Runner{
+ const r=controlState(source,dx,dy,jump,dash,clock,seq);
+ if(source.history)r.history={base:source.history.base,events:[...source.history.events,{at:clock,input:{dx,dy,jump,dash,seq}}]};
+ return r;
+}
+export function recordRunnerPatch(before:RunnerState,after:Runner):Runner{
+ if(!after.history)return after;
+ const state=runnerState(after),patch:Record<string,unknown>={},unset:string[]=[];
+ for(const key of new Set([...Object.keys(before),...Object.keys(state)])){
+  const k=key as keyof RunnerState;if(JSON.stringify(before[k])===JSON.stringify(state[k]))continue;
+  if(state[k]===undefined)unset.push(key);else patch[key]=state[k];
+ }
+ if(Object.keys(patch).length||unset.length)after.history={base:after.history.base,events:[...after.history.events,{at:after.t,patch,unset}]};
+ return after;
+}
+export function sampleRunner(source:Runner,clock:number,arena:Arena,effects:Effect[]=[],id='',settled?:Runner):Runner{
+ const history=source.history;if(!history)return advanceState(source,Math.max(source.t,clock),arena,effects,id);
+ const from=settled&&settled.t>=history.base.t&&settled.t<=clock?settled:history.base;
+ let r:Runner={...from};
+ for(const event of history.events){if(event.at>clock)break;if(event.at<from.t||event.input&&event.input.seq<=r.seq)continue;r=advanceState(r,event.at,arena,effects,id);
+  if(event.input){const e=event.input;r=controlState(r,e.dx,e.dy,e.jump,e.dash,event.at,e.seq);}
+  if(event.patch)r={...r,...event.patch};for(const key of event.unset||[])delete (r as unknown as Record<string,unknown>)[key];
+ }
+ return advanceState(r,Math.max(r.t,clock),arena,effects,id);
+}
+export function trimRunnerHistory(source:Runner,arena:Arena,effects:Effect[],id:string):Runner{
+ const h=source.history;if(!h)return source;
+ // Six seconds is the accepted input/reconnect window; keep two extra seconds.
+ const cutoff=Math.max(h.base.t,source.t-8000,h.events.length>256?h.events[h.events.length-256].at:0);
+ if(cutoff<=h.base.t)return source;
+ return {...source,history:{base:runnerState(sampleRunner(source,cutoff,arena,effects,id)),events:h.events.filter(e=>e.at>cutoff)}};
+}
 export function advanceRunner(source:Runner,clock:number,arena:Arena,effects:Effect[]=[],id=''):Runner{
+ // A hit can be committed after this player's next input was saved. Replaying
+ // its journal applies the hit at contact time and preserves every later input.
+ const late=source.history&&effects.some(e=>e.shared&&e.victim===id&&e.hitAt!==undefined&&e.hitAt<=source.t&&!source.usedEffects.includes(e.id)&&e.hitAt>=source.history!.base.t);
+ if(late)return {...sampleRunner(source,Math.max(source.t,clock),arena,effects,id),history:source.history};
+ return advanceState(source,clock,arena,effects,id);
+}
+function advanceState(source:Runner,clock:number,arena:Arena,effects:Effect[]=[],id=''):Runner{
  const r={...source,boxes:[...source.boxes],boxReadyAt:{...source.boxReadyAt},usedEffects:[...source.usedEffects],hits:[...source.hits]};if(r.finishAt!==undefined)return r;
  const end=Math.max(r.t,clock);let t=r.t;if(r.open){r.t=end;r.dx=0;r.dy=0;r.jumpQueuedUntil=0;return r;}
  startQueuedJump(r,t);
  if(!r.jumpQueuedUntil&&!r.dx&&!r.dy&&!r.vz&&!r.z&&!r.knockX&&!r.knockY&&!r.fallUntil&&r.diveUntil<=r.t&&(arena.version===2?r.y/(arena.length/27000):r.y%ROUND_LENGTH)<700&&floorAt(r.x,r.y,end,arena)&&effects.every(e=>e.owner===id||e.expires<=r.t||e.born>end)){drainEnergy(r,end,arena);r.t=end;return r;}
  // No active input survives a disconnect. Skip long idle periods without thousands of steps.
- if(end-t>6000&&r.inputUntil<t+2500&&!r.open){const cutoff=Math.min(end,t+5000);const first=advanceRunner(r,cutoff,arena,effects,id),resume=Math.max(cutoff,end-1000);drainEnergy(first,resume,arena);return advanceRunner({...first,t:resume},end,arena,effects,id);}
+ if(end-t>6000&&r.inputUntil<t+2500&&!r.open){const cutoff=Math.min(end,t+5000);const first=advanceState(r,cutoff,arena,effects,id),resume=Math.max(cutoff,end-1000);drainEnergy(first,resume,arena);return advanceState({...first,t:resume},end,arena,effects,id);}
  while(t<end-.001){
   startQueuedJump(r,t);
-  const start=t,dashing=isDashing(r,arena,t),boundaries=[COUNTDOWN,r.inputUntil,r.stunUntil,r.boostUntil];
+  const start=t,dashing=isDashing(r,arena,t),boundaries=[COUNTDOWN,r.inputUntil,r.stunUntil,r.boostUntil,...effects.filter(e=>e.shared&&e.victim===id&&!r.usedEffects.includes(e.id)).map(e=>e.hitAt??0)];
   if(r.jumpQueuedUntil)boundaries.push(r.jumpAt+880,r.jumpQueuedUntil);
   // Resolve landing at the same instant on every frame rate before consuming
   // a queued jump. Rounding it to the next frame loses early Space presses.
@@ -135,10 +192,10 @@ export function advanceRunner(source:Runner,clock:number,arena:Arena,effects:Eff
   if(r.z<32){for(const s of spinners(t,arena,r.y-40,r.y+40)){for(let arm=0;arm<s.arms;arm++){const angle=s.angle+arm*Math.PI/2,a=Math.cos(angle)*s.length,b=Math.sin(angle)*s.length;if(segmentDistance(r.x,r.y,s.x-a,s.y-b,s.x+a,s.y+b)<RADIUS+s.r)knock(r,s.x,s.y,t,230);}}
    for(const b of [...balls(t,arena,r.y-70,r.y+70),...bumpers(arena,r.y-70,r.y+70)])if(Math.hypot(r.x-b.x,r.y-b.y)<RADIUS+b.r)knock(r,b.x,b.y,t,240);
   }
-  for(const e of effects){if(e.owner===id||e.born>t||e.expires<=start||e.victim&&e.victim!==id||r.usedEffects.includes(e.id)||e.type==='field'||e.type==='boost'||e.type==='shield')continue;
+  for(const e of effects){if(e.owner===id||e.born>t||e.expires<=start||e.victim&&e.victim!==id||e.shared&&!e.victim&&!e.probe||r.usedEffects.includes(e.id)||e.type==='field'||e.type==='boost'||e.type==='shield')continue;
    if(e.type==='mine'&&t<e.born+500)continue;
-   const hitAt=e.type==='missile'?missileContact(e,start,t,{x:previousX,y:previousY,z:previousZ,vz:previousVz},r):r.z<=25&&Math.hypot(r.x-e.x,r.y-e.y)<RADIUS+(e.type==='mine'?32:29)?t:null;
-   if(hitAt!==null){const p=effectPosition(e,hitAt);r.usedEffects.push(e.id);r.usedEffects=r.usedEffects.slice(-200);r.hits.push({id:e.id,t:hitAt});r.hits=r.hits.slice(-200);if(hitAt>=r.shieldUntil)knock(r,p.x,p.y,hitAt,e.type==='banana'?115:280,e.type==='banana'?1050:850);}
+   const hitAt=e.shared&&e.victim===id?(e.hitAt!==undefined&&e.hitAt>=start-.001&&e.hitAt<=t?e.hitAt:null):e.type==='missile'?missileContact(e,start,t,{x:previousX,y:previousY,z:previousZ,vz:previousVz},r):r.z<=25&&Math.hypot(r.x-e.x,r.y-e.y)<RADIUS+(e.type==='mine'?32:29)?t:null;
+   if(hitAt!==null){const p=effectPosition(e,hitAt);r.usedEffects.push(e.id);r.usedEffects=r.usedEffects.slice(-200);r.hits.push({id:e.id,t:hitAt});r.hits=r.hits.slice(-200);if(!e.probe&&hitAt>=r.shieldUntil)knock(r,p.x,p.y,hitAt,e.type==='banana'?115:280,e.type==='banana'?1050:850);}
   }
   if(!floorAt(r.x,r.y,t,arena)&&r.z<=3){r.fallUntil=t+850;r.falls++;r.dx=0;r.dy=0;r.vz=0;r.jumpQueuedUntil=0;continue;}
   if(r.z<2){for(const cp of checkpoints(arena,r.y-80,r.y))if(r.y>=cp&&r.y<cp+80&&cp>r.checkpoint)r.checkpoint=cp;}

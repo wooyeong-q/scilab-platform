@@ -8,12 +8,18 @@ function hermite(a,b,va,vb,k,seconds){
 }
 class PoseTrack{
  constructor(){this.clear();}
- clear(){this.samples=[];this.offset=null;this.cursor=null;this.clock=null;this.arrival=-Infinity;this.visual=null;this.cadence=null;this.jitter=0;this.delay=140;}
- push(pose,clock){
+ clear(){this.samples=[];this.offset=null;this.cursor=null;this.clock=null;this.arrival=-Infinity;this.visual=null;this.cadence=null;this.jitter=0;this.delay=140;this.sealed=false;this.batch=null;this.batchArrival=null;}
+ push(pose,clock,through){
   if(!Array.isArray(pose)||pose.length!==13||!pose.every(Number.isFinite))return false;
   const [t,x,y,z,vx,vy,vz,fx,fy,flags,seq,falls,jumpAt]=pose,last=this.samples.at(-1);
   if(last&&(t<=last.t||seq<last.seq))return false;
-  if(last){const spacing=t-last.t,moving=Math.hypot(vx,vy,vz,last.vx,last.vy,last.vz)>.1;
+  const settled=Number.isFinite(through),newBatch=settled&&through!==this.batch;
+  if(newBatch){this.sealed=true;const spacing=this.batchArrival===null?0:clock-this.batchArrival;
+   if(spacing>20&&spacing<2500){this.cadence=this.cadence===null?spacing:this.cadence+(spacing-this.cadence)*.2;this.jitter+=(Math.abs(spacing-this.cadence)-this.jitter)*.15;this.delay=clamp(this.cadence*1.1+40+this.jitter*2,250,1400);}
+   else if(this.batchArrival===null)this.delay=400;
+   this.batch=through;this.batchArrival=clock;
+  }
+  if(last&&!settled){const spacing=t-last.t,moving=Math.hypot(vx,vy,vz,last.vx,last.vy,last.vz)>.1;
    if(moving&&spacing>0&&spacing<=500){this.cadence=this.cadence===null?spacing:this.cadence+(spacing-this.cadence)*.2;
     this.jitter+=(Math.abs(clock-this.arrival-spacing)-this.jitter)*.1;
     // Match the observed link, not an assumed 100 ms delivery interval.
@@ -21,7 +27,7 @@ class PoseTrack{
     this.delay=clamp(this.cadence*1.15+20+this.jitter*2,140,500);
    }
   }
-  const observed=clock-t;this.offset=this.offset===null?observed:this.offset+clamp(observed-this.offset,-20,20)*.05;
+  const observed=clock-(settled?through:t);if(!settled||newBatch)this.offset=this.offset===null?observed:this.offset+clamp(observed-this.offset,-20,20)*.05;
   this.arrival=clock;this.samples.push({t,x,y,z,vx,vy,vz,fx,fy,flags,seq,falls,jumpAt});
   if(this.samples.length>24)this.samples.shift();
   return true;
@@ -32,6 +38,9 @@ class PoseTrack{
   const desired=clock-this.offset-this.delay;
   if(this.cursor===null||elapsed>2000)this.cursor=desired;
   else this.cursor+=elapsed*clamp(1+(desired-this.cursor)/1500,.92,1.08);
+  // Common frames are settled through their timestamp. Never extrapolate past
+  // that boundary and show a player crossing an unresolved missile contact.
+  if(this.sealed)this.cursor=Math.min(this.cursor,this.samples.at(-1).t);
   const at=this.cursor;
   while(this.samples.length>2&&this.samples[1].t<=at)this.samples.shift();
   const a=this.samples[0],b=this.samples.find(p=>p.t>at);let target;
@@ -87,16 +96,16 @@ class EffectView{
   const times=players.filter(o=>o.p.id!==own?.id).map(o=>o.shown.t).filter(Number.isFinite).sort((a,b)=>a-b);
   // Server poses can be ahead of the conservative local input clock. Clamping
   // them to that clock shows a victim's knockback before the rocket arrives.
-  this.remoteTime=times.length?clamp(times[Math.floor(times.length/2)],clock-1500,clock+1500):clock;
+  this.remoteTime=times.length?times[Math.floor(times.length/2)]:clock;
   for(const [id,entry]of this.entries)if(clock>entry.expires+3000)this.entries.delete(id);
  }
  sample(effect){
-  const own=this.own,localHit=own?.r.hits.find(h=>h.id===effect.id),hit=effect.victim?{id:effect.victim,t:effect.hitAt}:localHit?{id:own.id,t:localHit.t}:this.hints.get(effect.id);
+  const own=this.own,localHit=own?.r.hits.find(h=>h.id===effect.id),localPrediction=!effect.shared||own?.predictions?.has(effect.id),hit=effect.victim?{id:effect.victim,t:effect.hitAt}:localHit&&localPrediction?{id:own.id,t:localHit.t}:effect.shared?null:this.hints.get(effect.id);
   const target=hit&&this.players.find(o=>o.p.id===hit.id);
   // A nearby incoming rocket must agree with this client's immediate dodge.
   const incoming=own&&effect.owner!==own.id&&Math.abs(own.r.x-effect.x)<100&&own.r.y>=effect.y-60&&own.r.y<effect.y+1100;
   const localTarget=!!hit&&hit.id===own?.id;
-  const desired=localTarget||incoming&&!hit?this.clock:target?target.shown.t:effect.type==='missile'?this.remoteTime:this.clock;
+  const desired=localTarget||incoming&&!hit&&localPrediction?this.clock:target?target.shown.t:effect.type==='missile'?this.remoteTime:this.clock;
   let entry=this.entries.get(effect.id);
   if(!entry){entry={time:desired,clock:this.clock,expires:effect.expires,burstAt:null};this.entries.set(effect.id,entry);}
   const elapsed=Math.max(0,this.clock-entry.clock);entry.clock=this.clock;

@@ -67,7 +67,7 @@ test('30 authenticated streams receive simultaneous launches and unique hits wit
    await h.pg.query("UPDATE quiz_rally_sessions SET state=jsonb_set(state,ARRAY['players',$2],(state #> ARRAY['players',$2]) || $3::jsonb) WHERE code=$1",[made.code,s.playerId,JSON.stringify({runner:r,gear:['missile']})]);
   }
   for(const who of students){
-   const abort=new AbortController(),events=[],response=await quizStream(new Request('http://localhost/events?motion=1',{signal:abort.signal}),made.code,who),reader=response.body.getReader();
+   const abort=new AbortController(),events=[],response=await quizStream(new Request('http://localhost/events?motion=1&world=1',{signal:abort.signal}),made.code,who),reader=response.body.getReader();
    const stream={abort,events};streams.push(stream);stream.read=(async()=>{let buffer='';const decoder=new TextDecoder();while(true){const q=await reader.read();if(q.done)break;buffer+=decoder.decode(q.value,{stream:true});let n;while((n=buffer.indexOf('\n\n'))>=0){const part=buffer.slice(0,n);buffer=buffer.slice(n+2);if(part.startsWith('data: '))events.push(JSON.parse(part.slice(6)));}}})();
   }
   await until(()=>streams.every(s=>s.events.some(e=>e.type==='ready')));
@@ -79,13 +79,15 @@ test('30 authenticated streams receive simultaneous launches and unique hits wit
   assert.ok(streams.every(s=>s.events.filter(e=>e.type==='effects').every((e,i)=>e.arenaRevision===i+1)));
   wall+=1000;
   await Promise.all(students.map(s=>game.actQuizRoom(made.code,s,{action:'arena-input',inputs:[{seq:2,at:5000,dx:0,dy:0,jump:false,dash:false}],requestId:randomUUID()})));
+  await until(()=>streams.every(s=>s.events.filter(e=>e.type==='effects').length>=31));
+  await Promise.all(students.map(s=>game.actQuizRoom(made.code,s,{action:'arena-input',inputs:[{seq:3,at:5000,dx:0,dy:0,jump:false,dash:false}],requestId:randomUUID()})));
   snapshot=await game.getQuizSnapshot(made.code,teacher);
   assert.equal(snapshot.arenaEffects.length,30);const hits=snapshot.arenaEffects.filter(e=>e.victim);assert.equal(hits.length,14);
   assert.equal(new Set(hits.map(e=>e.id)).size,14);assert.ok(hits.every(e=>e.victim!==e.owner&&e.hitAt>=e.born));
   assert.ok(!hits.some(e=>e.victim===students[17].playerId),'jumped target dodges');
   assert.equal(snapshot.ranking.find(p=>p.id===students[16].playerId).runner.stunUntil,0,'shield absorbs contact');
   assert.equal(snapshot.ranking.filter(p=>p.runner.stunUntil>5000).length,13);
-  await until(()=>streams.every(s=>s.events.filter(e=>e.type==='effects').length===44));
+  assert.ok(streams.every(s=>s.events.filter(e=>e.type==='effects').length===31),'one common contact batch, not one competing claim per target');
   assert.ok(streams.every(s=>s.events.every(e=>e.type!=='refresh')));
   assert.ok(!JSON.stringify(streams[0].events).includes(students[1].token));
   // A concentrated volley must not lose early claims to a short hit journal.
@@ -93,9 +95,11 @@ test('30 authenticated streams receive simultaneous launches and unique hits wit
   for(const [i,s]of students.entries())await h.pg.query("UPDATE quiz_rally_sessions SET state=jsonb_set(state,ARRAY['players',$2],(state #> ARRAY['players',$2]) || $3::jsonb) WHERE code=$1",[made.code,s.playerId,JSON.stringify({runner:runner({t:7000,seq:3,x:0,y:i===29?590:300}),gear:['missile']})]);
   await Promise.all(students.slice(0,29).map(s=>game.actQuizRoom(made.code,s,{action:'arena-use',slot:0,at:7000,requestId:randomUUID()})));
   wall+=1000;
-  const victim=students[29],hit=await game.actQuizRoom(made.code,victim,{action:'arena-input',inputs:[{seq:4,at:8000,dx:0,dy:0,jump:false,dash:false}],requestId:randomUUID()});
+  await Promise.all(students.map(s=>game.actQuizRoom(made.code,s,{action:'arena-input',inputs:[{seq:4,at:8000,dx:0,dy:0,jump:false,dash:false}],requestId:randomUUID()})));
+  await until(()=>streams.every(s=>s.events.some(e=>Object.keys(e.delta?.claims||{}).length===29)));
+  const victim=students[29],hit=await game.actQuizRoom(made.code,victim,{action:'arena-input',inputs:[{seq:5,at:8000,dx:0,dy:0,jump:false,dash:false}],requestId:randomUUID()});
   assert.equal(hit.player.runner.hits.length,29);assert.equal(hit.arenaEffects.filter(e=>e.born===7000&&e.victim===victim.playerId).length,29);
-  const bystander=await game.actQuizRoom(made.code,students[0],{action:'arena-input',inputs:[{seq:4,at:8000,dx:0,dy:0,jump:false,dash:false}],requestId:randomUUID()});assert.equal(bystander.player.runner.hits.length,0);
+  const bystander=await game.actQuizRoom(made.code,students[0],{action:'arena-input',inputs:[{seq:5,at:8000,dx:0,dy:0,jump:false,dash:false}],requestId:randomUUID()});assert.equal(bystander.player.runner.hits.length,0);
  }finally{Date.now=realNow;for(const s of streams)s.abort.abort();await Promise.all(streams.map(s=>s.read));await h.close();}
 });
 

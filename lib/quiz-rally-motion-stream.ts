@@ -19,7 +19,7 @@ export async function quizMotionStream(request:Request,code:string,identity:Quiz
   request.signal.addEventListener('abort',peer.close,{once:true});
   const body=new ReadableStream<Uint8Array>({start(c){
     controller=c;if(request.signal.aborted){peer.close();return;}
-    serveQuizSocket(peer as unknown as MotionPeer,access.code);
+    serveQuizSocket(peer as unknown as MotionPeer,access.code,new URL(request.url).searchParams.get('world')==='1');
     // Credentials remain on the server; the browser authenticates this stream
     // with the existing HTTP headers, not URL parameters or a socket message.
     peer.emit('message',JSON.stringify({type:'auth',...identity}));
