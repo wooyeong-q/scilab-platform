@@ -37,8 +37,8 @@ function reconcile(M,source,pending,clock,arena,effects,id){let r=source;for(con
 // their own simulation. A small bounded history absorbs uneven classroom polls.
 class RemoteTrack{
  constructor(){this.samples=[];this.interval=650;this.delay=650;this.cursor=null;this.clock=null;this.visual=null;this.prediction=null;this.live=false;this.poses=window.quizArenaMotion?new window.quizArenaMotion.PoseTrack():null;}
- pushPose(pose,clock){this.poses?.push(pose,clock);}
- setLive(live){if(this.live===live)return;this.live=live;if(!live)this.poses?.clear();this.delay=live?120:650;this.cursor=null;this.prediction=null;}
+ pushPose(pose,clock,hits=[]){if(this.poses?.push(pose,clock))this.hitHints=hits;}
+ setLive(live){if(this.live===live)return;this.live=live;if(!live){this.poses?.clear();this.hitHints=[];}this.delay=live?120:650;this.cursor=null;this.prediction=null;}
  push(r,clock){
   const last=this.samples.at(-1);
   if(last&&r.t<last.t)return;

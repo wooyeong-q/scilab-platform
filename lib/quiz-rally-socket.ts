@@ -57,6 +57,14 @@ export function serveQuizSocket(ws:MotionPeer,code:string){
           void refresh().then(()=>{if(!closed)send({type:'refresh'});}).catch(()=>close(1008));
         }else if(event.type==='input'&&event.id===identity?.playerId&&motion&&event.roomRevision===motion.access.roomRevision&&event.arenaRevision===motion.access.arenaRevision){
           acceptInputs(event.inputs);
+        }else if(event.type==='effects'&&motion){
+          if(refreshing||event.roomRevision!==motion.access.roomRevision||event.arenaRevision>motion.access.arenaRevision+1){
+            void refresh().then(()=>{if(!closed)send({type:'refresh'});}).catch(()=>close(1008));
+          }else if(event.arenaRevision===motion.access.arenaRevision+1){
+            motion.effects(event.delta,event.arenaRevision);
+            if(event.id===identity?.playerId)motion.ack(event.runner,event.version);
+            send(event);
+          }
         }else if(!refreshing&&event.type==='motion'){
           if(event.id===identity?.playerId&&motion&&event.roomRevision===motion.access.roomRevision&&event.arenaRevision===motion.access.arenaRevision)motion.ack(event.runner,event.version);
           send(event);

@@ -9,6 +9,7 @@ export const GEAR_HELP:Record<Gear,string>={mine:'뒤에 설치 · 밟으면 밀
 export const WIDTH=620, SPEED=175, RADIUS=18, COUNTDOWN=3000;
 export const ENERGY_DRAIN=4, ENERGY_CHARGE=45, MIN_ENERGY_SPEED=.35;
 export const DASH_SPEED=1.4, DASH_ENERGY_DRAIN=10, BOX_RESPAWN=8000;
+export const MISSILE_SPEED=460, MISSILE_RADIUS=10, MISSILE_HALF_LENGTH=22, MISSILE_CLEARANCE=50;
 export function energyValue(r:Runner){return Math.max(0,Math.min(100,r.energy??100));}
 export function energySpeed(r:Runner,arena:Arena){return arena.energy?MIN_ENERGY_SPEED+(1-MIN_ENERGY_SPEED)*energyValue(r)/100:1;}
 export function isMoving(r:Runner,clock=r.t){return (!!r.dx||!!r.dy)&&clock>=COUNTDOWN&&clock<r.inputUntil&&clock>=r.stunUntil&&!r.open&&!r.fallUntil&&r.finishAt===undefined;}
@@ -49,7 +50,22 @@ export function couldFinish(r:Runner,clock:number,arena:Arena){return r.finishAt
 export function floorAt(x:number,y:number,clock:number,arena?:Arena){if(arena?.version===2){const road=trackAt(y,arena);return y>=5&&Math.abs(x-road.center)<=road.width/2&&!gaps(arena,y,y).length&&tileDanger(x,y,clock,arena)!==2;}if(y<5||Math.abs(x-center(y))>WIDTH/2)return false;const local=y%ROUND_LENGTH;if((local>2170&&local<2240)||(local>2420&&local<2490))return false;
  return tileDanger(x,y,clock)!==2;}
 export function tileDanger(x:number,y:number,clock:number,arena?:Arena){if(arena?.version===2)return cityTileDanger(x,y,clock,arena);const local=y%ROUND_LENGTH;if(local<4130||local>4410)return 0;const row=Math.floor((local-4130)/95),col=Math.max(0,Math.min(4,Math.floor((x-center(y)+310)/124)));if((row+col)%3!==0)return 0;const phase=(clock/1000+row*.8+col*.45)%3.6;return phase>2.4?2:phase>1.8?1:0;}
-export function effectPosition(e:Effect,t:number){const dt=Math.max(0,t-e.born)/1000;return e.type==='missile'?{x:e.x+e.dx*460*dt,y:e.y+e.dy*460*dt}:{x:e.x,y:e.y};}
+export function effectPosition(e:Effect,t:number){const dt=Math.max(0,Math.min(t,e.hitAt??Infinity)-e.born)/1000;return e.type==='missile'?{x:e.x+e.dx*MISSILE_SPEED*dt,y:e.y+e.dy*MISSILE_SPEED*dt}:{x:e.x,y:e.y};}
+// Sweep relative motion through the rocket's narrow body instead of a large
+// circular endpoint test. This also catches a fast dash crossing between ticks.
+export function missileContact(e:Effect,start:number,end:number,from:Pick<Runner,'x'|'y'|'z'|'vz'>,to:Pick<Runner,'x'|'y'>):number|null{
+ const first=Math.max(start,e.born),last=Math.min(end,e.expires,e.hitAt??Infinity);if(last<first||end<=start)return null;
+ const n=Math.hypot(e.dx,e.dy)||1,dx=e.dx/n,dy=e.dy/n,side=RADIUS+MISSILE_RADIUS,along=side+MISSILE_HALF_LENGTH;
+ const point=(t:number)=>{const k=(t-start)/(end-start),p=effectPosition(e,t),x=from.x+(to.x-from.x)*k-p.x,y=from.y+(to.y-from.y)*k-p.y;return{x:(x*dy-y*dx)/side,y:(x*dx+y*dy)/along};};
+ const a=point(first),b=point(last),vx=b.x-a.x,vy=b.y-a.y,A=vx*vx+vy*vy,B=2*(a.x*vx+a.y*vy),C=a.x*a.x+a.y*a.y-1;let lo=0,hi=1;
+ if(A<1e-12){if(C>0)return null;}else{const disc=B*B-4*A*C;if(disc<0)return null;const root=Math.sqrt(disc);lo=Math.max(0,(-B-root)/(2*A));hi=Math.min(1,(-B+root)/(2*A));if(lo>hi)return null;}
+ let at=first+(last-first)*lo;const until=first+(last-first)*hi,seconds=(at-start)/1000;
+ if(from.z+from.vz*seconds-340*seconds*seconds>MISSILE_CLEARANCE){
+  const disc=from.vz*from.vz+1360*(from.z-MISSILE_CLEARANCE);if(disc<0)return null;
+  at=start+(from.vz+Math.sqrt(disc))/680*1000;if(at>until+.000001)return null;
+ }
+ return at;
+}
 function segmentDistance(x:number,y:number,ax:number,ay:number,bx:number,by:number){const dx=bx-ax,dy=by-ay,k=Math.max(0,Math.min(1,((x-ax)*dx+(y-ay)*dy)/(dx*dx+dy*dy||1)));return Math.hypot(x-ax-k*dx,y-ay-k*dy);}
 function knock(r:Runner,x:number,y:number,t:number,force=190,stun=600){if(t<r.immuneUntil||r.open)return;const d=Math.hypot(r.x-x,r.y-y)||1;r.knockX=(r.x-x)/d*force;r.knockY=(r.y-y)/d*force-55;r.stunUntil=t+stun;r.immuneUntil=t+1050;}
 // Keep one early press for 150 ms, including across server acknowledgements.
@@ -99,7 +115,7 @@ export function advanceRunner(source:Runner,clock:number,arena:Arena,effects:Eff
   if(grounded&&belt){vx+=arena.version===1?(Math.floor((groundY-2800)/110)%2?75:-75):belt.vx;vy+=belt.vy;}
   // Keep crosswind steerable when a depleted battery reduces player control.
   for(const wind of fans(arena,r.y,r.y))vx+=wind.force*(.7+.3*Math.sin(t/700+wind.phase))*(grounded?1:.65)*energyDrive;
-  const previousY=r.y,previousX=r.x;
+  const previousY=r.y,previousX=r.x,previousZ=r.z,previousVz=r.vz;
   r.x+=(vx+r.knockX)*dt;r.y+=(vy+r.knockY)*dt;r.knockX*=Math.pow(.04,dt);r.knockY*=Math.pow(.04,dt);
   // Integrate height analytically so 30/60/120 Hz rendering and server batches
   // produce the same jump arc, rather than a different height at every sync.
@@ -119,9 +135,10 @@ export function advanceRunner(source:Runner,clock:number,arena:Arena,effects:Eff
   if(r.z<32){for(const s of spinners(t,arena,r.y-40,r.y+40)){for(let arm=0;arm<s.arms;arm++){const angle=s.angle+arm*Math.PI/2,a=Math.cos(angle)*s.length,b=Math.sin(angle)*s.length;if(segmentDistance(r.x,r.y,s.x-a,s.y-b,s.x+a,s.y+b)<RADIUS+s.r)knock(r,s.x,s.y,t,230);}}
    for(const b of [...balls(t,arena,r.y-70,r.y+70),...bumpers(arena,r.y-70,r.y+70)])if(Math.hypot(r.x-b.x,r.y-b.y)<RADIUS+b.r)knock(r,b.x,b.y,t,240);
   }
-  for(const e of effects){if(e.owner===id||e.born>t||e.expires<=t||e.victim&&e.victim!==id||r.usedEffects.includes(e.id)||e.type==='field'||e.type==='boost'||e.type==='shield')continue;
-   if(e.type==='mine'&&t<e.born+500)continue;if(r.z>(e.type==='missile'?50:25))continue;const p=effectPosition(e,t),radius=e.type==='missile'?34:e.type==='mine'?32:29;
-   if(Math.hypot(r.x-p.x,r.y-p.y)<RADIUS+radius){r.usedEffects.push(e.id);r.usedEffects=r.usedEffects.slice(-80);r.hits.push({id:e.id,t});r.hits=r.hits.slice(-12);if(t>=r.shieldUntil)knock(r,p.x,p.y,t,e.type==='banana'?115:280,e.type==='banana'?1050:850);}
+  for(const e of effects){if(e.owner===id||e.born>t||e.expires<=start||e.victim&&e.victim!==id||r.usedEffects.includes(e.id)||e.type==='field'||e.type==='boost'||e.type==='shield')continue;
+   if(e.type==='mine'&&t<e.born+500)continue;
+   const hitAt=e.type==='missile'?missileContact(e,start,t,{x:previousX,y:previousY,z:previousZ,vz:previousVz},r):r.z<=25&&Math.hypot(r.x-e.x,r.y-e.y)<RADIUS+(e.type==='mine'?32:29)?t:null;
+   if(hitAt!==null){const p=effectPosition(e,hitAt);r.usedEffects.push(e.id);r.usedEffects=r.usedEffects.slice(-80);r.hits.push({id:e.id,t:hitAt});r.hits=r.hits.slice(-12);if(hitAt>=r.shieldUntil)knock(r,p.x,p.y,hitAt,e.type==='banana'?115:280,e.type==='banana'?1050:850);}
   }
   if(!floorAt(r.x,r.y,t,arena)&&r.z<=3){r.fallUntil=t+850;r.falls++;r.dx=0;r.dy=0;r.vz=0;r.jumpQueuedUntil=0;continue;}
   if(r.z<2){for(const cp of checkpoints(arena,r.y-80,r.y))if(r.y>=cp&&r.y<cp+80&&cp>r.checkpoint)r.checkpoint=cp;}

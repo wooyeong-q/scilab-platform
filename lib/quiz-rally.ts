@@ -99,11 +99,11 @@ export async function publishQuizMotion(code:string,identity:QuizIdentity,inputs
 }
 // NOTIFY is committed with the guarded write: no extra database round trip,
 // no missed publish after a successful save, and no process-local room bus.
-function arenaNotice(motion=false){
-  const payload=`jsonb_build_object('type','${motion?'motion':'refresh'}','code',code,
+function arenaNotice(motion=false,delta=''){
+  const payload=`jsonb_build_object('type','${delta?'effects':motion?'motion':'refresh'}','code',code,
     'roomRevision',COALESCE((state->>'metaRevision')::int,0),'arenaRevision',COALESCE((state->>'arenaRevision')::int,0),
-    'status',state->>'status'${motion?`, 'id',$2::text,'version',(state #>> ARRAY['players',$2,'version'])::int,
-    'runner',(state #> ARRAY['players',$2,'runner']) - ARRAY['boxes','boxReadyAt','questionBox']::text[]`:''})::text`;
+    'status',state->>'status'${motion||delta?`, 'id',$2::text,'version',(state #>> ARRAY['players',$2,'version'])::int,
+    'runner',(state #> ARRAY['players',$2,'runner']) - ARRAY['boxes','boxReadyAt','questionBox']::text[]`:''}${delta?`, 'delta',${delta}`:''})::text`;
   return `CASE WHEN state ? 'arena' THEN pg_notify('quiz_rally_' || lower(code),
     CASE WHEN octet_length(${payload})<7900 THEN ${payload} ELSE '{"type":"refresh"}' END) END AS realtime_notice`;
 }
@@ -298,7 +298,11 @@ function modifyArena(room:Room,p:Player,body:Record<string,unknown>,q:CustomQues
     if(gear==='shield')r.shieldUntil=actionClock+4000;
     else if(gear==='boost')r.boostUntil=actionClock+3000;
     else {const effects=(room.arenaEffects||[]).filter(e=>e.expires>now-5000);assert(effects.length<200,'경기의 아이템이 많아요. 잠깐 뒤 사용해 주세요.');const behind=gear==='mine'||gear==='banana',offset=behind?-55:gear==='missile'?45:0,direction=gear==='missile'?missileDirection():{dx:r.fx,dy:r.fy};
-      effects.push({id:randomUUID(),type:gear,owner:p.id,x:r.x+direction.dx*offset,y:r.y+direction.dy*offset,dx:direction.dx,dy:direction.dy,born:actionClock,expires:actionClock+(gear==='missile'?2200:gear==='field'?5000:14000)});room.arenaEffects=effects;
+      // A delayed request must not create an already-flown rocket behind a
+      // target's saved input anchor. Project the muzzle to acceptance time,
+      // without advancing the owner's anchor past their queued jump inputs.
+      const born=gear==='missile'?now:actionClock,origin=gear==='missile'?advanceRunner(r,born,room.arena!,effects,p.id):r;
+      effects.push({id:randomUUID(),type:gear,owner:p.id,x:origin.x+direction.dx*offset,y:origin.y+direction.dy*offset,dx:direction.dx,dy:direction.dy,born,expires:born+(gear==='missile'?2200:gear==='field'?5000:14000)});room.arenaEffects=effects;
     }
     p.gear!.splice(slot,1);p.useAt=now;notice(p,GEAR_NAMES[gear]+' 사용!');return;
   }
@@ -434,7 +438,7 @@ export async function actQuizRoom(code:string,identity:QuizIdentity,body:Record<
     const finishClaim=!wasFinished&&p.finish&&p.finish.place>0;
     if(finishClaim){params.push(JSON.stringify(room.finishers),JSON.stringify(priorFinishers));statement=`UPDATE quiz_rally_sessions SET state=jsonb_set(jsonb_set(state,ARRAY['players',$2],$3::jsonb),'{finishers}',$6::jsonb)`;}
     const arenaChanged=!!room.arena&&JSON.stringify(room.arenaEffects||[])!==priorArenaEffects;
-    let arenaGuards='';
+    let arenaGuards='',effectDelta='';
     if(arenaChanged){
       // Merge only this action's additions and claims into the current row.
       // Replacing the entire effects snapshot forces unrelated students to
@@ -446,6 +450,7 @@ export async function actQuizRoom(code:string,identity:QuizIdentity,body:Record<
         .map(e=>[e.id,{victim:e.victim,hitAt:e.hitAt}]));
       params.push(JSON.stringify(added),JSON.stringify(claims),added.length?gameClock(room)-5000:-1);
       const additions=`$${params.length-2}::jsonb`,claimed=`$${params.length-1}::jsonb`,cutoff=`$${params.length}::double precision`;
+      effectDelta=`jsonb_build_object('added',${additions},'claims',${claimed},'cutoff',${cutoff})`;
       const saved=`jsonb_array_elements(COALESCE(state->'arenaEffects','[]'::jsonb))`;
       const merged=`COALESCE((SELECT jsonb_agg(effect || COALESCE(${claimed}->(effect->>'id'),'{}'::jsonb) ORDER BY ordinal)
         FROM ${saved} WITH ORDINALITY AS current_effects(effect,ordinal)
@@ -467,7 +472,7 @@ export async function actQuizRoom(code:string,identity:QuizIdentity,body:Record<
     if(target)statement+=` AND (state #>> ARRAY['players',$6,'version'])::int=$8`;
     if(finishClaim)statement+=` AND COALESCE(state->'finishers','[]'::jsonb)=$7::jsonb`;
     statement+=arenaGuards;
-    const result=await query(statement+' RETURNING '+snapshotColumns+','+arenaNotice(!arenaChanged&&!finishClaim&&!customizing),params);
+    const result=await query(statement+' RETURNING '+snapshotColumns+','+arenaNotice(!arenaChanged&&!finishClaim&&!customizing,!finishClaim&&!customizing?effectDelta:''),params);
     if(result.length)return snapshotFromRow(result[0],identity);
   }
   throw new QuizError('동시에 요청이 많습니다. 같은 동작을 다시 시도해 주세요.',409);

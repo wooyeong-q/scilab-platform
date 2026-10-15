@@ -146,7 +146,7 @@ function cityPistons(t, a, near, far) { return cityLayout(a).pistons.filter(p =>
 })(city);const exports={},require=name=>{if(name==="./quiz-rally-city")return city;throw Error("Unknown arena module");};
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.ROUND_LENGTH = exports.center = exports.STAGES = exports.CHECKPOINTS = exports.BOX_RESPAWN = exports.DASH_ENERGY_DRAIN = exports.DASH_SPEED = exports.MIN_ENERGY_SPEED = exports.ENERGY_CHARGE = exports.ENERGY_DRAIN = exports.COUNTDOWN = exports.RADIUS = exports.SPEED = exports.WIDTH = exports.GEAR_HELP = exports.GEAR_NAMES = void 0;
+exports.ROUND_LENGTH = exports.center = exports.STAGES = exports.CHECKPOINTS = exports.MISSILE_CLEARANCE = exports.MISSILE_HALF_LENGTH = exports.MISSILE_RADIUS = exports.MISSILE_SPEED = exports.BOX_RESPAWN = exports.DASH_ENERGY_DRAIN = exports.DASH_SPEED = exports.MIN_ENERGY_SPEED = exports.ENERGY_CHARGE = exports.ENERGY_DRAIN = exports.COUNTDOWN = exports.RADIUS = exports.SPEED = exports.WIDTH = exports.GEAR_HELP = exports.GEAR_NAMES = void 0;
 exports.energyValue = energyValue;
 exports.energySpeed = energySpeed;
 exports.isMoving = isMoving;
@@ -173,6 +173,7 @@ exports.couldFinish = couldFinish;
 exports.floorAt = floorAt;
 exports.tileDanger = tileDanger;
 exports.effectPosition = effectPosition;
+exports.missileContact = missileContact;
 exports.control = control;
 exports.advanceRunner = advanceRunner;
 exports.progress = progress;
@@ -182,6 +183,7 @@ exports.GEAR_HELP = { mine: '뒤에 설치 · 밟으면 밀려나고 0.85초 조
 exports.WIDTH = 620, exports.SPEED = 175, exports.RADIUS = 18, exports.COUNTDOWN = 3000;
 exports.ENERGY_DRAIN = 4, exports.ENERGY_CHARGE = 45, exports.MIN_ENERGY_SPEED = .35;
 exports.DASH_SPEED = 1.4, exports.DASH_ENERGY_DRAIN = 10, exports.BOX_RESPAWN = 8000;
+exports.MISSILE_SPEED = 460, exports.MISSILE_RADIUS = 10, exports.MISSILE_HALF_LENGTH = 22, exports.MISSILE_CLEARANCE = 50;
 function energyValue(r) { return Math.max(0, Math.min(100, r.energy ?? 100)); }
 function energySpeed(r, arena) { return arena.energy ? exports.MIN_ENERGY_SPEED + (1 - exports.MIN_ENERGY_SPEED) * energyValue(r) / 100 : 1; }
 function isMoving(r, clock = r.t) { return (!!r.dx || !!r.dy) && clock >= exports.COUNTDOWN && clock < r.inputUntil && clock >= r.stunUntil && !r.open && !r.fallUntil && r.finishAt === undefined; }
@@ -247,7 +249,43 @@ function tileDanger(x, y, clock, arena) { if (arena?.version === 2)
     return (0, quiz_rally_city_1.cityTileDanger)(x, y, clock, arena); const local = y % exports.ROUND_LENGTH; if (local < 4130 || local > 4410)
     return 0; const row = Math.floor((local - 4130) / 95), col = Math.max(0, Math.min(4, Math.floor((x - (0, exports.center)(y) + 310) / 124))); if ((row + col) % 3 !== 0)
     return 0; const phase = (clock / 1000 + row * .8 + col * .45) % 3.6; return phase > 2.4 ? 2 : phase > 1.8 ? 1 : 0; }
-function effectPosition(e, t) { const dt = Math.max(0, t - e.born) / 1000; return e.type === 'missile' ? { x: e.x + e.dx * 460 * dt, y: e.y + e.dy * 460 * dt } : { x: e.x, y: e.y }; }
+function effectPosition(e, t) { const dt = Math.max(0, Math.min(t, e.hitAt ?? Infinity) - e.born) / 1000; return e.type === 'missile' ? { x: e.x + e.dx * exports.MISSILE_SPEED * dt, y: e.y + e.dy * exports.MISSILE_SPEED * dt } : { x: e.x, y: e.y }; }
+// Sweep relative motion through the rocket's narrow body instead of a large
+// circular endpoint test. This also catches a fast dash crossing between ticks.
+function missileContact(e, start, end, from, to) {
+    const first = Math.max(start, e.born), last = Math.min(end, e.expires, e.hitAt ?? Infinity);
+    if (last < first || end <= start)
+        return null;
+    const n = Math.hypot(e.dx, e.dy) || 1, dx = e.dx / n, dy = e.dy / n, side = exports.RADIUS + exports.MISSILE_RADIUS, along = side + exports.MISSILE_HALF_LENGTH;
+    const point = (t) => { const k = (t - start) / (end - start), p = effectPosition(e, t), x = from.x + (to.x - from.x) * k - p.x, y = from.y + (to.y - from.y) * k - p.y; return { x: (x * dy - y * dx) / side, y: (x * dx + y * dy) / along }; };
+    const a = point(first), b = point(last), vx = b.x - a.x, vy = b.y - a.y, A = vx * vx + vy * vy, B = 2 * (a.x * vx + a.y * vy), C = a.x * a.x + a.y * a.y - 1;
+    let lo = 0, hi = 1;
+    if (A < 1e-12) {
+        if (C > 0)
+            return null;
+    }
+    else {
+        const disc = B * B - 4 * A * C;
+        if (disc < 0)
+            return null;
+        const root = Math.sqrt(disc);
+        lo = Math.max(0, (-B - root) / (2 * A));
+        hi = Math.min(1, (-B + root) / (2 * A));
+        if (lo > hi)
+            return null;
+    }
+    let at = first + (last - first) * lo;
+    const until = first + (last - first) * hi, seconds = (at - start) / 1000;
+    if (from.z + from.vz * seconds - 340 * seconds * seconds > exports.MISSILE_CLEARANCE) {
+        const disc = from.vz * from.vz + 1360 * (from.z - exports.MISSILE_CLEARANCE);
+        if (disc < 0)
+            return null;
+        at = start + (from.vz + Math.sqrt(disc)) / 680 * 1000;
+        if (at > until + .000001)
+            return null;
+    }
+    return at;
+}
 function segmentDistance(x, y, ax, ay, bx, by) { const dx = bx - ax, dy = by - ay, k = Math.max(0, Math.min(1, ((x - ax) * dx + (y - ay) * dy) / (dx * dx + dy * dy || 1))); return Math.hypot(x - ax - k * dx, y - ay - k * dy); }
 function knock(r, x, y, t, force = 190, stun = 600) { if (t < r.immuneUntil || r.open)
     return; const d = Math.hypot(r.x - x, r.y - y) || 1; r.knockX = (r.x - x) / d * force; r.knockY = (r.y - y) / d * force - 55; r.stunUntil = t + stun; r.immuneUntil = t + 1050; }
@@ -373,7 +411,7 @@ function advanceRunner(source, clock, arena, effects = [], id = '') {
         // Keep crosswind steerable when a depleted battery reduces player control.
         for (const wind of fans(arena, r.y, r.y))
             vx += wind.force * (.7 + .3 * Math.sin(t / 700 + wind.phase)) * (grounded ? 1 : .65) * energyDrive;
-        const previousY = r.y, previousX = r.x;
+        const previousY = r.y, previousX = r.x, previousZ = r.z, previousVz = r.vz;
         r.x += (vx + r.knockX) * dt;
         r.y += (vy + r.knockY) * dt;
         r.knockX *= Math.pow(.04, dt);
@@ -420,20 +458,19 @@ function advanceRunner(source, clock, arena, effects = [], id = '') {
                     knock(r, b.x, b.y, t, 240);
         }
         for (const e of effects) {
-            if (e.owner === id || e.born > t || e.expires <= t || e.victim && e.victim !== id || r.usedEffects.includes(e.id) || e.type === 'field' || e.type === 'boost' || e.type === 'shield')
+            if (e.owner === id || e.born > t || e.expires <= start || e.victim && e.victim !== id || r.usedEffects.includes(e.id) || e.type === 'field' || e.type === 'boost' || e.type === 'shield')
                 continue;
             if (e.type === 'mine' && t < e.born + 500)
                 continue;
-            if (r.z > (e.type === 'missile' ? 50 : 25))
-                continue;
-            const p = effectPosition(e, t), radius = e.type === 'missile' ? 34 : e.type === 'mine' ? 32 : 29;
-            if (Math.hypot(r.x - p.x, r.y - p.y) < exports.RADIUS + radius) {
+            const hitAt = e.type === 'missile' ? missileContact(e, start, t, { x: previousX, y: previousY, z: previousZ, vz: previousVz }, r) : r.z <= 25 && Math.hypot(r.x - e.x, r.y - e.y) < exports.RADIUS + (e.type === 'mine' ? 32 : 29) ? t : null;
+            if (hitAt !== null) {
+                const p = effectPosition(e, hitAt);
                 r.usedEffects.push(e.id);
                 r.usedEffects = r.usedEffects.slice(-80);
-                r.hits.push({ id: e.id, t });
+                r.hits.push({ id: e.id, t: hitAt });
                 r.hits = r.hits.slice(-12);
-                if (t >= r.shieldUntil)
-                    knock(r, p.x, p.y, t, e.type === 'banana' ? 115 : 280, e.type === 'banana' ? 1050 : 850);
+                if (hitAt >= r.shieldUntil)
+                    knock(r, p.x, p.y, hitAt, e.type === 'banana' ? 115 : 280, e.type === 'banana' ? 1050 : 850);
             }
         }
         if (!floorAt(r.x, r.y, t, arena) && r.z <= 3) {

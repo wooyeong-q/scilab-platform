@@ -1,4 +1,4 @@
-import { advanceRunner,control,isDashing,type Runner } from './quiz-rally-arena';
+import { advanceRunner,control,isDashing,type Runner,type Effect } from './quiz-rally-arena';
 import type { getQuizMotionAccess } from './quiz-rally';
 export type MotionAccess=Awaited<ReturnType<typeof getQuizMotionAccess>>;
 type Input={seq:number;at:number;dx:number;dy:number;jump:boolean;dash:boolean};
@@ -16,7 +16,7 @@ export function motionInputs(values:unknown):Input[]{
 // This projection never writes scores, items, hits or the player's saved
 // position. It uses the SAME server physics and ordered inputs as HTTP saves.
 export class MotionProjection{
-  access:MotionAccess;pending:Input[]=[];anchor?:Runner;projection?:Runner;
+  access:MotionAccess;pending:Input[]=[];authority?:Runner;anchor?:Runner;projection?:Runner;
   lastSeq=0;lastSent=0;previous?:Runner;lastSignature='';
   constructor(access:MotionAccess,readonly id:string){this.access=access;this.reset(access);}
   clock(now=Date.now()){return Math.min(this.access.duration,this.access.raceClock+(this.access.status==='running'?Math.max(0,now-this.access.serverNow):0));}
@@ -28,9 +28,15 @@ export class MotionProjection{
   ack(source:Runner,version:number){
     if(version<this.access.version)return;
     this.access.version=version;this.pending=this.pending.filter(e=>e.seq>source.seq);
+    this.authority=source;
     this.anchor={...source,boxes:[],boxReadyAt:{}};this.lastSeq=Math.max(this.lastSeq,source.seq);
     for(const e of this.pending)this.apply(e);
     this.projection=undefined;
+  }
+  effects(delta:{added:Effect[];claims:Record<string,Partial<Effect>>;cutoff:number},revision:number){
+    this.access.effects=this.access.effects.filter(e=>e.expires>delta.cutoff).map(e=>({...e,...delta.claims[e.id]})).concat(delta.added);
+    this.access.arenaRevision=revision;
+    if(this.authority)this.ack(this.authority,this.access.version);
   }
   apply(e:Input){
     if(!this.anchor||!this.access.arena)return;
@@ -50,11 +56,14 @@ export class MotionProjection{
     const r=this.projection,previous=this.previous,dt=previous?(t-previous.t)/1000:0;
     const moving=!!r.dx||!!r.dy||!!r.vz||!!r.z||!!r.fallUntil||t<r.stunUntil;
     const flags=(isDashing(r,this.access.arena,t)?1:0)|(r.open?2:0)|(r.fallUntil?4:0)|(t<r.stunUntil?8:0)|(t<r.boostUntil?16:0)|(t<r.shieldUntil?32:0)|(r.finishAt!==undefined?64:0);
-    const signature=[r.x,r.y,r.z,flags,r.seq,r.falls].join(':');
+    const signature=[r.x,r.y,r.z,flags,r.seq,r.falls,r.hits.at(-1)?.id].join(':');
     if(!moving&&signature===this.lastSignature&&t-this.lastSent<1000)return null;
     const velocity=(key:'x'|'y')=>dt>0&&dt<.5?round(Math.max(-800,Math.min(800,(r[key]-previous![key])/dt))):0;
     const pose=[Math.round(t),round(r.x),round(r.y),round(r.z),velocity('x'),velocity('y'),round(r.vz),round(r.fx),round(r.fy),flags,r.seq,r.falls,round(r.jumpAt)];
     this.previous={...r};this.lastSent=t;this.lastSignature=signature;
-    return {type:'frame',code:this.access.code,id:this.id,roomRevision:this.access.roomRevision,arenaRevision:this.access.arenaRevision,pose};
+    // Presentation hints accompany the same physics pose. They never claim a
+    // persistent victim; the guarded game action still decides the result.
+    const hits=r.hits.filter(hit=>hit.t>=t-3000).slice(-4);
+    return {type:'frame',code:this.access.code,id:this.id,roomRevision:this.access.roomRevision,arenaRevision:this.access.arenaRevision,pose,...(hits.length?{hits}:{})};
   }
 }

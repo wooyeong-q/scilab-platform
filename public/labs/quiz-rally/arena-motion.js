@@ -10,9 +10,9 @@ class PoseTrack{
  constructor(){this.clear();}
  clear(){this.samples=[];this.offset=null;this.cursor=null;this.clock=null;this.arrival=-Infinity;this.visual=null;this.cadence=null;this.jitter=0;this.delay=140;}
  push(pose,clock){
-  if(!Array.isArray(pose)||pose.length!==13||!pose.every(Number.isFinite))return;
+  if(!Array.isArray(pose)||pose.length!==13||!pose.every(Number.isFinite))return false;
   const [t,x,y,z,vx,vy,vz,fx,fy,flags,seq,falls,jumpAt]=pose,last=this.samples.at(-1);
-  if(last&&(t<=last.t||seq<last.seq))return;
+  if(last&&(t<=last.t||seq<last.seq))return false;
   if(last){const spacing=t-last.t,moving=Math.hypot(vx,vy,vz,last.vx,last.vy,last.vz)>.1;
    if(moving&&spacing>0&&spacing<=500){this.cadence=this.cadence===null?spacing:this.cadence+(spacing-this.cadence)*.2;
     this.jitter+=(Math.abs(clock-this.arrival-spacing)-this.jitter)*.1;
@@ -24,6 +24,7 @@ class PoseTrack{
   const observed=clock-t;this.offset=this.offset===null?observed:this.offset+clamp(observed-this.offset,-20,20)*.05;
   this.arrival=clock;this.samples.push({t,x,y,z,vx,vy,vz,fx,fy,flags,seq,falls,jumpAt});
   if(this.samples.length>24)this.samples.shift();
+  return true;
  }
  sample(clock,source){
   if(!this.samples.length||clock-this.arrival>1500)return null;
@@ -74,5 +75,41 @@ class LocalView{
  }
  sample(r,dt){const decay=Math.exp(-Math.max(0,dt)/80);this.x*=decay;this.y*=decay;return{x:r.x+this.x,y:r.y+this.y,z:r.z};}
 }
-window.quizArenaMotion={PoseTrack,LocalView,hermite};
+function mergeEffects(effects,delta){return effects.filter(e=>e.expires>delta.cutoff).map(e=>({...e,...delta.claims[e.id]})).concat(delta.added);}
+// Projectiles and the player they hit must use the same presentation time.
+// Local incoming hits stay on the immediate local physics timeline.
+class EffectView{
+ constructor(){this.clear();}
+ clear(){this.entries=new Map();}
+ begin(clock,players,own){
+  this.clock=clock;this.players=players;this.own=own;
+  this.hints=new Map();for(const player of players)for(const hit of player.hitHints||[]){const previous=this.hints.get(hit.id);if(!previous||hit.t<previous.t)this.hints.set(hit.id,{id:player.p.id,t:hit.t});}
+  const times=players.filter(o=>o.p.id!==own?.id).map(o=>o.shown.t).filter(Number.isFinite).sort((a,b)=>a-b);
+  // Server poses can be ahead of the conservative local input clock. Clamping
+  // them to that clock shows a victim's knockback before the rocket arrives.
+  this.remoteTime=times.length?clamp(times[Math.floor(times.length/2)],clock-1500,clock+1500):clock;
+  for(const [id,entry]of this.entries)if(clock>entry.expires+3000)this.entries.delete(id);
+ }
+ sample(effect){
+  const own=this.own,localHit=own?.r.hits.find(h=>h.id===effect.id),hit=effect.victim?{id:effect.victim,t:effect.hitAt}:localHit?{id:own.id,t:localHit.t}:this.hints.get(effect.id);
+  const target=hit&&this.players.find(o=>o.p.id===hit.id);
+  // A nearby incoming rocket must agree with this client's immediate dodge.
+  const incoming=own&&effect.owner!==own.id&&Math.abs(own.r.x-effect.x)<100&&own.r.y>=effect.y-60&&own.r.y<effect.y+1100;
+  const localTarget=!!hit&&hit.id===own?.id;
+  const desired=localTarget||incoming&&!hit?this.clock:target?target.shown.t:effect.type==='missile'?this.remoteTime:this.clock;
+  let entry=this.entries.get(effect.id);
+  if(!entry){entry={time:desired,clock:this.clock,expires:effect.expires,burstAt:null};this.entries.set(effect.id,entry);}
+  const elapsed=Math.max(0,this.clock-entry.clock);entry.clock=this.clock;
+  entry.time=localTarget?desired:entry.time+clamp(desired-entry.time,elapsed*.5,elapsed*1.5);
+  const confirmed=hit&&desired>=hit.t&&entry.time>=hit.t;
+  if(confirmed){
+   if(entry.burstAt===null)entry.burstAt=this.clock;
+   if(this.clock-entry.burstAt>500||this.clock-hit.t>3000)return null;
+   return{effect:{...effect,victim:hit.id,hitAt:hit.t},time:hit.t+this.clock-entry.burstAt,positionAt:hit.t,burst:true};
+  }
+  const at=Math.min(entry.time,hit?.t??Infinity);if(at<effect.born||at>effect.expires)return null;
+  return{effect,time:at,positionAt:at,burst:false};
+ }
+}
+window.quizArenaMotion={PoseTrack,LocalView,EffectView,mergeEffects,hermite};
 })();

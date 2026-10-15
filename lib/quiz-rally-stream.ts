@@ -35,6 +35,7 @@ export async function quizStream(request:Request,code:string,identity:QuizIdenti
     // Control events are authorization boundaries (e.g. teacher removal).
     // Stop delivering until credentials have been checked again.
     try{const event=JSON.parse(msg.payload);
+      if(event.type==='effects'){if(!checking)emit(JSON.stringify({type:'refresh',code:access.code}));return;}
       if(event.type!=='motion'&&event.type!=='refresh')return;
       if(event.type==='refresh'){
         if(checking)return;checking=true;
