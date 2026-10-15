@@ -1,11 +1,13 @@
 import { Client } from '@neondatabase/serverless';
 import { authorizeQuizStream, QuizError, type QuizIdentity } from './quiz-rally';
+import { quizMotionStream } from './quiz-rally-motion-stream';
 
 // Each listener belongs to one bounded HTTP request. LISTEN requires the
 // direct connection, never the transaction pool used for ordinary queries.
 export async function quizStream(request:Request,code:string,identity:QuizIdentity){
   const origin=request.headers.get('origin');
   if(origin&&origin!==new URL(request.url).origin)throw new QuizError('같은 사이트에서 참여해 주세요.',403);
+  if(new URL(request.url).searchParams.get('motion')==='1')return quizMotionStream(request,code,identity);
   const access=await authorizeQuizStream(code,identity);
   if(access.status==='ended')return new Response(null,{status:204});
   const connectionString=process.env.DATABASE_URL_UNPOOLED||process.env.POSTGRES_URL_NON_POOLING;

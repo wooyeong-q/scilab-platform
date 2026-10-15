@@ -3,6 +3,15 @@ import type { getQuizMotionAccess } from './quiz-rally';
 export type MotionAccess=Awaited<ReturnType<typeof getQuizMotionAccess>>;
 type Input={seq:number;at:number;dx:number;dy:number;jump:boolean;dash:boolean};
 const round=(n:number)=>Math.round(n*100)/100;
+export function motionInputs(values:unknown):Input[]{
+  if(!Array.isArray(values)||values.length<1||values.length>24)throw new Error('invalid inputs');
+  let seq=0;const inputs:Input[]=[];
+  for(const v of values){
+    if(!v||!Number.isSafeInteger(v.seq)||v.seq<=seq||v.seq<1||!Number.isFinite(v.at)||v.at<0||!Number.isFinite(v.dx)||Math.abs(v.dx)>1||!Number.isFinite(v.dy)||Math.abs(v.dy)>1||typeof v.jump!=='boolean'||typeof v.dash!=='boolean')throw new Error('invalid input');
+    seq=v.seq;inputs.push({seq:v.seq,at:v.at,dx:v.dx,dy:v.dy,jump:v.jump,dash:v.dash});
+  }
+  return inputs;
+}
 
 // This projection never writes scores, items, hits or the player's saved
 // position. It uses the SAME server physics and ordered inputs as HTTP saves.
@@ -30,12 +39,7 @@ export class MotionProjection{
     this.projection=undefined;
   }
   inputs(values:unknown){
-    if(!Array.isArray(values)||values.length<1||values.length>24)throw new Error('invalid inputs');
-    let seq=0;const inputs:Input[]=[];
-    for(const v of values){
-      if(!v||!Number.isSafeInteger(v.seq)||v.seq<=seq||v.seq<1||!Number.isFinite(v.at)||v.at<0||!Number.isFinite(v.dx)||Math.abs(v.dx)>1||!Number.isFinite(v.dy)||Math.abs(v.dy)>1||typeof v.jump!=='boolean'||typeof v.dash!=='boolean')throw new Error('invalid input');
-      seq=v.seq;inputs.push({seq:v.seq,at:v.at,dx:v.dx,dy:v.dy,jump:v.jump,dash:v.dash});
-    }
+    const inputs=motionInputs(values);
     if(this.access.status!=='running'||!this.anchor||this.anchor.open||this.anchor.finishAt!==undefined)return;
     for(const e of inputs){if(e.seq<=this.lastSeq)continue;this.lastSeq=e.seq;this.pending.push(e);this.apply(e);}
     if(this.pending.length>96)throw new Error('unacknowledged inputs');

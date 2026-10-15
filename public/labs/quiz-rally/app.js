@@ -19,7 +19,7 @@ let homeRole='student',code='',identity=null,snapshot=null,busy=false,pollTimer=
 let refreshWanted=false,refreshTimer=0;
 function refreshLive(){refreshWanted=true;clearTimeout(refreshTimer);refreshTimer=setTimeout(()=>{if(!busy&&!polling&&identity&&snapshot){refreshWanted=false;poll();}},60);}
 const live=new window.quizArenaLive({event:event=>{if(event.type==='refresh'||!window.quizArena.liveMotion(event))refreshLive();},status:(ready,fast)=>{window.quizArena.liveStatus(ready,fast);schedulePoll();},refresh:refreshLive});
-window.quizArena.sendInput=input=>live.sendInput(input);
+window.quizArena.sendInput=input=>live.sendInput(input,{roomRevision:snapshot?.roomRevision,arenaRevision:snapshot?.arenaRevision});
 function syncLive(){live.configure(api+'/'+code+'/events',identity,!!(activeTab&&snapshot?.arena&&['running','paused'].includes(snapshot.status)));}
 
 let lobbyRobot=null;

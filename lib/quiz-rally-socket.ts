@@ -5,7 +5,8 @@ import { MotionProjection } from './quiz-rally-motion';
 
 // Every live socket owns a bounded database session. PostgreSQL fan-out works
 // across instances; no sticky routing or process-local room membership.
-export function serveQuizSocket(ws:WebSocket,code:string){
+export type MotionPeer=Pick<WebSocket,'on'|'close'|'send'|'readyState'|'bufferedAmount'>;
+export function serveQuizSocket(ws:MotionPeer,code:string){
   let client:Client|undefined,identity:QuizIdentity|undefined,motion:MotionProjection|undefined;
   let closed=false,authenticating=false,refreshing=false,publishing=false,refreshAgain=false;
   let timer:ReturnType<typeof setInterval>|undefined,expiry:ReturnType<typeof setTimeout>|undefined;
@@ -16,6 +17,12 @@ export function serveQuizSocket(ws:WebSocket,code:string){
   function close(reason=1000,detail=''){
     if(closed)return;closed=true;clearTimeout(authDeadline);clearTimeout(expiry);clearInterval(timer);
     ws.close(reason,detail);void client?.end().catch(()=>{});
+  }
+  function acceptInputs(values:unknown){
+    const now=Date.now();budget=Math.min(100,budget+(now-budgetAt)*.1);budgetAt=now;
+    budget-=Array.isArray(values)?values.length:1000;if(budget<0)throw new Error('rate limit');
+    if(refreshing){waitingInputs.push(values as unknown[]);if(waitingInputs.reduce((n,a)=>n+(Array.isArray(a)?a.length:1000),0)>96)throw new Error('input backlog');}
+    else motion?.inputs(values);
   }
   async function refresh(){
     if(refreshing){refreshAgain=true;return;}if(!identity)return;refreshing=true;
@@ -48,6 +55,8 @@ export function serveQuizSocket(ws:WebSocket,code:string){
       try{const event=JSON.parse(notification.payload);
         if(event.type==='refresh'){
           void refresh().then(()=>{if(!closed)send({type:'refresh'});}).catch(()=>close(1008));
+        }else if(event.type==='input'&&event.id===identity?.playerId&&motion&&event.roomRevision===motion.access.roomRevision&&event.arenaRevision===motion.access.arenaRevision){
+          acceptInputs(event.inputs);
         }else if(!refreshing&&event.type==='motion'){
           if(event.id===identity?.playerId&&motion&&event.roomRevision===motion.access.roomRevision&&event.arenaRevision===motion.access.arenaRevision)motion.ack(event.runner,event.version);
           send(event);
@@ -68,10 +77,7 @@ export function serveQuizSocket(ws:WebSocket,code:string){
       if(value.type==='auth'){void authenticate(value).catch(()=>{console.warn('Quiz realtime authentication failed',{stage:authStage});close(1008);});return;}
       if(!motion||authenticating&&!timer||!identity)throw new Error('not ready');
       if(value.type!=='input'||identity.role!=='student')throw new Error('invalid message');
-      const now=Date.now();budget=Math.min(100,budget+(now-budgetAt)*.1);budgetAt=now;
-      budget-=Array.isArray(value.inputs)?value.inputs.length:1000;if(budget<0)throw new Error('rate limit');
-      if(refreshing){waitingInputs.push(value.inputs);if(waitingInputs.reduce((n,a)=>n+(Array.isArray(a)?a.length:1000),0)>96)throw new Error('input backlog');}
-      else motion.inputs(value.inputs);
+      acceptInputs(value.inputs);
     }catch{close(1008);}
   });
   return close;

@@ -7,20 +7,20 @@ const sleep=ms=>new Promise(r=>setTimeout(r,ms));
 const arena={version:1,length:4700,seed:7,combat:true,energy:true};
 const r=()=>({...M.freshRunner(4000),x:0,y:300});
 
-test('slow socket startup and idle heartbeats allow the full connection timeout',()=>{
- const timers=new Map();let timerId=0,socket;
- class FakeSocket{constructor(){socket=this;this.readyState=1;this.bufferedAmount=0;}send(){}close(){this.onclose?.();}}
- const env={window:{},WebSocket:FakeSocket,URL,location:{href:'https://game.test/'},Date,AbortController,
-  setTimeout(fn,ms){timers.set(++timerId,{fn,ms});return timerId;},clearTimeout(id){timers.delete(id);}};
+test('motion uploads overlap in bounded batches without losing inputs when responses reorder',async()=>{
+ const requests=[],env={window:{},URL,location:{href:'https://game.test/'},Date,AbortController,setTimeout,clearTimeout,
+  fetch(url,options){return new Promise(resolve=>requests.push({url:String(url),options,resolve}));}};
  vm.runInNewContext(fs.readFileSync('public/labs/quiz-rally/arena-live.js','utf8'),env);
  const live=new env.window.quizArenaLive({event(){},status(){},refresh(){}});
- live.url='/api/labs/quiz-rally/sessions/ABCDEF/events';live.who={role:'student',playerId:'p',token:'test'};
- live.websocket(0);assert.equal([...timers.values()].at(-1).ms,20000);
- socket.onopen();socket.onmessage({data:JSON.stringify({type:'ready'})});
- assert.equal(live.fast,true);assert.equal([...timers.values()].at(-1).ms,20000);
- socket.onmessage({data:JSON.stringify({type:'ping'})});assert.equal([...timers.values()].at(-1).ms,20000);live.stop();assert.equal(timers.size,0);
+ live.url='/api/labs/quiz-rally/sessions/ABCDEF/events';live.key='active';live.who={role:'student',playerId:'p',token:'test'};live.fast=true;
+ const revision={roomRevision:1,arenaRevision:0},input={seq:1,at:4000,dx:1,dy:1,jump:false,dash:true};
+ live.sendInput(input,revision);await sleep(20);assert.equal(requests.length,1);
+ live.sendInput({...input,seq:2,jump:true},revision);live.sendInput({...input,seq:3,dx:0},revision);await sleep(120);
+ assert.equal(requests.length,2);assert.equal(live.inputRequests.size,2);
+ assert.deepEqual(JSON.parse(requests[1].options.body).inputs.map(e=>e.seq),[1,2,3]);
+ requests[1].resolve({ok:true});await sleep(1);assert.equal(live.inputs.length,0);
+ requests[0].resolve({ok:true});await sleep(1);assert.equal(live.inputs.length,0);assert.equal(live.inputRequests.size,0);live.stop();
 });
-
 test('local jump height and landing match the physics on every frame; only reconciliation corrections ease out',()=>{
  const view=new LocalView(),start=M.control(r(),1,1,true,true,4000,1);
  for(const fps of [30,60,120])for(let t=4000;t<5100;t+=1000/fps){const physical=M.advanceRunner(start,t,arena),shown=view.sample(physical,1000/fps);assert.equal(shown.z,physical.z);assert.equal(shown.x,physical.x);assert.equal(shown.y,physical.y);}
@@ -87,4 +87,31 @@ test('independent authenticated WebSocket sessions relay fast inputs before an H
   await game.actQuizRoom(made.code,teacher,{action:'remove',playerId:students[0].playerId,requestId:randomUUID()});await until(()=>a.readyState===3);
   assert.ok(!JSON.stringify(b.events).includes(students[0].token));
  }finally{for(const ws of clients)ws.close();for(const ws of wss.clients)ws.terminate();await new Promise(r=>wss.close(r));await new Promise(r=>server.close(r));await h.close();}
+});
+
+test('authenticated HTTP motion and independent streams deliver 10 Hz poses without persistent game writes',async()=>{
+ const h=await harness(),game=h.load('lib/quiz-rally.ts'),{quizStream}=h.load('lib/quiz-rally-stream.ts'),route=h.load('app/api/labs/quiz-rally/sessions/[code]/motion/route.ts');
+ const made=await game.createQuizRoom({title:'스트림 확인'}),teacher={role:'teacher',token:made.teacherKey,playerId:''};
+ const students=[0,1].map(i=>({role:'student',token:randomBytes(32).toString('base64url'),playerId:randomUUID(),nickname:'스트림'+i}));
+ for(const s of students)await game.joinQuizRoom(made.code,s,{nickname:s.nickname});await game.actQuizRoom(made.code,teacher,{action:'start',requestId:randomUUID()});
+ await h.pg.query("UPDATE quiz_rally_sessions SET state=jsonb_set(state,'{endsAt}',to_jsonb($2::bigint)) WHERE code=$1",[made.code,Date.now()+900000-4000]);
+ const streams=[];async function until(fn){for(let i=0;i<400;i++){if(fn())return;await sleep(20);}assert.fail('stream event timed out');}
+ function headers(who){return {'Content-Type':'application/json',Authorization:'Bearer '+who.token,'X-Quiz-Role':who.role,'X-Player-Id':who.playerId};}
+ async function publish(who,body){return route.POST(new Request('http://localhost/api/labs/quiz-rally/sessions/'+made.code+'/motion',{method:'POST',headers:headers(who),body:JSON.stringify(body)}),{params:Promise.resolve({code:made.code})});}
+ try{
+  for(const who of students){const abort=new AbortController(),events=[];const response=await quizStream(new Request('http://localhost/events?motion=1',{signal:abort.signal}),made.code,who),reader=response.body.getReader();
+   const stream={abort,events,done:false};streams.push(stream);stream.read=(async()=>{const decoder=new TextDecoder();let buffer='';while(true){const{value,done}=await reader.read();if(done){stream.done=true;break;}buffer+=decoder.decode(value,{stream:true});let i;while((i=buffer.indexOf('\n\n'))>=0){const block=buffer.slice(0,i);buffer=buffer.slice(i+2);if(block.startsWith('data: '))events.push(JSON.parse(block.slice(6)));}}})();
+  }
+  await until(()=>streams.every(s=>s.events.some(e=>e.type==='ready'&&e.motion===true)));
+  const snapshot=await game.getQuizSnapshot(made.code,students[0]),input={seq:1,at:Math.floor(snapshot.raceClock),dx:1,dy:1,jump:true,dash:true},body={inputs:[input],roomRevision:snapshot.roomRevision,arenaRevision:snapshot.arenaRevision};
+  assert.equal((await publish(students[0],body)).status,204);
+  await until(()=>streams[1].events.some(e=>e.type==='frame'&&e.id===students[0].playerId&&e.pose[3]>0&&e.pose[10]===1));
+  await sleep(350);assert.ok(streams[1].events.filter(e=>e.type==='frame'&&e.pose[10]===1).length>=3);
+  assert.equal((await game.getQuizSnapshot(made.code,students[0])).player.runner.seq,0);
+  assert.equal((await publish({...students[0],token:students[1].token},body)).status,409);
+  assert.equal((await publish(students[0],{...body,roomRevision:body.roomRevision+1})).status,409);
+  assert.equal((await publish(students[0],{...body,inputs:[{...input,dx:100}]})).status,400);
+  await game.actQuizRoom(made.code,teacher,{action:'remove',playerId:students[0].playerId,requestId:randomUUID()});await until(()=>streams[0].done);
+  assert.ok(!JSON.stringify(streams[1].events).includes(students[0].token));
+ }finally{for(const stream of streams)stream.abort.abort();await Promise.all(streams.map(s=>s.read));await h.close();}
 });

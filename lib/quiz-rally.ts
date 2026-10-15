@@ -83,6 +83,20 @@ export async function getQuizMotionAccess(code:string,identity:QuizIdentity){
     raceClock:gameClock(room,now),serverNow:now,duration:room.durationSeconds*1000,
     runner:player?.runner,version:player?.version||0};
 }
+// Authentication and publication share one guarded read. These transient
+// controls never update the saved runner, answers, scores or item inventory.
+export async function publishQuizMotion(code:string,identity:QuizIdentity,inputs:unknown[],roomRevision:number,arenaRevision:number){
+  assert(identity.role==='student'&&validToken(identity.token)&&uuid(identity.playerId),'참여 정보를 확인해 주세요.',403);
+  assert(Number.isSafeInteger(roomRevision)&&roomRevision>=0&&Number.isSafeInteger(arenaRevision)&&arenaRevision>=0,'경기 정보를 확인해 주세요.');
+  code=codeValue(code);
+  const payload=JSON.stringify({type:'input',code,id:identity.playerId,inputs,roomRevision,arenaRevision});
+  const rows=await query(`SELECT pg_notify('quiz_rally_'||lower(code),$4) FROM quiz_rally_sessions
+    WHERE code=$1 AND expires_at>NOW() AND state->>'status'='running'
+    AND COALESCE((state->>'metaRevision')::int,0)=$5 AND COALESCE((state->>'arenaRevision')::int,0)=$6
+    AND state #>> ARRAY['players',$2,'tokenHash']=$3 AND state #>> ARRAY['players',$2,'removed']='false'`,
+    [code,identity.playerId,hash(identity.token),payload,roomRevision,arenaRevision]);
+  assert(rows.length,'경기 상태가 바뀌었습니다. 다시 연결해 주세요.',409);
+}
 // NOTIFY is committed with the guarded write: no extra database round trip,
 // no missed publish after a successful save, and no process-local room bus.
 function arenaNotice(motion=false){
