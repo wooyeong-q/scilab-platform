@@ -7,6 +7,20 @@ const sleep=ms=>new Promise(r=>setTimeout(r,ms));
 const arena={version:1,length:4700,seed:7,combat:true,energy:true};
 const r=()=>({...M.freshRunner(4000),x:0,y:300});
 
+test('slow socket startup and idle heartbeats allow the full connection timeout',()=>{
+ const timers=new Map();let timerId=0,socket;
+ class FakeSocket{constructor(){socket=this;this.readyState=1;this.bufferedAmount=0;}send(){}close(){this.onclose?.();}}
+ const env={window:{},WebSocket:FakeSocket,URL,location:{href:'https://game.test/'},Date,AbortController,
+  setTimeout(fn,ms){timers.set(++timerId,{fn,ms});return timerId;},clearTimeout(id){timers.delete(id);}};
+ vm.runInNewContext(fs.readFileSync('public/labs/quiz-rally/arena-live.js','utf8'),env);
+ const live=new env.window.quizArenaLive({event(){},status(){},refresh(){}});
+ live.url='/api/labs/quiz-rally/sessions/ABCDEF/events';live.who={role:'student',playerId:'p',token:'test'};
+ live.websocket(0);assert.equal([...timers.values()].at(-1).ms,20000);
+ socket.onopen();socket.onmessage({data:JSON.stringify({type:'ready'})});
+ assert.equal(live.fast,true);assert.equal([...timers.values()].at(-1).ms,20000);
+ socket.onmessage({data:JSON.stringify({type:'ping'})});assert.equal([...timers.values()].at(-1).ms,20000);live.stop();assert.equal(timers.size,0);
+});
+
 test('local jump height and landing match the physics on every frame; only reconciliation corrections ease out',()=>{
  const view=new LocalView(),start=M.control(r(),1,1,true,true,4000,1);
  for(const fps of [30,60,120])for(let t=4000;t<5100;t+=1000/fps){const physical=M.advanceRunner(start,t,arena),shown=view.sample(physical,1000/fps);assert.equal(shown.z,physical.z);assert.equal(shown.x,physical.x);assert.equal(shown.y,physical.y);}

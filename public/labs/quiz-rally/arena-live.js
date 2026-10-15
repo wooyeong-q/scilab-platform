@@ -14,13 +14,13 @@ class Live{
  async websocket(generation){
   if(typeof WebSocket==='undefined'||Date.now()<this.socketRetryAt)return false;
   return new Promise(resolve=>{
-   let ws,ready=false,watchdog;const arm=()=>{clearTimeout(watchdog);watchdog=setTimeout(()=>ws.close(),ready?20000:5000);};
+   let ws,ready=false,watchdog;const arm=()=>{clearTimeout(watchdog);watchdog=setTimeout(()=>ws.close(),20000);};
    try{const url=new URL(this.url,location.href);url.pathname=url.pathname.replace(/\/events$/,'/socket');url.protocol=url.protocol==='https:'?'wss:':'ws:';ws=new WebSocket(url);this.socket=ws;arm();}
    catch{resolve(false);return;}
    ws.onopen=()=>{if(generation!==this.generation){ws.close();return;}ws.send(JSON.stringify({type:'auth',...this.who}));};
    ws.onmessage=message=>{
     if(generation!==this.generation)return;
-    try{const event=JSON.parse(message.data);arm();
+    try{const event=JSON.parse(message.data);if(event.type==='ready')ready=true;arm();
      if(event.type==='ready'){ready=true;this.attempt=0;this.state(true,true);this.refresh();}
      else if(event.type!=='ping')this.event(event);
     }catch{ws.close();}
