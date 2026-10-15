@@ -122,8 +122,9 @@ function liveMotion(event){
   if(event.id&&event.id!==state.player?.id)liveMotion({...event,type:'motion'});
   return true;
  }
- if(event.roomRevision!==state.roomRevision||event.arenaRevision!==state.arenaRevision||event.type==='motion'&&event.status!==state.status)return false;
+ if(event.roomRevision!==state.roomRevision||event.arenaRevision>state.arenaRevision||event.type==='motion'&&event.status!==state.status)return false;
  if(event.type==='world'){for(const entry of event.players||[])if(entry.id!==state.player?.id){const track=remoteTracks.get(entry.id);if(track)track.pushPose(entry.pose,clock(),[],event.through??event.at);}return true;}
+ if(event.arenaRevision<state.arenaRevision)return true;
  if(event.id===state.player?.id)return true;
  const player=state.ranking.find(p=>p.id===event.id);if(!player)return false;
  if(event.type==='frame'){const track=remoteTracks.get(player.id);if(!track)return false;track.pushPose(event.pose,clock(),event.hits||[]);return true;}

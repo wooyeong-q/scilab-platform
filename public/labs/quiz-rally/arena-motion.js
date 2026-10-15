@@ -29,11 +29,11 @@ class PoseTrack{
   }
   const observed=clock-(settled?through:t);if(!settled||newBatch)this.offset=this.offset===null?observed:this.offset+clamp(observed-this.offset,-20,20)*.05;
   this.arrival=clock;this.samples.push({t,x,y,z,vx,vy,vz,fx,fy,flags,seq,falls,jumpAt});
-  if(this.samples.length>24)this.samples.shift();
+  if(this.samples.length>64)this.samples.shift();
   return true;
  }
  sample(clock,source){
-  if(!this.samples.length||clock-this.arrival>1500)return null;
+  if(!this.samples.length||clock-this.arrival>(this.sealed?6000:1500))return null;
   const elapsed=this.clock===null?0:Math.max(0,clock-this.clock);this.clock=clock;
   const desired=clock-this.offset-this.delay;
   if(this.cursor===null||elapsed>2000)this.cursor=desired;
@@ -97,7 +97,7 @@ class EffectView{
   // Server poses can be ahead of the conservative local input clock. Clamping
   // them to that clock shows a victim's knockback before the rocket arrives.
   this.remoteTime=times.length?times[Math.floor(times.length/2)]:clock;
-  for(const [id,entry]of this.entries)if(clock>entry.expires+3000)this.entries.delete(id);
+  for(const [id,entry]of this.entries)if(Math.min(clock,this.remoteTime)>entry.expires+3000)this.entries.delete(id);
  }
  sample(effect){
   const own=this.own,localHit=own?.r.hits.find(h=>h.id===effect.id),localPrediction=!effect.shared||own?.predictions?.has(effect.id),hit=effect.victim?{id:effect.victim,t:effect.hitAt}:localHit&&localPrediction?{id:own.id,t:localHit.t}:effect.shared?null:this.hints.get(effect.id);
@@ -113,7 +113,7 @@ class EffectView{
   const confirmed=hit&&desired>=hit.t&&entry.time>=hit.t;
   if(confirmed){
    if(entry.burstAt===null)entry.burstAt=this.clock;
-   if(this.clock-entry.burstAt>500||this.clock-hit.t>3000)return null;
+   if(this.clock-entry.burstAt>500||desired-hit.t>3000)return null;
    return{effect:{...effect,victim:hit.id,hitAt:hit.t},time:hit.t+this.clock-entry.burstAt,positionAt:hit.t,burst:true};
   }
   const at=Math.min(entry.time,hit?.t??Infinity);if(at<effect.born||at>effect.expires)return null;

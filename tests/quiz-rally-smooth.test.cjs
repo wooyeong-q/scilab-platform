@@ -132,4 +132,5 @@ test('common pose batches stay smooth and never extrapolate into an unresolved c
   if(previous&&clock>10000)steps.push(shown.y-previous.y);previous=shown;
  }
  assert.ok(track.delay>=580&&track.delay<610);assert.ok(Math.min(...steps)>2.4);assert.ok(Math.max(...steps)<3.5);
+ const end=track.samples.at(-1).t,held=track.sample(track.arrival+3000,r());assert.ok(held&&held.t<=end,'stream handover holds the settled timeline instead of switching to a future prediction');
 });

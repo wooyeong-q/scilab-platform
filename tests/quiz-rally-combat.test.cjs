@@ -50,6 +50,9 @@ test('impact remains at contact and plays when the displayed victim reaches that
  // Slow HTTP responses keep local input time behind server pose time.
  const ahead=new EffectView();ahead.begin(4200,[{p:{id:'peer'},r:runner(),shown:runner({t:4500})}],own);assert.equal(ahead.sample(e).burst,true);
  const spectator=new EffectView();spectator.begin(4200,[{p:{id:'peer'},r:runner(),shown:runner({t:4500})}],null);assert.equal(spectator.sample(rocket()).positionAt,4500);
+ // A delayed room stream must not discard a real impact just because the
+ // local input clock is several seconds ahead of the displayed opponent.
+ const delayed=new EffectView();delayed.begin(10000,[{p:{id:'peer'},r:runner(),shown:runner({t:4500})}],own);assert.equal(delayed.sample({...e,shared:true}).burst,true);
 });
 
 test('30 authenticated streams receive simultaneous launches and unique hits without room refresh storms',async()=>{

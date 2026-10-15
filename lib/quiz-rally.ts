@@ -306,7 +306,7 @@ function modifyArena(room:Room,p:Player,body:Record<string,unknown>,q:CustomQues
     const slot=Number(body.slot);assert(Number.isInteger(slot)&&slot>=0&&slot<(p.gear||[]).length,'아이템을 선택해 주세요.');const gear=p.gear![slot];
     if(gear==='shield')r.shieldUntil=actionClock+4000;
     else if(gear==='boost')r.boostUntil=actionClock+3000;
-    else {const effects=(room.arenaEffects||[]).filter(e=>e.expires>now-5000);assert(effects.length<200,'경기의 아이템이 많아요. 잠깐 뒤 사용해 주세요.');const behind=gear==='mine'||gear==='banana',offset=behind?-55:gear==='missile'?45:0,direction=gear==='missile'?missileDirection():{dx:r.fx,dy:r.fy};
+    else {const cutoff=Math.min(now-5000,(room.arenaCombatAt??now)-3000),effects=(room.arenaEffects||[]).filter(e=>e.expires>cutoff);assert(effects.length<200,'경기의 아이템이 많아요. 잠깐 뒤 사용해 주세요.');const behind=gear==='mine'||gear==='banana',offset=behind?-55:gear==='missile'?45:0,direction=gear==='missile'?missileDirection():{dx:r.fx,dy:r.fy};
       // A delayed request must not create an already-flown rocket behind a
       // target's saved input anchor. Project the muzzle to acceptance time,
       // without advancing the owner's anchor past their queued jump inputs.
@@ -462,7 +462,7 @@ export async function actQuizRoom(code:string,identity:QuizIdentity,body:Record<
       const claims=Object.fromEntries((room.arenaEffects||[])
         .filter(e=>previous.has(e.id)&&e.victim&&!previous.get(e.id)!.victim)
         .map(e=>[e.id,{victim:e.victim,hitAt:e.hitAt}]));
-      params.push(JSON.stringify(added),JSON.stringify(claims),added.length?gameClock(room)-5000:-1);
+      params.push(JSON.stringify(added),JSON.stringify(claims),added.length?Math.min(gameClock(room)-5000,(room.arenaCombatAt??gameClock(room))-3000):-1);
       const additions=`$${params.length-2}::jsonb`,claimed=`$${params.length-1}::jsonb`,cutoff=`$${params.length}::double precision`;
       effectDelta=`jsonb_build_object('added',${additions},'claims',${claimed},'cutoff',${cutoff})`;
       const saved=`jsonb_array_elements(COALESCE(state->'arenaEffects','[]'::jsonb))`;

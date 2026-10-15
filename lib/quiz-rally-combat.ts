@@ -40,7 +40,7 @@ export function runnerPose(r:Runner,arena:Arena,previous?:Runner){
 // This replaces one independent physics publisher per student with one room
 // publisher and an atomic effects + common-time pose notification.
 export class QuizWorldFeed{
- leader=false;nextElection=0;previous=new Map<string,Runner>();lastFrame=-1;revision=-1;
+ leader=false;nextElection=0;previous=new Map<string,Runner>();lastFrame=-1;revision=-1;effectRevision=-1;
  constructor(readonly code:string,readonly query:Query){}
  async tick(){
   if(!this.leader){if(Date.now()<this.nextElection)return;this.nextElection=Date.now()+1000+Math.random()*500;
@@ -67,9 +67,11 @@ export class QuizWorldFeed{
   if(changed)messages.push({type:'effects',code:this.code,roomRevision:room.metaRevision,arenaRevision,status:room.status,delta:{added:[],claims,cutoff:-1}});
   // Supply short, timestamped segments even when input uploads arrive in a
   // batch. All characters and all missiles therefore share the same timeline.
-  const first=this.lastFrame<0?at:Math.max(this.lastFrame+100,at-700),times:number[]=[];
+  const first=this.lastFrame<0?at:Math.max(this.lastFrame+100,at-3000),times:number[]=[];
   for(let t=first;t<at;t+=100)times.push(t);times.push(at);
-  const previous=new Map(this.previous);
+  // Item/trap changes can revise a previously projected path. Reconstruct
+  // from accepted history before reusing incremental samples for this batch.
+  const previous=new Map(this.effectRevision===(room.arenaRevision||0)?this.previous:[]);
   for(const t of times){
    const poses=players.map(p=>{const prior=previous.get(p.id),r=sampleRunner(p.runner,t,arena,effects,p.id,prior),pose=runnerPose(r,arena,prior);previous.set(p.id,r);return {id:p.id,pose};});
    for(let i=0;i<poses.length;i+=20)messages.push({type:'world',code:this.code,roomRevision:room.metaRevision,arenaRevision,at:t,through:at,players:poses.slice(i,i+20)});
@@ -85,6 +87,6 @@ export class QuizWorldFeed{
     RETURNING code)
     SELECT pg_notify('quiz_rally_'||lower(code),payload) FROM committed CROSS JOIN jsonb_array_elements_text($7::jsonb) AS message(payload)`,
     [this.code,room.metaRevision,room.arenaRevision||0,at,changed,JSON.stringify(effects),JSON.stringify(payloads),Date.now(),room.arenaFrameVersion||0]);
-  if(saved.rows.length){this.lastFrame=at;this.previous=previous;}
+  if(saved.rows.length){this.lastFrame=at;this.previous=previous;this.effectRevision=arenaRevision;}
  }
 }
