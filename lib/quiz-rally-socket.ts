@@ -10,8 +10,8 @@ export function serveQuizSocket(ws:WebSocket,code:string){
   let closed=false,authenticating=false,refreshing=false,publishing=false,refreshAgain=false;
   let timer:ReturnType<typeof setInterval>|undefined,expiry:ReturnType<typeof setTimeout>|undefined;
   let lastPing=Date.now(),lastAuth=Date.now(),budget=100,budgetAt=Date.now();
-  let waitingInputs:unknown[][]=[];
-  const authDeadline=setTimeout(()=>close(1008),8000);
+  let waitingInputs:unknown[][]=[],authStage='waiting';
+  const authDeadline=setTimeout(()=>{console.warn('Quiz realtime authentication timed out',{stage:authStage});close(1008);},20000);
   const send=(data:unknown)=>{if(closed||ws.readyState!==1)return;if(ws.bufferedAmount>65536){close(1013);return;}ws.send(JSON.stringify(data));};
   function close(reason=1000){
     if(closed)return;closed=true;clearTimeout(authDeadline);clearTimeout(expiry);clearInterval(timer);
@@ -38,7 +38,7 @@ export function serveQuizSocket(ws:WebSocket,code:string){
   async function authenticate(value:Record<string,unknown>){
     if(authenticating||identity)throw new Error('duplicate auth');authenticating=true;
     if(value.role!=='student'&&value.role!=='teacher'||typeof value.token!=='string'||typeof value.playerId!=='string')throw new Error('invalid auth');
-    identity={role:value.role,token:value.token,playerId:value.playerId};await refresh();if(closed)return;
+    identity={role:value.role,token:value.token,playerId:value.playerId};authStage='checking access';await refresh();if(closed)return;
     const connectionString=process.env.DATABASE_URL_UNPOOLED||process.env.POSTGRES_URL_NON_POOLING;
     if(!connectionString)throw new Error('no realtime database');
     client=new Client({connectionString,connectionTimeoutMillis:6000,query_timeout:5000});
@@ -54,8 +54,8 @@ export function serveQuizSocket(ws:WebSocket,code:string){
         }else if(!refreshing&&event.type==='frame'&&event.id!==identity?.playerId)send(event);
       }catch{close(1011);}
     });
-    await client.connect();if(closed){await client.end();return;}
-    await client.query(`LISTEN "quiz_rally_${code.toLowerCase()}"`);await refresh();if(closed)return;
+    authStage='connecting database';await client.connect();if(closed){await client.end();return;}
+    authStage='subscribing';await client.query(`LISTEN "quiz_rally_${code.toLowerCase()}"`);authStage='rechecking access';await refresh();if(closed)return;
     clearTimeout(authDeadline);authenticating=false;send({type:'ready',code,transport:'websocket'});
     timer=setInterval(()=>{void tick().catch(()=>close(1011));},100);
     expiry=setTimeout(()=>close(1012),240000+Math.random()*10000);
@@ -65,7 +65,7 @@ export function serveQuizSocket(ws:WebSocket,code:string){
     if(closed)return;try{
       const text=raw.toString();if(Buffer.byteLength(text)>4096)throw new Error('large message');
       const value=JSON.parse(text);
-      if(value.type==='auth'){void authenticate(value).catch(()=>close(1008));return;}
+      if(value.type==='auth'){void authenticate(value).catch(()=>{console.warn('Quiz realtime authentication failed',{stage:authStage});close(1008);});return;}
       if(!motion||authenticating&&!timer||!identity)throw new Error('not ready');
       if(value.type!=='input'||identity.role!=='student')throw new Error('invalid message');
       const now=Date.now();budget=Math.min(100,budget+(now-budgetAt)*.1);budgetAt=now;
