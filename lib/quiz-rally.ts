@@ -75,6 +75,14 @@ export async function authorizeQuizStream(code:string,identity:QuizIdentity){
   authenticate(rows[0] as Row,identity,rows[0].player);
   return {code,status:rows[0].status as Phase};
 }
+export async function getQuizMotionAccess(code:string,identity:QuizIdentity){
+  const row=await readRoom(code,identity.role==='student'?[identity.playerId]:[]),room=row.state;
+  const player=room.players[identity.playerId];authenticate(row,identity,player);
+  const now=Date.now();return {code:row.code,status:phase(room,now),roomRevision:room.metaRevision||0,
+    arenaRevision:room.arenaRevision||0,arena:room.arena,effects:room.arenaEffects||[],
+    raceClock:gameClock(room,now),serverNow:now,duration:room.durationSeconds*1000,
+    runner:player?.runner,version:player?.version||0};
+}
 // NOTIFY is committed with the guarded write: no extra database round trip,
 // no missed publish after a successful save, and no process-local room bus.
 function arenaNotice(motion=false){

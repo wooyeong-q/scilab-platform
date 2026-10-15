@@ -36,8 +36,9 @@ function reconcile(M,source,pending,clock,arena,effects,id){let r=source;for(con
 // Presentation only: authoritative ranking, hits and the local player keep
 // their own simulation. A small bounded history absorbs uneven classroom polls.
 class RemoteTrack{
- constructor(){this.samples=[];this.interval=650;this.delay=650;this.cursor=null;this.clock=null;this.visual=null;this.prediction=null;this.live=false;}
- setLive(live){if(this.live===live)return;this.live=live;this.delay=live?120:650;this.cursor=null;this.prediction=null;}
+ constructor(){this.samples=[];this.interval=650;this.delay=650;this.cursor=null;this.clock=null;this.visual=null;this.prediction=null;this.live=false;this.poses=window.quizArenaMotion?new window.quizArenaMotion.PoseTrack():null;}
+ pushPose(pose,clock){this.poses?.push(pose,clock);}
+ setLive(live){if(this.live===live)return;this.live=live;if(!live)this.poses?.clear();this.delay=live?120:650;this.cursor=null;this.prediction=null;}
  push(r,clock){
   const last=this.samples.at(-1);
   if(last&&r.t<last.t)return;
@@ -55,6 +56,16 @@ class RemoteTrack{
  }
  sample(M,clock,arena,effects,id){
   if(!this.samples.length)return null;
+  const streamed=this.poses?.sample(clock,this.samples.at(-1));if(streamed){
+   const previous=this.visual,elapsed=this.clock===null?0:Math.max(0,clock-this.clock);
+   // Switching between the durable fallback and fast poses is also a
+   // correction. Bound that handover, including the first socket packet.
+   if(previous&&elapsed<2000&&!(previous.fallUntil&&!streamed.fallUntil)){
+    const dx=streamed.x-previous.x,dy=streamed.y-previous.y,limit=(streamed.boostUntil>clock?580:335)*Math.min(80,elapsed)/1000,k=Math.min(1,limit/(Math.hypot(dx,dy)||1));
+    streamed.x=previous.x+dx*k;streamed.y=previous.y+dy*k;
+   }
+   this.visual={x:streamed.x,y:streamed.y,z:streamed.z,falls:streamed.falls,fallUntil:streamed.fallUntil};this.clock=clock;return streamed;
+  }
   const elapsed=this.clock===null?0:Math.max(0,clock-this.clock);this.clock=clock;
   const desired=clock-this.delay;
   if(this.cursor===null||elapsed>2000)this.cursor=desired;

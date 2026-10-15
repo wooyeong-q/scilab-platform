@@ -11,7 +11,8 @@ async function harness() {
   const liveClients=new Set();
   class Listener extends require('node:events').EventEmitter {
     async connect(){liveClients.add(this);}
-    async query(statement){
+    async query(statement,params=[]){
+      if(statement==='SELECT pg_notify($1,$2)')return pg.query(statement,params);
       const channel=/^LISTEN "([A-Za-z0-9_]+)"$/.exec(statement)?.[1];
       if(!channel)throw new Error('Unexpected listener query');
       this.off=await pg.listen(channel,payload=>this.emit('notification',{channel,payload}));

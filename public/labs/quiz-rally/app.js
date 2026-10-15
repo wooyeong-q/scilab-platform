@@ -18,7 +18,8 @@ const chest=(color='#e7b352')=>`<svg class="chest" viewBox="0 0 120 96" fill="no
 let homeRole='student',code='',identity=null,snapshot=null,busy=false,pollTimer=0,failureCount=0,offset=0,viewKey='',rankPage=0,lastNotice='',toastTimer=0,activeTab=true,polling=false,epoch=0;
 let refreshWanted=false,refreshTimer=0;
 function refreshLive(){refreshWanted=true;clearTimeout(refreshTimer);refreshTimer=setTimeout(()=>{if(!busy&&!polling&&identity&&snapshot){refreshWanted=false;poll();}},60);}
-const live=new window.quizArenaLive({event:event=>{if(event.type==='refresh'||!window.quizArena.liveMotion(event))refreshLive();},status:ready=>{window.quizArena.liveStatus(ready);schedulePoll();},refresh:refreshLive});
+const live=new window.quizArenaLive({event:event=>{if(event.type==='refresh'||!window.quizArena.liveMotion(event))refreshLive();},status:(ready,fast)=>{window.quizArena.liveStatus(ready,fast);schedulePoll();},refresh:refreshLive});
+window.quizArena.sendInput=input=>live.sendInput(input);
 function syncLive(){live.configure(api+'/'+code+'/events',identity,!!(activeTab&&snapshot?.arena&&['running','paused'].includes(snapshot.status)));}
 
 let lobbyRobot=null;
