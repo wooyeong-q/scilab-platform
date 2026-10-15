@@ -36,16 +36,18 @@ function reconcile(M,source,pending,clock,arena,effects,id){let r=source;for(con
 // Presentation only: authoritative ranking, hits and the local player keep
 // their own simulation. A small bounded history absorbs uneven classroom polls.
 class RemoteTrack{
- constructor(){this.samples=[];this.interval=650;this.delay=650;this.cursor=null;this.clock=null;this.visual=null;this.prediction=null;}
+ constructor(){this.samples=[];this.interval=650;this.delay=650;this.cursor=null;this.clock=null;this.visual=null;this.prediction=null;this.live=false;}
+ setLive(live){if(this.live===live)return;this.live=live;this.delay=live?120:650;this.cursor=null;this.prediction=null;}
  push(r,clock){
   const last=this.samples.at(-1);
   if(last&&r.t<last.t)return;
-  const key=q=>[q.t,q.seq,q.x,q.y,q.z,q.vz,q.dx,q.dy,q.jumpAt,q.jumpQueuedUntil,q.open,q.falls,q.fallUntil,q.stunUntil,q.boostUntil,q.shieldUntil,q.finishAt].join(':');
+  const key=q=>[q.t,q.seq,q.x,q.y,q.z,q.vz,q.dx,q.dy,q.jumpAt,q.jumpQueuedUntil,q.open,q.falls,q.fallUntil,q.stunUntil,q.boostUntil,q.shieldUntil,q.energy,q.finishAt].join(':');
   if(last&&key(last)===key(r))return;
   if(last&&r.t>last.t){
    this.interval=this.interval*.8+Math.min(2000,r.t-last.t)*.2;
    this.delay=Math.max(250,Math.min(1100,Math.max(0,clock-r.t)+this.interval*.75));
   }
+  if(this.live)this.delay=Math.max(100,Math.min(600,Math.max(0,clock-r.t)+80));
   if(last&&r.t===last.t)this.samples[this.samples.length-1]=r;
   else this.samples.push(r);
   if(this.samples.length>10)this.samples.shift();
@@ -74,7 +76,7 @@ class RemoteTrack{
     if(!before.fallUntil&&seconds>=0&&seconds<300/340){target.z=Math.max(0,300*seconds-340*seconds*seconds);target.vz=300-680*seconds;target.jumpAt=jumpAt;}
    }
   }else{
-   const latest=this.samples.at(-1),until=Math.max(latest.t,Math.min(at,latest.t+350));
+   const latest=this.samples.at(-1),until=Math.max(latest.t,Math.min(at,latest.t+(this.live?1100:350)));
    // Do not keep guessing a classmate's direction for several seconds.
    // Resume the cached projection between packets instead of replaying it.
    if(!this.prediction||this.prediction.t>until)this.prediction=latest;

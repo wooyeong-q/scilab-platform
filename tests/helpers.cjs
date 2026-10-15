@@ -8,6 +8,16 @@ async function harness() {
   const pg = await PGlite.create();
   await pg.exec(fs.readFileSync(path.join(root, 'scripts/schema.sql'), 'utf8'));
   const queries = [], paths = [], cookies = new Map(), cache = new Map(), modules = new Map();
+  const liveClients=new Set();
+  class Listener extends require('node:events').EventEmitter {
+    async connect(){liveClients.add(this);}
+    async query(statement){
+      const channel=/^LISTEN "([A-Za-z0-9_]+)"$/.exec(statement)?.[1];
+      if(!channel)throw new Error('Unexpected listener query');
+      this.off=await pg.listen(channel,payload=>this.emit('notification',{channel,payload}));
+    }
+    end(){return this.ending??=(async()=>{await this.off?.();liveClients.delete(this);this.emit('end');})();}
+  }
   let fail = false;
   const sql = (strings, ...params) => sql.query(strings.reduce((s, part, i) => s + (i ? '$' + i : '') + part, ''), params);
   sql.query = async (query, params = [], options) => {
@@ -26,7 +36,7 @@ async function harness() {
     revalidatePath: (...args) => paths.push(args),
   };
   const mocks = {
-    '@neondatabase/serverless': { neon: () => sql },
+    '@neondatabase/serverless': { neon: () => sql,Client:Listener },
     'next/cache': nextCache,
     'next/headers': { cookies: async () => ({ get: key => cookies.get(key), set: (key, value, options) => cookies.set(key, { value, options }) }) },
   };
@@ -41,7 +51,7 @@ async function harness() {
     new Function('require', 'module', 'exports', compiled)(localRequire, mod, mod.exports);
     return mod.exports;
   }
-  return { pg, sql, queries, paths, cookies, cache, load, outage: value => { fail = value; }, close: () => pg.close() };
+  return { pg, sql, queries, paths, cookies, cache, load, liveClients,outage: value => { fail = value; }, close: async () => {await Promise.all([...liveClients].map(c=>c.end()));await pg.close();} };
 }
 
 function request(body, method = 'POST') {

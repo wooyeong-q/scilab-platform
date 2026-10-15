@@ -66,6 +66,25 @@ function authenticate(row:Pick<Row,'teacher_key_hash'>,identity:QuizIdentity,pla
   assert(identity.role==='student'&&player&&matches(identity.token,player.tokenHash),'참여 정보를 확인할 수 없습니다. 원래 참여한 기기에서 열어 주세요.',403);
   assert(!player.removed,'교사가 참여를 종료했습니다.',403);
 }
+// Streaming clients use the same room credentials as normal game requests.
+export async function authorizeQuizStream(code:string,identity:QuizIdentity){
+  code=codeValue(code);
+  const rows=await query(`SELECT teacher_key_hash,state->>'status' AS status,
+    state #> ARRAY['players',$2] AS player FROM quiz_rally_sessions WHERE code=$1 AND expires_at>NOW()`,[code,identity.playerId||'']);
+  assert(rows.length,'게임방을 찾을 수 없습니다.',404);
+  authenticate(rows[0] as Row,identity,rows[0].player);
+  return {code,status:rows[0].status as Phase};
+}
+// NOTIFY is committed with the guarded write: no extra database round trip,
+// no missed publish after a successful save, and no process-local room bus.
+function arenaNotice(motion=false){
+  const payload=`jsonb_build_object('type','${motion?'motion':'refresh'}','code',code,
+    'roomRevision',COALESCE((state->>'metaRevision')::int,0),'arenaRevision',COALESCE((state->>'arenaRevision')::int,0),
+    'status',state->>'status'${motion?`, 'id',$2::text,'version',(state #>> ARRAY['players',$2,'version'])::int,
+    'runner',(state #> ARRAY['players',$2,'runner']) - ARRAY['boxes','boxReadyAt','questionBox']::text[]`:''})::text`;
+  return `CASE WHEN state ? 'arena' THEN pg_notify('quiz_rally_' || lower(code),
+    CASE WHEN octet_length(${payload})<7900 THEN ${payload} ELSE '{"type":"refresh"}' END) END AS realtime_notice`;
+}
 function publicTurn(p:Player,q:CustomQuestion,code:string){const revealed=p.turn.correct===true||p.turn.revealed===true;return {
   nonce:p.turn.nonce,topic:q.topic,prompt:q.prompt,diagram:q.diagram||null,
   imageUrl:q.imageId?`/api/labs/quiz-rally/sessions/${code}/images/${q.imageId}`:q.imageUrl||null,imageAlt:q.imageAlt||'',
@@ -110,7 +129,7 @@ export async function joinQuizRoom(code:string,identity:QuizIdentity,body:Record
     AND (SELECT COUNT(*) FROM jsonb_each(state->'players') WHERE NOT (value->>'removed')::boolean)<40
     AND (SELECT COUNT(*) FROM jsonb_each(state->'players'))<80
     AND NOT EXISTS(SELECT 1 FROM jsonb_each(state->'players') WHERE lower(value->>'nickname')=lower($4) AND NOT (value->>'removed')::boolean)
-    RETURNING code`,[code,p.id,JSON.stringify(p),nickname]);
+    RETURNING code,${arenaNotice()}`,[code,p.id,JSON.stringify(p),nickname]);
   if(!rows.length){const latest=await readRoom(code);if(latest.state.players[p.id]){authenticate(latest,identity,latest.state.players[p.id]);return getQuizSnapshot(code,identity);}assert(phase(latest.state)!=='ended','이미 끝난 게임입니다.',409);assert(!Object.values(latest.state.players).some(x=>!x.removed&&x.nickname.toLocaleLowerCase()===nickname.toLocaleLowerCase()),'이미 사용 중인 닉네임입니다. 번호를 붙여 주세요.',409);throw new QuizError('참여 인원이 찼습니다. 한 게임에는 최대 40명이 참여할 수 있습니다.',409);}
   return getQuizSnapshot(code,identity);
 }
@@ -141,7 +160,7 @@ export async function getQuizSnapshot(code:string,identity:QuizIdentity){
 const snapshotColumns=`code,teacher_key_hash,state-'players' AS room,
   state #> ARRAY['players',$2] AS player,
   question_bank -> (state #>> ARRAY['players',$2,'turn','id']) AS custom_question,
-  (SELECT COALESCE(jsonb_agg(jsonb_build_object('id',key,'nickname',value->'nickname','avatar',value->'avatar','robot',value->'robot','finish',value->'finish','racer',value->'racer','runner',value->'runner','score',value->'score','correct',value->'correct','attempted',value->'attempted','shield',value->'shieldActive','protectedUntil',value->'protectedUntil',
+  (SELECT COALESCE(jsonb_agg(jsonb_build_object('id',key,'version',value->'version','nickname',value->'nickname','avatar',value->'avatar','robot',value->'robot','finish',value->'finish','racer',value->'racer','runner',value->'runner','score',value->'score','correct',value->'correct','attempted',value->'attempted','shield',value->'shieldActive','protectedUntil',value->'protectedUntil',
     'activity',CASE WHEN value #>> '{turn,correct}'='true' THEN CASE WHEN value #>> '{turn,reward}' IS NULL THEN 'reward' ELSE 'ready' END WHEN value #>> '{turn,revealed}'='true' THEN 'review' ELSE 'solving' END)),'[]'::jsonb)
    FROM jsonb_each(state->'players') WHERE NOT (value->>'removed')::boolean) AS ranking`;
 async function snapshotFromRow(r:Record<string,any>,identity:QuizIdentity){
@@ -160,7 +179,7 @@ async function snapshotFromRow(r:Record<string,any>,identity:QuizIdentity){
     const custom=room.questionIds&&ids.length?await query(`SELECT value AS q FROM quiz_rally_sessions,jsonb_each(question_bank) WHERE code=$1 AND key=ANY($2::text[])`,[code,ids]):[];
     for(const id of ids){const q=QUESTION_MAP.get(id)||custom.find(x=>x.q.id===id)?.q;if(q)review.push({prompt:q.prompt,answer:q.options[q.answer],explanation:q.explanation});}
   }
-  return {code,arena:room.arena||null,arenaEffects:room.arenaEffects||[],arenaRevision:room.arenaRevision||0,course:room.course||null,raceClock:gameClock(room,now),raceGoal:room.raceGoal||null,finishers:room.finishers||[],finishPrizes:room.arena?[]:room.raceGoal?(room.course?[20,12,8]:[50,30,15]).map(n=>(room.course?Math.min(room.raceGoal!,Math.ceil(room.course.length/650)):room.raceGoal!)*n):[],title:room.title,status:phase(room,now),durationSeconds:room.durationSeconds,endsAt:room.endsAt,remainingMs:room.remainingMs,serverNow:now,stealEnabled:room.stealEnabled,extension:room.extension,questionCount:room.questionIds?.length||QUIZ_QUESTIONS.filter(q=>room.extension||!q.extension).length,questionSetTitle:room.questionSetTitle||'중2 과학 · 물질의 구성',cityTarget:room.cityTarget||Math.max(1,ranking.length)*Math.max(3,Math.round(room.durationSeconds/80)),ranking:room.arena?ranking.map(x=>({...x,score:undefined})):ranking,player:identity.role==='student'?publicPlayer(p!,r.custom_question||QUESTION_MAP.get(p!.turn.id)!,code,review):null};
+  return {code,roomRevision:room.metaRevision||0,arena:room.arena||null,arenaEffects:room.arenaEffects||[],arenaRevision:room.arenaRevision||0,course:room.course||null,raceClock:gameClock(room,now),raceGoal:room.raceGoal||null,finishers:room.finishers||[],finishPrizes:room.arena?[]:room.raceGoal?(room.course?[20,12,8]:[50,30,15]).map(n=>(room.course?Math.min(room.raceGoal!,Math.ceil(room.course.length/650)):room.raceGoal!)*n):[],title:room.title,status:phase(room,now),durationSeconds:room.durationSeconds,endsAt:room.endsAt,remainingMs:room.remainingMs,serverNow:now,stealEnabled:room.stealEnabled,extension:room.extension,questionCount:room.questionIds?.length||QUIZ_QUESTIONS.filter(q=>room.extension||!q.extension).length,questionSetTitle:room.questionSetTitle||'중2 과학 · 물질의 구성',cityTarget:room.cityTarget||Math.max(1,ranking.length)*Math.max(3,Math.round(room.durationSeconds/80)),ranking:room.arena?ranking.map(x=>({...x,score:undefined})):ranking,player:identity.role==='student'?publicPlayer(p!,r.custom_question||QUESTION_MAP.get(p!.turn.id)!,code,review):null};
 }
 
 async function settleCourse(code:string){
@@ -175,7 +194,7 @@ async function settleCourse(code:string){
     }
     params.push(JSON.stringify(patch),JSON.stringify(winners));
     const result=await query(`UPDATE quiz_rally_sessions SET state=jsonb_set(jsonb_set(state,'{players}',(state->'players') || $${params.length-1}::jsonb),'{finishers}',$${params.length}::jsonb) || jsonb_build_object('metaRevision',(state->>'metaRevision')::int+1)
-      WHERE code=$1 AND expires_at>NOW() AND (state->>'metaRevision')::int=$2 AND COALESCE(state->'finishers','[]'::jsonb)=$3::jsonb ${guards} RETURNING code`,params);
+      WHERE code=$1 AND expires_at>NOW() AND (state->>'metaRevision')::int=$2 AND COALESCE(state->'finishers','[]'::jsonb)=$3::jsonb ${guards} RETURNING code,${arenaNotice()}`,params);
     if(result.length)return;
   }
   throw new QuizError('결승 순위를 확인 중입니다. 잠시 후 다시 연결합니다.',409);
@@ -275,7 +294,7 @@ async function settleArena(code:string){
     for(const {p,r} of arrivals){params.push(p.id,p.version);guards+=` AND (state #>> ARRAY['players',$${params.length-1},'version'])::int=$${params.length}`;winners.push(p.id);p.runner={...r,open:false};p.finish={place:winners.length,bonus:0};p.version++;notice(p,`결승선 ${winners.length}등 통과!`);patch[p.id]=p;}
     params.push(JSON.stringify(patch),JSON.stringify(winners),JSON.stringify(effects));
     const rows=await query(`UPDATE quiz_rally_sessions SET state=jsonb_set(jsonb_set(jsonb_set(state,'{players}',(state->'players') || $${params.length-2}::jsonb),'{finishers}',$${params.length-1}::jsonb),'{arenaEffects}',$${params.length}::jsonb) || jsonb_build_object('metaRevision',(state->>'metaRevision')::int+1,'arenaRevision',COALESCE((state->>'arenaRevision')::int,0)+1)
-      WHERE code=$1 AND expires_at>NOW() AND (state->>'metaRevision')::int=$2 AND COALESCE((state->>'arenaRevision')::int,0)=$3 ${guards} RETURNING code`,params);if(rows.length)return;
+      WHERE code=$1 AND expires_at>NOW() AND (state->>'metaRevision')::int=$2 AND COALESCE((state->>'arenaRevision')::int,0)=$3 ${guards} RETURNING code,${arenaNotice()}`,params);if(rows.length)return;
   }
   throw new QuizError('도착 순서를 확인 중입니다. 잠시 뒤 다시 연결합니다.',409);
 }
@@ -426,7 +445,7 @@ export async function actQuizRoom(code:string,identity:QuizIdentity,body:Record<
     if(target)statement+=` AND (state #>> ARRAY['players',$6,'version'])::int=$8`;
     if(finishClaim)statement+=` AND COALESCE(state->'finishers','[]'::jsonb)=$7::jsonb`;
     statement+=arenaGuards;
-    const result=await query(statement+' RETURNING '+snapshotColumns,params);
+    const result=await query(statement+' RETURNING '+snapshotColumns+','+arenaNotice(!arenaChanged&&!finishClaim&&!customizing),params);
     if(result.length)return snapshotFromRow(result[0],identity);
   }
   throw new QuizError('동시에 요청이 많습니다. 같은 동작을 다시 시도해 주세요.',409);
@@ -449,7 +468,7 @@ async function controlRoom(code:string,identity:QuizIdentity,body:Record<string,
     const params:unknown[]=[code,JSON.stringify(patch),room.metaRevision];
     let statement=`UPDATE quiz_rally_sessions SET state=state || $2::jsonb WHERE code=$1 AND expires_at>NOW() AND (state->>'metaRevision')::int=$3`;
     if(player){params.push(player.id,JSON.stringify(player),version);statement=`UPDATE quiz_rally_sessions SET state=jsonb_set(state || $2::jsonb,ARRAY['players',$4],$5::jsonb) WHERE code=$1 AND expires_at>NOW() AND (state->>'metaRevision')::int=$3 AND (state #>> ARRAY['players',$4,'version'])::int=$6`;}
-    if((await query(statement+' RETURNING code',params)).length)return getQuizSnapshot(code,identity);
+    if((await query(statement+' RETURNING code,'+arenaNotice(),params)).length)return getQuizSnapshot(code,identity);
   }
   throw new QuizError('다른 요청을 처리 중입니다. 다시 시도해 주세요.',409);
 }
