@@ -12,10 +12,10 @@ async function setup(t,combat=true){
  const collect=async(energy=20,gear=[])=>{const room=await read(h,code),box=M.boxes(room.arena)[0];await patch({gear,runner:{...M.freshRunner(C.gameClock(room)),x:box.x,y:box.y,energy}});return game.actQuizRoom(code,s,action('arena-collect',{box:box.id}));};
  return{h,game,M,C,code,s,teacher,patch,collect,tick:ms=>now+=ms};
 }
-test('energy drains over game time, smoothly slows running, and freezes during questions and countdown',async t=>{
+test('energy drains only while moving, smoothly slows running, and freezes during questions and countdown',async t=>{
  const {M}=await setup(t),a={version:2,length:27000,seed:7,combat:true,energy:true,supplies:2},r={...M.freshRunner(4000),x:0,y:300};
  assert.equal(M.advanceRunner(M.freshRunner(),3000,a).energy,100);
- assert.ok(Math.abs(M.advanceRunner(r,19000,a).energy-40)<1e-9);assert.equal(M.advanceRunner(r,29000,a).energy,0);
+ assert.equal(M.advanceRunner(r,19000,a).energy,100);assert.equal(M.advanceRunner(r,29000,a).energy,100);
  assert.equal(M.advanceRunner({...r,energy:20,open:true},44000,a).energy,20);
  const full=M.advanceRunner(M.control(r,0,1,false,false,4000,1),4500,a),low=M.advanceRunner(M.control({...r,energy:10},0,1,false,false,4000,1),4500,a),empty=M.advanceRunner(M.control({...r,energy:0},0,1,false,false,4000,1),4500,a);
  assert.ok(full.y>low.y&&low.y>empty.y&&empty.y>300);assert.ok(Math.abs(empty.y-330.625)<1e-7);assert.ok(Math.abs(low.energy-8)<1e-9);
@@ -77,7 +77,7 @@ test('item hits have documented stun times, no extra energy penalty, and respect
  const {M}=await setup(t),a={version:1,length:4700,seed:1,combat:true,energy:true},r={...M.freshRunner(4000),x:0,y:350};
  for(const [type,stun] of [['mine',850],['banana',1050],['missile',850]]){
   const e={id:type,type,owner:'other',x:0,y:350,dx:0,dy:1,born:type==='mine'?3000:4000,expires:15000};
-  const hit=M.advanceRunner(r,4020,a,[e],'me');assert.equal(hit.hits.length,1);assert.equal(hit.stunUntil-hit.hits[0].t,stun);assert.ok(Math.abs(hit.energy-99.92)<1e-9);
+  const hit=M.advanceRunner(r,4020,a,[e],'me');assert.equal(hit.hits.length,1);assert.equal(hit.stunUntil-hit.hits[0].t,stun);assert.ok(Math.abs(hit.energy-100)<1e-9);
   assert.equal(M.advanceRunner({...r,shieldUntil:5000},4020,a,[e],'me').stunUntil,0);
   assert.equal(M.advanceRunner({...r,z:60},4020,a,[e],'me').hits.length,0);assert.equal(M.advanceRunner(r,4020,a,[e],'other').hits.length,0);
  }

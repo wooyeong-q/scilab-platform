@@ -149,6 +149,7 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.ROUND_LENGTH = exports.center = exports.STAGES = exports.CHECKPOINTS = exports.BOX_RESPAWN = exports.DASH_ENERGY_DRAIN = exports.DASH_SPEED = exports.MIN_ENERGY_SPEED = exports.ENERGY_CHARGE = exports.ENERGY_DRAIN = exports.COUNTDOWN = exports.RADIUS = exports.SPEED = exports.WIDTH = exports.GEAR_HELP = exports.GEAR_NAMES = void 0;
 exports.energyValue = energyValue;
 exports.energySpeed = energySpeed;
+exports.isMoving = isMoving;
 exports.isDashing = isDashing;
 exports.boxWait = boxWait;
 exports.freshRunner = freshRunner;
@@ -183,11 +184,12 @@ exports.ENERGY_DRAIN = 4, exports.ENERGY_CHARGE = 45, exports.MIN_ENERGY_SPEED =
 exports.DASH_SPEED = 1.4, exports.DASH_ENERGY_DRAIN = 10, exports.BOX_RESPAWN = 8000;
 function energyValue(r) { return Math.max(0, Math.min(100, r.energy ?? 100)); }
 function energySpeed(r, arena) { return arena.energy ? exports.MIN_ENERGY_SPEED + (1 - exports.MIN_ENERGY_SPEED) * energyValue(r) / 100 : 1; }
-function isDashing(r, arena, clock = r.t) { return !!r.dash && (!!r.dx || !!r.dy) && clock >= exports.COUNTDOWN && clock < r.inputUntil && clock >= r.stunUntil && !r.open && !r.fallUntil && r.finishAt === undefined && (!arena.energy || energyValue(r) > 1e-8); }
+function isMoving(r, clock = r.t) { return (!!r.dx || !!r.dy) && clock >= exports.COUNTDOWN && clock < r.inputUntil && clock >= r.stunUntil && !r.open && !r.fallUntil && r.finishAt === undefined; }
+function isDashing(r, arena, clock = r.t) { return !!r.dash && isMoving(r, clock) && (!arena.energy || energyValue(r) > 1e-8); }
 // Legacy runners have no timestamps: their old one-use boxes become available.
 function boxWait(r, id, clock) { return r.open && r.questionBox === id ? exports.BOX_RESPAWN : Math.max(0, (r.boxReadyAt?.[id] ?? 0) - clock); }
 function drainEnergy(r, end, arena, rate = exports.ENERGY_DRAIN) {
-    if (!arena.energy || r.open || r.finishAt !== undefined)
+    if (!arena.energy || !isMoving(r))
         return energyValue(r);
     const seconds = Math.max(0, end - Math.max(r.t, exports.COUNTDOWN)) / 1000, start = energyValue(r), powered = Math.min(seconds, start / rate);
     r.energy = Math.max(0, start - seconds * rate);
@@ -197,7 +199,7 @@ exports.CHECKPOINTS = [100, 690, 1350, 2060, 2700, 3350, 4010];
 exports.STAGES = ['출발 광장', '움직이는 문', '회전봉 정원', '점프 브리지', '컨베이어 길', '볼링 대로', '사라지는 발판'];
 const center = (y) => Math.sin(y / 660) * 65;
 exports.center = center;
-function freshRunner(clock = 0, slot = 0) { return { x: (0, exports.center)(100) + (slot % 8 - 3.5) * 48, y: 100 - Math.floor(slot / 8) * 20, z: 0, vz: 0, dx: 0, dy: 0, fx: 0, fy: 1, t: clock, seq: 0, inputUntil: 0, jumpAt: -2000, diveAt: -3000, diveUntil: 0, dash: false, stunUntil: 0, immuneUntil: 0, boostUntil: 0, shieldUntil: 0, knockX: 0, knockY: 0, checkpoint: 100, fallUntil: 0, falls: 0, open: false, boxes: [], boxReadyAt: {}, usedEffects: [], hits: [], energy: 100 }; }
+function freshRunner(clock = 0, slot = 0) { return { x: (0, exports.center)(100) + (slot % 8 - 3.5) * 48, y: 100 - Math.floor(slot / 8) * 20, z: 0, vz: 0, dx: 0, dy: 0, fx: 0, fy: 1, t: clock, seq: 0, inputUntil: 0, jumpAt: -2000, jumpQueuedUntil: 0, diveAt: -3000, diveUntil: 0, dash: false, stunUntil: 0, immuneUntil: 0, boostUntil: 0, shieldUntil: 0, knockX: 0, knockY: 0, checkpoint: 100, fallUntil: 0, falls: 0, open: false, boxes: [], boxReadyAt: {}, usedEffects: [], hits: [], energy: 100 }; }
 exports.ROUND_LENGTH = 4700;
 function raceLength(durationSeconds) { return Math.round(14000 + (durationSeconds - 300) * 13000 / 600); }
 function stageAt(y, arena) { if (arena?.version === 2)
@@ -249,6 +251,21 @@ function effectPosition(e, t) { const dt = Math.max(0, t - e.born) / 1000; retur
 function segmentDistance(x, y, ax, ay, bx, by) { const dx = bx - ax, dy = by - ay, k = Math.max(0, Math.min(1, ((x - ax) * dx + (y - ay) * dy) / (dx * dx + dy * dy || 1))); return Math.hypot(x - ax - k * dx, y - ay - k * dy); }
 function knock(r, x, y, t, force = 190, stun = 600) { if (t < r.immuneUntil || r.open)
     return; const d = Math.hypot(r.x - x, r.y - y) || 1; r.knockX = (r.x - x) / d * force; r.knockY = (r.y - y) / d * force - 55; r.stunUntil = t + stun; r.immuneUntil = t + 1050; }
+// Keep one early press for 150 ms, including across server acknowledgements.
+// It is consumed once on landing, never converted into an automatic double jump.
+function startQueuedJump(r, clock) {
+    if (!r.jumpQueuedUntil)
+        return;
+    if (clock > r.jumpQueuedUntil) {
+        r.jumpQueuedUntil = 0;
+        return;
+    }
+    if (clock >= exports.COUNTDOWN && r.z <= .0000001 && !r.fallUntil && !r.open && r.finishAt === undefined && clock >= r.stunUntil && clock - r.jumpAt >= 880) {
+        r.vz = 300;
+        r.jumpAt = clock;
+        r.jumpQueuedUntil = 0;
+    }
+}
 function control(source, dx, dy, jump, dash, clock, seq) {
     const r = { ...source };
     r.seq = seq;
@@ -262,10 +279,9 @@ function control(source, dx, dy, jump, dash, clock, seq) {
         r.fx = dx / n;
         r.fy = dy / n;
     }
-    if (jump && r.z <= .1 && !r.fallUntil && clock >= r.stunUntil && clock - r.jumpAt >= 880) {
-        r.vz = 300;
-        r.jumpAt = clock;
-    }
+    if (jump && !r.fallUntil)
+        r.jumpQueuedUntil = clock + 150;
+    startQueuedJump(r, clock);
     // Dash changes horizontal speed only; it never cuts a jump's vertical arc.
     r.dash = dash;
     r.diveUntil = 0;
@@ -281,9 +297,11 @@ function advanceRunner(source, clock, arena, effects = [], id = '') {
         r.t = end;
         r.dx = 0;
         r.dy = 0;
+        r.jumpQueuedUntil = 0;
         return r;
     }
-    if (!r.dx && !r.dy && !r.vz && !r.z && !r.knockX && !r.knockY && !r.fallUntil && r.diveUntil <= r.t && (arena.version === 2 ? r.y / (arena.length / 27000) : r.y % exports.ROUND_LENGTH) < 700 && floorAt(r.x, r.y, end, arena) && effects.every(e => e.owner === id || e.expires <= r.t || e.born > end)) {
+    startQueuedJump(r, t);
+    if (!r.jumpQueuedUntil && !r.dx && !r.dy && !r.vz && !r.z && !r.knockX && !r.knockY && !r.fallUntil && r.diveUntil <= r.t && (arena.version === 2 ? r.y / (arena.length / 27000) : r.y % exports.ROUND_LENGTH) < 700 && floorAt(r.x, r.y, end, arena) && effects.every(e => e.owner === id || e.expires <= r.t || e.born > end)) {
         drainEnergy(r, end, arena);
         r.t = end;
         return r;
@@ -296,7 +314,14 @@ function advanceRunner(source, clock, arena, effects = [], id = '') {
         return advanceRunner({ ...first, t: resume }, end, arena, effects, id);
     }
     while (t < end - .001) {
+        startQueuedJump(r, t);
         const start = t, dashing = isDashing(r, arena, t), boundaries = [exports.COUNTDOWN, r.inputUntil, r.stunUntil, r.boostUntil];
+        if (r.jumpQueuedUntil)
+            boundaries.push(r.jumpAt + 880, r.jumpQueuedUntil);
+        // Resolve landing at the same instant on every frame rate before consuming
+        // a queued jump. Rounding it to the next frame loses early Space presses.
+        if (r.z > 0 || r.vz > 0)
+            boundaries.push(t + (r.vz + Math.sqrt(r.vz * r.vz + 1360 * r.z)) / 680 * 1000);
         if (dashing && arena.energy)
             boundaries.push(t + energyValue(r) / exports.DASH_ENERGY_DRAIN * 1000);
         // Split at input expiry and depletion so render cadence cannot extend a dash.
@@ -357,8 +382,10 @@ function advanceRunner(source, clock, arena, effects = [], id = '') {
         // produce the same jump arc, rather than a different height at every sync.
         r.z = Math.max(0, r.z + r.vz * dt - 340 * dt * dt);
         r.vz -= 680 * dt;
-        if (r.z === 0)
+        if (r.z < .0000001) {
+            r.z = 0;
             r.vz = 0;
+        }
         // Tall sliding gates cannot be jumped; find the moving opening.
         for (const gate of gates(t, arena, r.y - 70, r.y + 70))
             if (Math.abs(r.y - gate.y) < exports.RADIUS + 16 && Math.abs(r.x - gate.gap) > gate.width / 2 - exports.RADIUS) {
@@ -415,6 +442,7 @@ function advanceRunner(source, clock, arena, effects = [], id = '') {
             r.dx = 0;
             r.dy = 0;
             r.vz = 0;
+            r.jumpQueuedUntil = 0;
             continue;
         }
         if (r.z < 2) {
@@ -430,6 +458,7 @@ function advanceRunner(source, clock, arena, effects = [], id = '') {
             break;
         }
     }
+    startQueuedJump(r, t);
     return r;
 }
 function progress(r) { return r.finishAt !== undefined ? Infinity : r.y; }

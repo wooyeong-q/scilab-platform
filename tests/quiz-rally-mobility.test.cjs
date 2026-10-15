@@ -10,9 +10,9 @@ test('held dash trades energy for distance, preserves jump height and ends on re
  assert.ok(dash.y-300>(walk.y-300)*1.35);near(dash.z,walk.z,'same jump arc');near(dash.vz,walk.vz,'same vertical velocity');near(walk.energy,97,'ordinary drain');near(dash.energy,92.5,'dash drain');
  const airborne=M.advanceRunner(M.control(source,0,1,true,false,4000,1),4200,arena),started=M.control(airborne,0,1,false,true,4200,2);near(started.vz,airborne.vz,'midair dash does not force a dive');
  let released=M.advanceRunner(M.control(source,0,1,false,true,4000,1),4300,arena);released=M.advanceRunner(M.control(released,0,1,false,false,4300,2),4800,arena);near(released.energy,95,'release restores base drain');assert.equal(M.isDashing(released,arena),false);
- const idle=M.advanceRunner(M.control(source,0,0,false,true,4000,1),4500,arena);near(idle.energy,98,'holding Shift while idle has no extra drain');near(idle.y,300,'dash does not auto-drive');
+ const idle=M.advanceRunner(M.control(source,0,0,false,true,4000,1),4500,arena);near(idle.energy,100,'holding Shift while idle does not drain energy');near(idle.y,300,'dash does not auto-drive');
  const empty=M.advanceRunner(M.control(runner(0),0,1,false,true,4000,1),4500,arena);near(empty.y,330.625,'empty battery still walks');assert.equal(M.isDashing(empty,arena),false);
- const expired=M.advanceRunner(M.control({...source,y:100},0,1,false,true,4000,1),9000,arena);near(expired.energy,66.8,'disconnect expires extra drain with movement');assert.equal(M.isDashing(expired,arena),false);
+ const expired=M.advanceRunner(M.control({...source,y:100},0,1,false,true,4000,1),9000,arena);near(expired.energy,78,'disconnect stops energy drain with movement');assert.equal(M.isDashing(expired,arena),false);
 });
 
 test('dash distance, energy depletion and input expiry are independent of render cadence',()=>{

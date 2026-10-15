@@ -189,7 +189,7 @@ function advanceArenaPlayer(room:Room,p:Player,clock:number){
 function closeArenaQuestion(r:Runner,clock:number){
   const id=r.questionBox??r.boxes.at(-1); // Also close questions opened before respawn timestamps existed.
   if(r.open&&id!==undefined)r.boxReadyAt={...r.boxReadyAt,[id]:clock+BOX_RESPAWN};
-  delete r.questionBox;r.open=false;r.dash=false;r.dx=0;r.dy=0;r.inputUntil=clock;
+  delete r.questionBox;r.jumpQueuedUntil=0;r.open=false;r.dash=false;r.dx=0;r.dy=0;r.inputUntil=clock;
 }
 function modifyArena(room:Room,p:Player,body:Record<string,unknown>,q:CustomQuestion){
   assert(p.runner&&!p.finish,'이미 완주했어요. 친구들의 경주를 지켜봐 주세요.',409);
@@ -221,7 +221,7 @@ function modifyArena(room:Room,p:Player,body:Record<string,unknown>,q:CustomQues
     if(p.turn.correct||p.turn.revealed){if(!p.deck.length)p.deck=deckFor(room);if(p.deck.length>1&&p.deck[0]===p.turn.id)p.deck.push(p.deck.shift()!);p.turn=turnFor(p.deck.shift()!);}
     if(!r.boxes.includes(b.id))r.boxes.push(b.id);
     r.boxReadyAt={...Object.fromEntries(Object.entries(r.boxReadyAt||{}).filter(([,ready])=>ready>actionClock)),[b.id]:actionClock+BOX_RESPAWN};
-    r.questionBox=b.id;r.open=true;r.dash=false;r.dx=0;r.dy=0;r.z=0;r.vz=0;r.knockX=0;r.knockY=0;r.inputUntil=now;return;
+    r.questionBox=b.id;r.jumpQueuedUntil=0;r.open=true;r.dash=false;r.dx=0;r.dy=0;r.z=0;r.vz=0;r.knockX=0;r.knockY=0;r.inputUntil=now;return;
   }
   if(action==='answer'){
     assert(r.open,'문제 상자를 먼저 획득해 주세요.',409);const retry=p.turn.answered&&p.turn.correct===false&&!p.turn.revealed;

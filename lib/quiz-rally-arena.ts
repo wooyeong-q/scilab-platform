@@ -3,7 +3,7 @@ import { cityLayout, cityTrack, cityRegion, cityTileDanger, cityPistons } from '
 export type Arena={version:1|2;length:number;seed:number;combat:boolean;energy?:boolean;supplies?:2};
 export type Gear='mine'|'missile'|'banana'|'field'|'shield'|'boost';
 export type Effect={id:string;type:Gear;owner:string;x:number;y:number;dx:number;dy:number;born:number;expires:number;victim?:string;hitAt?:number};
-export type Runner={x:number;y:number;z:number;vz:number;dx:number;dy:number;fx:number;fy:number;t:number;seq:number;inputUntil:number;jumpAt:number;diveAt:number;diveUntil:number;dash?:boolean;stunUntil:number;immuneUntil:number;boostUntil:number;shieldUntil:number;knockX:number;knockY:number;checkpoint:number;fallUntil:number;falls:number;open:boolean;boxes:number[];boxReadyAt?:Record<string,number>;questionBox?:number;usedEffects:string[];hits:{id:string;t:number}[];finishAt?:number;energy?:number};
+export type Runner={x:number;y:number;z:number;vz:number;dx:number;dy:number;fx:number;fy:number;t:number;seq:number;inputUntil:number;jumpAt:number;jumpQueuedUntil?:number;diveAt:number;diveUntil:number;dash?:boolean;stunUntil:number;immuneUntil:number;boostUntil:number;shieldUntil:number;knockX:number;knockY:number;checkpoint:number;fallUntil:number;falls:number;open:boolean;boxes:number[];boxReadyAt?:Record<string,number>;questionBox?:number;usedEffects:string[];hits:{id:string;t:number}[];finishAt?:number;energy?:number};
 export const GEAR_NAMES:Record<Gear,string>={mine:'폭탄',missile:'미사일',banana:'바나나',field:'감속 영역',shield:'보호막',boost:'질주'};
 export const GEAR_HELP:Record<Gear,string>={mine:'뒤에 설치 · 밟으면 밀려나고 0.85초 조작 불가',missile:'앞으로 발사 · 맞으면 밀려나고 0.85초 조작 불가',banana:'뒤에 놓기 · 밟으면 1.05초 미끄러집니다',field:'5초 유지 · 영역 안 친구의 이동 속도를 38%로 낮춤',shield:'4초 동안 공격을 막습니다',boost:'3초 동안 이동 속도 2배'};
 export const WIDTH=620, SPEED=175, RADIUS=18, COUNTDOWN=3000;
@@ -11,11 +11,12 @@ export const ENERGY_DRAIN=4, ENERGY_CHARGE=45, MIN_ENERGY_SPEED=.35;
 export const DASH_SPEED=1.4, DASH_ENERGY_DRAIN=10, BOX_RESPAWN=8000;
 export function energyValue(r:Runner){return Math.max(0,Math.min(100,r.energy??100));}
 export function energySpeed(r:Runner,arena:Arena){return arena.energy?MIN_ENERGY_SPEED+(1-MIN_ENERGY_SPEED)*energyValue(r)/100:1;}
-export function isDashing(r:Runner,arena:Arena,clock=r.t){return !!r.dash&&(!!r.dx||!!r.dy)&&clock>=COUNTDOWN&&clock<r.inputUntil&&clock>=r.stunUntil&&!r.open&&!r.fallUntil&&r.finishAt===undefined&&(!arena.energy||energyValue(r)>1e-8);}
+export function isMoving(r:Runner,clock=r.t){return (!!r.dx||!!r.dy)&&clock>=COUNTDOWN&&clock<r.inputUntil&&clock>=r.stunUntil&&!r.open&&!r.fallUntil&&r.finishAt===undefined;}
+export function isDashing(r:Runner,arena:Arena,clock=r.t){return !!r.dash&&isMoving(r,clock)&&(!arena.energy||energyValue(r)>1e-8);}
 // Legacy runners have no timestamps: their old one-use boxes become available.
 export function boxWait(r:Runner,id:number,clock:number){return r.open&&r.questionBox===id?BOX_RESPAWN:Math.max(0,(r.boxReadyAt?.[id]??0)-clock);}
 function drainEnergy(r:Runner,end:number,arena:Arena,rate=ENERGY_DRAIN){
- if(!arena.energy||r.open||r.finishAt!==undefined)return energyValue(r);
+ if(!arena.energy||!isMoving(r))return energyValue(r);
  const seconds=Math.max(0,end-Math.max(r.t,COUNTDOWN))/1000,start=energyValue(r),powered=Math.min(seconds,start/rate);
  r.energy=Math.max(0,start-seconds*rate);
  return seconds?(start*powered-rate*powered*powered/2)/seconds:start;
@@ -23,7 +24,7 @@ function drainEnergy(r:Runner,end:number,arena:Arena,rate=ENERGY_DRAIN){
 export const CHECKPOINTS=[100,690,1350,2060,2700,3350,4010];
 export const STAGES=['출발 광장','움직이는 문','회전봉 정원','점프 브리지','컨베이어 길','볼링 대로','사라지는 발판'];
 export const center=(y:number)=>Math.sin(y/660)*65;
-export function freshRunner(clock=0,slot=0):Runner{return{x:center(100)+(slot%8-3.5)*48,y:100-Math.floor(slot/8)*20,z:0,vz:0,dx:0,dy:0,fx:0,fy:1,t:clock,seq:0,inputUntil:0,jumpAt:-2000,diveAt:-3000,diveUntil:0,dash:false,stunUntil:0,immuneUntil:0,boostUntil:0,shieldUntil:0,knockX:0,knockY:0,checkpoint:100,fallUntil:0,falls:0,open:false,boxes:[],boxReadyAt:{},usedEffects:[],hits:[],energy:100};}
+export function freshRunner(clock=0,slot=0):Runner{return{x:center(100)+(slot%8-3.5)*48,y:100-Math.floor(slot/8)*20,z:0,vz:0,dx:0,dy:0,fx:0,fy:1,t:clock,seq:0,inputUntil:0,jumpAt:-2000,jumpQueuedUntil:0,diveAt:-3000,diveUntil:0,dash:false,stunUntil:0,immuneUntil:0,boostUntil:0,shieldUntil:0,knockX:0,knockY:0,checkpoint:100,fallUntil:0,falls:0,open:false,boxes:[],boxReadyAt:{},usedEffects:[],hits:[],energy:100};}
 export const ROUND_LENGTH=4700;
 export function raceLength(durationSeconds:number){return Math.round(14000+(durationSeconds-300)*13000/600);}
 export function stageAt(y:number,arena?:Arena){if(arena?.version===2)return cityRegion(y,arena);const round=Math.max(0,Math.floor(y/ROUND_LENGTH)),stage=Math.min(6,Math.floor((y-round*ROUND_LENGTH)/670));return{round,stage,index:round*7+stage,name:STAGES[stage],hint:"결승선을 향해!",color:stage};}
@@ -51,22 +52,35 @@ export function tileDanger(x:number,y:number,clock:number,arena?:Arena){if(arena
 export function effectPosition(e:Effect,t:number){const dt=Math.max(0,t-e.born)/1000;return e.type==='missile'?{x:e.x+e.dx*460*dt,y:e.y+e.dy*460*dt}:{x:e.x,y:e.y};}
 function segmentDistance(x:number,y:number,ax:number,ay:number,bx:number,by:number){const dx=bx-ax,dy=by-ay,k=Math.max(0,Math.min(1,((x-ax)*dx+(y-ay)*dy)/(dx*dx+dy*dy||1)));return Math.hypot(x-ax-k*dx,y-ay-k*dy);}
 function knock(r:Runner,x:number,y:number,t:number,force=190,stun=600){if(t<r.immuneUntil||r.open)return;const d=Math.hypot(r.x-x,r.y-y)||1;r.knockX=(r.x-x)/d*force;r.knockY=(r.y-y)/d*force-55;r.stunUntil=t+stun;r.immuneUntil=t+1050;}
+// Keep one early press for 150 ms, including across server acknowledgements.
+// It is consumed once on landing, never converted into an automatic double jump.
+function startQueuedJump(r:Runner,clock:number){
+ if(!r.jumpQueuedUntil)return;
+ if(clock>r.jumpQueuedUntil){r.jumpQueuedUntil=0;return;}
+ if(clock>=COUNTDOWN&&r.z<=.0000001&&!r.fallUntil&&!r.open&&r.finishAt===undefined&&clock>=r.stunUntil&&clock-r.jumpAt>=880){r.vz=300;r.jumpAt=clock;r.jumpQueuedUntil=0;}
+}
 export function control(source:Runner,dx:number,dy:number,jump:boolean,dash:boolean,clock:number,seq:number):Runner{
  const r={...source};r.seq=seq;if(r.open||r.finishAt!==undefined)return r;const n=Math.max(1,Math.hypot(dx,dy));r.dx=dx/n;r.dy=dy/n;r.inputUntil=clock+2200;
  if(dx||dy){r.fx=dx/n;r.fy=dy/n;}
- if(jump&&r.z<=.1&&!r.fallUntil&&clock>=r.stunUntil&&clock-r.jumpAt>=880){r.vz=300;r.jumpAt=clock;}
+ if(jump&&!r.fallUntil)r.jumpQueuedUntil=clock+150;startQueuedJump(r,clock);
  // Dash changes horizontal speed only; it never cuts a jump's vertical arc.
  r.dash=dash;r.diveUntil=0;
  return r;
 }
 export function advanceRunner(source:Runner,clock:number,arena:Arena,effects:Effect[]=[],id=''):Runner{
  const r={...source,boxes:[...source.boxes],boxReadyAt:{...source.boxReadyAt},usedEffects:[...source.usedEffects],hits:[...source.hits]};if(r.finishAt!==undefined)return r;
- const end=Math.max(r.t,clock);let t=r.t;if(r.open){r.t=end;r.dx=0;r.dy=0;return r;}
- if(!r.dx&&!r.dy&&!r.vz&&!r.z&&!r.knockX&&!r.knockY&&!r.fallUntil&&r.diveUntil<=r.t&&(arena.version===2?r.y/(arena.length/27000):r.y%ROUND_LENGTH)<700&&floorAt(r.x,r.y,end,arena)&&effects.every(e=>e.owner===id||e.expires<=r.t||e.born>end)){drainEnergy(r,end,arena);r.t=end;return r;}
+ const end=Math.max(r.t,clock);let t=r.t;if(r.open){r.t=end;r.dx=0;r.dy=0;r.jumpQueuedUntil=0;return r;}
+ startQueuedJump(r,t);
+ if(!r.jumpQueuedUntil&&!r.dx&&!r.dy&&!r.vz&&!r.z&&!r.knockX&&!r.knockY&&!r.fallUntil&&r.diveUntil<=r.t&&(arena.version===2?r.y/(arena.length/27000):r.y%ROUND_LENGTH)<700&&floorAt(r.x,r.y,end,arena)&&effects.every(e=>e.owner===id||e.expires<=r.t||e.born>end)){drainEnergy(r,end,arena);r.t=end;return r;}
  // No active input survives a disconnect. Skip long idle periods without thousands of steps.
  if(end-t>6000&&r.inputUntil<t+2500&&!r.open){const cutoff=Math.min(end,t+5000);const first=advanceRunner(r,cutoff,arena,effects,id),resume=Math.max(cutoff,end-1000);drainEnergy(first,resume,arena);return advanceRunner({...first,t:resume},end,arena,effects,id);}
  while(t<end-.001){
+  startQueuedJump(r,t);
   const start=t,dashing=isDashing(r,arena,t),boundaries=[COUNTDOWN,r.inputUntil,r.stunUntil,r.boostUntil];
+  if(r.jumpQueuedUntil)boundaries.push(r.jumpAt+880,r.jumpQueuedUntil);
+  // Resolve landing at the same instant on every frame rate before consuming
+  // a queued jump. Rounding it to the next frame loses early Space presses.
+  if(r.z>0||r.vz>0)boundaries.push(t+(r.vz+Math.sqrt(r.vz*r.vz+1360*r.z))/680*1000);
   if(dashing&&arena.energy)boundaries.push(t+energyValue(r)/DASH_ENERGY_DRAIN*1000);
   // Split at input expiry and depletion so render cadence cannot extend a dash.
   t=Math.min(end,t+20,...boundaries.filter(at=>at>start+.000001));const dt=(t-start)/1000;
@@ -89,7 +103,7 @@ export function advanceRunner(source:Runner,clock:number,arena:Arena,effects:Eff
   r.x+=(vx+r.knockX)*dt;r.y+=(vy+r.knockY)*dt;r.knockX*=Math.pow(.04,dt);r.knockY*=Math.pow(.04,dt);
   // Integrate height analytically so 30/60/120 Hz rendering and server batches
   // produce the same jump arc, rather than a different height at every sync.
-  r.z=Math.max(0,r.z+r.vz*dt-340*dt*dt);r.vz-=680*dt;if(r.z===0)r.vz=0;
+  r.z=Math.max(0,r.z+r.vz*dt-340*dt*dt);r.vz-=680*dt;if(r.z<.0000001){r.z=0;r.vz=0;}
   // Tall sliding gates cannot be jumped; find the moving opening.
   for(const gate of gates(t,arena,r.y-70,r.y+70))if(Math.abs(r.y-gate.y)<RADIUS+16&&Math.abs(r.x-gate.gap)>gate.width/2-RADIUS){r.y=previousY<=gate.y?gate.y-RADIUS-17:gate.y+RADIUS+17;}
   for(const wall of barriers(arena,r.y-40,r.y+40))if(r.z<wall.height&&Math.abs(r.x-wall.x)<wall.w/2+RADIUS&&Math.abs(r.y-wall.y)<wall.depth/2+RADIUS){
@@ -109,10 +123,10 @@ export function advanceRunner(source:Runner,clock:number,arena:Arena,effects:Eff
    if(e.type==='mine'&&t<e.born+500)continue;if(r.z>(e.type==='missile'?50:25))continue;const p=effectPosition(e,t),radius=e.type==='missile'?34:e.type==='mine'?32:29;
    if(Math.hypot(r.x-p.x,r.y-p.y)<RADIUS+radius){r.usedEffects.push(e.id);r.usedEffects=r.usedEffects.slice(-80);r.hits.push({id:e.id,t});r.hits=r.hits.slice(-12);if(t>=r.shieldUntil)knock(r,p.x,p.y,t,e.type==='banana'?115:280,e.type==='banana'?1050:850);}
   }
-  if(!floorAt(r.x,r.y,t,arena)&&r.z<=3){r.fallUntil=t+850;r.falls++;r.dx=0;r.dy=0;r.vz=0;continue;}
+  if(!floorAt(r.x,r.y,t,arena)&&r.z<=3){r.fallUntil=t+850;r.falls++;r.dx=0;r.dy=0;r.vz=0;r.jumpQueuedUntil=0;continue;}
   if(r.z<2){for(const cp of checkpoints(arena,r.y-80,r.y))if(r.y>=cp&&r.y<cp+80&&cp>r.checkpoint)r.checkpoint=cp;}
   if(r.y>=arena.length&&Math.abs(r.x-center(arena.length))<WIDTH/2){r.finishAt=t-dt*1000+Math.max(0,Math.min(1,(arena.length-previousY)/(r.y-previousY||1)))*dt*1000;r.y=arena.length;r.dx=0;r.dy=0;break;}
  }
- return r;
+ startQueuedJump(r,t);return r;
 }
 export function progress(r:Runner){return r.finishAt!==undefined?Infinity:r.y;}
