@@ -8,11 +8,19 @@ function hermite(a,b,va,vb,k,seconds){
 }
 class PoseTrack{
  constructor(){this.clear();}
- clear(){this.samples=[];this.offset=null;this.cursor=null;this.clock=null;this.arrival=-Infinity;this.visual=null;}
+ clear(){this.samples=[];this.offset=null;this.cursor=null;this.clock=null;this.arrival=-Infinity;this.visual=null;this.cadence=null;this.jitter=0;this.delay=140;}
  push(pose,clock){
   if(!Array.isArray(pose)||pose.length!==13||!pose.every(Number.isFinite))return;
   const [t,x,y,z,vx,vy,vz,fx,fy,flags,seq,falls,jumpAt]=pose,last=this.samples.at(-1);
   if(last&&(t<=last.t||seq<last.seq))return;
+  if(last){const spacing=t-last.t,moving=Math.hypot(vx,vy,vz,last.vx,last.vy,last.vz)>.1;
+   if(moving&&spacing>0&&spacing<=500){this.cadence=this.cadence===null?spacing:this.cadence+(spacing-this.cadence)*.2;
+    this.jitter+=(Math.abs(clock-this.arrival-spacing)-this.jitter)*.1;
+    // Match the observed link, not an assumed 100 ms delivery interval.
+    // Idle heartbeats never enlarge the movement buffer.
+    this.delay=clamp(this.cadence*1.15+20+this.jitter*2,140,500);
+   }
+  }
   const observed=clock-t;this.offset=this.offset===null?observed:this.offset+clamp(observed-this.offset,-20,20)*.05;
   this.arrival=clock;this.samples.push({t,x,y,z,vx,vy,vz,fx,fy,flags,seq,falls,jumpAt});
   if(this.samples.length>24)this.samples.shift();
@@ -20,7 +28,7 @@ class PoseTrack{
  sample(clock,source){
   if(!this.samples.length||clock-this.arrival>1500)return null;
   const elapsed=this.clock===null?0:Math.max(0,clock-this.clock);this.clock=clock;
-  const desired=clock-this.offset-140;
+  const desired=clock-this.offset-this.delay;
   if(this.cursor===null||elapsed>2000)this.cursor=desired;
   else this.cursor+=elapsed*clamp(1+(desired-this.cursor)/1500,.92,1.08);
   const at=this.cursor;

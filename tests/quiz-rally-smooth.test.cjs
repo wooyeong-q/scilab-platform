@@ -115,3 +115,12 @@ test('authenticated HTTP motion and independent streams deliver 10 Hz poses with
   assert.ok(!JSON.stringify(streams[1].events).includes(students[0].token));
  }finally{for(const stream of streams)stream.abort.abort();await Promise.all(streams.map(s=>s.read));await h.close();}
 });
+
+test('presentation adapts to a 300 ms link without periodic braking or inflating on idle heartbeats',()=>{
+ const track=new PoseTrack(),steps=[];let next=4000,previous;
+ for(let clock=4000;clock<16000;clock+=1000/60){if(clock>=next){track.push([next-100,0,300+(next-4000)*.175,0,0,175,0,0,1,0,1,0,-2000],clock);next+=300;}
+  const shown=track.sample(clock,r());if(shown&&previous&&clock>11000)steps.push(shown.y-previous.y);if(shown)previous=shown;
+ }
+ assert.ok(track.delay>=360&&track.delay<=400);assert.ok(Math.min(...steps)>2.5);assert.ok(Math.max(...steps)<3.4);
+ const delay=track.delay;track.push([17000,0,2400,0,0,0,0,0,1,0,2,0,-2000],17100);track.push([18000,0,2400,0,0,0,0,0,1,0,2,0,-2000],18100);assert.equal(track.delay,delay);
+});
