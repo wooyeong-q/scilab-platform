@@ -11,11 +11,11 @@ export function serveQuizSocket(ws:WebSocket,code:string){
   let timer:ReturnType<typeof setInterval>|undefined,expiry:ReturnType<typeof setTimeout>|undefined;
   let lastPing=Date.now(),lastAuth=Date.now(),budget=100,budgetAt=Date.now();
   let waitingInputs:unknown[][]=[],authStage='waiting';
-  const authDeadline=setTimeout(()=>{console.warn('Quiz realtime authentication timed out',{stage:authStage});close(1008);},20000);
+  const authDeadline=setTimeout(()=>{console.warn('Quiz realtime authentication timed out',{stage:authStage});close(1008,'auth timeout: '+authStage);},20000);
   const send=(data:unknown)=>{if(closed||ws.readyState!==1)return;if(ws.bufferedAmount>65536){close(1013);return;}ws.send(JSON.stringify(data));};
-  function close(reason=1000){
+  function close(reason=1000,detail=''){
     if(closed)return;closed=true;clearTimeout(authDeadline);clearTimeout(expiry);clearInterval(timer);
-    ws.close(reason);void client?.end().catch(()=>{});
+    ws.close(reason,detail);void client?.end().catch(()=>{});
   }
   async function refresh(){
     if(refreshing){refreshAgain=true;return;}if(!identity)return;refreshing=true;
