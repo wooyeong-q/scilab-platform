@@ -1,7 +1,7 @@
-import { sampleRunner,isDashing,type Arena,type Runner,type Effect } from './quiz-rally-arena';
+import { sampleRunner,isDashing,acceptedRunner,type Arena,type Runner,type Effect,type ArenaInput } from './quiz-rally-arena';
 import { gameClock } from './quiz-rally-course';
 
-type Participant={id:string;runner:Runner;removed?:boolean;finish?:unknown};
+type Participant={id:string;runner:Runner;removed?:boolean;finish?:unknown;inputs?:ArenaInput[]};
 type Query=(statement:string,params?:unknown[])=>Promise<{rows:Record<string,any>[]} >;
 const round=(n:number)=>Math.round(n*100)/100;
 
@@ -51,10 +51,11 @@ export class QuizWorldFeed{
  }
  async publish(){
   const row=(await this.query(`SELECT state-'players' AS room,
-    (SELECT COALESCE(jsonb_agg(jsonb_build_object('id',key,'runner',value->'runner','removed',value->'removed','finish',value->'finish')),'[]'::jsonb) FROM jsonb_each(state->'players')) AS players
+    (SELECT COALESCE(jsonb_agg(jsonb_build_object('id',key,'runner',value->'runner','removed',value->'removed','finish',value->'finish','inputs',COALESCE(q.inputs,'[]'::jsonb))),'[]'::jsonb)
+      FROM jsonb_each(state->'players') LEFT JOIN quiz_rally_motion_inputs q ON q.code=quiz_rally_sessions.code AND q.player_id=key) AS players
     FROM quiz_rally_sessions WHERE code=$1 AND expires_at>NOW()`,[this.code])).rows[0];
   if(!row||row.room.status!=='running'||!row.room.arena)return;
-  const room=row.room,arena=room.arena as Arena,now=gameClock(room),players=(row.players as Participant[]).filter(p=>p.runner&&!p.removed),active=players.filter(p=>!p.finish);
+  const room=row.room,arena=room.arena as Arena,now=gameClock(room),players=(row.players as Participant[]).filter(p=>p.runner&&!p.removed).map(p=>({...p,runner:p.finish?p.runner:acceptedRunner(p.runner,p.inputs||[],now,arena,room.arenaEffects||[],p.id)})),active=players.filter(p=>!p.finish);
   if(!active.length)return;
   // Every normal input advertises an ordered watermark, including idle input.
   // A disconnected player cannot stall the class indefinitely. Its old input

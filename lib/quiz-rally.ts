@@ -6,7 +6,7 @@ import { QuizError } from './quiz-rally-errors';
 import { QuizWorldFeed } from './quiz-rally-combat';
 import { robotFor, validateRobot, type RobotParts } from './quiz-rally-robot';
 import { advance, capsuleAt, freshRacer, gameClock, CHARGE, type Course, type Racer } from './quiz-rally-course';
-import { advanceRunner, control, freshRunner,raceLength, couldFinish, missileDirection, boxes, boxWait, BOX_RESPAWN, GEAR_NAMES, ENERGY_CHARGE, energyValue,withHistory,sampleRunner,runnerState,recordRunnerPatch,trimRunnerHistory, type Arena, type Runner, type Gear, type Effect } from './quiz-rally-arena';
+import { advanceRunner, control, freshRunner,raceLength, couldFinish, missileDirection, boxes, boxWait, BOX_RESPAWN, GEAR_NAMES, ENERGY_CHARGE, energyValue,withHistory,acceptedRunner,sampleRunner,runnerState,recordRunnerPatch,trimRunnerHistory, type Arena, type Runner, type Gear, type Effect,type ArenaInput } from './quiz-rally-arena';
 export { QuizError } from './quiz-rally-errors';
 
 type Phase = 'lobby' | 'running' | 'paused' | 'ended';
@@ -29,7 +29,7 @@ type Room = {
   raceGoal?:number; finishers?:string[]; course?:Course; stoppedClock?:number; arena?:Arena; arenaEffects?:Effect[]; arenaRevision?:number;arenaCombatAt?:number;
   questionIds?: string[]; questionSetTitle?: string; cityTarget?:number;
 };
-type Row = { code: string; teacher_key_hash: string; state: Room; expires_at: string; custom_question?:CustomQuestion };
+type Row = { code: string; teacher_key_hash: string; state: Room; expires_at: string; custom_question?:CustomQuestion;motion_inputs?:ArenaInput[] };
 // A recent authenticated question can answer without another database read
 // on a warm worker. The guarded UPDATE still checks the player and room;
 // stale snapshots fall back to a fresh read before any result is returned.
@@ -58,7 +58,8 @@ async function query(statement:string,params:unknown[]=[]):Promise<Record<string
 async function readRoom(code:string,playerIds?:string[]):Promise<Row>{
   const projection=playerIds?`(state-'players') || jsonb_build_object('players',
     (SELECT COALESCE(jsonb_object_agg(key,value),'{}'::jsonb) FROM jsonb_each(state->'players') WHERE key=ANY($2::text[]))) AS state`:'state';
-  const custom=playerIds?`,question_bank -> (state #>> ARRAY['players',($2::text[])[1],'turn','id']) AS custom_question`:'';
+  const custom=playerIds?`,question_bank -> (state #>> ARRAY['players',($2::text[])[1],'turn','id']) AS custom_question,
+    (SELECT inputs FROM quiz_rally_motion_inputs q WHERE q.code=quiz_rally_sessions.code AND q.player_id=($2::text[])[1]) AS motion_inputs`:'';
   const rows=await query(`SELECT code,teacher_key_hash,${projection},expires_at ${custom} FROM quiz_rally_sessions WHERE code=$1 AND expires_at>NOW()`,playerIds?[codeValue(code),playerIds]:[codeValue(code)]);
   assert(rows.length,'게임방을 찾을 수 없거나 이용 기간이 끝났습니다.',404);return rows[0] as Row;
 }
@@ -84,18 +85,32 @@ export async function getQuizMotionAccess(code:string,identity:QuizIdentity){
     raceClock:gameClock(room,now),serverNow:now,duration:room.durationSeconds*1000,
     runner:player?.runner,version:player?.version||0};
 }
-// Authentication and publication share one guarded read. These transient
-// controls never update the saved runner, answers, scores or item inventory.
+// Fast inputs are authenticated and journaled in small per-player rows. They
+// do not wait for a full-room save or mutate answers, scores or item inventory.
 export async function publishQuizMotion(code:string,identity:QuizIdentity,inputs:unknown[],roomRevision:number,arenaRevision:number){
   assert(identity.role==='student'&&validToken(identity.token)&&uuid(identity.playerId),'참여 정보를 확인해 주세요.',403);
   assert(Number.isSafeInteger(roomRevision)&&roomRevision>=0&&Number.isSafeInteger(arenaRevision)&&arenaRevision>=0,'경기 정보를 확인해 주세요.');
   code=codeValue(code);
   const payload=JSON.stringify({type:'input',code,id:identity.playerId,inputs,roomRevision,arenaRevision});
-  const rows=await query(`SELECT pg_notify('quiz_rally_'||lower(code),$4) FROM quiz_rally_sessions
-    WHERE code=$1 AND expires_at>NOW() AND state->>'status'='running'
-    AND COALESCE((state->>'metaRevision')::int,0)=$5 AND COALESCE((state->>'arenaRevision')::int,0)=$6
-    AND state #>> ARRAY['players',$2,'tokenHash']=$3 AND state #>> ARRAY['players',$2,'removed']='false'`,
-    [code,identity.playerId,hash(identity.token),payload,roomRevision,arenaRevision]);
+  const clock=`GREATEST(0,LEAST((state->>'durationSeconds')::double precision*1000,(state->>'durationSeconds')::double precision*1000-GREATEST(0,(state->>'endsAt')::double precision-$8::double precision)))`;
+  const rows=await query(`WITH accepted AS (
+    INSERT INTO quiz_rally_motion_inputs(code,player_id,inputs,updated_at)
+    SELECT code,$2,(SELECT jsonb_agg(event || jsonb_build_object('at',
+      GREATEST(COALESCE((state #>> ARRAY['players',$2,'runner','t'])::double precision,0),LEAST(${clock},GREATEST(${clock}-6000,(event->>'at')::double precision)))) ORDER BY ordinal)
+      FROM jsonb_array_elements($7::jsonb) WITH ORDINALITY AS incoming(event,ordinal)),NOW()
+    FROM quiz_rally_sessions WHERE code=$1 AND expires_at>NOW() AND state->>'status'='running' AND (state->>'endsAt')::double precision>$8
+    AND COALESCE((state->>'metaRevision')::int,0)=$5 AND COALESCE((state->>'arenaRevision')::int,0)>=$6
+    AND state #>> ARRAY['players',$2,'tokenHash']=$3 AND state #>> ARRAY['players',$2,'removed']='false'
+    ON CONFLICT(code,player_id) DO UPDATE SET inputs=(
+      SELECT jsonb_agg(event ORDER BY seq) FROM (
+        SELECT * FROM (
+          SELECT DISTINCT ON ((event->>'seq')::bigint) event,(event->>'seq')::bigint AS seq
+          FROM jsonb_array_elements(quiz_rally_motion_inputs.inputs || EXCLUDED.inputs) WITH ORDINALITY AS combined(event,ordinal)
+          ORDER BY (event->>'seq')::bigint,ordinal
+        ) AS unique_inputs ORDER BY seq DESC LIMIT 96
+      ) AS bounded_inputs),updated_at=NOW() RETURNING code)
+    SELECT pg_notify('quiz_rally_'||lower(code),$4) FROM accepted`,
+    [code,identity.playerId,hash(identity.token),payload,roomRevision,arenaRevision,JSON.stringify(inputs),Date.now()]);
   assert(rows.length,'경기 상태가 바뀌었습니다. 다시 연결해 주세요.',409);
 }
 // NOTIFY is committed with the guarded write: no extra database round trip,
@@ -322,6 +337,8 @@ async function settleArena(code:string){
   for(let attempt=0;attempt<8;attempt++){
     const row=await readRoom(code),room=row.state;if(!room.arena)return;
     const effects=room.arenaEffects||[],now=gameClock(room),waiting=effects.some(e=>e.shared&&!e.victim&&e.expires>(room.arenaCombatAt||0)&&e.born<=now),clock=waiting?Math.min(now,room.arenaCombatAt||0):now;
+    const journals=await query('SELECT player_id,inputs FROM quiz_rally_motion_inputs WHERE code=$1',[code]);
+    for(const journal of journals){const p=room.players[journal.player_id];if(p?.runner&&!p.removed&&!p.finish)p.runner=acceptedRunner(p.runner,journal.inputs,now,room.arena,effects,p.id);}
     const project=(p:Player)=>waiting?sampleRunner(p.runner!,clock,room.arena!,effects,p.id):advanceRunner(p.runner!,clock,room.arena!,effects,p.id);
     const projected=Object.values(room.players).filter(p=>!p.removed&&!p.finish&&p.runner).map(p=>({p,r:project(p)}));
     // Resolve a trap to one victim before deriving the final arrival order.
@@ -438,6 +455,7 @@ export async function actQuizRoom(code:string,identity:QuizIdentity,body:Record<
     if(customizing)assert(phase(room)!=='ended','끝난 게임에서는 로봇을 바꿀 수 없습니다.',409);
     else assert(phase(room)==='running',phase(room)==='paused'?'선생님이 게임을 잠시 멈췄습니다.':'진행 중인 게임에서 사용할 수 있습니다.',409);
     if(room.course&&p.racer&&!p.finish){p.racer=advance(p.racer,gameClock(room),room.course);if(p.racer.finishAt!==undefined){await settleCourse(code);return getQuizSnapshot(code,identity);}}
+    if(room.arena&&p.runner&&!p.finish&&row.motion_inputs?.length)p.runner=acceptedRunner(p.runner,row.motion_inputs,gameClock(room),room.arena,room.arenaEffects||[],p.id);
     if(room.arena&&p.runner){if(p.finish&&body.action==='arena-input')return getQuizSnapshot(code,identity);if(!p.finish&&couldFinish(p.runner,gameClock(room),room.arena)&&advanceRunner(p.runner,gameClock(room),room.arena,room.arenaEffects||[],p.id).finishAt!==undefined){await settleArena(code);return getQuizSnapshot(code,identity);}}
     const priorArenaEffects=JSON.stringify(room.arenaEffects||[]);
     const oldVersion=p.version,target=body.action==='item'&&body.item==='steal'?room.players[String(body.targetId)]:undefined,targetVersion=target?.version;
@@ -486,7 +504,9 @@ export async function actQuizRoom(code:string,identity:QuizIdentity,body:Record<
     if(target)statement+=` AND (state #>> ARRAY['players',$6,'version'])::int=$8`;
     if(finishClaim)statement+=` AND COALESCE(state->'finishers','[]'::jsonb)=$7::jsonb`;
     statement+=arenaGuards;
-    if(room.arena&&p.runner&&!customizing)statement+=` AND COALESCE((state->>'arenaCombatAt')::double precision,0)<=($3::jsonb #>> '{runner,t}')::double precision`;
+    // A newer accepted fast input can advance the room watermark while this
+    // older prefix is saved. The durable queue preserves that suffix for replay.
+    if(room.arena&&p.runner&&!customizing&&!row.motion_inputs?.length)statement+=` AND COALESCE((state->>'arenaCombatAt')::double precision,0)<=($3::jsonb #>> '{runner,t}')::double precision`;
     const result=await query(statement+' RETURNING '+snapshotColumns+','+arenaNotice(!arenaChanged&&!finishClaim&&!customizing,!finishClaim&&!customizing?effectDelta:''),params);
     if(result.length)return snapshotFromRow(result[0],identity);
   }

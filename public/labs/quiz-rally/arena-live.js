@@ -7,9 +7,8 @@ class Live{
  stop(){this.key='';this.generation++;clearTimeout(this.timer);clearTimeout(this.inputTimer);this.inputTimer=0;this.abort?.abort();this.abort=null;for(const request of this.inputRequests)request.abort();this.inputRequests.clear();this.inputs=[];this.inputRevision='';this.dispatched=0;this.state(false);}
  reconnect(){if(!this.key)return;clearTimeout(this.timer);if(this.abort)this.abort.abort();else this.connect();}
  sendInput(input,revision){
-  if(this.world)return true; // The room feed uses the ordered durable input log.
   if(!this.fast||!this.key||this.who?.role!=='student'||!Number.isSafeInteger(revision?.roomRevision)||!Number.isSafeInteger(revision?.arenaRevision))return false;
-  const key=revision.roomRevision+':'+revision.arenaRevision;
+  const key=String(revision.roomRevision);
   if(key!==this.inputRevision){this.inputRevision=key;this.inputs=[];this.dispatched=0;}
   if(!this.inputs.some(e=>e.seq===input.seq))this.inputs.push({...input});
   this.inputs.sort((a,b)=>a.seq-b.seq);if(this.inputs.length>96){this.inputs=this.inputs.slice(-96);this.refresh();}

@@ -1,6 +1,59 @@
 const test=require('node:test'),assert=require('node:assert/strict'),{harness}=require('./helpers.cjs');
 const arena={version:1,length:4700,seed:1,combat:true};
 const {randomUUID,randomBytes}=require('node:crypto'),sleep=ms=>new Promise(r=>setTimeout(r,ms));
+process.env.DATABASE_URL='postgres://test';process.env.DATABASE_URL_UNPOOLED='postgres://test';
+
+test('the accepted fast journal advances common poses before a full save, without retiming a dash jump',async()=>{
+ const h=await harness(),game=h.load('lib/quiz-rally.ts'),M=h.load('lib/quiz-rally-arena.ts'),{QuizWorldFeed}=h.load('lib/quiz-rally-combat.ts'),real=Date.now;let wall=real();Date.now=()=>wall;
+ try{
+  const made=await game.createQuizRoom({title:'빠른 입력 검증'}),teacher={role:'teacher',token:made.teacherKey,playerId:''},who={role:'student',playerId:randomUUID(),token:randomBytes(32).toString('base64url'),nickname:'입력'};
+  await game.joinQuizRoom(made.code,who,{nickname:who.nickname});await game.actQuizRoom(made.code,teacher,{action:'start',requestId:randomUUID()});wall+=4400;
+  const access=await game.getQuizMotionAccess(made.code,who),input=(seq,at,more={})=>({seq,at,dx:1,dy:1,jump:seq===1,dash:true,...more});
+  const publish=inputs=>game.publishQuizMotion(made.code,who,inputs,access.roomRevision,access.arenaRevision);
+  await publish([input(1,4000),input(3,4400)]);
+  let rows=await h.pg.query('SELECT inputs FROM quiz_rally_motion_inputs WHERE code=$1',[made.code]),log=rows.rows[0].inputs;
+  let projected=M.acceptedRunner(access.runner,log,4400,access.arena,[],who.playerId);
+  assert.equal(projected.seq,1,'a missing sequence prevents sealing a later input');
+  await publish([input(1,4300,{jump:false}),input(2,4200),input(3,4400)]);
+  rows=await h.pg.query('SELECT inputs FROM quiz_rally_motion_inputs WHERE code=$1',[made.code]);log=rows.rows[0].inputs;
+  assert.equal(log[0].at,4000,'the first accepted input wins over conflicting duplicates');assert.equal(log[0].jump,true);
+  const feed=new QuizWorldFeed(made.code,(q,p)=>h.pg.query(q,p));await feed.publish();
+  const state=(await h.pg.query('SELECT state FROM quiz_rally_sessions WHERE code=$1',[made.code])).rows[0].state;
+  assert.equal(state.arenaCombatAt,4400);assert.equal(state.players[who.playerId].runner.seq,0,'pose publication does not rewrite inventory or the full player row');
+  projected=M.sampleRunner(M.acceptedRunner(access.runner,log,4400,access.arena,[],who.playerId),4400,access.arena,[],who.playerId);
+  assert.equal(projected.jumpAt,4000);assert.ok(projected.z>50);
+  wall+=300;await game.actQuizRoom(made.code,who,{action:'arena-input',requestId:randomUUID(),inputs:[input(1,4000),input(2,4200),input(3,4400)]});
+  const saved=(await game.getQuizMotionAccess(made.code,who)).runner;
+  assert.equal(saved.seq,3);assert.equal(saved.jumpAt,4000,'an advanced common watermark does not delay the original jump');
+  for(const k of ['x','y','z','vz'])assert.ok(Math.abs(saved[k]-projected[k])<1e-7,k);
+  const stale=M.acceptedRunner(access.runner,log,14000,access.arena,[],who.playerId);
+  assert.equal(stale.t,4400,'re-reading old inputs never refreshes their timestamps');
+  assert.equal(M.advanceRunner(stale,14000,access.arena,[],who.playerId).inputUntil,6600);
+  for(let start=4;start<=123;start+=24)await publish(Array.from({length:24},(_,i)=>input(start+i,4700,{jump:false})));
+  const bounded=(await h.pg.query('SELECT inputs FROM quiz_rally_motion_inputs WHERE code=$1',[made.code])).rows[0].inputs;
+  assert.equal(bounded.length,96);assert.equal(bounded.at(-1).seq,123);
+ }finally{Date.now=real;await h.close();}
+});
+
+test('fast journal rejects wrong identity, stale revisions and paused rooms without changing its accepted log',async()=>{
+ const h=await harness(),game=h.load('lib/quiz-rally.ts');
+ try{
+  const made=await game.createQuizRoom({title:'입력 인증'}),teacher={role:'teacher',token:made.teacherKey,playerId:''},who={role:'student',playerId:randomUUID(),token:randomBytes(32).toString('base64url'),nickname:'인증'};
+  await game.joinQuizRoom(made.code,who,{nickname:who.nickname});await game.actQuizRoom(made.code,teacher,{action:'start',requestId:randomUUID()});
+  const a=await game.getQuizMotionAccess(made.code,who),inputs=[{seq:1,at:0,dx:0,dy:0,jump:false,dash:false}];
+  await assert.rejects(game.publishQuizMotion(made.code,{...who,token:randomBytes(32).toString('base64url')},inputs,a.roomRevision,a.arenaRevision));
+  await assert.rejects(game.publishQuizMotion(made.code,{...who,playerId:randomUUID()},inputs,a.roomRevision,a.arenaRevision));
+  await assert.rejects(game.publishQuizMotion(made.code,who,inputs,a.roomRevision+1,a.arenaRevision));
+  await assert.rejects(game.publishQuizMotion(made.code,who,inputs,a.roomRevision,a.arenaRevision+1));
+  assert.equal((await h.pg.query('SELECT * FROM quiz_rally_motion_inputs')).rows.length,0);
+  await game.publishQuizMotion(made.code,who,inputs,a.roomRevision,a.arenaRevision);
+  await h.pg.query("UPDATE quiz_rally_sessions SET state=jsonb_set(state,'{arenaRevision}',to_jsonb($2::int)) WHERE code=$1",[made.code,a.arenaRevision+1]);
+  await game.publishQuizMotion(made.code,who,inputs,a.roomRevision,a.arenaRevision);
+  await game.actQuizRoom(made.code,teacher,{action:'pause',requestId:randomUUID()});
+  await assert.rejects(game.publishQuizMotion(made.code,who,[{...inputs[0],seq:2}],a.roomRevision,a.arenaRevision));
+  assert.equal((await h.pg.query('SELECT inputs FROM quiz_rally_motion_inputs')).rows[0].inputs.length,1);
+ }finally{await h.close();}
+});
 
 test('common contacts use physical order, independent of upload order and late saved anchors',async()=>{
  const h=await harness(),M=h.load('lib/quiz-rally-arena.ts'),{resolveCombat}=h.load('lib/quiz-rally-combat.ts');

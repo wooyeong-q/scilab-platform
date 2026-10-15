@@ -7,6 +7,7 @@ export type Runner={x:number;y:number;z:number;vz:number;dx:number;dy:number;fx:
 type RunnerState=Omit<Runner,'history'>;
 type RunnerEvent={at:number;input?:{dx:number;dy:number;jump:boolean;dash:boolean;seq:number};patch?:Partial<RunnerState>;unset?:string[]};
 type RunnerHistory={base:RunnerState;events:RunnerEvent[]};
+export type ArenaInput={seq:number;at:number;dx:number;dy:number;jump:boolean;dash:boolean};
 export const GEAR_NAMES:Record<Gear,string>={mine:'폭탄',missile:'미사일',banana:'바나나',field:'감속 영역',shield:'보호막',boost:'질주'};
 export const GEAR_HELP:Record<Gear,string>={mine:'뒤에 설치 · 밟으면 밀려나고 0.85초 조작 불가',missile:'앞으로 발사 · 맞으면 밀려나고 0.85초 조작 불가',banana:'뒤에 놓기 · 밟으면 1.05초 미끄러집니다',field:'5초 유지 · 영역 안 친구의 이동 속도를 38%로 낮춤',shield:'4초 동안 공격을 막습니다',boost:'3초 동안 이동 속도 2배'};
 export const WIDTH=620, SPEED=175, RADIUS=18, COUNTDOWN=3000;
@@ -101,6 +102,15 @@ function controlState(source:Runner,dx:number,dy:number,jump:boolean,dash:boolea
 // inputs and replay a committed hit without moving a queued jump to a later time.
 export function runnerState(source:Runner):RunnerState{const {history,...state}=source;return {...state,boxes:[...state.boxes],boxReadyAt:{...state.boxReadyAt},usedEffects:[...state.usedEffects],hits:[...state.hits]};}
 export function withHistory(source:Runner):Runner{return source.history?source:{...source,history:{base:runnerState(source),events:[]}};}
+// The authenticated fast lane records these controls durably before announcing
+// them. Both the room resolver and ordinary saves consume the same ordered log.
+export function acceptedRunner(source:Runner,inputs:ArenaInput[],clock:number,arena:Arena,effects:Effect[],id:string):Runner{
+ let r=withHistory(source);
+ for(const e of inputs){if(e.seq<=r.seq)continue;if(e.seq!==r.seq+1)break;const at=Math.max(r.t,Math.min(clock,e.at));
+  r=control(advanceRunner(r,at,arena,effects,id),e.dx,e.dy,e.jump,e.dash,at,e.seq);
+ }
+ return r;
+}
 export function control(source:Runner,dx:number,dy:number,jump:boolean,dash:boolean,clock:number,seq:number):Runner{
  const r=controlState(source,dx,dy,jump,dash,clock,seq);
  if(source.history)r.history={base:source.history.base,events:[...source.history.events,{at:clock,input:{dx,dy,jump,dash,seq}}]};

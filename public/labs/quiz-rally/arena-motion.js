@@ -27,7 +27,11 @@ class PoseTrack{
     this.delay=clamp(this.cadence*1.15+20+this.jitter*2,140,500);
    }
   }
-  const observed=clock-(settled?through:t);if(!settled||newBatch)this.offset=this.offset===null?observed:this.offset+clamp(observed-this.offset,-20,20)*.05;
+  const observed=clock-(settled?through:t);
+  // A room watermark can catch up after classmates join or reconnect. Its
+  // age is not clock drift: retaining the old offset would add seconds of lag.
+  if(settled&&newBatch)this.offset=observed;
+  else if(!settled)this.offset=this.offset===null?observed:this.offset+clamp(observed-this.offset,-20,20)*.05;
   this.arrival=clock;this.samples.push({t,x,y,z,vx,vy,vz,fx,fy,flags,seq,falls,jumpAt});
   if(this.samples.length>64)this.samples.shift();
   return true;
@@ -37,7 +41,7 @@ class PoseTrack{
   const elapsed=this.clock===null?0:Math.max(0,clock-this.clock);this.clock=clock;
   const desired=clock-this.offset-this.delay;
   if(this.cursor===null||elapsed>2000)this.cursor=desired;
-  else this.cursor+=elapsed*clamp(1+(desired-this.cursor)/1500,.92,1.08);
+  else this.cursor+=elapsed*clamp(1+(desired-this.cursor)/1500,.92,this.sealed&&desired-this.cursor>1000?1.25:1.08);
   // Common frames are settled through their timestamp. Never extrapolate past
   // that boundary and show a player crossing an unresolved missile contact.
   if(this.sealed)this.cursor=Math.min(this.cursor,this.samples.at(-1).t);

@@ -261,3 +261,11 @@ CREATE TABLE IF NOT EXISTS quiz_rally_sessions (
 CREATE INDEX IF NOT EXISTS quiz_rally_expiry_idx ON quiz_rally_sessions (expires_at);
 ALTER TABLE quiz_rally_sessions ADD COLUMN IF NOT EXISTS question_bank JSONB;
 ALTER TABLE quiz_rally_sessions ADD COLUMN IF NOT EXISTS question_images JSONB;
+
+CREATE TABLE IF NOT EXISTS quiz_rally_motion_inputs (
+  code TEXT NOT NULL REFERENCES quiz_rally_sessions(code) ON DELETE CASCADE,
+  player_id TEXT NOT NULL,
+  inputs JSONB NOT NULL DEFAULT '[]'::jsonb,
+  updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  PRIMARY KEY (code, player_id)
+);

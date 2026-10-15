@@ -15,7 +15,7 @@ test('motion uploads overlap in bounded batches without losing inputs when respo
  live.url='/api/labs/quiz-rally/sessions/ABCDEF/events';live.key='active';live.who={role:'student',playerId:'p',token:'test'};live.fast=true;
  const revision={roomRevision:1,arenaRevision:0},input={seq:1,at:4000,dx:1,dy:1,jump:false,dash:true};
  live.sendInput(input,revision);await sleep(20);assert.equal(requests.length,1);
- live.sendInput({...input,seq:2,jump:true},revision);live.sendInput({...input,seq:3,dx:0},revision);await sleep(120);
+ live.sendInput({...input,seq:2,jump:true},{...revision,arenaRevision:1});live.sendInput({...input,seq:3,dx:0},{...revision,arenaRevision:2});await sleep(120);
  assert.equal(requests.length,2);assert.equal(live.inputRequests.size,2);
  assert.deepEqual(JSON.parse(requests[1].options.body).inputs.map(e=>e.seq),[1,2,3]);
  requests[1].resolve({ok:true});await sleep(1);assert.equal(live.inputs.length,0);
@@ -133,4 +133,10 @@ test('common pose batches stay smooth and never extrapolate into an unresolved c
  }
  assert.ok(track.delay>=580&&track.delay<610);assert.ok(Math.min(...steps)>2.4);assert.ok(Math.max(...steps)<3.5);
  const end=track.samples.at(-1).t,held=track.sample(track.arrival+3000,r());assert.ok(held&&held.t<=end,'stream handover holds the settled timeline instead of switching to a future prediction');
+});
+
+test('a late join watermark cannot permanently add seconds to every subsequent pose',()=>{
+ const track=new PoseTrack();let next=4000,shown;
+ for(let clock=4000;clock<40000;clock+=1000/60){if(clock>=next){const through=next===4000?0:next-500;track.push([through,0,through*.1,0,0,100,0,0,1,0,1,0,-2000],clock,through);next+=500;}shown=track.sample(clock,r());}
+ assert.ok(40000-shown.t<1600,'playback catches up smoothly after the room watermark catches up');
 });

@@ -177,6 +177,7 @@ exports.effectPosition = effectPosition;
 exports.missileContact = missileContact;
 exports.runnerState = runnerState;
 exports.withHistory = withHistory;
+exports.acceptedRunner = acceptedRunner;
 exports.control = control;
 exports.recordRunnerPatch = recordRunnerPatch;
 exports.sampleRunner = sampleRunner;
@@ -347,6 +348,20 @@ function controlState(source, dx, dy, jump, dash, clock, seq) {
 // inputs and replay a committed hit without moving a queued jump to a later time.
 function runnerState(source) { const { history, ...state } = source; return { ...state, boxes: [...state.boxes], boxReadyAt: { ...state.boxReadyAt }, usedEffects: [...state.usedEffects], hits: [...state.hits] }; }
 function withHistory(source) { return source.history ? source : { ...source, history: { base: runnerState(source), events: [] } }; }
+// The authenticated fast lane records these controls durably before announcing
+// them. Both the room resolver and ordinary saves consume the same ordered log.
+function acceptedRunner(source, inputs, clock, arena, effects, id) {
+    let r = withHistory(source);
+    for (const e of inputs) {
+        if (e.seq <= r.seq)
+            continue;
+        if (e.seq !== r.seq + 1)
+            break;
+        const at = Math.max(r.t, Math.min(clock, e.at));
+        r = control(advanceRunner(r, at, arena, effects, id), e.dx, e.dy, e.jump, e.dash, at, e.seq);
+    }
+    return r;
+}
 function control(source, dx, dy, jump, dash, clock, seq) {
     const r = controlState(source, dx, dy, jump, dash, clock, seq);
     if (source.history)
