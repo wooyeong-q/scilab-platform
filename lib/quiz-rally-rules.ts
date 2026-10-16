@@ -25,7 +25,7 @@ export type Room = {
   status: Phase; endsAt: number | null; remainingMs: number; metaRevision: number;
   requests: string[]; players: Record<string,Player>;
   raceGoal?:number; finishers?:string[]; course?:Course; stoppedClock?:number; arena?:Arena; arenaEffects?:Effect[]; arenaRevision?:number;arenaCombatAt?:number;
-  questionIds?: string[]; questionSetTitle?: string; cityTarget?:number;
+  questionIds?: string[]; questionSetTitle?: string; cityTarget?:number; arenaFinalized?:boolean;
   realtime?: {version:1;generation:string;checkpoint:number};
 };
 export type Row = { code: string; teacher_key_hash: string; state: Room; expires_at: string; custom_question?:CustomQuestion;motion_inputs?:ArenaInput[] };

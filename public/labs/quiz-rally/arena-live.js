@@ -50,42 +50,55 @@ class Live{
 // A real-time room never falls back to the independent Neon motion publisher.
 // HTTP retries are routed to the same room authority by the application API.
 class RealtimeLive {
- constructor(callbacks){Object.assign(this,callbacks);this.key='';this.ready=false;this.fast=false;this.pending=new Map();this.generation=0;this.attempt=0;}
+ constructor(callbacks){Object.assign(this,callbacks);this.key='';this.ready=false;this.fast=false;this.pending=new Map();this.generation=0;this.attempt=0;this.inputQueue=[];this.lastInputSend=0;}
  state(ready){if(this.ready!==ready){this.ready=ready;this.fast=ready;this.status(ready,ready);}}
  configure(url,who,enabled,realtime){const key=enabled&&who?realtime.url+':'+who.role+':'+who.playerId+':'+who.token:'';if(key===this.key)return;this.stop();if(!key)return;this.key=key;this.url=realtime.url;this.who={...who};this.attempt=0;this.connect();}
- stop(){this.key='';this.generation++;clearTimeout(this.timer);clearTimeout(this.watchdog);clearInterval(this.heartbeat);if(this.socket){this.socket.onclose=null;this.socket.close();this.socket=null;}for(const p of this.pending.values()){clearTimeout(p.timer);p.reject(new Error('실시간 서버에 다시 연결하고 있어요.'));}this.pending.clear();this.state(false);}
+ stop(){this.key='';this.generation++;clearTimeout(this.timer);clearTimeout(this.watchdog);clearTimeout(this.inputTimer);this.inputTimer=0;this.inputQueue=[];clearInterval(this.heartbeat);if(this.socket){this.socket.onclose=null;this.socket.close();this.socket=null;}for(const p of this.pending.values()){clearTimeout(p.timer);p.reject(new Error('실시간 서버에 다시 연결하고 있어요.'));}this.pending.clear();this.state(false);}
  arm(){clearTimeout(this.watchdog);this.watchdog=setTimeout(()=>this.socket?.close(),12000);}
  connect(){
   if(!this.key)return;const generation=++this.generation;let socket;
   try{socket=new WebSocket(this.url);}catch{this.timer=setTimeout(()=>this.connect(),2000);return;}
-  this.socket=socket;this.arm();
+  this.socket=socket;this.awaitingSnapshot=true;this.lastInputSend=0;this.arm();
   socket.onopen=()=>{if(generation!==this.generation)return;socket.send(JSON.stringify({type:'auth',identity:this.who}));};
   socket.onmessage=message=>{
    if(generation!==this.generation)return;this.arm();
    try{const event=JSON.parse(message.data);
-    if(event.type==='ready'){this.attempt=0;this.state(true);clearInterval(this.heartbeat);this.heartbeat=setInterval(()=>{if(socket.readyState===WebSocket.OPEN){this.pingAt=performance.now();socket.send('{"type":"ping"}');}},4000);}
+    if(event.type==='ready'){this.attempt=0;clearInterval(this.heartbeat);this.heartbeat=setInterval(()=>{if(socket.readyState===WebSocket.OPEN){this.pingAt=performance.now();socket.send('{"type":"ping"}');}},4000);}
     else if(event.type==='pong'){if(this.pingAt)this.transit=Math.min(250,(performance.now()-this.pingAt)/2);}
     else if(event.type==='response'||event.type==='error'){
      const pending=this.pending.get(event.id);if(pending){clearTimeout(pending.timer);this.pending.delete(event.id);if(event.type==='error'){const error=new Error(event.error);error.status=event.status;pending.reject(error);}else{if(event.data)Object.defineProperty(event.data,'_transitMs',{value:Math.min(250,(performance.now()-pending.started)/2)});pending.resolve(event.data);}}
      else if(event.type==='error'){this.refresh();if(event.status===403)socket.close();}
-    }else{if(event.type==='snapshot'&&event.data)Object.defineProperty(event.data,'_transitMs',{value:this.transit||0});if(event.type==='world'){event.authoritative=true;event.transitMs=this.transit||0;}this.event(event);}
+    }else{if(event.type==='snapshot'&&event.data)Object.defineProperty(event.data,'_transitMs',{value:this.transit||0});if(event.type==='world'){event.authoritative=true;event.transitMs=this.transit||0;}this.event(event);if(event.type==='snapshot'&&this.awaitingSnapshot){this.awaitingSnapshot=false;this.state(true);}}
    }catch{socket.close();}
   };
-  socket.onclose=event=>{if(generation!==this.generation)return;this.socket=null;clearTimeout(this.watchdog);clearInterval(this.heartbeat);this.state(false);for(const p of this.pending.values()){clearTimeout(p.timer);p.reject(new Error('실시간 서버에 다시 연결하고 있어요.'));}this.pending.clear();if(event.code===4001){this.key='';return;}if(this.key)this.timer=setTimeout(()=>this.connect(),Math.min(10000,400*2**Math.min(this.attempt++,5))+Math.random()*300);};
+  socket.onclose=event=>{if(generation!==this.generation)return;this.socket=null;clearTimeout(this.watchdog);clearTimeout(this.inputTimer);this.inputTimer=0;this.inputQueue=[];clearInterval(this.heartbeat);this.state(false);for(const p of this.pending.values()){clearTimeout(p.timer);p.reject(new Error('실시간 서버에 다시 연결하고 있어요.'));}this.pending.clear();if(event.code===4001){this.key='';this.event({type:'superseded'});return;}if(this.key)this.timer=setTimeout(()=>this.connect(),Math.min(10000,400*2**Math.min(this.attempt++,5))+Math.random()*300);};
   socket.onerror=()=>socket.close();
  }
  reconnect(){if(this.socket)this.socket.close();else if(this.key){clearTimeout(this.timer);this.connect();}}
- sendInput(input,revision){if(!this.ready||this.socket?.readyState!==WebSocket.OPEN||this.who.role!=='student')return false;if(this.socket.bufferedAmount>65536){this.socket.close();return false;}this.socket.send(JSON.stringify({type:'input',inputs:[input],...revision}));return true;}
+ sendInput(input,revision){return this.sendInputs([input],revision);}
+ sendInputs(inputs,revision){
+  if(!this.ready||this.socket?.readyState!==WebSocket.OPEN||this.who.role!=='student'||!inputs.length)return false;
+  if(this.inputRevision?.roomRevision!==revision.roomRevision)this.inputQueue=[];
+  this.inputRevision={...revision};const queued=new Map(this.inputQueue.map(e=>[e.seq,e]));for(const e of inputs)queued.set(e.seq,e);
+  this.inputQueue=[...queued.values()].sort((a,b)=>a.seq-b.seq).slice(-96);this.flushInputs();return true;
+ }
+ flushInputs(urgent=false){
+  clearTimeout(this.inputTimer);this.inputTimer=0;
+  if(!this.ready||this.socket?.readyState!==WebSocket.OPEN||!this.inputQueue.length)return;
+  const wait=this.socket.bufferedAmount>65536?50:urgent?0:Math.max(0,60-(Date.now()-this.lastInputSend));
+  if(wait){this.inputTimer=setTimeout(()=>this.flushInputs(),wait);return;}
+  this.socket.send(JSON.stringify({type:'input',inputs:this.inputQueue,...this.inputRevision}));this.inputQueue=[];this.lastInputSend=Date.now();
+ }
  request(body){
   if(!this.ready||this.socket?.readyState!==WebSocket.OPEN)return Promise.reject(new Error('실시간 서버에 다시 연결하고 있어요.'));
-  const id=crypto.randomUUID();return new Promise((resolve,reject)=>{const timer=setTimeout(()=>{this.pending.delete(id);reject(new Error('응답을 다시 확인하고 있어요.'));},4000);this.pending.set(id,{resolve,reject,timer,started:performance.now()});this.socket.send(JSON.stringify({type:'request',id,body:body||undefined}));});
+  this.flushInputs(true);const id=crypto.randomUUID();return new Promise((resolve,reject)=>{const timer=setTimeout(()=>{this.pending.delete(id);reject(new Error('응답을 다시 확인하고 있어요.'));},4000);this.pending.set(id,{resolve,reject,timer,started:performance.now()});this.socket.send(JSON.stringify({type:'request',id,body:body||undefined}));});
  }
 }
 class Transport {
  constructor(callbacks){this.legacy=new Live(callbacks);this.realtime=new RealtimeLive(callbacks);this.active=this.legacy;}
  get ready(){return this.active.ready;}get fast(){return this.active.fast;}get authoritative(){return this.active===this.realtime;}
  configure(url,who,enabled,realtime){const next=realtime?.version===1?this.realtime:this.legacy;if(this.active!==next){this.active.stop();this.active=next;}this.active.configure(url,who,enabled,realtime);}
- stop(){this.active.stop();}reconnect(){this.active.reconnect();}sendInput(input,revision){return this.active.sendInput(input,revision);}request(body){return this.realtime.request(body);}
+ stop(){this.active.stop();}reconnect(){this.active.reconnect();}sendInput(input,revision){return this.active.sendInput(input,revision);}sendInputs(inputs,revision){if(this.authoritative)return this.realtime.sendInputs(inputs,revision);return inputs.every(e=>this.legacy.sendInput(e,revision));}request(body){return this.realtime.request(body);}
 }
 window.quizArenaLive=Transport;
 })();

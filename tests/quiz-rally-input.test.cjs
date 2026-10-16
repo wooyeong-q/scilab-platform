@@ -46,3 +46,16 @@ test('blur clears movement and a later unmodified repeat cannot leave dash stuck
  k.update(event('KeyW','w',false,true),true);
  assert.equal(k.controls().x,0);assert.equal(k.controls().y,1);assert.equal(k.controls().dash,false);
 });
+test('Space and physical J each jump once, including Korean IME, while question modals block input',()=>{
+ const callbacks={},jumps=[],ctx={document:{addEventListener:(name,fn)=>callbacks[name]=fn,querySelector:()=>null,activeElement:{tagName:'CANVAS'}},canvas:{isConnected:true},state:{arena:{},status:'running',player:{}},dialog:{open:false},inputCheck:{key(){}},keyboard:new Keyboard(),nudge:j=>{if(j)jumps.push(j);},toggleDashLock(){},use(){}};
+ const source=fs.readFileSync('public/labs/quiz-rally/arena.js','utf8');vm.runInNewContext(source.slice(source.indexOf("document.addEventListener('keydown'"),source.indexOf("window.addEventListener('blur'")),ctx);
+ const press=(code,key,repeat=false)=>callbacks.keydown({...event(code,key,false,repeat),preventDefault(){}});
+ press('Space',' ');press('Space',' ',true);press('KeyJ','ㅓ');assert.equal(jumps.length,2);
+ ctx.dialog.open=true;press('KeyJ','j');assert.equal(jumps.length,2);
+ ctx.dialog.open=false;ctx.document.activeElement.tagName='INPUT';press('Space',' ');assert.equal(jumps.length,2);
+});
+test('a clock restored after a long outage immediately returns inside the input freshness window',()=>{
+ const t=new context.window.quizArenaSync.Timeline();t.sync(4000,'running',0,0);
+ assert.equal(t.sync(7000,'running',0,500),7000);
+ assert.equal(t.now(750),7250);
+});

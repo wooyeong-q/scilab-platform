@@ -73,14 +73,14 @@ export class QuizArenaRoom {
     });
     const p = this.room.players[who.playerId];
     if (p.finish) return;
-    const at = gameClock(this.room);
+    const at = gameClock(this.room), before = p.runner!.seq;
     for (const e of inputs) {
       if (e.seq <= p.runner!.seq) continue;
       const fresh = Math.abs(at - e.at) <= 1500;
       p.runner = runnerState(control(p.runner!, fresh ? e.dx : 0, fresh ? e.dy : 0, fresh && e.jump === true, fresh && e.dash === true, at, e.seq));
       p.runner.inputUntil = at + INPUT_LEASE_MS;
     }
-    p.version++; this.changed();
+    if(p.runner!.seq!==before){p.version++; this.changed();}
   }
 
   tick(wall = Date.now()) {
@@ -202,6 +202,7 @@ export class QuizArenaRoom {
     const players=Object.values(this.room.players).filter(p=>!p.removed);
     const poses=players.map(p=>({id:p.id,pose:runnerPose(p.runner!,this.room.arena!,previous.get(p.id))}));
     previous.clear(); for(const p of players) previous.set(p.id,p.runner!);
-    return {type:'world',code:this.record.code,roomRevision:this.room.metaRevision,arenaRevision:this.room.arenaRevision||0,arenaEffects:this.room.arenaEffects||[],at:gameClock(this.room),through:gameClock(this.room),players:poses};
+    const ranking=[...players].sort((a,b)=>a.finish||b.finish?(a.finish?.place||999)-(b.finish?.place||999):b.runner!.y-a.runner!.y||a.id.localeCompare(b.id)).map(p=>p.id);
+    return {type:'world',code:this.record.code,roomRevision:this.room.metaRevision,arenaRevision:this.room.arenaRevision||0,arenaEffects:this.room.arenaEffects||[],at:gameClock(this.room),through:gameClock(this.room),players:poses,ranking};
   }
 }

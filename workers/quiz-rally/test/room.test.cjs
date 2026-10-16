@@ -70,8 +70,16 @@ test('30 real WebSockets share authoritative frames, reconnect, and stop with th
   assert.ok(Math.min(...frameCounts)>=30,JSON.stringify(frameCounts));
   for(const client of clients.slice(0,30)){
    const frame=[...client.events].reverse().find(e=>e.type==='world');assert.equal(frame.players.length,30);assert.ok(frame.self.runner.seq>=15);assert.ok(frame.self.runner.y>0);
+   assert.equal(new Set(frame.ranking).size,30);
+   const positions=new Map(frame.players.map(p=>[p.id,p.pose[2]]));
+   for(let i=1;i<frame.ranking.length;i++)assert.ok(positions.get(frame.ranking[i-1])>=positions.get(frame.ranking[i]),'rank uses common positions');
+   assert.deepEqual(frame.ranking,teacher.events.find(e=>e.type==='world'&&e.at===frame.at).ranking,'every participant receives the same order, including subpixel ties');
    assert.equal(client.events.some(e=>e.type==='error'),false);
   }
+  const snapshotCount=teacher.events.filter(e=>e.type==='snapshot').length,inputId=randomUUID();
+  clients[0].ws.send(JSON.stringify({type:'request',id:inputId,body:{action:'arena-input',requestId:randomUUID(),inputs:[{seq:++seq,at:5500,dx:0,dy:0}]}}));
+  await until(()=>clients[0].events.some(e=>e.type==='response'&&e.id===inputId));
+  assert.equal(teacher.events.filter(e=>e.type==='snapshot').length,snapshotCount,'movement fallback must not broadcast whole snapshots to the class');
   const writesBefore=h.checkpoints.length;assert.ok(writesBefore<=2,`Only bounded checkpoints, got ${writesBefore}`);
   clients[0].ws.close();await sleep(50);const rejoined=await h.connect(students[0]);clients.push(rejoined);
   const restored=rejoined.events.find(e=>e.type==='snapshot').data;assert.ok(restored.player.runner.seq>=15);

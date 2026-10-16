@@ -18,8 +18,9 @@ const chest=(color='#e7b352')=>`<svg class="chest" viewBox="0 0 120 96" fill="no
 let homeRole='student',code='',identity=null,snapshot=null,busy=false,pollTimer=0,failureCount=0,offset=0,viewKey='',rankPage=0,lastNotice='',toastTimer=0,activeTab=true,polling=false,epoch=0;
 let refreshWanted=false,refreshTimer=0,inputSave=null;
 function refreshLive(){refreshWanted=true;clearTimeout(refreshTimer);refreshTimer=setTimeout(()=>{if(!busy&&!polling&&identity&&snapshot){refreshWanted=false;poll();}},60);}
-const live=new window.quizArenaLive({event:event=>{if(event.type==='snapshot'){if(event.data?.code===code)update(event.data);return;}if(event.type==='refresh'||!window.quizArena.liveMotion(event))refreshLive();},status:(ready,fast)=>{window.quizArena.liveStatus(ready,fast);schedulePoll();},refresh:refreshLive});
+const live=new window.quizArenaLive({event:event=>{if(event.type==='superseded'){showBlocked('같은 참여 정보로 다른 창에서 접속했어요. 사용할 창 하나만 남겨 주세요.');return;}if(event.type==='snapshot'){if(event.data?.code===code)update(event.data);return;}if(event.type==='refresh'||!window.quizArena.liveMotion(event))refreshLive();},status:(ready,fast)=>{window.quizArena.liveStatus(ready,fast);schedulePoll();},refresh:refreshLive});
 window.quizArena.sendInput=input=>live.sendInput(input,{roomRevision:snapshot?.roomRevision,arenaRevision:snapshot?.arenaRevision});
+window.quizArena.sendInputs=inputs=>live.sendInputs(inputs,{roomRevision:snapshot?.roomRevision,arenaRevision:snapshot?.arenaRevision});
 function syncLive(){live.configure(api+'/'+code+'/events',identity,!!(activeTab&&snapshot?.arena&&(snapshot.realtime||['running','paused'].includes(snapshot.status))),snapshot?.realtime);}
 
 let lobbyRobot=null;
@@ -84,7 +85,14 @@ function update(data){data=window.quizArenaSync.mergeSnapshot(snapshot,data);if(
 }
 function schedulePoll(){clearTimeout(pollTimer);if(!identity||!code||!activeTab||snapshot?.status==='ended')return;const base=refreshWanted?80:snapshot?.arena?(live.ready?(live.authoritative?15000:3000):800):snapshot?.course?1100:identity.role==='teacher'||dialog.classList.contains('crew-modal')&&dialog.open?3500:5000;pollTimer=setTimeout(poll,Math.min(30000,base*(failureCount?2**Math.min(failureCount,3):1))+Math.random()*500);}
 async function poll(){if(polling||busy){schedulePoll();return;}polling=true;refreshWanted=false;const room=code,who=identity,stamp=epoch;try{const data=await request('/'+room,null,who,false);if(room===code&&who===identity&&stamp===epoch)update(data);}catch(e){if(room!==code||who!==identity||stamp!==epoch)return;failureCount++;connection('연결 확인 중…',true);if(e.status===403||e.status===404){clearTimeout(pollTimer);showBlocked(e.message);return;}if(failureCount===1)toast('연결이 잠시 끊겼어요. 자동으로 다시 연결합니다.',true);}finally{polling=false;if(snapshot)schedulePoll();}}
-async function enter(room,who){inputSave=null;live.stop();resetLobbyRobot();epoch++;clearTimeout(pollTimer);code=room;identity=who;viewKey='';rankPage=0;lastNotice='';crewFocus=who.playerId||'';setLocation(code,identity.role);main.innerHTML='<div class="loading">게임방에 연결하고 있어요…</div>';try{update(await request('/'+code));schedulePoll();}catch(e){showBlocked(e.message);}}
+async function enter(room,who){
+ inputSave=null;live.stop();resetLobbyRobot();const stamp=++epoch;clearTimeout(pollTimer);snapshot=null;code=room;identity=who;viewKey='';rankPage=0;lastNotice='';crewFocus=who.playerId||'';setLocation(code,identity.role);main.innerHTML='<div class="loading">게임방에 연결하고 있어요…</div>';
+ try{const data=await request('/'+room,null,who,false);if(stamp!==epoch)return;update(data);schedulePoll();}
+ catch(e){if(stamp!==epoch)return;if(e.status&&e.status<500&&e.status!==429){showBlocked(e.message);return;}
+  connection('다시 연결 중…',true);main.innerHTML='<section class="waiting"><h1>다시 연결하고 있어요</h1><p class="subline">참여 정보는 그대로 유지됩니다. 잠시 기다려 주세요.</p><div class="center-actions"><button class="button primary" data-action="retry">지금 다시 연결</button><button class="button secondary" data-action="home">처음으로</button></div></section>';
+  pollTimer=setTimeout(()=>{if(stamp===epoch)enter(room,who);},2000);
+ }
+}
 function showBlocked(message){live.stop();window.quizArena.stop();resetLobbyRobot();syncCity(null);snapshot=null;clearTimeout(pollTimer);main.innerHTML=`<section class="waiting"><div class="waiting-mark">!</div><h1>참여 정보를 확인해 주세요</h1><p class="subline">${esc(message)}</p><div class="center-actions"><button class="button primary" data-action="retry">다시 연결</button><button class="button secondary" data-action="home">처음으로</button></div></section>`;connection('연결되지 않음',true);}
 function showHome(role=homeRole,room=''){inputSave=null;live.stop();resetLobbyRobot();syncCity(null);epoch++;clearTimeout(pollTimer);snapshot=null;identity=null;code='';document.body.classList.remove('course-mode','course-enlarged','arena-mode');window.quizArena.stop();homeRole=role;viewKey='';main.className='';setLocation('',null);connection('도시 재가동 · 학급 게임');
  const recent=storageRead('quiz-rally:recent',[]).filter(r=>Date.now()-r.at<14*86400000);
@@ -143,7 +151,7 @@ function manage(){openDialog('참여자 관리',`<p>참여를 종료한 학생�
 // At most one background save runs beside an item/question action. Both
 // include ordered inputs; the server's player version guards serialize commits.
 async function saveArenaInput(extras){
- if(inputSave||busy||!snapshot?.arena||snapshot.status!=='running')return;
+ if(inputSave||busy||!snapshot?.arena||snapshot.status!=='running'||snapshot.realtime&&live.authoritative&&live.ready)return;
  const task={room:code,who:identity};inputSave=task;epoch++;
  try{const data=await request('/'+task.room,{action:'arena-input',requestId:crypto.randomUUID(),...extras},task.who,false);if(code===task.room&&identity===task.who)update(data);}
  catch{if(code===task.room&&identity===task.who)refreshLive();}

@@ -6,7 +6,7 @@ import { sql } from './db';
 import { QUESTION_MAP, QUIZ_QUESTIONS } from './quiz-rally-questions';
 import { validateQuestions, type CustomQuestion } from './quiz-rally-bank';
 import { QuizError } from './quiz-rally-errors';
-import { QuizWorldFeed } from './quiz-rally-combat';
+import { QuizWorldFeed, resolveCombat } from './quiz-rally-combat';
 import { robotFor, validateRobot, type RobotParts } from './quiz-rally-robot';
 import { advance, capsuleAt, freshRacer, gameClock, CHARGE, type Course, type Racer } from './quiz-rally-course';
 import { advanceRunner, control, freshRunner,raceLength, missileDirection, boxes, boxWait, BOX_RESPAWN, GEAR_NAMES, ENERGY_CHARGE, energyValue,withHistory,acceptedRunner,sampleRunner,runnerState,recordRunnerPatch,trimRunnerHistory, type Arena, type Runner, type Gear, type Effect,type ArenaInput } from './quiz-rally-arena';
@@ -150,7 +150,7 @@ export async function getQuizSnapshot(code:string,identity:QuizIdentity){
   if(row.room.course&&(row.ranking as Array<{racer?:Racer;finish?:Finish}>).some(p=>p.racer&&!p.finish&&advance(p.racer,gameClock(row.room),row.room.course).finishAt!==undefined)){
     await settleCourse(code);row=(await query(`SELECT ${snapshotColumns} FROM quiz_rally_sessions WHERE code=$1 AND expires_at>NOW()`,[code,identity.playerId||'']))[0];
   }
-  if(row.room.arena&&(row.ranking as Array<{runner?:Runner;finish?:Finish;id:string}>).some(p=>p.runner&&!p.finish&&p.runner.finishAt!==undefined)){
+  if(row.room.arena&&!row.room.arenaFinalized&&(row.ranking as Array<{runner?:Runner;finish?:Finish;id:string}>).some(p=>p.runner&&!p.finish&&(p.runner.finishAt!==undefined||phase(row.room)==='ended'))){
     await settleArena(code);row=(await query(`SELECT ${snapshotColumns} FROM quiz_rally_sessions WHERE code=$1 AND expires_at>NOW()`,[code,identity.playerId||'']))[0];
   }
   return snapshotFromRow(row,identity);
@@ -173,7 +173,7 @@ async function snapshotFromRow(r:Record<string,any>,identity:QuizIdentity){
     }
   }
   const now=Date.now(),ranking=(r.ranking as Array<{id:string;nickname:string;avatar?:number;robot?:RobotParts;activity:string;racer?:Racer;runner?:Runner;finish?:Finish;score:number;correct:number;attempted:number;shield:boolean;protectedUntil:number}>).map(p=>({...p,avatar:avatarFor(p),robot:robotFor(p.robot,avatarFor(p))})).sort((a,b)=>b.score-a.score||b.correct-a.correct||a.nickname.localeCompare(b.nickname,'ko'));
-  if(room.arena){const positions=new Map(ranking.map(p=>[p.id,advanceRunner(p.runner!,gameClock(room,now),room.arena!,room.arenaEffects||[],p.id).y]));ranking.sort((a,b)=>{if(a.finish||b.finish)return(a.finish?.place||999)-(b.finish?.place||999);return positions.get(b.id)!-positions.get(a.id)!||a.nickname.localeCompare(b.nickname,'ko');});}
+  if(room.arena){const positions=new Map(ranking.map(p=>[p.id,phase(room,now)==='ended'?p.runner!.y:advanceRunner(p.runner!,gameClock(room,now),room.arena!,room.arenaEffects||[],p.id).y]));ranking.sort((a,b)=>{if(a.finish||b.finish)return(a.finish?.place||999)-(b.finish?.place||999);return positions.get(b.id)!-positions.get(a.id)!||a.id.localeCompare(b.id);});}
   const review=[];if(identity.role==='student'&&phase(room,now)==='ended'){
     const ids=Object.entries(p!.stats).filter(([,v])=>v[0]>v[1]).slice(0,6).map(([id])=>id);
     const custom=room.questionIds&&ids.length?await query(`SELECT value AS q FROM quiz_rally_sessions,jsonb_each(question_bank) WHERE code=$1 AND key=ANY($2::text[])`,[code,ids]):[];
@@ -202,10 +202,13 @@ async function settleCourse(code:string){
 
 async function settleArena(code:string){
   for(let attempt=0;attempt<8;attempt++){
-    const row=await readRoom(code),room=row.state;if(!room.arena)return;
-    const effects=room.arenaEffects||[],now=gameClock(room),waiting=effects.some(e=>e.shared&&!e.victim&&e.expires>(room.arenaCombatAt||0)&&e.born<=now),clock=waiting?Math.min(now,room.arenaCombatAt||0):now;
+    const row=await readRoom(code),room=row.state;if(!room.arena||room.arenaFinalized)return;
+    const ended=phase(room)==='ended',now=gameClock(room);
+    let effects=room.arenaEffects||[];
+    const waiting=!ended&&effects.some(e=>e.shared&&!e.victim&&e.expires>(room.arenaCombatAt||0)&&e.born<=now),clock=waiting?Math.min(now,room.arenaCombatAt||0):now;
     const journals=await query('SELECT player_id,inputs FROM quiz_rally_motion_inputs WHERE code=$1',[code]);
     for(const journal of journals){const p=room.players[journal.player_id];if(p?.runner&&!p.removed&&!p.finish)p.runner=acceptedRunner(p.runner,journal.inputs,now,room.arena,effects,p.id);}
+    if(ended)effects=resolveCombat(Object.values(room.players).filter(p=>p.runner) as (Player&{runner:Runner})[],now,room.arena,effects).effects;
     // Never award a finish from extrapolated held input: an unseen release may
     // still be in flight. Only replay through the latest accepted control.
     const project=(p:Player)=>sampleRunner(p.runner!,Math.min(clock,p.runner!.t),room.arena!,effects,p.id);
@@ -213,7 +216,8 @@ async function settleArena(code:string){
     // Resolve a trap to one victim before deriving the final arrival order.
     const hits=projected.flatMap(({p,r})=>r.hits.filter(h=>!p.runner!.usedEffects.includes(h.id)).map(h=>({...h,id:h.id,playerId:p.id}))).sort((a,b)=>a.t-b.t||a.playerId.localeCompare(b.playerId));
     for(const hit of hits){const e=effects.find(e=>e.id===hit.id);if(e&&!e.victim){e.victim=hit.playerId;e.hitAt=hit.t;}}
-    const arrivals=projected.map(({p})=>({p,r:project(p)})).filter(x=>x.r.finishAt!==undefined).sort((a,b)=>a.r.finishAt!-b.r.finishAt!||a.p.id.localeCompare(b.p.id));if(!arrivals.length)return;
+    const arrivals=projected.map(({p})=>({p,r:project(p)})).filter(x=>x.r.finishAt!==undefined).sort((a,b)=>a.r.finishAt!-b.r.finishAt!||a.p.id.localeCompare(b.p.id));
+    if(!arrivals.length&&!ended)return;
     // A later upload can contain an earlier crossing. Sort confirmed arrivals
     // together with existing finishers, not by HTTP response order.
     const ordered=[...Object.values(room.players).filter(p=>p.finish&&p.runner?.finishAt!==undefined).map(p=>({p,r:p.runner!})),...arrivals]
@@ -223,8 +227,15 @@ async function settleArena(code:string){
       params.push(p.id,p.version);guards+=` AND (state #>> ARRAY['players',$${params.length-1},'version'])::int=$${params.length}`;
       p.runner={...r,open:false};p.finish={place,bonus:0};p.version++;notice(p,`결승선 ${place}등 통과!`);patch[p.id]=p;
     }
+    // End results use the accepted journal, including a final release that
+    // arrived before the teacher's stop. Never project an unconfirmed finish.
+    if(ended)for(const {p} of projected){if(p.finish)continue;const r=runnerState(project(p));
+      Object.assign(r,{dx:0,dy:0,dash:false,jumpQueuedUntil:0,inputUntil:r.t,open:false});
+      params.push(p.id,p.version);guards+=` AND (state #>> ARRAY['players',$${params.length-1},'version'])::int=$${params.length}`;
+      p.runner=r;p.version++;patch[p.id]=p;
+    }
     params.push(JSON.stringify(patch),JSON.stringify(winners),JSON.stringify(effects));
-    const rows=await query(`UPDATE quiz_rally_sessions SET state=jsonb_set(jsonb_set(jsonb_set(state,'{players}',(state->'players') || $${params.length-2}::jsonb),'{finishers}',$${params.length-1}::jsonb),'{arenaEffects}',$${params.length}::jsonb) || jsonb_build_object('metaRevision',(state->>'metaRevision')::int+1,'arenaRevision',COALESCE((state->>'arenaRevision')::int,0)+1)
+    const rows=await query(`UPDATE quiz_rally_sessions SET state=jsonb_set(jsonb_set(jsonb_set(state,'{players}',(state->'players') || $${params.length-2}::jsonb),'{finishers}',$${params.length-1}::jsonb),'{arenaEffects}',$${params.length}::jsonb) || jsonb_build_object('metaRevision',(state->>'metaRevision')::int+1,'arenaRevision',COALESCE((state->>'arenaRevision')::int,0)+1,'arenaFinalized',${ended?'true':'false'})
       WHERE code=$1 AND expires_at>NOW() AND (state->>'metaRevision')::int=$2 AND COALESCE((state->>'arenaRevision')::int,0)=$3 ${guards} RETURNING code,${arenaNotice()}`,params);if(rows.length)return;
   }
   throw new QuizError('도착 순서를 확인 중입니다. 잠시 뒤 다시 연결합니다.',409);

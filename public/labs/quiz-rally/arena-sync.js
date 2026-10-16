@@ -1,4 +1,4 @@
-/* Keep local input history until the server acknowledges it. Never rewind the running clock. */
+/* Keep local input history until acknowledgement; smooth normal clock drift. */
 (()=>{'use strict';
 const movementCodes={KeyW:'w',KeyA:'a',KeyS:'s',KeyD:'d',ArrowUp:'ArrowUp',ArrowLeft:'ArrowLeft',ArrowDown:'ArrowDown',ArrowRight:'ArrowRight'};
 const movementKeys=new Set(Object.values(movementCodes));
@@ -26,6 +26,10 @@ class Timeline{
   // Use the confirmed clock as a conservative target and never skip play time.
   const running=status==='running',target=raceClock,previous=this.now(at);
   if(!this.ready||!running||!this.running){this.base=target;this.correction=0;}
+  // After an outage, drift beyond the server's input freshness window would
+  // reject every jump for minutes at a 2% correction rate. Re-anchor once;
+  // reconciliation restores the confirmed runner and replays pending inputs.
+  else if(Math.abs(target-previous)>1500){this.base=target;this.correction=0;}
   // A slow response is not a reason to skip part of a jump or collision.
   // Keep elapsed play time continuous; correct clock drift gradually.
   else{this.base=previous;this.correction=target-previous;}
@@ -111,11 +115,19 @@ function mergeSnapshot(previous,next){
  if((next.roomRevision||0)<(previous.roomRevision||0))return null;
  const merged={...next};
  if((previous.arenaRevision||0)>(next.arenaRevision||0)){merged.arenaRevision=previous.arenaRevision;merged.arenaEffects=previous.arenaEffects;}
+ const mergePlayer=(old,p)=>{
+  if(!old||old.id!==p.id)return p;
+  const result=(old.version||0)>(p.version||0)?old:p;
+  // Motion frames carry only the runner. They must not claim to have received
+  // the corresponding inventory/question/finish fields of a full snapshot.
+  return (old.motionVersion||0)>Math.max(p.version||0,p.motionVersion||0)?{...result,runner:old.runner,motionVersion:old.motionVersion}:result;
+ };
  const peers=new Map(previous.ranking.map(p=>[p.id,p]));
- merged.ranking=next.ranking.map(p=>(peers.get(p.id)?.version||0)>(p.version||0)?peers.get(p.id):p);
- if(previous.player?.id===next.player?.id&&(previous.player?.version||0)>(next.player?.version||0))merged.player=previous.player;
+ merged.ranking=next.ranking.map(p=>mergePlayer(peers.get(p.id),p));
+ if(next.player)merged.player=mergePlayer(previous.player,next.player);
+ if(previous.roomRevision===next.roomRevision&&(previous.liveRankAt||0)>next.raceClock){merged.liveRanks=previous.liveRanks;merged.liveRankAt=previous.liveRankAt;}
  return merged;
 }
-function orderPlayers(players){return players.sort((a,b)=>a.p.finish||b.p.finish?(a.p.finish?.place||999)-(b.p.finish?.place||999):b.shown.y-a.shown.y||a.p.nickname.localeCompare(b.p.nickname,'ko'));}
+function orderPlayers(players,order){const places=new Map((order||[]).map((id,i)=>[id,i]));return players.sort((a,b)=>a.p.finish||b.p.finish?(a.p.finish?.place||999)-(b.p.finish?.place||999):order?(places.get(a.p.id)??999)-(places.get(b.p.id)??999):b.r.y-a.r.y||a.p.id.localeCompare(b.p.id));}
 window.quizArenaSync={Keyboard,Timeline,RemoteTrack,reconcile,mergeSnapshot,orderPlayers};
 })();

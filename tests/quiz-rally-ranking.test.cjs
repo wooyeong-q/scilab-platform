@@ -56,3 +56,24 @@ test('an item carries an input backlog in one request and concurrent movement ca
  snap=await game.actQuizRoom(code,p,use);assert.deepEqual(snap.player.gear,['shield']);assert.equal(snap.arenaEffects.length,1);
  tick(1000);await assert.rejects(game.actQuizRoom(code,p,action('arena-use',{slot:0,gear:'mine,shield',inputs:[]})),/아이템이 바뀌/);
 });
+test('teacher ending a race includes crossings already accepted by the fast input journal',async t=>{
+ const {h,game,M,code,teacher,players:[p],at,arena,patch,tick}=await setup(t);
+ await patch(p,M.control({...M.freshRunner(at),x:M.center(arena.length),y:arena.length-40},0,1,false,false,at,1));
+ await h.pg.query("UPDATE quiz_rally_sessions SET state=state || $2::jsonb WHERE code=$1",[code,JSON.stringify({arenaCombatAt:at-100,arenaEffects:[{id:randomUUID(),type:'missile',owner:'another-player',x:5000,y:100,dx:0,dy:1,born:at,expires:at+2200,shared:true}]})]);
+ tick(1000);const before=await game.getQuizSnapshot(code,p);
+ await game.publishQuizMotion(code,p,[{seq:2,at:at+900,dx:0,dy:0,jump:false,dash:false}],before.roomRevision,before.arenaRevision);
+ const ended=await game.actQuizRoom(code,teacher,action('end'));
+ assert.equal(ended.status,'ended');assert.equal(ended.ranking.find(x=>x.id===p.playerId).finish?.place,1);
+ assert.equal((await game.getQuizSnapshot(code,p)).player.finish?.place,1);
+});
+test('time expiry settles accepted crossings without turning an unseen release into a finish',async t=>{
+ const {game,M,code,teacher,players:[crossed,stopped],at,arena,patch,tick}=await setup(t);
+ for(const p of [crossed,stopped])await patch(p,M.control({...M.freshRunner(at),x:M.center(arena.length),y:arena.length-40},0,1,false,false,at,1));
+ tick(1000);const before=await game.getQuizSnapshot(code,teacher);
+ for(const [p,delay] of [[crossed,900],[stopped,50]])await game.publishQuizMotion(code,p,[{seq:2,at:at+delay,dx:0,dy:0,jump:false,dash:false}],before.roomRevision,before.arenaRevision);
+ tick(300000);const ended=await game.getQuizSnapshot(code,teacher);
+ assert.equal(ended.status,'ended');assert.equal(ended.ranking.find(x=>x.id===crossed.playerId).finish?.place,1);
+ assert.equal(ended.ranking.find(x=>x.id===stopped.playerId).finish,null);
+ assert.ok(ended.ranking.find(x=>x.id===stopped.playerId).runner.y<arena.length-25);
+ const again=await game.getQuizSnapshot(code,teacher);assert.equal(again.roomRevision,ended.roomRevision,'finalization runs once');
+});

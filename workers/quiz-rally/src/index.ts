@@ -170,7 +170,8 @@ export class QuizRoom {
         if(data.body?.action==='join')this.game.join(who,data.body);
         else if(data.body)this.game.act(who,data.body);
         const result=this.snapshot(who);
-        if(data.body){await this.save();this.broadcastSnapshots();this.queueCheckpoint(this.game.room.status==='ended');await this.armAlarm();}
+        if(data.body&&data.body.action!=='arena-input'){await this.save();this.broadcastSnapshots();this.queueCheckpoint(this.game.room.status==='ended');await this.armAlarm();}
+        else if(data.body){if(Date.now()-this.saveAt>=5000)await this.save();this.queueCheckpoint();}
         this.run();return json(result);
       }catch(error){const e=failure(error);return json({error:e.error},e.status);}
     });
@@ -210,7 +211,8 @@ export class QuizRoom {
         if(data.type==='request'){
           if(data.body)this.game!.act(who,data.body);
           const result=this.snapshot(who);
-          if(data.body){await this.save();this.broadcastSnapshots();if(this.game!.room.status==='ended')this.queueCheckpoint(true);await this.armAlarm();}
+          if(data.body&&data.body.action!=='arena-input'){await this.save();this.broadcastSnapshots();if(this.game!.room.status==='ended')this.queueCheckpoint(true);await this.armAlarm();}
+          else if(data.body&&Date.now()-this.saveAt>=5000)await this.save();
           this.send(ws,{type:'response',id,data:result});this.run();return;
         }
         if(data.type==='ping'){this.send(ws,{type:'pong'});return;}
