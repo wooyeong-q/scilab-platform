@@ -14,11 +14,12 @@ test('atom explorer: all 20 neutral models, shell transitions, invalid drops and
  assert.equal(neutralModel(1).n,0);assert.equal(neutralModel(18).n,22);
  assert.ok(validateSave(fresh()));assert.equal(validateSave({version:1,step:99}),null);
 });
-test('atom explorer registration is idempotent and preserves administrator changes',async()=>{
- const h=await harness();try{const p=JSON.parse(fs.readFileSync('public/labs/atom-explorer/program.json','utf8'));
- const source=fs.readFileSync('scripts/register-atom-explorer.mjs','utf8');const query=source.match(/sql.query\(`([\s\S]*?)`/)[1];const args=[p.id,p.title,p.summary,p.description,p.category,p.grade,JSON.stringify(p.tags),p.icon,p.url,p.author,p.featured,p.duration,p.format,p.standard];
- await h.pg.query(query,args);await h.pg.query("UPDATE programs SET title='교사 수정 제목',like_count=7 WHERE id=$1",[p.id]);await h.pg.query(query,args);
- const rows=(await h.pg.query('SELECT * FROM programs WHERE id=$1',[p.id])).rows;assert.equal(rows.length,1);assert.equal(rows[0].title,'교사 수정 제목');assert.equal(rows[0].like_count,7);
- const db=h.load('lib/db.ts');assert.equal((await db.getProgram(p.id)).url,p.url);
- }finally{await h.close();}
+test('the retired atom registration command never connects to production data',()=>{
+ const {spawnSync}=require('node:child_process');
+ const env={...process.env,VERCEL_ENV:'production'};delete env.DATABASE_URL;
+ for(const args of [[],['--register']]){
+  const result=spawnSync(process.execPath,['scripts/register-atom-explorer.mjs',...args],{env,encoding:'utf8'});
+  assert.equal(result.status,0,result.stderr);
+  assert.match(result.stdout,/retired.*skipped/i);
+ }
 });

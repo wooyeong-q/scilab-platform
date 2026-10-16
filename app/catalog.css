@@ -1,0 +1,115 @@
+/* Scoped to the program catalog; classroom runners and admin screens keep their own layouts. */
+.catalogHome { min-height: calc(100dvh - 182px); }
+.catalogIntro { display: flex; align-items: flex-end; justify-content: space-between; gap: 28px; padding-top: 38px; padding-bottom: 30px; }
+.catalogEyebrow { display: flex; align-items: center; gap: 7px; color: var(--purple); font-size: 11px; font-weight: 800; letter-spacing: .13em; }
+.catalogIntro h1 { margin: 12px 0 9px; font-size: clamp(28px, 3vw, 40px); line-height: 1.2; letter-spacing: -.04em; }
+.catalogIntro p { margin: 0; color: var(--muted); font-size: 15px; line-height: 1.6; }
+.catalogIntroMeta { display: flex; align-items: center; gap: 22px; padding-bottom: 3px; color: var(--muted); font-size: 13px; flex-shrink: 0; }
+.catalogIntroMeta strong { color: var(--ink); font-size: 20px; margin-right: 3px; }
+.catalogIntroMeta a { display: inline-flex; align-items: center; gap: 5px; color: #475467; padding: 10px 13px; border: 1px solid var(--line); background: #fff; border-radius: 10px; font-weight: 700; }
+.catalogExplorer { padding-bottom: 64px; scroll-margin-top: 90px; }
+.catalogWorkspace { display: grid; grid-template-columns: 190px minmax(0, 1fr); align-items: start; gap: 30px; }
+.catalogSidebar { position: sticky; top: 94px; padding-top: 5px; min-width: 0; }
+.catalogSidebar h2 { margin: 0 12px 13px; font-size: 12px; color: #7a8393; font-weight: 800; }
+.catalogSubjects { display: grid; gap: 6px; }
+.catalogSubjects button { display: flex; align-items: center; gap: 11px; width: 100%; padding: 13px 12px; text-align: left; color: #5e6779; border: 1px solid transparent; background: transparent; border-radius: 12px; cursor: pointer; font-size: 14px; font-weight: 700; }
+.catalogSubjects button svg { flex-shrink: 0; }
+.catalogSubjects button small { margin-left: auto; color: #667085; font-size: 12px; font-variant-numeric: tabular-nums; }
+.catalogSubjects button:hover { background: #eceef6; color: var(--ink); }
+.catalogSubjects button.isActive { background: #ececff; color: #4c49ce; border-color: #dcddfa; }
+.catalogSubjects button.isActive small { color: #4c49ce; }
+.catalogSidebarNote { margin: 22px 12px; padding-top: 18px; border-top: 1px solid var(--line); color: #737c8c; font-size: 12px; line-height: 1.8; }
+.catalogResults { min-width: 0; }
+.catalogToolbar { display: flex; align-items: center; gap: 18px; padding: 13px 15px; border: 1px solid var(--line); border-radius: 15px; background: #fff; }
+.catalogSearch { display: flex; align-items: center; gap: 10px; flex: 1; min-width: 0; color: #959baa; }
+.catalogSearch input { width: 100%; min-width: 0; height: 35px; padding: 0; outline: 0; border: 0; background: transparent; color: var(--ink); font-size: 14px; }
+.catalogSearch input::placeholder { color: #9199a7; }
+.catalogSearch input::-webkit-search-cancel-button { display: none; }
+.catalogSearch button { display: grid; place-items: center; border: 0; background: #f0f1f6; color: #596579; width: 30px; height: 30px; border-radius: 8px; cursor: pointer; flex-shrink: 0; }
+.catalogSort { display: flex; align-items: center; gap: 10px; flex-shrink: 0; color: #8a92a1; font-size: 12px; padding-left: 18px; border-left: 1px solid var(--line); }
+.catalogSort select { max-width: 100%; border: 0; background: transparent; padding: 9px 20px 9px 0; color: #475467; font-size: 13px; font-weight: 700; cursor: pointer; }
+.catalogResultsHeading { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 10px; margin: 26px 0 22px; }
+.catalogResultsHeading h2 { display: flex; align-items: center; gap: 10px; margin: 0; font-size: 20px; letter-spacing: -.025em; }
+.catalogResultsHeading h2 span { color: var(--purple); font-size: 15px; font-variant-numeric: tabular-nums; }
+.catalogResultsHeading p { margin: 0; color: #8a92a1; font-size: 12px; line-height: 1.6; overflow-wrap: anywhere; }
+.catalogGroups { display: grid; gap: 30px; }
+.catalogGroupHeading { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin: 0 0 13px; }
+.catalogGroupHeading h3 { display: flex; align-items: center; gap: 8px; flex-shrink: 0; margin: 0; color: #3c4556; font-size: 15px; }
+.catalogGroupHeading h3 svg { color: #727899; }
+.catalogGroupHeading h3 span { color: #9299a6; font-size: 12px; font-weight: 500; margin-left: 3px; }
+.catalogGroupUnits { color: #707b8c; font-size: 11px; line-height: 1.5; text-align: right; overflow-wrap: anywhere; }
+.catalogGrid { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 320px), 1fr)); gap: 16px; }
+.catalogProgramLink { display: block; min-width: 0; border-radius: 17px; }
+.catalogProgramCard { --card-tint: #eef0ff; --card-accent: #6863c8; display: flex; flex-direction: column; height: 100%; overflow: hidden; background: #fff; border: 1px solid #e3e6ee; border-radius: 17px; transition: border-color .18s, box-shadow .18s, transform .18s; }
+.catalogProgramLink:hover .catalogProgramCard { transform: translateY(-3px); border-color: #c7c9ec; box-shadow: 0 12px 28px rgba(38, 45, 76, .08); }
+.catalogProgramCard.tone-earth { --card-tint: #edf3fb; --card-accent: #486b98; }
+.catalogProgramCard.tone-chemistry { --card-tint: #eff5ef; --card-accent: #52765b; }
+.catalogProgramCard.tone-physics { --card-tint: #faf2e8; --card-accent: #8a6237; }
+.catalogProgramCard.tone-biology { --card-tint: #eff7f5; --card-accent: #356f66; }
+.catalogCardVisual { position: relative; display: flex; align-items: center; gap: 13px; height: 92px; padding: 18px 20px; background: var(--card-tint); overflow: hidden; flex-shrink: 0; }
+.catalogCardVisual > img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
+.catalogCardIcon { position: relative; display: grid; place-items: center; width: 48px; height: 48px; flex-shrink: 0; border: 1px solid rgba(255,255,255,.9); border-radius: 15px; background: rgba(255,255,255,.65); font-size: 28px; }
+.catalogVisualLabel { position: relative; color: var(--card-accent); font-size: 12px; font-weight: 800; background: var(--card-tint); padding: 5px 8px; border-radius: 7px; max-width: 55%; overflow-wrap: anywhere; }
+.catalogFeatured { position: absolute; top: 10px; right: 10px; display: flex; align-items: center; gap: 4px; border: 1px solid rgba(255,255,255,.9); border-radius: 6px; background: #fff; padding: 4px 6px; color: #667085; font-size: 10px; font-weight: 700; }
+.catalogCardBody { padding: 19px 20px 16px; display: flex; flex-direction: column; flex: 1; min-width: 0; }
+.catalogCardBody h4 { margin: 0 0 10px; font-size: 20px; line-height: 1.4; letter-spacing: -.035em; overflow-wrap: anywhere; }
+.catalogCardSummary { display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 3; overflow: hidden; margin: 0 0 16px; color: #667085; font-size: 14px; line-height: 1.75; min-height: 3.5em; }
+.catalogCardMeta { display: flex; flex-wrap: wrap; gap: 8px 12px; margin-top: auto; color: #667085; font-size: 12px; line-height: 1.5; }
+.catalogCardMeta > span { display: inline-flex; align-items: center; gap: 5px; overflow-wrap: anywhere; }
+.catalogCardMeta svg { flex-shrink: 0; color: #9199a6; }
+.catalogCardTags { display: flex; flex-wrap: wrap; gap: 5px; margin-top: 13px; }
+.catalogCardTags span { padding: 4px 7px; border-radius: 5px; background: #f4f5f8; color: #697386; font-size: 11px; line-height: 1.5; }
+.catalogCardFooter { display: flex; align-items: center; justify-content: space-between; gap: 8px; padding: 13px 20px; border-top: 1px solid #f0f1f5; }
+.catalogCardStats { display: flex; align-items: center; gap: 12px; color: #667085; font-size: 12px; }
+.catalogCardStats > span, .catalogCardAction { display: inline-flex; align-items: center; gap: 5px; }
+.catalogCardAction { color: #5651c2; font-size: 12px; font-weight: 800; white-space: nowrap; }
+.catalogEmpty { padding: 70px 20px; text-align: center; border: 1px dashed #d8dce7; border-radius: 17px; background: rgba(255,255,255,.65); }
+.catalogEmpty > svg { color: #9a9ec3; }
+.catalogEmpty h3 { font-size: 18px; margin: 18px 0 8px; }
+.catalogEmpty p { color: var(--muted); font-size: 13px; line-height: 1.7; }
+.catalogEmpty button { margin-top: 12px; padding: 11px 15px; border: 1px solid #dddff2; border-radius: 10px; color: #5652c0; background: #f1f1ff; font-weight: 700; cursor: pointer; }
+.catalogSrOnly { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0,0,0,0); white-space: nowrap; border: 0; }
+.catalogHome button:focus-visible, .catalogHome a:focus-visible, .catalogHome select:focus-visible { outline: 3px solid #8d8be3; outline-offset: 3px; }
+.catalogSearch:focus-within { outline: 2px solid #b9b7ef; outline-offset: 5px; border-radius: 5px; }
+@media (max-width: 1100px) {
+  .catalogWorkspace { grid-template-columns: 156px minmax(0,1fr); gap: 20px; }
+  .catalogIntroMeta { gap: 12px; }
+}
+@media (max-width: 900px) {
+  .catalogIntro { padding-top: 28px; padding-bottom: 23px; }
+  .catalogWorkspace { grid-template-columns: minmax(0,1fr); gap: 20px; }
+  .catalogSidebar { position: static; padding: 0; }
+  .catalogSidebar h2, .catalogSidebarNote { display: none; }
+  .catalogSubjects { display: flex; flex-wrap: wrap; gap: 8px; }
+  .catalogSubjects button { width: auto; padding: 11px 13px; gap: 8px; background: #fff; border-color: var(--line); }
+  .catalogSubjects button small { margin-left: 4px; }
+}
+@media (max-width: 620px) {
+  .catalogIntro { display: block; }
+  .catalogIntro h1 { font-size: 28px; }
+  .catalogIntro p { font-size: 13px; }
+  .catalogIntroMeta { margin-top: 16px; justify-content: space-between; font-size: 12px; }
+  .catalogIntroMeta strong { font-size: 17px; }
+  .catalogIntroMeta a { padding: 8px 10px; }
+  .catalogSubjects { gap: 6px; }
+  .catalogSubjects button { font-size: 12px; padding: 10px; }
+  .catalogSubjects button svg { width: 15px; height: 15px; }
+  .catalogToolbar { flex-wrap: wrap; padding: 10px 12px; gap: 8px; }
+  .catalogSearch { flex-basis: 100%; }
+  .catalogSearch input { font-size: 13px; min-height: 38px; }
+  .catalogSort { margin-left: auto; padding-left: 0; border-left: 0; }
+  .catalogResultsHeading { margin-top: 21px; margin-bottom: 18px; }
+  .catalogResultsHeading h2 { font-size: 18px; }
+  .catalogResultsHeading p { flex-basis: 100%; font-size: 11px; }
+  .catalogGroupUnits { display: none; }
+  .catalogGrid { gap: 13px; }
+  .catalogCardVisual { height: 82px; }
+  .catalogCardBody { padding: 17px 18px 14px; }
+  .catalogCardBody h4 { font-size: 18px; }
+  .catalogCardFooter { padding: 12px 18px; }
+  .catalogExplorer { padding-bottom: 44px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .catalogProgramCard { transition: none; }
+  .catalogProgramLink:hover .catalogProgramCard { transform: none; }
+}

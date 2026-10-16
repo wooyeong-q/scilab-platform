@@ -60,3 +60,16 @@ Physical classroom Wi-Fi throughput, Safari/iOS media behavior and a simultaneou
 browser do not establish those network/device properties.
 
 Rollback baseline: `f48330c24bb394238432365c7c37dcc02537a6e9`.
+
+## Catalog changes are separate from deployments
+
+The homepage catalog is owned by the program-management interface. A normal
+npm run build performs additive schema migration/checks and next build only.
+It does not register, update, retire, or restore catalog entries.
+
+When the user explicitly requests registration of a named built-in, use
+npm run catalog:register:matter-zoom or npm run catalog:register:quiz-rally.
+Direct entrypoints without the exact --register argument are harmless no-ops.
+Both registrars preserve deleted_at markers and administrator edits.
+The retired atom-explorer entrypoint is always a no-op.
+Never regenerate production catalog rows from development defaults or lab folders.

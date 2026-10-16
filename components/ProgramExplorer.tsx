@@ -1,36 +1,82 @@
 'use client';
 
-import { useDeferredValue,useMemo,useState } from 'react';
-import Link from 'next/link';
-import { ArrowUpRight,Eye,Heart,Search,Sparkles } from 'lucide-react';
+import { useDeferredValue, useMemo, useState } from 'react';
+import { Atom, Dna, Earth, FlaskConical, Layers3, LayoutGrid, Search, SearchX, X } from 'lucide-react';
+import { ProgramCard } from '@/components/ProgramCard';
+import { groupPrograms, selectPrograms, type CatalogSort } from '@/lib/program-catalog';
 import type { Program } from '@/lib/programs';
 
-export function ProgramExplorer({programs}:{programs:Program[]}){
-  const[query,setQuery]=useState('');
-  const[category,setCategory]=useState('전체');
-  const[sort,setSort]=useState<'recommended'|'popular'|'views'>('recommended');
-  const deferredQuery=useDeferredValue(query);
+const SUBJECT_ICONS = { '지구과학': Earth, '화학': FlaskConical, '물리': Atom, '생명과학': Dna };
+function SubjectIcon({ name }: { name: string }) {
+  const Icon = SUBJECT_ICONS[name as keyof typeof SUBJECT_ICONS] || Layers3;
+  return <Icon size={18} aria-hidden="true"/>;
+}
 
-  const categories=useMemo(()=>['전체',...Array.from(new Set(programs.map((program)=>program.category)))],[programs]);
-  const filtered=useMemo(()=>{
-    const normalized=deferredQuery.trim().toLowerCase();
-    const result=programs.filter((program)=>{
-      const text=[program.title,program.summary,program.category,program.grade,...program.tags].join(' ').toLowerCase();
-      return(category==='전체'||program.category===category)&&text.includes(normalized);
-    });
-    return[...result].sort((a,b)=>sort==='popular'?(b.likeCount||0)-(a.likeCount||0):sort==='views'?(b.viewCount||0)-(a.viewCount||0):Number(Boolean(b.featured))-Number(Boolean(a.featured))||(b.likeCount||0)-(a.likeCount||0));
-  },[category,deferredQuery,programs,sort]);
+export function ProgramExplorer({ programs }: { programs: Program[] }) {
+  const [query, setQuery] = useState('');
+  const [subject, setSubject] = useState('전체');
+  const [sort, setSort] = useState<CatalogSort>('recommended');
+  const deferredQuery = useDeferredValue(query);
+  const subjects = useMemo(() => groupPrograms(programs), [programs]);
+  const filtered = useMemo(
+    () => selectPrograms(programs, deferredQuery, subject, sort),
+    [programs, deferredQuery, subject, sort],
+  );
+  const groups = useMemo(() => sort === 'recommended'
+    ? groupPrograms(filtered)
+    : [{ name: subject === '전체' ? '전체 프로그램' : subject, programs: filtered }],
+  [filtered, subject, sort]);
 
-  function remember(id:string){
-    try{
-      const recent:string[]=JSON.parse(localStorage.getItem('scilab-recent')||'[]');
-      localStorage.setItem('scilab-recent',JSON.stringify([id,...recent.filter((item)=>item!==id)].slice(0,12)));
-    }catch{}
-  }
-
-  return <>
-    <section className="searchPanel"><div className="searchBox"><Search size={20}/><input value={query} onChange={(e)=>setQuery(e.target.value)} placeholder="프로그램명, 단원, 핵심어로 검색"/></div><div className="filters">{categories.map((item)=><button key={item} className={category===item?'filter active':'filter'} onClick={()=>setCategory(item)}>{item}</button>)}</div></section>
-    <div className="sectionHeading"><div><span className="sectionEyebrow">PROGRAMS</span><h2>수업에 바로 쓰는 프로그램</h2></div><div className="sectionTools"><p>{filtered.length}개</p><select value={sort} onChange={(e)=>setSort(e.target.value as typeof sort)}><option value="recommended">추천순</option><option value="popular">추천 많은 순</option><option value="views">조회 많은 순</option></select></div></div>
-    <section className="programGrid">{filtered.map((program)=><Link className="programCardLink" href={`/programs/${program.id}`} key={program.id} prefetch={false} onClick={()=>remember(program.id)}><article className="programCard">{program.thumbnailUrl?<img className="programThumb" src={program.thumbnailUrl} alt="" loading="lazy" decoding="async"/>:<div className="cardTop"><span className="programIcon">{program.icon}</span>{program.featured&&<span className="featured"><Sparkles size={13}/> 추천</span>}</div>}<div className="cardBody"><span className="categoryLabel">{program.category}</span><h3>{program.title}</h3><p>{program.summary}</p></div><div className="tagRow">{program.tags.slice(0,3).map((tag)=><span key={tag}>{tag}</span>)}</div><div className="cardStats"><span><Eye size={14}/>{(program.viewCount||0).toLocaleString()}</span><span><Heart size={14}/>{(program.likeCount||0).toLocaleString()}</span></div><div className="cardFooter"><span>{program.grade}</span><span className="detailLink">자세히 보기 <ArrowUpRight size={16}/></span></div></article></Link>)}</section>
-  </>;
+  function reset() { setQuery(''); setSubject('전체'); }
+  return <div className="catalogWorkspace">
+    <aside className="catalogSidebar">
+      <h2>과학 영역</h2>
+      <nav className="catalogSubjects" aria-label="과학 영역 선택">
+        <button type="button" className={subject === '전체' ? 'isActive' : ''}
+          aria-pressed={subject === '전체'} onClick={() => setSubject('전체')}>
+          <LayoutGrid size={18} aria-hidden="true"/><span>전체 프로그램</span><small>{programs.length}</small>
+        </button>
+        {subjects.map(group => <button key={group.name} type="button"
+          className={subject === group.name ? 'isActive' : ''} aria-pressed={subject === group.name}
+          onClick={() => setSubject(group.name)}>
+          <SubjectIcon name={group.name}/><span>{group.name}</span><small>{group.programs.length}</small>
+        </button>)}
+      </nav>
+      <p className="catalogSidebarNote">분야를 선택하거나<br/>단원과 핵심어로 검색하세요.</p>
+    </aside>
+    <div className="catalogResults">
+      <div className="catalogToolbar">
+        <div className="catalogSearch" role="search">
+          <Search size={20} aria-hidden="true"/>
+          <input id="catalog-search" type="search" value={query} onChange={event => setQuery(event.target.value)}
+            placeholder="프로그램명, 단원, 핵심어 검색" aria-label="프로그램 검색"/>
+          {query ? <button type="button" aria-label="검색어 지우기" onClick={() => setQuery('')}><X size={17}/></button> : null}
+        </div>
+        <label className="catalogSort">정렬
+          <select value={sort} onChange={event => setSort(event.target.value as CatalogSort)}>
+            <option value="recommended">분야별 · 추천순</option>
+            <option value="popular">추천 많은 순</option>
+            <option value="views">조회 많은 순</option>
+          </select>
+        </label>
+      </div>
+      <div className="catalogResultsHeading">
+        <h2>{subject === '전체' ? '전체 프로그램' : subject}<span>{filtered.length}</span></h2>
+        <p role="status" aria-live="polite">{deferredQuery.trim() ? '“' + deferredQuery.trim() + '” 검색 결과' : '프로그램을 선택하면 설명과 수업 자료를 볼 수 있습니다.'}</p>
+      </div>
+      <div className="catalogGroups" aria-busy={query !== deferredQuery}>
+        {filtered.length ? groups.map(group => <section key={group.name} className="catalogGroup" aria-label={group.name}>
+          <div className="catalogGroupHeading">
+            <h3><SubjectIcon name={group.name}/>{group.name}<span>{group.programs.length}개</span></h3>
+            {sort === 'recommended' ? <span className="catalogGroupUnits">{[...new Set(group.programs.map(program => program.category))].join(' · ')}</span> : null}
+          </div>
+          <div className="catalogGrid">{group.programs.map(program => <ProgramCard key={program.id} program={program}/>)}</div>
+        </section>) : <div className="catalogEmpty">
+          <SearchX size={32} aria-hidden="true"/><h3>{programs.length ? '검색 결과가 없습니다.' : '공개된 프로그램이 없습니다.'}</h3>
+          <p>{programs.length ? '다른 검색어를 입력하거나 전체 프로그램을 확인해 보세요.' : '프로그램이 등록되면 이곳에 표시됩니다.'}</p>
+          {programs.length ? <button type="button" onClick={reset}>전체 프로그램 보기</button> : null}
+        </div>}
+      </div>
+    </div>
+  </div>;
 }

@@ -57,6 +57,11 @@ export async function registerMatterZoom(sql,p){
 }
 
 async function main(){
+  // A program deployment must never implicitly change the homepage catalog.
+  if (process.argv[2] !== '--register' || process.argv.length !== 3) {
+    console.log('Catalog registration skipped. Explicitly request --register to register this program.');
+    return;
+  }
   if(process.env.VERCEL_ENV && process.env.VERCEL_ENV!=='production'){
     console.log('Preview build: matter zoom registration deferred to production.');
     return;

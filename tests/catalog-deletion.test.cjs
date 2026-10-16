@@ -1,6 +1,5 @@
 const { test } = require('node:test');
 const assert = require('node:assert/strict');
-const fs = require('node:fs');
 const { harness, request, params } = require('./helpers.cjs');
 process.env.DATABASE_URL = 'postgres://test:test@localhost/test';
 process.env.ADMIN_PASSWORD = 'catalog-deletion-test-password';
@@ -8,7 +7,8 @@ process.env.SESSION_SECRET = 'catalog-deletion-test-secret';
 const atom = require('../public/labs/atom-explorer/program.json');
 const matter = require('../public/labs/matter-zoom/program.json');
 const quiz = require('../public/labs/quiz-rally/program.json');
-const legacyAtomQuery = fs.readFileSync('scripts/register-atom-explorer.mjs','utf8').match(/sql.query\(`([\s\S]*?)`/)[1];
+// Simulate an older registrar independently of the retired current CLI.
+const legacyAtomQuery = "INSERT INTO programs (id,title,summary,description,category,grade,tags,icon,url,author,featured,duration,format,standard) VALUES ($1,$2,$3,$4,$5,$6,$7::jsonb,$8,$9,$10,$11,$12,$13,$14) ON CONFLICT (id) DO NOTHING";
 const args = p => [p.id,p.title,p.summary,p.description,p.category,p.grade,JSON.stringify(p.tags),p.icon,p.url,p.author,p.featured,p.duration,p.format,p.standard];
 async function login(h) {
   assert.equal((await h.load('app/api/admin/login/route.ts').POST(request({password:process.env.ADMIN_PASSWORD}))).status,200);

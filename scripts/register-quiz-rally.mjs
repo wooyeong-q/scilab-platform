@@ -16,6 +16,11 @@ export async function registerQuizRally(sql,p){
  [p.id,p.summary,p.description,JSON.stringify(p.tags)],{fetchOptions:{signal:AbortSignal.timeout(15000)}});
 }
 async function main(){
+  // A program deployment must never implicitly change the homepage catalog.
+  if (process.argv[2] !== '--register' || process.argv.length !== 3) {
+    console.log('Catalog registration skipped. Explicitly request --register to register this program.');
+    return;
+  }
  if(process.env.VERCEL_ENV&&process.env.VERCEL_ENV!=='production'){console.log('Preview: Quiz Rally registration deferred to production.');return;}
  if(!process.env.DATABASE_URL)throw new Error('DATABASE_URL is not configured');
  const p=JSON.parse(await readFile(new URL('../public/labs/quiz-rally/program.json',import.meta.url),'utf8'));
