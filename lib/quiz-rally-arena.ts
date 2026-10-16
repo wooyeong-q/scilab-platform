@@ -1,6 +1,6 @@
-import { cityLayout, cityTrack, cityRegion, cityTileDanger, cityPistons } from './quiz-rally-city';
+import { cityLayout, cityTrack, cityRegion, cityTileDanger, cityPistons, cityBeams } from './quiz-rally-city';
 // Deterministic top-down obstacle race. Shared by the authoritative server and client prediction.
-export type Arena={version:1|2;length:number;seed:number;combat:boolean;energy?:boolean;supplies?:2};
+export type Arena={version:1|2;length:number;seed:number;combat:boolean;energy?:boolean;supplies?:2;course?:3};
 export type Gear='mine'|'missile'|'banana'|'field'|'shield'|'boost';
 export type Effect={id:string;type:Gear;owner:string;x:number;y:number;dx:number;dy:number;born:number;expires:number;victim?:string;hitAt?:number;shared?:boolean;probe?:boolean};
 export type Runner={x:number;y:number;z:number;vz:number;dx:number;dy:number;fx:number;fy:number;t:number;seq:number;inputUntil:number;jumpAt:number;jumpQueuedUntil?:number;diveAt:number;diveUntil:number;dash?:boolean;stunUntil:number;immuneUntil:number;boostUntil:number;shieldUntil:number;knockX:number;knockY:number;checkpoint:number;fallUntil:number;falls:number;open:boolean;boxes:number[];boxReadyAt?:Record<string,number>;questionBox?:number;usedEffects:string[];hits:{id:string;t:number}[];finishAt?:number;energy?:number;history?:RunnerHistory};
@@ -42,11 +42,12 @@ export function tileRows(arena?:Arena,near=0,far=arena?.length||ROUND_LENGTH){if
 export function gates(clock:number,arena?:Arena,near=0,far=arena?.length||ROUND_LENGTH){if(arena?.version===2)return cityLayout(arena).gates.filter(g=>g.y>=near&&g.y<=far).map(g=>({y:g.y,gap:center(g.y)+g.offset+Math.sin(clock/g.period+g.phase)*g.amplitude,width:g.width}));return bases(arena,near,far).flatMap(base=>[830,1010,1190].map((v,i)=>{const y=base+v;return{y,gap:center(y)+Math.sin(clock/1100+i*1.9+base/ROUND_LENGTH)*160,width:180};})).filter(g=>g.y>=near&&g.y<=far);}
 export function spinners(clock:number,arena?:Arena,near=0,far=arena?.length||ROUND_LENGTH){if(arena?.version===2)return cityLayout(arena).rotors.filter(g=>g.y+g.length>=near&&g.y-g.length<=far).map(g=>({...g,angle:clock/g.period+g.phase}));return bases(arena,near-200,far+200).flatMap(base=>[1530,1770].map((v,i)=>{const y=base+v;return{x:center(y)+(i?100:-95),y,angle:clock/(i?850:-1000)+i+base/ROUND_LENGTH,length:185,r:15,arms:1};})).filter(g=>g.y+200>=near&&g.y-200<=far);}
 export function balls(clock:number,arena?:Arena,near=0,far=arena?.length||ROUND_LENGTH){if(arena?.version===2)return cityLayout(arena).balls.filter(g=>g.y+g.r>=near&&g.y-g.r<=far).map(g=>({x:g.x+Math.sin(clock/g.period+g.phase)*g.amplitude,y:g.y,r:g.r}));return bases(arena,near,far).flatMap(base=>[3510,3690,3850].map((v,i)=>{const y=base+v;return{x:center(y)+Math.sin(clock/(900+i*180)+i*2+base/ROUND_LENGTH)*250,y,r:34};})).filter(g=>g.y>=near&&g.y<=far);}
-export function bumpers(arena?:Arena,near=0,far=arena?.length||ROUND_LENGTH){if(arena?.version===2)return [];return bases(arena,near,far).flatMap(base=>[{x:-180,y:2850},{x:165,y:3030},{x:-120,y:3100}].map(p=>{const y=base+p.y;return{x:p.x+center(y),y,r:32};})).filter(g=>g.y>=near&&g.y<=far);}
+export function bumpers(arena?:Arena,near=0,far=arena?.length||ROUND_LENGTH){if(arena?.version===2)return cityLayout(arena).bumpers.filter(b=>b.y+b.r>=near&&b.y-b.r<=far).map(b=>({...b,spring:true}));return bases(arena,near,far).flatMap(base=>[{x:-180,y:2850},{x:165,y:3030},{x:-120,y:3100}].map(p=>{const y=base+p.y;return{x:p.x+center(y),y,r:32,spring:true};})).filter(g=>g.y>=near&&g.y<=far);}
 export function trackAt(y:number,arena?:Arena){return arena?.version===2?cityTrack(y,arena):{center:center(y),width:WIDTH};}
 export function barriers(arena:Arena,near=0,far=arena.length){return arena.version===2?cityLayout(arena).walls.filter(b=>b.y+40>=near&&b.y-40<=far):[];}
 export function fans(arena:Arena,near=0,far=arena.length){return arena.version===2?cityLayout(arena).fans.filter(b=>b.end>=near&&b.start<=far):[];}
 export function pistons(clock:number,arena:Arena,near=0,far=arena.length){return arena.version===2?cityPistons(clock,arena,near,far):[];}
+export function beams(clock:number,arena:Arena,near=0,far=arena.length){return arena.version===2?cityBeams(clock,arena,near,far):[];}
 export function missileDirection(){return{dx:0,dy:1};}
 // Predict only an isolated incoming missile for the local player's immediate
 // dodge/impact response. Any possible classmate in the corridor disables that
@@ -199,6 +200,7 @@ function advanceState(source:Runner,clock:number,arena:Arena,effects:Effect[]=[]
    else r.x=wall.x+(previousX<=wall.x?-1:1)*(wall.w/2+RADIUS+.5);
   }
   for(const press of pistons(t,arena,r.y-90,r.y+90))if(press.state===2&&Math.hypot(r.x-press.x,r.y-press.y)<press.r+RADIUS)knock(r,press.x,press.y,t,265,780);
+  for(const beam of beams(t,arena,r.y-40,r.y+40))if(beam.state===2&&r.z<34&&Math.abs(r.x-beam.x)<beam.w/2+RADIUS&&Math.abs(r.y-beam.y)<RADIUS+8)knock(r,r.x,beam.y,t,190,450);
   if(r.z<32){for(const s of spinners(t,arena,r.y-40,r.y+40)){for(let arm=0;arm<s.arms;arm++){const angle=s.angle+arm*Math.PI/2,a=Math.cos(angle)*s.length,b=Math.sin(angle)*s.length;if(segmentDistance(r.x,r.y,s.x-a,s.y-b,s.x+a,s.y+b)<RADIUS+s.r)knock(r,s.x,s.y,t,230);}}
    for(const b of [...balls(t,arena,r.y-70,r.y+70),...bumpers(arena,r.y-70,r.y+70)])if(Math.hypot(r.x-b.x,r.y-b.y)<RADIUS+b.r)knock(r,b.x,b.y,t,240);
   }

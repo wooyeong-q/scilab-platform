@@ -83,12 +83,19 @@ class PoseTrack{
 }
 class LocalView{
  constructor(){this.reset();}
- reset(){this.x=0;this.y=0;}
+ reset(){this.x=0;this.y=0;this.z=0;this.zTime=0;}
  correct(before,after){
-  if(!before||before.falls!==after.falls||Math.hypot(before.x-after.x,before.y-after.y)>250){this.reset();return;}
+  if(!before||before.falls!==after.falls||!!before.fallUntil!==!!after.fallUntil||after.open||after.finishAt!==undefined||Math.hypot(before.x-after.x,before.y-after.y)>250){this.reset();return;}
   this.x=clamp(this.x+before.x-after.x,-100,100);this.y=clamp(this.y+before.y-after.y,-100,100);
+  // A server acknowledgement can retime an otherwise valid jump. Preserve
+  // the displayed height at that instant, then settle only its correction.
+  // Do not low-pass the jump itself or alter collision/landing physics.
+  if(Math.abs(before.z-after.z)>.001){this.z=clamp(this.z+before.z-after.z,-80,80);this.zTime=180;}
  }
- sample(r,dt){const decay=Math.exp(-Math.max(0,dt)/80);this.x*=decay;this.y*=decay;return{x:r.x+this.x,y:r.y+this.y,z:r.z};}
+ sample(r,dt){const elapsed=Math.max(0,dt),decay=Math.exp(-elapsed/80);this.x*=decay;this.y*=decay;
+  if(this.zTime){const step=Math.min(elapsed,this.zTime);this.z*=1-step/this.zTime;this.zTime-=step;}
+  if(!r.z&&!r.vz){this.z=0;this.zTime=0;}
+  return{x:r.x+this.x,y:r.y+this.y,z:r.fallUntil?r.z:Math.max(0,r.z+this.z)};}
 }
 function mergeEffects(effects,delta){return effects.filter(e=>e.expires>delta.cutoff).map(e=>({...e,...delta.claims[e.id]})).concat(delta.added);}
 // Projectiles and the player they hit must use the same presentation time.

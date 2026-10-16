@@ -143,5 +143,14 @@ function wall(c,P,v,s){
  for(let x=left+25;x<right-15;x+=62){const p=P(x,y-.2,z*.45);ellipse(c,p.x,p.y,2*s,2*s,'#bfced4b3');if(!low)line(c,P(x+12,y,12),P(x+12,y,z-16),'#20334b55',3*s);}
  if(low){for(const x of [v.x-28,v.x,v.x+28]){line(c,P(x-6,y,39),P(x,y,45),'#fff4c9',3*s);line(c,P(x,y,45),P(x+6,y,39),'#fff4c9',3*s);}}
 }
-window.quizArenaScene={background,scenery,surface,details,supply,wall};
+function hazards(c,P,M,a,near,far,t,s){
+ for(const beam of M.beams(t,a,near,far)){
+  const left=beam.x-beam.w/2,right=beam.x+beam.w/2,color=beam.state===2?'#ff7391':beam.state===1?'#ffe69a':'#83b5c5';
+  c.save();c.setLineDash([7*s,8*s]);line(c,P(left,beam.y),P(right,beam.y),beam.state===1?'#ffe69aaa':'#b2d5df55',3*s);c.setLineDash([]);
+  for(const x of [left,right]){block(c,P,x,beam.y-12,22,24,42,['#496979','#253c50','#b8d7dc'],s);const lamp=P(x,beam.y,39);ellipse(c,lamp.x,lamp.y,5*s,4*s,color);}
+  if(beam.state){const p=P(left,beam.y,26),q=P(right,beam.y,26);c.globalAlpha=beam.state===2?.3:.35+.25*Math.sin(t/85);line(c,p,q,color,(beam.state===2?17:4)*s);c.globalAlpha=1;if(beam.state===2){line(c,p,q,color,6*s);line(c,p,q,'#fff3ed',2*s);}}
+  const label=P(beam.x,beam.y+38);c.font=`700 ${11*s}px system-ui`;c.textAlign='center';c.fillStyle=color;c.fillText(beam.state===1?'곧 켜짐 · 점프':beam.state===2?'점프해서 통과':'꺼짐 · 지나가세요',label.x,label.y);c.restore();
+ }
+}
+window.quizArenaScene={background,scenery,surface,details,supply,wall,hazards};
 })();
