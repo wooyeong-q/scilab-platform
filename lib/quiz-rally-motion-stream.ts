@@ -23,7 +23,9 @@ export async function quizMotionStream(request:Request,code:string,identity:Quiz
     // Credentials remain on the server; the browser authenticates this stream
     // with the existing HTTP headers, not URL parameters or a socket message.
     peer.emit('message',JSON.stringify({type:'auth',...identity}));
-    expiry=setTimeout(peer.close,45000+Math.random()*5000);
+    // Spread routine handovers over half a minute instead of reconnecting the
+    // whole class every 45 seconds. Access is still rechecked every 15 seconds.
+    expiry=setTimeout(peer.close,210000+Math.random()*30000);
   },cancel(){peer.close();}},{highWaterMark:64});
   return new Response(body,{headers:{'Content-Type':'text/event-stream','Cache-Control':'no-store, no-transform','X-Accel-Buffering':'no','X-Content-Type-Options':'nosniff'}});
 }
