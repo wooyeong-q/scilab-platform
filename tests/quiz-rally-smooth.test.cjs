@@ -11,7 +11,7 @@ test('motion uploads overlap in bounded batches without losing inputs when respo
  const requests=[],env={window:{},URL,location:{href:'https://game.test/'},Date,AbortController,setTimeout,clearTimeout,
   fetch(url,options){return new Promise(resolve=>requests.push({url:String(url),options,resolve}));}};
  vm.runInNewContext(fs.readFileSync('public/labs/quiz-rally/arena-live.js','utf8'),env);
- const live=new env.window.quizArenaLive({event(){},status(){},refresh(){}});
+ const live=new env.window.quizArenaLive({event(){},status(){},refresh(){}}).legacy;
  live.url='/api/labs/quiz-rally/sessions/ABCDEF/events';live.key='active';live.who={role:'student',playerId:'p',token:'test'};live.fast=true;
  const revision={roomRevision:1,arenaRevision:0},input={seq:1,at:4000,dx:1,dy:1,jump:false,dash:true};
  live.sendInput(input,revision);await sleep(20);assert.equal(requests.length,1);

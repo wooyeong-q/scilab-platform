@@ -1,0 +1,12 @@
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "scilab-quiz-rally",
+  "main": "src/index.ts",
+  "compatibility_date": "2026-07-01",
+  "compatibility_flags": ["nodejs_compat"],
+  "workers_dev": true,
+  "vars": {"APP_ORIGIN": "https://scilab-platform.vercel.app"},
+  "durable_objects": {"bindings": [{"name": "QUIZ_ROOMS", "class_name": "QuizRoom"}]},
+  "migrations": [{"tag": "v1", "new_sqlite_classes": ["QuizRoom"]}],
+  "observability": {"enabled": false}
+}

@@ -117,6 +117,18 @@ function answerPending(){dialog.dataset.pending='true';dialog.setAttribute('aria
 function liveStatus(connected,fast=false){liveConnected=connected;liveFast=connected&&fast;for(const track of remoteTracks.values())track.setLive(connected);if(connected&&fast&&state?.status==='running')for(const input of pending)if(!window.quizArena.sendInput?.(input))break;}
 function liveMotion(event){
  if(!state?.arena||state.status!=='running'||event.code!==room||!['motion','frame','world','effects'].includes(event.type))return false;
+ if(event.type==='world'&&event.authoritative){
+  if(event.roomRevision!==state.roomRevision)return false;
+  if(event.arenaRevision>=state.arenaRevision){state.arenaEffects=event.arenaEffects||[];state.arenaRevision=event.arenaRevision;effectsDirty=true;}
+  timeline.sync(event.at,'running',event.transitMs||0,performance.now());lastAck=performance.now();connectionLost=false;
+  const me=state.player,ack=event.self;
+  if(me&&ack&&ack.version>=me.version){
+   const before=local?M.advanceRunner(local,clock(),state.arena,ownEffects(),me.id):null;
+   me.runner=ack.runner;me.version=ack.version;seq=Math.max(seq,ack.runner.seq);pending=pending.filter(e=>e.seq>ack.runner.seq);
+   const rankedMe=state.ranking.find(p=>p.id===me.id);if(rankedMe){rankedMe.runner=ack.runner;rankedMe.version=ack.version;}
+   local=N.reconcile(M,ack.runner,pending,clock(),state.arena,ownEffects(),me.id);ownView.correct(before,local);
+  }
+ }
  if(event.type==='effects'){
   if(event.roomRevision!==state.roomRevision)return false;
   if(event.arenaRevision<=state.arenaRevision)return true;
