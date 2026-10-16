@@ -3,7 +3,7 @@
 const M=window.quizArenaModel,N=window.quizArenaSync,FX=window.quizArenaFX,SCN=window.quizArenaScene,esc=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 let state=null,root,send,isBusy,questionHTML,received=0,canvas,ctx,raf=0,lastDraw=0,local=null,visual=null,keyboard=new N.Keyboard(),touch={x:0,y:0},touchDash=false,dashLocked=false,dashPointer=null,lastSend=0,lastInput='',seq=0,queuedUse=null,usingItem=null,queuedClose=false,picking=-1,pickAt=0,focus='',room='',role='',popupKey='',lastStage=-1,bannerUntil=0,rosterAt=0,camY=0,camX=0;
 const inputCheck=new window.quizArenaInputCheck(),ownView=new window.quizArenaMotion.LocalView(),effectView=new window.quizArenaMotion.EffectView();let effectsDirty=false,lastHitQueued='';
-let simulated=new Map(),pending=[],timeline=new N.Timeline(),lastQueued=0,lastAck=0,connectionLost=false,renderDt=16;let liveConnected=false;const remoteTracks=new Map(),remoteAnchors=new Map();const images=new Map(),dialog=document.createElement('dialog');dialog.id='arena-question';dialog.className='arena-question-popup';dialog.setAttribute('aria-labelledby','question-title');document.body.append(dialog);
+let simulated=new Map(),pending=[],timeline=new N.Timeline(),lastQueued=0,lastAck=0,connectionLost=false,renderDt=16;let liveConnected=false,liveFast=false;const remoteTracks=new Map(),remoteAnchors=new Map();const images=new Map(),dialog=document.createElement('dialog');dialog.id='arena-question';dialog.className='arena-question-popup';dialog.setAttribute('aria-labelledby','question-title');document.body.append(dialog);
 function clock(){return Math.min(state.durationSeconds*1000,timeline.now());}
 function predicted(p,t=clock()){return M.advanceRunner(p.runner,t,state.arena,state.arenaEffects,p.id);}
 function clearControls(reason){inputCheck.record('clear',{reason,keys:[...keyboard.keys],shift:keyboard.shift,dashLocked});if(reason==='room'||reason==='stop')dashLocked=false;keyboard.clear();touch={x:0,y:0};touchDash=false;dashPointer=null;lastInput='';queuedUse=null;}
@@ -77,7 +77,7 @@ function frame(){raf=0;if(!state?.arena||!canvas?.isConnected||state.status==='e
   // An idle victim still acknowledges a predicted hit. Otherwise the server
   // would not commit the collision until their next movement or item action.
   const hit=r.hits.at(-1);if(hit&&hit.id!==lastHitQueued&&!own.runner.usedEffects.includes(hit.id)){lastHitQueued=hit.id;nudge(false,true);}
-  const c=controls();if(!r.open&&(lastInput!==Math.round(clamp(c.x)*100)/100+','+Math.round(clamp(c.y)*100)/100+','+Number(c.dash)||performance.now()-lastQueued>650))nudge(false,true);
+  const c=controls();if(!r.open&&(lastInput!==Math.round(clamp(c.x)*100)/100+','+Math.round(clamp(c.y)*100)/100+','+Number(c.dash)||performance.now()-lastQueued>(liveFast?250:650)))nudge(false,true);
   if(!connectionLost&&performance.now()-lastAck>6000&&local){clearControls('connection');nudge();connectionLost=true;}
   if(!isBusy()){
    if(queuedClose){queuedClose=false;clearControls('close-question');pending=[];send('arena-close');}
@@ -85,7 +85,7 @@ function frame(){raf=0;if(!state?.arena||!canvas?.isConnected||state.status==='e
     if(canUseItem()&&state.player.gear.join(',')===request.gear){usingItem=request;renderBag();Promise.resolve(send('arena-use',{slot:request.slot,...(pending.length?{inputs:pending.slice(0,24)}:{})})).finally(()=>{if(usingItem===request){usingItem=null;renderBag();}});}else renderBag();
    }
    else if(!r.open&&t>=M.COUNTDOWN){const box=M.boxes(state.arena,r.y-65,r.y+65).find(b=>M.boxWait(r,b.id,t)===0&&Math.hypot(r.x-b.x,r.y-b.y)<64);if(box&&pending.length<24&&!r.fallUntil&&r.z<=2&&r.vz===0&&(picking!==box.id||performance.now()-pickAt>1800)){picking=box.id;pickAt=performance.now();clearControls('collect');nudge();send('arena-collect',{box:box.id,inputs:pending.slice(0,24)});}
-    else if(pending.length){lastSend=performance.now();send('arena-input',{inputs:pending.slice(0,24)});}
+    else if(pending.length&&(!liveFast||performance.now()-lastSend>650||pending.length>=24)){lastSend=performance.now();send('arena-input',{inputs:pending.slice(0,24)});}
    }
   }
  }
@@ -110,7 +110,7 @@ function releasePad(e){if(e.pointerId===dashPointer){dashPointer=null;touchDash=
 document.addEventListener('pointerup',releasePad);document.addEventListener('pointercancel',releasePad);document.addEventListener('lostpointercapture',releasePad);
 function download(){const rows=[['등수','닉네임','완주 여부','진행률','정답 수','도전 수','넘어진 횟수'],...state.ranking.map((p,i)=>[p.finish?p.finish.place:i+1,p.nickname,p.finish?'완주':'미완주',Math.floor(M.advanceRunner(p.runner,state.raceClock,state.arena,state.arenaEffects,p.id).y/state.arena.length*100)+'%',p.correct,p.attempted,p.runner.falls])];const csv='\ufeff'+rows.map(row=>row.map(v=>'"'+String(v).replace(/^[=+\-@]/,"'$&").replace(/"/g,'""')+'"').join(',')).join('\r\n'),url=URL.createObjectURL(new Blob([csv],{type:'text/csv;charset=utf-8'})),a=document.createElement('a');a.href=url;a.download='장애물레이스-'+state.code+'.csv';a.click();setTimeout(()=>URL.revokeObjectURL(url),1000);}
 function answerPending(){dialog.dataset.pending='true';dialog.setAttribute('aria-busy','true');}
-function liveStatus(connected,fast=false){liveConnected=connected;for(const track of remoteTracks.values())track.setLive(connected);if(connected&&fast&&state?.status==='running')for(const input of pending)if(!window.quizArena.sendInput?.(input))break;}
+function liveStatus(connected,fast=false){liveConnected=connected;liveFast=connected&&fast;for(const track of remoteTracks.values())track.setLive(connected);if(connected&&fast&&state?.status==='running')for(const input of pending)if(!window.quizArena.sendInput?.(input))break;}
 function liveMotion(event){
  if(!state?.arena||state.status!=='running'||event.code!==room||!['motion','frame','world','effects'].includes(event.type))return false;
  if(event.type==='effects'){

@@ -130,3 +130,21 @@ test('a room publishes settled poses once and another connection takes over when
   for(const s of streams){const frames=s.events.filter(e=>e.type==='world');assert.equal(new Set(frames.map(e=>e.at)).size,frames.length,'a time is not published by competing leaders');}
  }finally{Date.now=real;for(const s of streams)s.abort.abort();await Promise.all(streams.map(s=>s.read));await h.close();}
 });
+
+test('a short burst of 100 small room updates does not disconnect a stream that briefly pauses reading',async()=>{
+ const h=await harness(),game=h.load('lib/quiz-rally.ts'),{quizStream}=h.load('lib/quiz-rally-stream.ts'),abort=new AbortController();
+ let reader;
+ try{
+  const made=await game.createQuizRoom({title:'스트림 버퍼'}),teacher={role:'teacher',token:made.teacherKey,playerId:''},who={role:'student',playerId:randomUUID(),token:randomBytes(32).toString('base64url'),nickname:'수신'};
+  await game.joinQuizRoom(made.code,who,{nickname:who.nickname});await game.actQuizRoom(made.code,teacher,{action:'start',requestId:randomUUID()});
+  const access=await game.getQuizMotionAccess(made.code,who),response=await quizStream(new Request('http://localhost/events?motion=1&world=1',{signal:abort.signal}),made.code,who);reader=response.body.getReader();
+  let buffer='',ended=false;const events=[],decoder=new TextDecoder();
+  async function read(){const q=await reader.read();if(q.done){ended=true;return;}buffer+=decoder.decode(q.value,{stream:true});let n;while((n=buffer.indexOf('\n\n'))>=0){const block=buffer.slice(0,n);buffer=buffer.slice(n+2);if(block.startsWith('data: '))events.push(JSON.parse(block.slice(6)));}}
+  while(!events.some(e=>e.type==='ready'))await read();
+  const update={type:'motion',code:made.code,status:'running',roomRevision:access.roomRevision,arenaRevision:access.arenaRevision,id:randomUUID(),runner:access.runner};
+  await h.pg.query("SELECT pg_notify($1,($2::jsonb || jsonb_build_object('version',n))::text) FROM generate_series(1,100) AS n",['quiz_rally_'+made.code.toLowerCase(),JSON.stringify(update)]);
+  while(!ended&&events.filter(e=>e.type==='motion'&&e.id===update.id).length<100)await read();
+  assert.equal(events.filter(e=>e.type==='motion'&&e.id===update.id).length,100);
+  assert.equal(ended,false,'bounded byte buffering absorbs the burst without a reconnect');
+ }finally{abort.abort();await reader?.cancel();await h.close();}
+});

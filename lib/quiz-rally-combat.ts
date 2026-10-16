@@ -51,7 +51,8 @@ export class QuizWorldFeed{
  }
  async publish(){
   const row=(await this.query(`SELECT state-'players' AS room,
-    (SELECT COALESCE(jsonb_agg(jsonb_build_object('id',key,'runner',value->'runner','removed',value->'removed','finish',value->'finish','inputs',COALESCE(q.inputs,'[]'::jsonb))),'[]'::jsonb)
+    (SELECT COALESCE(jsonb_agg(jsonb_build_object('id',key,'runner',value->'runner','removed',value->'removed','finish',value->'finish','inputs',
+      (SELECT COALESCE(jsonb_agg(event ORDER BY (event->>'seq')::bigint),'[]'::jsonb) FROM jsonb_array_elements(COALESCE(q.inputs,'[]'::jsonb)) AS pending(event) WHERE (event->>'seq')::bigint>COALESCE((value #>> '{runner,seq}')::bigint,0)))),'[]'::jsonb)
       FROM jsonb_each(state->'players') LEFT JOIN quiz_rally_motion_inputs q ON q.code=quiz_rally_sessions.code AND q.player_id=key) AS players
     FROM quiz_rally_sessions WHERE code=$1 AND expires_at>NOW()`,[this.code])).rows[0];
   if(!row||row.room.status!=='running'||!row.room.arena)return;
