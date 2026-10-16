@@ -27,7 +27,7 @@ async function body(request:Request) {
 export default {
   async fetch(request:Request,env:Env):Promise<Response> {
     const url=new URL(request.url);
-    if(url.pathname==='/health')return json({ok:true,protocol:1,tickMs:ROOM_TICK_MS,storage:'sqlite',performanceVersion:2,courseVersion:3});
+    if(url.pathname==='/health')return json({ok:true,protocol:1,tickMs:ROOM_TICK_MS,storage:'sqlite',performanceVersion:2,courseVersion:4});
     const match=/^\/rooms\/([A-HJ-NP-Z2-9]{6})\/([a-f0-9-]{36})\/(socket|init|rpc)$/.exec(url.pathname);
     if(!match)return json({error:'경기 주소를 확인해 주세요.'},404);
     if(match[3]==='socket') {

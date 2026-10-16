@@ -37,3 +37,47 @@ test('new beams warn before contact, can be jumped, and bumpers use shared autho
  const b=M.bumpers(arena)[0],ground={...source(),x:b.x+10,y:b.y,t:4000};assert.ok(M.advanceRunner(ground,4020,arena).stunUntil>4000);assert.equal(M.advanceRunner({...ground,z:60},4020,arena).stunUntil,0);
  assert.equal(M.beams(4000,{...arena,course:undefined}).length,0);assert.equal(M.bumpers({...arena,course:undefined}).length,0,'live legacy rooms keep their geometry');
 });
+
+test('harder rooms preserve the practice half and make later encounters require steering and timing',()=>{
+ for(const duration of [300,480,600,900])for(const seed of [1,42,99999]){
+  const a={...arena,course:4,length:M.raceLength(duration),seed},old={...a,course:3},Y=y=>Math.round(y*a.length/27000);
+  for(const fn of ['gaps','barriers','fans','bumpers','conveyors'])assert.equal(JSON.stringify(M[fn](a,0,Y(13200))),JSON.stringify(M[fn](old,0,Y(13200))),fn+' practice geometry stays unchanged');
+  for(const fn of ['gates','spinners','beams','pistons','balls'])assert.equal(JSON.stringify(M[fn](4000,a,0,Y(13200))),JSON.stringify(M[fn](4000,old,0,Y(13200))),fn+' practice timing stays unchanged');
+  assert.equal(M.trackAt(Y(19450),a).width,190);assert.equal(M.trackAt(Y(25700),a).width,170);
+  assert.ok(M.spinners(4000,a,Y(21900)).some(s=>s.arms===2&&Math.abs(s.period)<=630));
+  assert.ok(M.checkpoints(a,Y(21800)).length<M.checkpoints(old,Y(21800)).length,'recover between encounters, not after every obstacle');
+  const walls=M.barriers(a,Y(24600),Y(25100));assert.equal(walls.length,2);assert.ok(walls[0].x+walls[0].w/2>Math.max(...walls.map(w=>M.trackAt(w.y,a).center))&&walls[1].x-walls[1].w/2<Math.min(...walls.map(w=>M.trackAt(w.y,a).center)),'opposing tall walls close the straight centre route');
+  for(let t=4000;t<14000;t+=100){
+   const gate=M.gates(t,a,Y(23900),Y(24200))[0],road=M.trackAt(gate.y,a),left=Math.max(gate.gap-gate.width/2+M.RADIUS,road.center-road.width/2+M.RADIUS),right=Math.min(gate.gap+gate.width/2-M.RADIUS,road.center+road.width/2-M.RADIUS);
+   assert.ok(right-left>=60,'moving final opening stays inside the narrow deck');
+  }
+  for(const cp of M.checkpoints(a))for(let t=4000;t<9000;t+=250)assert.ok(M.floorAt(M.trackAt(cp,a).center,cp,t,a),'safe respawn floor');
+  for(const b of M.boxes(a))for(let t=4000;t<9000;t+=250)assert.ok(M.floorAt(b.x,b.y,t,a),'safe question floor');
+  for(const g of M.gaps(a))for(const energy of [0,100]){
+   const y=g.start-11,start={...source(),x:M.trackAt(y,a).center,y,energy},out=M.advanceRunner(M.control(start,0,1,true,false,4000,1),4900,a);
+   assert.equal(out.falls,0,`${duration}s / seed ${seed} / charge ${energy}: gap ${g.start}`);assert.ok(out.y>g.end,'no mandatory dash or charge trap');
+  }
+  for(const fn of ['barriers','gaps','bumpers'])assert.equal(M[fn](a,Y(26400)).length,0,'clear finish approach');
+  for(const fn of ['beams','spinners','pistons'])assert.equal(M[fn](4000,a,Y(26400)).length,0,'clear finish approach');
+ }
+});
+
+test('the final slalom, timed beam and consecutive narrow jumps form a continuous playable route',()=>{
+ for(const duration of [300,900])for(const energy of [0,100]){
+  const a={...arena,course:4,length:M.raceLength(duration)},Y=y=>Math.round(y*a.length/27000),start=Y(24500);
+  let r={...source(),x:M.trackAt(start,a).center,y:start,checkpoint:start,energy},seq=0;
+  const step=(dx,dy,jump=false)=>{r=M.advanceRunner(M.control(r,dx,dy,jump,false,r.t,++seq),r.t+20,a);assert.equal(r.falls,0,'route does not depend on respawning');assert.equal(r.stunUntil,0,'route does not depend on damage immunity');assert.ok(r.t<150000,'route cannot stall');};
+  const move=(x,y)=>{while(Math.hypot(r.x-x,r.y-y)>2)step((x-r.x)/3,(y-r.y)/3);};
+  const [first,second]=M.barriers(a,Y(24600),Y(25100));
+  move(first.x+first.w/2+M.RADIUS+24,r.y);move(r.x,first.y+45);
+  move(second.x-second.w/2-M.RADIUS-24,r.y);move(r.x,second.y+45);
+  const beam=M.beams(r.t,a,Y(25200),Y(25350))[0];move(M.trackAt(beam.y,a).center,beam.y-40);
+  while(Array.from({length:33},(_,i)=>M.beams(r.t+i*50,a,beam.y,beam.y)[0].state).some(state=>state===2))step(0,0);
+  move(r.x,beam.y+45);
+  while(r.finishAt===undefined){
+   const next=M.gaps(a,r.y,a.length)[0],jump=!!next&&next.start>=r.y&&next.start-r.y<=13&&r.z===0;
+   step((M.trackAt(r.y+20,a).center-r.x)/10,1,jump);
+  }
+  assert.ok(r.y>=a.length);assert.ok(r.jumpAt>4000,'the gaps require actual player jumps');
+ }
+});

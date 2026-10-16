@@ -36,7 +36,7 @@ function cityRegion(y, arena) {
     let i = exports.CITY_REGIONS.length - 1;
     while (i > 0 && reference < exports.CITY_REGIONS[i].start)
         i--;
-    const lesson = arena.course === 3 ? [
+    const lesson = (arena.course || 0) >= 3 ? [
         ['출발 연습장', '먼저 이동하고 낮은 턱을 점프해 보세요'], ['기초 조작길', '넓은 문을 지나며 방향 전환과 대시 연습'], ['풍력 지붕', '짧은 틈부터 점프! 바람은 조금씩 강해져요'], ['프레스 공장', '노란 경고를 보고 피하기 · 전기 장벽은 점프'], ['회전 타워', '회전봉과 범퍼를 차례로 넘어가세요'], ['붕괴 스카이웨이', '안전한 발판을 골라 점프를 이어가세요'], ['시티 코어', '최종 도전 · 배운 조작을 조합해 결승으로!'],
     ][i] : null;
     return { ...exports.CITY_REGIONS[i], ...(lesson ? { name: lesson[0], hint: lesson[1] } : {}), stage: i, index: i, round: 0 };
@@ -60,7 +60,7 @@ function cityLayout(arena) {
     const belt = (a, b, vx, vy = 0) => l.belts.push({ start: Y(a), end: Y(b), vx, vy });
     const tiles = (start, count, phase) => { for (let row = 0; row < Math.max(3, Math.round(count * scale)); row++)
         l.tiles.push({ y: Y(start) + row * 95, row, safe: (row * 2 + Math.floor(phase)) % 5, period: 3400, phase: phase * 1000 + row * 390 }); };
-    if (arena.course !== 3) {
+    if (arena.course !== 3 && arena.course !== 4) {
         // Existing rooms retain their geometry and supply IDs during deployment.
         // Plaza: readable first obstacles, followed by an alternating street slalom.
         wall(850, -125, 370, 27);
@@ -153,38 +153,89 @@ function cityLayout(arena) {
         rotor(11900, 0, 175, 1300);
         ball(12500, 34, 1300, 1.7);
         gate(13000, 205, 3.2, 125, 1700);
-        wall(13800, 125, 320);
-        rotor(14300, -45, 200, -1150);
-        strip(14680, 15250, 400, 15);
-        rotor(15000, 15, 175, 1050);
-        beam(15600, 0, 420, 3500, 800);
-        rotor(16150, -75, 200, -950, 2);
-        bumper(16620, 135, 38);
-        gate(17000, 175, 5.1, 145, 1450);
-        tiles(17680, 5, .2);
-        gap(18600, 86);
-        strip(18840, 19700, 260, -65);
-        fan(19020, 19590, 75);
-        gap(19450, 88);
-        tiles(19980, 6, 1.8);
-        gate(21060, 160, 2.7, 155, 1350);
-        gap(21630, 92);
-        // Final fifth: faster timings, tighter lanes, alternating combinations.
-        // Recovery checkpoints separate encounters; the finish itself stays clear.
-        belt(22200, 22900, -75, -25);
-        piston(22420, 125, 72, 250);
-        piston(22750, -120, 72, 1500);
-        beam(23200, 0, 500, 2900, 400);
-        bumper(23500, -170, 39);
-        bumper(23500, 170, 39);
-        ball(23800, 42, 850, 0);
-        gate(24250, 140, 5.7, 178, 1120);
-        rotor(24800, 0, 225, -800, 2);
-        strip(25150, 25900, 230, 0);
-        gap(25400, 98);
-        gap(25800, 102);
-        wall(26200, -140, 300, 28);
-        l.checkpoints = [100, 700, 1600, 2530, 3250, 4150, 5250, 6500, 7600, 9020, 9940, 10450, 11200, 12250, 12750, 13450, 14700, 15340, 16400, 17200, 18400, 19750, 20800, 21850, 23000, 23950, 24550, 25150, 26000, 26400].map(y => y === 100 ? 100 : Y(y));
+        if (arena.course === 3) {
+            // Keep the previously published course unchanged for rooms already in play.
+            wall(13800, 125, 320);
+            rotor(14300, -45, 200, -1150);
+            strip(14680, 15250, 400, 15);
+            rotor(15000, 15, 175, 1050);
+            beam(15600, 0, 420, 3500, 800);
+            rotor(16150, -75, 200, -950, 2);
+            bumper(16620, 135, 38);
+            gate(17000, 175, 5.1, 145, 1450);
+            tiles(17680, 5, .2);
+            gap(18600, 86);
+            strip(18840, 19700, 260, -65);
+            fan(19020, 19590, 75);
+            gap(19450, 88);
+            tiles(19980, 6, 1.8);
+            gate(21060, 160, 2.7, 155, 1350);
+            gap(21630, 92);
+            // Final fifth: faster timings, tighter lanes, alternating combinations.
+            // Recovery checkpoints separate encounters; the finish itself stays clear.
+            belt(22200, 22900, -75, -25);
+            piston(22420, 125, 72, 250);
+            piston(22750, -120, 72, 1500);
+            beam(23200, 0, 500, 2900, 400);
+            bumper(23500, -170, 39);
+            bumper(23500, 170, 39);
+            ball(23800, 42, 850, 0);
+            gate(24250, 140, 5.7, 178, 1120);
+            rotor(24800, 0, 225, -800, 2);
+            strip(25150, 25900, 230, 0);
+            gap(25400, 98);
+            gap(25800, 102);
+            wall(26200, -140, 300, 28);
+            l.checkpoints = [100, 700, 1600, 2530, 3250, 4150, 5250, 6500, 7600, 9020, 9940, 10450, 11200, 12250, 12750, 13450, 14700, 15340, 16400, 17200, 18400, 19750, 20800, 21850, 23000, 23950, 24550, 25150, 26000, 26400].map(y => y === 100 ? 100 : Y(y));
+        }
+        else {
+            // Tower: the practice half is over. Narrow decks prevent walking around
+            // the rotors; alternating walls require deliberate changes of direction.
+            wall(13650, 130, 390);
+            strip(14000, 14800, 310, -15);
+            rotor(14360, -15, 185, -800, 2);
+            beam(14980, 0, 580, 2800, 600);
+            strip(15200, 16080, 280, 35);
+            rotor(15460, 35, 175, 760);
+            rotor(15880, 35, 175, -720);
+            gate(16450, 140, 5.1, 145, 1050);
+            wall(16820, -140, 390);
+            bumper(16820, 175, 38);
+            beam(17050, 0, 580, 2500, 300);
+            // Skyway: choose a safe tile lane, then steer a much narrower wind bridge.
+            // Gaps stay jumpable at low charge; difficulty comes from timing/steering.
+            strip(17500, 18380, 340);
+            tiles(17680, 6, .2);
+            gap(18600, 100);
+            strip(18840, 19760, 190, -85);
+            fan(18960, 19630, 100);
+            gap(19450, 102);
+            strip(19900, 20800, 300, 40);
+            tiles(20020, 7, 1.8);
+            gate(21100, 125, 2.7, 145, 900);
+            gap(21600, 104);
+            // Core: three continuous encounters, with recovery only between them.
+            // (1) The belt feeds alternating presses and a double rotor on a narrow deck.
+            strip(22100, 23150, 300);
+            belt(22200, 22800, -55, -24);
+            piston(22400, -65, 64, 0, 2400);
+            piston(22730, 65, 64, 1200, 2400);
+            rotor(23000, 0, 190, -630, 2);
+            // (2) A full-width beam leads into a small moving opening and paired bumpers.
+            strip(23500, 24300, 200);
+            beam(23700, 0, 580, 2300, 400);
+            gate(24050, 110, 2.2, 55, 950);
+            bumper(24240, -70, 32);
+            bumper(24240, 70, 32);
+            // (3) A left/right slalom, electric hurdle and two jumps on a 170-wide bridge.
+            wall(24680, -115, 390);
+            wall(25020, 115, 390);
+            beam(25280, 0, 580, 2300, 1100);
+            strip(25400, 26350, 170);
+            gap(25600, 104);
+            gap(26030, 104);
+            l.checkpoints = [100, 700, 1600, 2530, 3250, 4150, 5250, 6500, 7600, 9020, 9940, 10450, 11200, 12250, 12750, 13450, 15080, 17200, 18380, 19800, 20860, 21880, 23400, 24500, 26400].map(y => y === 100 ? 100 : Y(y));
+        }
     }
     // Cache before scattering so layout queries remain bounded and deterministic.
     cache.set(key, l);
@@ -206,7 +257,7 @@ function cityLayout(arena) {
     }
     // A failed wind crossing always has a refill at its preceding safe checkpoint.
     // Append IDs so existing rooms keep the identity of every scattered box.
-    for (const wind of l.fans) {
+    for (const wind of [...l.fans, ...(arena.course === 4 ? l.belts : [])]) {
         const y = l.checkpoints.filter(cp => cp < wind.start).at(-1), x = track(l, y).center;
         if (!l.boxes.some(b => Math.hypot(b.x - x, b.y - y) < 100))
             l.boxes.push({ id: l.boxes.length, x, y, r: 27 });

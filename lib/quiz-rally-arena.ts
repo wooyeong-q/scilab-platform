@@ -1,6 +1,6 @@
 import { cityLayout, cityTrack, cityRegion, cityTileDanger, cityPistons, cityBeams } from './quiz-rally-city';
 // Deterministic top-down obstacle race. Shared by the authoritative server and client prediction.
-export type Arena={version:1|2;length:number;seed:number;combat:boolean;energy?:boolean;supplies?:2;course?:3};
+export type Arena={version:1|2;length:number;seed:number;combat:boolean;energy?:boolean;supplies?:2;course?:3|4};
 export type Gear='mine'|'missile'|'banana'|'field'|'shield'|'boost';
 export type Effect={id:string;type:Gear;owner:string;x:number;y:number;dx:number;dy:number;born:number;expires:number;victim?:string;hitAt?:number;shared?:boolean;probe?:boolean};
 export type Runner={x:number;y:number;z:number;vz:number;dx:number;dy:number;fx:number;fy:number;t:number;seq:number;inputUntil:number;jumpAt:number;jumpQueuedUntil?:number;diveAt:number;diveUntil:number;dash?:boolean;stunUntil:number;immuneUntil:number;boostUntil:number;shieldUntil:number;knockX:number;knockY:number;checkpoint:number;fallUntil:number;falls:number;open:boolean;boxes:number[];boxReadyAt?:Record<string,number>;questionBox?:number;usedEffects:string[];hits:{id:string;t:number}[];finishAt?:number;energy?:number;history?:RunnerHistory};

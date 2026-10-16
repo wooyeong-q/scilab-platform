@@ -1,5 +1,5 @@
 // A single authored city route. Seeded supply caches vary by room, not by player.
-export type CityArena={version:1|2;length:number;seed:number;combat:boolean;supplies?:2;course?:3};
+export type CityArena={version:1|2;length:number;seed:number;combat:boolean;supplies?:2;course?:3|4};
 type Strip={start:number;end:number;width:number;offset:number};
 type Gate={y:number;offset:number;width:number;amplitude:number;period:number;phase:number};
 type Rotor={x:number;y:number;length:number;r:number;period:number;phase:number;arms:number};
@@ -27,7 +27,7 @@ const cache=new Map<string,CityLayout>();
 const smooth=(x:number)=>{const n=Math.max(0,Math.min(1,x));return n*n*(3-2*n);};
 function random(seed:number){let n=seed|0;return()=>{n=(n+0x6D2B79F5)|0;let t=n;t=Math.imul(t^(t>>>15),t|1);t^=t+Math.imul(t^(t>>>7),t|61);return((t^(t>>>14))>>>0)/4294967296;};}
 function track(layout:CityLayout,y:number){let width=620,offset=0;for(const s of layout.strips){if(y<s.start||y>s.end)continue;const blend=smooth(Math.min(y-s.start,s.end-y)/Math.min(150,(s.end-s.start)/3));width=620+(s.width-620)*blend;offset=s.offset*blend;break;}return{center:center(y)+offset,width};}
-export function cityRegion(y:number,arena:CityArena){const reference=y/arena.length*CITY_LENGTH;let i=CITY_REGIONS.length-1;while(i>0&&reference<CITY_REGIONS[i].start)i--;const lesson=arena.course===3?[
+export function cityRegion(y:number,arena:CityArena){const reference=y/arena.length*CITY_LENGTH;let i=CITY_REGIONS.length-1;while(i>0&&reference<CITY_REGIONS[i].start)i--;const lesson=(arena.course||0)>=3?[
  ['출발 연습장','먼저 이동하고 낮은 턱을 점프해 보세요'],['기초 조작길','넓은 문을 지나며 방향 전환과 대시 연습'],['풍력 지붕','짧은 틈부터 점프! 바람은 조금씩 강해져요'],['프레스 공장','노란 경고를 보고 피하기 · 전기 장벽은 점프'],['회전 타워','회전봉과 범퍼를 차례로 넘어가세요'],['붕괴 스카이웨이','안전한 발판을 골라 점프를 이어가세요'],['시티 코어','최종 도전 · 배운 조작을 조합해 결승으로!'],
  ][i]:null;return{...CITY_REGIONS[i],...(lesson?{name:lesson[0],hint:lesson[1]}:{}),stage:i,index:i,round:0};}
 export function cityLayout(arena:CityArena):CityLayout{
@@ -47,7 +47,7 @@ export function cityLayout(arena:CityArena):CityLayout{
  const belt=(a:number,b:number,vx:number,vy=0)=>l.belts.push({start:Y(a),end:Y(b),vx,vy});
  const tiles=(start:number,count:number,phase:number)=>{for(let row=0;row<Math.max(3,Math.round(count*scale));row++)l.tiles.push({y:Y(start)+row*95,row,safe:(row*2+Math.floor(phase))%5,period:3400,phase:phase*1000+row*390});};
 
- if(arena.course!==3){
+ if(arena.course!==3&&arena.course!==4){
  // Existing rooms retain their geometry and supply IDs during deployment.
  // Plaza: readable first obstacles, followed by an alternating street slalom.
  wall(850,-125,370,27);gate(1240,184,.4,135,1500);
@@ -100,6 +100,8 @@ export function cityLayout(arena:CityArena):CityLayout{
  rotor(11900,0,175,1300);ball(12500,34,1300,1.7);
  gate(13000,205,3.2,125,1700);
 
+ if(arena.course===3){
+ // Keep the previously published course unchanged for rooms already in play.
  wall(13800,125,320);rotor(14300,-45,200,-1150);
  strip(14680,15250,400,15);rotor(15000,15,175,1050);
  beam(15600,0,420,3500,800);
@@ -119,6 +121,39 @@ export function cityLayout(arena:CityArena):CityLayout{
  rotor(24800,0,225,-800,2);strip(25150,25900,230,0);
  gap(25400,98);gap(25800,102);wall(26200,-140,300,28);
  l.checkpoints=[100,700,1600,2530,3250,4150,5250,6500,7600,9020,9940,10450,11200,12250,12750,13450,14700,15340,16400,17200,18400,19750,20800,21850,23000,23950,24550,25150,26000,26400].map(y=>y===100?100:Y(y));
+ }else{
+ // Tower: the practice half is over. Narrow decks prevent walking around
+ // the rotors; alternating walls require deliberate changes of direction.
+ wall(13650,130,390);
+ strip(14000,14800,310,-15);rotor(14360,-15,185,-800,2);
+ beam(14980,0,580,2800,600);
+ strip(15200,16080,280,35);
+ rotor(15460,35,175,760);rotor(15880,35,175,-720);
+ gate(16450,140,5.1,145,1050);
+ wall(16820,-140,390);bumper(16820,175,38);
+ beam(17050,0,580,2500,300);
+
+ // Skyway: choose a safe tile lane, then steer a much narrower wind bridge.
+ // Gaps stay jumpable at low charge; difficulty comes from timing/steering.
+ strip(17500,18380,340);tiles(17680,6,.2);gap(18600,100);
+ strip(18840,19760,190,-85);fan(18960,19630,100);gap(19450,102);
+ strip(19900,20800,300,40);tiles(20020,7,1.8);
+ gate(21100,125,2.7,145,900);gap(21600,104);
+
+ // Core: three continuous encounters, with recovery only between them.
+ // (1) The belt feeds alternating presses and a double rotor on a narrow deck.
+ strip(22100,23150,300);belt(22200,22800,-55,-24);
+ piston(22400,-65,64,0,2400);piston(22730,65,64,1200,2400);
+ rotor(23000,0,190,-630,2);
+ // (2) A full-width beam leads into a small moving opening and paired bumpers.
+ strip(23500,24300,200);beam(23700,0,580,2300,400);
+ gate(24050,110,2.2,55,950);bumper(24240,-70,32);bumper(24240,70,32);
+ // (3) A left/right slalom, electric hurdle and two jumps on a 170-wide bridge.
+ wall(24680,-115,390);wall(25020,115,390);
+ beam(25280,0,580,2300,1100);strip(25400,26350,170);
+ gap(25600,104);gap(26030,104);
+ l.checkpoints=[100,700,1600,2530,3250,4150,5250,6500,7600,9020,9940,10450,11200,12250,12750,13450,15080,17200,18380,19800,20860,21880,23400,24500,26400].map(y=>y===100?100:Y(y));
+ }
  }
  // Cache before scattering so layout queries remain bounded and deterministic.
  cache.set(key,l);if(cache.size>24)cache.delete(cache.keys().next().value!);
@@ -134,7 +169,7 @@ export function cityLayout(arena:CityArena):CityLayout{
  }
  // A failed wind crossing always has a refill at its preceding safe checkpoint.
  // Append IDs so existing rooms keep the identity of every scattered box.
- for(const wind of l.fans){const y=l.checkpoints.filter(cp=>cp<wind.start).at(-1)!,x=track(l,y).center;
+ for(const wind of [...l.fans,...(arena.course===4?l.belts:[])]){const y=l.checkpoints.filter(cp=>cp<wind.start).at(-1)!,x=track(l,y).center;
   if(!l.boxes.some(b=>Math.hypot(b.x-x,b.y-y)<100))l.boxes.push({id:l.boxes.length,x,y,r:27});
  }
  return l;

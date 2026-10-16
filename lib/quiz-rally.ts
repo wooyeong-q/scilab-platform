@@ -90,7 +90,7 @@ export async function createQuizRoom(body:Record<string,unknown>){
   const custom=body.questions!==undefined?validateQuestions(body.questions):null;
   const state:Room={title,durationSeconds:duration,extension:body.extension===true,stealEnabled:body.stealEnabled===true,status:'lobby',endsAt:null,remainingMs:duration*1000,metaRevision:0,requests:[],players:{}};
   if(custom){state.questionIds=Object.keys(custom.bank);state.questionSetTitle=textValue(body.questionSetTitle,80,'직접 넣은 문제');state.extension=false;}
-  state.raceGoal=state.questionIds?.length||QUIZ_QUESTIONS.filter(q=>state.extension||!q.extension).length;state.finishers=[];state.arena={version:2,length:raceLength(duration),seed:randomInt(100000),combat:body.stealEnabled!==false,energy:true,supplies:2,course:3};state.arenaEffects=[];state.arenaRevision=0;
+  state.raceGoal=state.questionIds?.length||QUIZ_QUESTIONS.filter(q=>state.extension||!q.extension).length;state.finishers=[];state.arena={version:2,length:raceLength(duration),seed:randomInt(100000),combat:body.stealEnabled!==false,energy:true,supplies:2,course:4};state.arenaEffects=[];state.arenaRevision=0;
   state.realtime=newQuizRealtimeRoute();
   for(let i=0;i<6;i++){
     const code=Array.from({length:6},()=>codeChars[randomInt(codeChars.length)]).join('');
