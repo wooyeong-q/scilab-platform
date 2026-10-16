@@ -59,7 +59,7 @@ class RealtimeLive {
   if(!this.key)return;const generation=++this.generation;let socket;
   try{socket=new WebSocket(this.url);}catch{this.timer=setTimeout(()=>this.connect(),2000);return;}
   this.socket=socket;this.awaitingSnapshot=true;this.lastInputSend=0;this.arm();
-  socket.onopen=()=>{if(generation!==this.generation)return;socket.send(JSON.stringify({type:'auth',identity:this.who}));};
+  socket.onopen=()=>{if(generation!==this.generation)return;socket.send(JSON.stringify({type:'auth',identity:this.who,playerDeltas:1}));};
   socket.onmessage=message=>{
    if(generation!==this.generation)return;this.arm();
    try{const event=JSON.parse(message.data);

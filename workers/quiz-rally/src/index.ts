@@ -9,7 +9,9 @@ interface Env {
   QUIZ_REALTIME_SECRET: string;
   APP_ORIGIN: string;
 }
-type Attachment = {who?:QuizIdentity;createdAt:number};
+type Attachment = {who?:QuizIdentity;createdAt:number;playerDeltas?:boolean};
+type PlayerSave = {revision:number;savedAt:number;player:RoomRecord['state']['players'][string]};
+type EffectSave = {revision:number;savedAt:number;effects:RoomRecord['state']['arenaEffects'];arenaRevision:number};
 const json=(value:unknown,status=200)=>new Response(JSON.stringify(value),{status,headers:{'Content-Type':'application/json','Cache-Control':'no-store'}});
 function secret(request:Request, env:Env) {
   const actual=Buffer.from(request.headers.get('authorization')||''), expected=Buffer.from('Bearer '+env.QUIZ_REALTIME_SECRET);
@@ -25,7 +27,7 @@ async function body(request:Request) {
 export default {
   async fetch(request:Request,env:Env):Promise<Response> {
     const url=new URL(request.url);
-    if(url.pathname==='/health')return json({ok:true,protocol:1,tickMs:ROOM_TICK_MS,storage:'sqlite'});
+    if(url.pathname==='/health')return json({ok:true,protocol:1,tickMs:ROOM_TICK_MS,storage:'sqlite',performanceVersion:2});
     const match=/^\/rooms\/([A-HJ-NP-Z2-9]{6})\/([a-f0-9-]{36})\/(socket|init|rpc)$/.exec(url.pathname);
     if(!match)return json({error:'경기 주소를 확인해 주세요.'},404);
     if(match[3]==='socket') {
@@ -48,6 +50,10 @@ export class QuizRoom {
   private previous=new Map<string,Runner>();
   private serial:Promise<unknown>=Promise.resolve();
   private tickQueued=false;
+  private dirtyPlayers=new Set<string>();
+  private legacyDirty=false;
+  private legacySnapshotAt=0;
+  private alarmAt=0;
   private rates=new Map<WebSocket,{at:number;tokens:number}>();
 
   constructor(private ctx:DurableObjectState,private env:Env) {
@@ -56,6 +62,14 @@ export class QuizRoom {
       const saved=await this.readChunks<RoomRecord>('room');
       if(saved){
         saved.question_bank=(await this.readChunks<RoomRecord['question_bank']>('questions'))??null;
+        const baseRevision=saved.revision;
+        const patches=await Promise.all(Object.keys(saved.state.players).map(id=>this.readChunks<PlayerSave>('player:'+id)));
+        for(const patch of patches)if(patch&&patch.revision>baseRevision){
+          saved.state.players[patch.player.id]=patch.player;
+          saved.revision=Math.max(saved.revision,patch.revision);saved.savedAt=Math.max(saved.savedAt,patch.savedAt);
+        }
+        const effects=await this.readChunks<EffectSave>('effects');
+        if(effects&&effects.revision>baseRevision){saved.state.arenaEffects=effects.effects;saved.state.arenaRevision=effects.arenaRevision;saved.revision=Math.max(saved.revision,effects.revision);saved.savedAt=Math.max(saved.savedAt,effects.savedAt);}
         this.game=new QuizArenaRoom(saved); const recovered=this.game.recover();
         this.websocketUrl=(await ctx.storage.get<string>('url'))!;
         if(recovered)await this.save();
@@ -70,32 +84,51 @@ export class QuizRoom {
     const keys=Array.from({length:count},(_,i)=>name+':'+i), values=await this.ctx.storage.get<string>(keys);
     return JSON.parse(keys.map(key=>values.get(key)!).join(''));
   }
-  private async writeChunks(name:string,value:unknown) {
+  private chunkValues(name:string,value:unknown,values:Record<string,unknown>) {
     // Bounded keys also support large teacher question banks without exceeding
     // the per-value limit. One multi-key put commits the manifest and chunks.
-    const raw=JSON.stringify(value), chunkSize=32000, values:Record<string,unknown>={};
+    const raw=JSON.stringify(value), chunkSize=32000;
     const count=Math.ceil(raw.length/chunkSize);if(count>120)throw new QuizError('경기 저장 용량이 너무 큽니다.',413);
     values[name+':count']=count;
     for(let i=0;i<count;i++)values[name+':'+i]=raw.slice(i*chunkSize,(i+1)*chunkSize);
-    await this.ctx.storage.put(values);
   }
+  private async writeChunks(name:string,value:unknown){const values:Record<string,unknown>={};this.chunkValues(name,value,values);await this.ctx.storage.put(values);}
   private async save() {
     if(!this.game)return;
     const saved=this.game.checkpoint();saved.question_bank=null;
     await this.writeChunks('room',saved);this.saveAt=Date.now();
   }
+  private async savePlayer(who:QuizIdentity,action:unknown){
+    const game=this.game!,stamp={revision:game.record.revision,savedAt:Date.now()};
+    // Persist the action and its deduplication IDs before acknowledgement.
+    // Movement checkpoints stay bounded; no whole-class clone/write per answer.
+    // One multi-key write keeps item consumption and its effect atomic.
+    const values:Record<string,unknown>={};
+    this.chunkValues('player:'+who.playerId,{...stamp,player:game.room.players[who.playerId]},values);
+    if(action==='arena-use')this.chunkValues('effects',{...stamp,effects:game.room.arenaEffects,arenaRevision:game.room.arenaRevision||0},values);
+    await this.ctx.storage.put(values);
+    this.dirtyPlayers.add(who.playerId);this.legacyDirty=true;
+  }
+  private async persistAction(who:QuizIdentity,action:unknown){
+    if(who.role==='student'&&this.game!.room.status==='running'&&action!=='join'&&action!=='customize')await this.savePlayer(who,action);
+    else{await this.save();this.broadcastSnapshots();await this.armAlarm();}
+  }
   private members(){return this.ctx.getWebSockets().filter(ws=>!!(ws.deserializeAttachment() as Attachment)?.who);}
   private send(ws:WebSocket,value:unknown){try{ws.send(JSON.stringify(value));}catch{try{ws.close(1011,'Reconnect');}catch{}}}
   private snapshot(who:QuizIdentity){return this.game!.snapshot(who,this.websocketUrl);}
-  private broadcastSnapshots(){
+  private broadcastSnapshots(legacyOnly=false){
+    if(!legacyOnly)this.dirtyPlayers.clear();
+    this.legacyDirty=false;this.legacySnapshotAt=Date.now();
     for(const ws of this.members()){
-      const who=(ws.deserializeAttachment() as Attachment).who!;
+      const attachment=ws.deserializeAttachment() as Attachment;if(legacyOnly&&attachment.playerDeltas)continue;
+      const who=attachment.who!;
       try{this.send(ws,{type:'snapshot',data:this.snapshot(who)});}catch{ws.close(1008,'Participation ended');}
     }
   }
   private frames(){
     if(!this.game)return;
-    const frame=this.game.world(this.previous);
+    const changes=[...this.dirtyPlayers].map(id=>this.game!.room.players[id]).filter(p=>p&&!p.removed).map(p=>({id:p.id,version:p.version,correct:p.correct,attempted:p.attempted,activity:p.turn.correct?'ready':'solving',runner:{...p.runner!,boxes:[],boxReadyAt:{},hits:[],usedEffects:[]}}));
+    const frame={...this.game.world(this.previous),changes};this.dirtyPlayers.clear();
     for(const ws of this.members()){
       const who=(ws.deserializeAttachment() as Attachment).who!, p=this.game.room.players[who.playerId];
       this.send(ws,{...frame,self:p&&!p.removed?{runner:p.runner,version:p.version}:null});
@@ -112,6 +145,7 @@ export class QuizRoom {
         const changed=this.game.tick(),now=Date.now();
         if(changed){await this.save();this.broadcastSnapshots();this.run();}
         if(now-this.frameAt>=ROOM_FRAME_MS){this.frameAt=now;this.frames();}
+        if(this.legacyDirty&&now-this.legacySnapshotAt>=1000)this.broadcastSnapshots(true);
         if(now-this.saveAt>=5000)await this.save();
         if(now>=this.nextSync)this.queueCheckpoint();
       }).catch(()=>{
@@ -137,7 +171,9 @@ export class QuizRoom {
   }
   private async armAlarm(){
     if(!this.game)return;
-    await this.ctx.storage.setAlarm(Math.min(Date.parse(this.game.record.expires_at),Date.now()+60000));
+    const at=Math.min(Date.parse(this.game.record.expires_at),Date.now()+60000);
+    if(this.alarmAt>Date.now()+30000)return;
+    await this.ctx.storage.setAlarm(at);this.alarmAt=at;
   }
   async fetch(request:Request):Promise<Response>{
     return this.enqueue(async()=>{
@@ -170,7 +206,7 @@ export class QuizRoom {
         if(data.body?.action==='join')this.game.join(who,data.body);
         else if(data.body)this.game.act(who,data.body);
         const result=this.snapshot(who);
-        if(data.body&&data.body.action!=='arena-input'){await this.save();this.broadcastSnapshots();this.queueCheckpoint(this.game.room.status==='ended');await this.armAlarm();}
+        if(data.body&&data.body.action!=='arena-input'){await this.persistAction(who,data.body.action);this.queueCheckpoint(this.game.room.status==='ended');}
         else if(data.body){if(Date.now()-this.saveAt>=5000)await this.save();this.queueCheckpoint();}
         this.run();return json(result);
       }catch(error){const e=failure(error);return json({error:e.error},e.status);}
@@ -197,7 +233,7 @@ export class QuizRoom {
             const prior=(other.deserializeAttachment() as Attachment).who!;
             if(other!==ws&&prior.role===who.role&&prior.playerId===who.playerId)other.close(4001,'Connected elsewhere');
           }
-          ws.serializeAttachment({...attachment,who});
+          ws.serializeAttachment({...attachment,who,playerDeltas:data.playerDeltas===1});
           this.send(ws,{type:'ready',motion:true,world:true});
           this.send(ws,{type:'snapshot',data:this.snapshot(who)});this.run();return;
         }
@@ -211,7 +247,7 @@ export class QuizRoom {
         if(data.type==='request'){
           if(data.body)this.game!.act(who,data.body);
           const result=this.snapshot(who);
-          if(data.body&&data.body.action!=='arena-input'){await this.save();this.broadcastSnapshots();if(this.game!.room.status==='ended')this.queueCheckpoint(true);await this.armAlarm();}
+          if(data.body&&data.body.action!=='arena-input'){await this.persistAction(who,data.body.action);if(this.game!.room.status==='ended')this.queueCheckpoint(true);}
           else if(data.body&&Date.now()-this.saveAt>=5000)await this.save();
           this.send(ws,{type:'response',id,data:result});this.run();return;
         }

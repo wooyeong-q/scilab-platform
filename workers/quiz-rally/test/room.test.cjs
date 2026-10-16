@@ -4,7 +4,7 @@ const {build}=require('esbuild'),{Miniflare}=require('miniflare');
 const token=()=>randomBytes(32).toString('base64url');
 const sleep=ms=>new Promise(resolve=>setTimeout(resolve,ms));
 async function until(fn,timeout=5000){const start=Date.now();while(!fn()){if(Date.now()-start>timeout)throw new Error('Timed out');await sleep(10);}}
-async function worker(){
+async function worker(configure){
  const bundle=await build({entryPoints:[path.resolve(__dirname,'../src/index.ts')],bundle:true,format:'esm',platform:'browser',external:['node:crypto'],write:false,target:'es2022'});
  const secret=token(),checkpoints=[];
  const options={modules:true,script:bundle.outputFiles[0].text,compatibilityDate:'2026-07-01',compatibilityFlags:['nodejs_compat'],
@@ -14,13 +14,14 @@ async function worker(){
  const generation=randomUUID(),code='ABC234',base=`https://room.test/rooms/${code}/${generation}`;
  const teacher={role:'teacher',token:token(),playerId:''};
  const record={code,teacher_key_hash:createHash('sha256').update(teacher.token).digest('hex'),expires_at:new Date(Date.now()+86400000).toISOString(),revision:0,savedAt:Date.now(),question_bank:null,state:{title:'30명 모의 경기',durationSeconds:300,extension:false,stealEnabled:true,status:'lobby',endsAt:null,remainingMs:300000,metaRevision:0,requests:[],players:{},arena:{version:2,length:14000,seed:42,combat:true,energy:true,supplies:2},arenaEffects:[],arenaRevision:0,finishers:[],realtime:{version:1,generation,checkpoint:0}}};
+ if(configure)configure(record);
  const send=async(action,data)=>mf.dispatchFetch(base+'/'+action,{method:'POST',headers:{Authorization:'Bearer '+secret,'Content-Type':'application/json'},body:JSON.stringify(data)});
  const init=await send('init',record);assert.equal(init.status,200);
  const rpc=async(identity,body)=>{const response=await send('rpc',{identity,body}),data=await response.json();assert.equal(response.status,200,JSON.stringify(data));return data;};
- async function connect(identity){
+ async function connect(identity,playerDeltas=1){
   const response=await mf.dispatchFetch(base+'/socket',{headers:{Upgrade:'websocket',Origin:'https://game.test'}});assert.equal(response.status,101);
   const ws=response.webSocket,events=[];ws.accept();ws.addEventListener('message',event=>events.push(JSON.parse(event.data)));
-  ws.send(JSON.stringify({type:'auth',identity}));await until(()=>events.some(e=>e.type==='snapshot'));
+  ws.send(JSON.stringify({type:'auth',identity,playerDeltas}));await until(()=>events.some(e=>e.type==='snapshot'));
   return {ws,events};
  }
  return {mf,base,secret,teacher,rpc,connect,checkpoints,record,restart:()=>mf.setOptions(options)};
@@ -90,4 +91,36 @@ test('30 real WebSockets share authoritative frames, reconnect, and stop with th
   await h.rpc(h.teacher,{action:'end',requestId:randomUUID()});
   console.log(JSON.stringify({webSockets:31,simulationSeconds:5.5,minWorldFrames:Math.min(...frameCounts),startAcknowledgmentMs:Math.round(actionMs),neonCheckpointsDuringRace:writesBefore,reconnect:true,pause:true}));
  }finally{clearInterval(interval);for(const c of clients)try{c.ws.close();}catch{}await h.mf.dispose();}
+});
+
+// Seed ordinary player state in the local fixture only; production has no test endpoint.
+const fs=require('node:fs'),ts=require('typescript'),loaded=new Map();
+function load(file){file=path.resolve(__dirname,'../../..',file);if(!path.extname(file))file+='.ts';if(loaded.has(file))return loaded.get(file).exports;const m={exports:{}};loaded.set(file,m);const source=ts.transpileModule(fs.readFileSync(file,'utf8'),{compilerOptions:{target:ts.ScriptTarget.ES2022,module:ts.ModuleKind.CommonJS}}).outputText;new Function('require','module','exports',source)(n=>n.startsWith('.')?load(path.resolve(path.dirname(file),n)):require(n),m,m.exports);return m.exports;}
+const {QuizArenaRoom}=load('lib/quiz-rally-room'),M=load('lib/quiz-rally-arena'),{QUESTION_MAP}=load('lib/quiz-rally-questions');
+async function socketRequest(c,body){const id=randomUUID(),start=performance.now();c.ws.send(JSON.stringify({type:'request',id,body}));await until(()=>c.events.some(e=>e.id===id));const e=c.events.find(e=>e.id===id);assert.equal(e.type,'response',JSON.stringify(e));return {data:e.data,ms:performance.now()-start};}
+test('30 simultaneous answers and items send deltas, and durable actions survive restart without duplication',async()=>{
+ const students=Array.from({length:30},(_,i)=>({role:'student',token:token(),playerId:randomUUID(),nickname:'동시'+i}));let box;
+ const h=await worker(record=>{const game=new QuizArenaRoom(record);for(const who of students)game.join(who,{nickname:who.nickname});game.room.status='running';game.room.endsAt=Date.now()+296000;box=M.boxes(game.room.arena,0,700)[0];for(const p of Object.values(game.room.players)){Object.assign(p.runner,{x:box.x,y:box.y,t:4000,energy:40});p.gear=['missile'];}record.state=game.room;record.revision=game.record.revision;});
+ const clients=[];try{
+  clients.push(...await Promise.all(students.map(w=>h.connect(w))));const teacher=await h.connect(h.teacher);clients.push(teacher);
+  const snapshots=clients.map(c=>c.events.filter(e=>e.type==='snapshot').length);
+  const opened=await Promise.all(clients.slice(0,30).map(c=>socketRequest(c,{action:'arena-collect',box:box.id,requestId:randomUUID()})));
+  const answers=await Promise.all(clients.slice(0,30).map((c,i)=>{const t=opened[i].data.player.turn,q=[...QUESTION_MAP.values()].find(q=>q.prompt===t.prompt);return socketRequest(c,{action:'answer',nonce:t.nonce,choice:t.options.indexOf(q.options[q.answer]),requestId:randomUUID()});}));
+  const bodies=answers.map(a=>({action:'arena-use',slot:0,gear:a.data.player.gear.join(','),requestId:randomUUID()}));
+  const used=await Promise.all(clients.slice(0,30).map((c,i)=>socketRequest(c,bodies[i])));
+  await until(()=>teacher.events.some(e=>e.type==='world'&&e.changes?.some(p=>p.correct===1)));
+  clients.forEach((c,i)=>assert.equal(c.events.filter(e=>e.type==='snapshot').length,snapshots[i],'ordinary actions do not rebroadcast full room snapshots'));
+  for(const c of clients)for(const frame of c.events.filter(e=>e.type==='world'))for(const change of frame.changes||[])for(const privateKey of ['turn','tokenHash','requests','gear'])assert.equal(privateKey in change,false);
+  const before=used.map(x=>x.data.player);
+  const legacy=await h.connect({...h.teacher},0);clients.push(legacy); // supersedes only the observer
+  await socketRequest(clients[0],{action:'arena-close',requestId:randomUUID()});
+  await until(()=>legacy.events.filter(e=>e.type==='snapshot').length>1,2000);
+  await h.restart();
+  for(let i=0;i<30;i++){
+   const restored=await h.rpc(students[i]);assert.equal(restored.status,'paused');assert.equal(restored.player.correct,1);assert.deepEqual(restored.player.gear,before[i].gear);
+   const retry=await h.rpc(students[i],bodies[i]);assert.deepEqual(retry.player.gear,before[i].gear,'replayed item is not consumed again');
+  }
+  const restored=await h.rpc(students[0]);assert.equal(restored.arenaEffects.filter(e=>e.type==='missile').length,30,'all committed missiles survive the delta journal');
+  console.log(JSON.stringify({simultaneousStudents:30,answerP95Ms:Math.round(answers.map(x=>x.ms).sort((a,b)=>a-b)[28]),itemP95Ms:Math.round(used.map(x=>x.ms).sort((a,b)=>a-b)[28]),fullRoomBroadcastsFor90Actions:0,recoveredPlayers:30}));
+ }finally{for(const c of clients)try{c.ws.close();}catch{}await h.mf.dispose();}
 });

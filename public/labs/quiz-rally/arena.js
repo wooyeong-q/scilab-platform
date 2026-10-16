@@ -120,6 +120,12 @@ function liveMotion(event){
  if(event.type==='world'&&event.authoritative){
   if(event.roomRevision!==state.roomRevision)return false;
   if(event.arenaRevision>state.arenaRevision){state.arenaEffects=event.arenaEffects||[];state.arenaRevision=event.arenaRevision;effectsDirty=true;}
+  for(const change of event.changes||[]){
+   if(change.id===state.player?.id)continue;
+   const player=state.ranking.find(p=>p.id===change.id);if(!player||change.version<(player.version||0))continue;
+   player.correct=change.correct;player.attempted=change.attempted;player.activity=change.activity;player.version=change.version;
+   if(change.runner){player.runner=change.runner;simulated.delete(player.id);}
+  }
   if(event.ranking&&event.at>=(state.liveRankAt||0)){state.liveRanks=event.ranking;state.liveRankAt=event.at;}
   timeline.sync(event.at,'running',event.transitMs||0,performance.now());lastAck=performance.now();connectionLost=false;
   const me=state.player,ack=event.self;

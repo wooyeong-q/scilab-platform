@@ -123,7 +123,8 @@ export class QuizArenaRoom {
     assert(phase(this.room) === 'running' || body.action === 'customize' && phase(this.room) !== 'ended', '진행 중인 경기에서 사용할 수 있습니다.', 409);
     if (Array.isArray(body.inputs) && body.inputs.length) this.input(who, body.inputs);
     // A rejected command must not partly consume a question, item, or effect.
-    const next = structuredClone(this.room), player = next.players[who.playerId];
+    const player = structuredClone(p);
+    const next = {...this.room,players:{...this.room.players,[who.playerId]:player},arenaEffects:structuredClone(this.room.arenaEffects||[])};
     modifyPlayer(next, player, {...body, inputs:undefined, at:gameClock(next)}, this.question(player));
     if (player.runner) player.runner = runnerState(player.runner);
     if (JSON.stringify(next.arenaEffects) !== JSON.stringify(this.room.arenaEffects)) next.arenaRevision = (next.arenaRevision || 0) + 1;
