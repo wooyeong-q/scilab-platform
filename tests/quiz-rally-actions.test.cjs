@@ -46,3 +46,10 @@ test('temporary entry failures preserve identity and retry; invalid credentials 
  ctx.request=async()=>{throw Object.assign(new Error('invalid'),{status:403});};await ctx.enter('ABC234',who);assert.deepEqual(blocked,['invalid']);
  let resolve;ctx.request=()=>new Promise(r=>resolve=r);const pending=ctx.enter('ABC234',who);ctx.epoch++;resolve({code:'ABC234'});await pending;assert.equal(updates.length,0);
 });
+test('authoritative peer poses avoid replaying stale physics on every rendering frame',()=>{
+ const N=sync();let samples=0;
+ const ctx={N,clock:()=>120000,local:{y:500,t:120000},state:{realtime:{version:1},player:{id:'me'},arena:{},arenaEffects:[{id:'new-effect'}],liveRanks:['peer','me'],ranking:[{id:'me',runner:{y:100,t:4000}},{id:'peer',runner:{y:100,t:4000}}]},simulated:new Map(),remoteTracks:new Map([['peer',{sample:()=>{samples++;return {y:600,t:119750};}}]]),M:{advanceRunner(){assert.fail('settled remote poses must not replay old collision history');}}};
+ const source=fs.readFileSync('public/labs/quiz-rally/arena.js','utf8');vm.runInNewContext(source.slice(source.indexOf('function ranked(){'),source.indexOf('\nfunction shell')),ctx);
+ for(let i=0;i<3;i++){ctx.simulated.clear();const rows=ctx.ranked();assert.equal(rows[0].p.id,'peer');assert.equal(rows[0].shown.y,600);assert.equal(rows[1].r,ctx.local);}
+ assert.equal(samples,3,'sample each remote track once per frame');
+});
