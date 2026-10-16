@@ -93,7 +93,7 @@ export async function createGalaxySession(titleValue: unknown, durationValue?: u
   throw new Error('수업 코드를 만들지 못했습니다.');
 }
 
-export async function joinGalaxySession(code: string, nicknameValue: unknown) {
+export async function joinGalaxySession(code: string, nicknameValue: unknown, retry?: { id?: unknown; key?: unknown }) {
   await ensureGalaxyVoyageDatabase();
   const db = database();
   const nickname = String(nicknameValue || '').trim().replace(/\s+/g, ' ').slice(0, 16);
@@ -101,16 +101,31 @@ export async function joinGalaxySession(code: string, nicknameValue: unknown) {
   const sessions = await db`SELECT * FROM galaxy_voyage_sessions WHERE code=${code} AND expires_at > NOW() LIMIT 1`;
   if (!sessions[0]) return { status: 'missing' as const };
   const session = mapSession(sessions[0] as Record<string, unknown>);
+  const retryId = typeof retry?.id === 'string' && /^[a-f0-9-]{36}$/.test(retry.id) ? retry.id : '';
+  const retryKey = typeof retry?.key === 'string' && /^[a-zA-Z0-9_-]{32,80}$/.test(retry.key) ? retry.key : '';
+  if (retryId && retryKey) {
+    const existing = await db`SELECT id,nickname,score FROM galaxy_voyage_players
+      WHERE session_id=${session.id} AND id=${retryId} AND player_key_hash=${hashKey(retryKey)} AND nickname=${nickname}`;
+    if (existing[0]) return { status: 'joined' as const, session, player: { id: retryId, nickname, score: Number(existing[0].score), rank: 1 }, playerKey: retryKey };
+  }
   if (session.endsAt && Date.parse(session.endsAt) <= Date.now()) return { status: 'ended' as const };
   const counts = await db`SELECT COUNT(*)::int AS count FROM galaxy_voyage_players WHERE session_id=${session.id}`;
   if (Number(counts[0]?.count || 0) >= MAX_PLAYERS) return { status: 'full' as const };
-  const playerKey = newSecret();
-  const id = randomUUID();
+  const playerKey = retryId && retryKey ? retryKey : newSecret();
+  const id = retryId && retryKey ? retryId : randomUUID();
   const rows = await db`INSERT INTO galaxy_voyage_players (id, session_id, nickname, player_key_hash)
     VALUES (${id}, ${session.id}, ${nickname}, ${hashKey(playerKey)})
     ON CONFLICT (session_id, nickname) DO NOTHING
     RETURNING id, nickname, score`;
-  if (!rows[0]) return { status: 'duplicate' as const };
+  if (!rows[0]) {
+    // A concurrent retry can lose ON CONFLICT after the first request commits.
+    if (retryId && retryKey) {
+      const existing = await db`SELECT id,nickname,score FROM galaxy_voyage_players
+        WHERE session_id=${session.id} AND id=${retryId} AND player_key_hash=${hashKey(retryKey)} AND nickname=${nickname}`;
+      if (existing[0]) return { status: 'joined' as const, session, player: { id: retryId, nickname, score: Number(existing[0].score), rank: 1 }, playerKey: retryKey };
+    }
+    return { status: 'duplicate' as const };
+  }
   return {
     status: 'joined' as const,
     session,
@@ -140,7 +155,7 @@ export async function getGalaxyScoreboard(code: string, playerId: string, player
   const checkpoint = new Date().toISOString();
   // Rank the class once and return both the leaderboard and the player's row.
   const snapshotRows = await db`WITH ranked AS (
-      SELECT id, nickname, score, ROW_NUMBER() OVER (ORDER BY score DESC, updated_at ASC)::int AS rank
+      SELECT id, nickname, score, ROW_NUMBER() OVER (ORDER BY score DESC, updated_at ASC, id ASC)::int AS rank
       FROM galaxy_voyage_players WHERE session_id=${sessionId}
     ) SELECT
       (SELECT COALESCE(json_agg(r ORDER BY r.rank), '[]'::json) FROM ranked r WHERE r.rank<=200) AS leaders,
@@ -336,14 +351,18 @@ export async function applyRandomUfoEvent(code: string, playerId: string, player
   await ensureGalaxyVoyageDatabase();
   const player = await verifiedPlayer(code, playerId, playerKey);
   if (!player) return { status: 'unauthorized' as const };
-  const timing = timingForPlayer(player);
-  if (timing.state === 'waiting' || timing.state === 'ended') return { status: timing.state };
   const eventRef = String(eventKeyValue || '').trim().toLowerCase();
   if (!/^[a-z0-9-]{8,80}$/.test(eventRef)) return { status: 'invalid' as const };
+  const existing = await database()`SELECT actor_delta,actor_message,event_kind FROM galaxy_voyage_score_events
+    WHERE actor_id=${playerId} AND event_key=${'ufo:'+eventRef} LIMIT 1`;
+  if (existing[0]) return { status: 'duplicate' as const, score: Number(player.score), delta: 0,
+    message: String(existing[0].actor_message), outcome: String(existing[0].event_kind).replace(/^ufo_/, '') };
+  const timing = timingForPlayer(player);
+  if (timing.state === 'waiting' || timing.state === 'ended') return { status: timing.state };
   return applySharedUfoEvent(player, eventRef, String(player.title).includes('우리은하 천체 탐사'));
 }
 
-function timingForPlayer(row: Record<string, unknown>) {
+export function timingForPlayer(row: Record<string, unknown>) {
   const duration = row.duration_seconds == null ? null : Number(row.duration_seconds);
   const start = row.started_at ? new Date(String(row.started_at)).getTime() : null;
   const now = new Date(String(row.server_now)).getTime();
@@ -363,7 +382,7 @@ export async function controlGalaxySession(code: string, teacherKey: string, sta
     (SELECT COUNT(*)::int FROM galaxy_voyage_players p WHERE p.session_id=s.id) AS participant_count,
     (SELECT COALESCE(json_agg(r ORDER BY r.rank), '[]'::json) FROM (
       SELECT p.id,p.nickname,p.score,p.flight_x AS x,p.flight_y AS y,p.flight_z AS z,p.flight_at,
-        ROW_NUMBER() OVER (ORDER BY p.score DESC,p.updated_at ASC)::int AS rank,
+        ROW_NUMBER() OVER (ORDER BY p.score DESC,p.updated_at ASC,p.id ASC)::int AS rank,
         (SELECT COALESCE(json_agg(e.event_key),'[]'::json) FROM galaxy_voyage_score_events e
           WHERE e.actor_id=p.id AND e.event_kind='observation') AS observations,
         (SELECT COALESCE(json_agg(e.event_key),'[]'::json) FROM galaxy_voyage_score_events e

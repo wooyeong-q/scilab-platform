@@ -17,7 +17,7 @@ export async function POST(request: Request, { params }: Context) {
     const body = parsed && typeof parsed === 'object' && !Array.isArray(parsed)
       ? parsed as Record<string, unknown>
       : {};
-    const result = await joinGalaxySession(code, body.nickname);
+    const result = await joinGalaxySession(code, body.nickname, { id: body.joinId, key: body.joinKey });
     if (result.status === 'ended') return noStore({ error: '종료된 수업입니다. 새 수업 코드를 입력해 주세요.' }, { status: 409 });
     if (result.status === 'invalid') return noStore({ error: '이름을 입력해 주세요.' }, { status: 400 });
     if (result.status === 'missing') return noStore({ error: '수업 코드를 찾을 수 없습니다.' }, { status: 404 });

@@ -483,6 +483,7 @@
       window.addEventListener('resize',resize,{passive:true});window.addEventListener('orientationchange',()=>setTimeout(resize,120),{passive:true});bindPanelSwipe();buildRoute();resize();renderMission();requestAnimationFrame(drawScene);
     })();
   </script>
+  <script src="./classroom-sync.js?v=20261016-sync2"></script>
   <script>
     (()=>{
       'use strict';
@@ -628,11 +629,14 @@
       const coarsePointer=window.matchMedia('(hover:none) and (pointer:coarse)').matches;
       let mode='map',selectedKey=null,observingKey=null,viewMode='face',solarView=false,scanning=false,warping=false,reduced=false,started=false;
       let visited=new Set(),look={x:0,y:0},targetLook={x:0,y:0},warpPower=0,toastTimer=0;
-      let width=0,height=0,viewWidth=0,viewHeight=0,dpr=1,lastFrame=0,galaxySets={};
+      let width=0,height=0,viewWidth=0,viewHeight=0,dpr=1,lastFrame=0,lastHudFrame=0,galaxySets={};
       let camera={x:0,y:0,z:0,yaw:0,pitch:0},pinchDistance=0,keys=new Set(),moveSpeed=1,turnSpeed=1.1,discoveryRenderPending=false,autoDockPending=false;
       const navPointers=new Map(),touchInput={moveX:0,moveY:0,lookX:0,lookY:0};
       let selectedSample=null,assigned=new Map(),classAttempts=0,classificationComplete=false,expeditionScore=0,visitorEncounters=0,visitedLandmarks=new Set();
       let classroom=null,scoreSince=new Date().toISOString(),scoreboardTimer=0,scoreboardLoading=false,notificationSeen=new Set(),voyageRestored=false,localVoyageRestored=false;
+      let boardVersion='',progressVersion='',lastLeaders=[],notificationCursor=null,actionQueue=null,actionEpoch=0,syncFailures=0,lastScorePaint='',lastFinalPaint='',lastLocalSave=0;
+      const peerVersions={},teacherProgress={},teacherFlights={},teacherPlayers=new Map(),teacherButtons=new Map(),confirmedProgress=new Set();
+      function pendingScore(){return (actionQueue?.pending||[]).reduce((sum,e)=>sum+(confirmedProgress.has(e.kind+':'+e.reference)?0:e.localDelta||0),0)}
       const visitorStates=Array.from({length:3},(_,index)=>({index,element:null,holdUntil:0,holdPosition:null,worldPosition:[0,0,1500],cooldownUntil:0,resolving:false}));
       let redUfoUnlocked=false;
       let discovered=new Set(isMilkyWayObjects?[]:['milkyway']);
@@ -648,9 +652,22 @@
       function displayGalaxyName(galaxy){return discovered.has(galaxy.key)?galaxy.name:`미확인 ${entityName} 신호`}
       function setScore(value){expeditionScore=Math.max(0,Number(value)||0);if(ui.score)ui.score.textContent=String(expeditionScore);if(ui.scorePanelValue)ui.scorePanelValue.textContent=String(expeditionScore)}
       function updateScore(delta){setScore(expeditionScore+delta)}
+      function setupActionQueue(value){
+        actionQueue=GalaxyClassroomSync.createOutbox({initial:Array.isArray(value.pendingEvents)?value.pendingEvents:[],
+          persist:pending=>{if(classroom!==value)return;value.pendingEvents=pending.map(e=>({...e}));saveClassroom()},
+          canSend:()=>classroom===value&&!document.hidden&&!!classTiming,
+          send:async event=>{
+            const attack=event.kind==='attack',body=attack?{action:'attack',targetId:event.targetId,shotId:event.reference}:{kind:event.kind,reference:event.reference,experience:isMilkyWayObjects?'milky-way-objects':'galaxy-voyage'};
+            const {response,data}=await requestJson(`/api/labs/galaxy-voyage/sessions/${value.code}/${attack?'flight':'events'}`,{method:'POST',headers:{'content-type':'application/json',...classroomHeaders()},body:JSON.stringify(body)});
+            return {...data,retry:response.status>=500||response.status===429||data.status==='waiting',ok:response.ok};
+          },
+          onResult:(result,event)=>{if(classroom!==value)return;actionEpoch++;boardVersion='';progressVersion='';if(result.ok&&result.message&&(event.kind==='ufo'||event.kind==='attack'))showToast(result.message,result.delta<0?'bad':'good');if(result.ok&&Number.isFinite(Number(result.score)))setScore(Number(result.score)+pendingScore());if(!result.ok)showToast(result.error||'기록을 저장하지 못했습니다.','bad');void loadScoreboard()},
+          onError:()=>{setText(ui.scoreRank,'연결 재시도 · 기록 보관 중')}
+        });
+      }
       async function applyScoreChange(kind,reference,localDelta){if(classBlocked())return;
-        updateScore(localDelta);if(!classroom)return;
-        try{const {response,data}=await requestJson(`/api/labs/galaxy-voyage/sessions/${classroom.code}/events`,{method:'POST',headers:{'content-type':'application/json','x-player-id':classroom.player.id,'x-player-key':classroom.playerKey},body:JSON.stringify({kind,reference,experience:isMilkyWayObjects?'milky-way-objects':'galaxy-voyage'})});if(!response.ok)throw new Error(data.error||'점수 반영 실패');if(Number.isFinite(Number(data.score)))setScore(data.score);if(isMilkyWayObjects&&kind==='observation'&&visited.size>=milkyWayObjectCatalog.length)void loadScoreboard()}catch(error){showToast(error.message||'점수를 다시 확인합니다.','bad');void loadScoreboard()}
+        updateScore(localDelta);if(!classroom)return;actionEpoch++;
+        await actionQueue.enqueue({kind,reference,localDelta});
       }
       function recordObservation(galaxy){if(classBlocked())return;
         if(!galaxy||visited.has(galaxy.key))return false;
@@ -683,7 +700,7 @@
       function classNow(){return clockServer+performance.now()-clockAnchor}
       function syncTiming(t){if(!t)return;classTiming=t;clockServer=Date.parse(t.serverTime);clockAnchor=performance.now();tickClassClock()}
       function classBlocked(){if(!classroom)return false;if(!classTiming)return true;if(classTiming.durationSeconds==null)return false;const now=classNow();return !classTiming.startedAt||now<Date.parse(classTiming.startedAt)||now>=Date.parse(classTiming.endsAt)}
-      function showFinalRanks(leaders){finalList.replaceChildren();for(const p of leaders||[]){const li=document.createElement('li');li.textContent=p.rank+'위 · '+p.nickname+' · '+p.score+'점';finalList.append(li)}}
+      function showFinalRanks(leaders){const paint=JSON.stringify(leaders);if(paint===lastFinalPaint)return;lastFinalPaint=paint;finalList.replaceChildren();for(const p of leaders||[]){const li=document.createElement('li');li.textContent=p.rank+'위 · '+p.nickname+' · '+p.score+'점';finalList.append(li)}}
       function tickClassClock(){
         if(!classroom)return;const blocked=classBlocked();timeBadge.hidden=false;document.querySelector('.brandText small').style.display=classTiming?.durationSeconds==null&&classTiming?'':'none';
         if(!classTiming){timedTitle.textContent='수업 연결 확인 중';timedDetail.textContent='서버의 시작 시각을 확인하고 있습니다.'}
@@ -691,7 +708,7 @@
         else{const now=classNow(),start=Date.parse(classTiming.startedAt),end=Date.parse(classTiming.endsAt);
           if(!classTiming.startedAt){timeBadge.textContent='시작 대기';timedTitle.textContent='교사의 시작을 기다려 주세요';timedDetail.textContent='수업 코드 '+classroom.code+' · 입장 완료';}
           else if(now<start){const n=Math.ceil((start-now)/1000);timeBadge.textContent=n+'초 후 시작';timedTitle.textContent=n+'초 후 함께 시작합니다';timedDetail.textContent='준비하세요!';}
-          else if(now>=end){localStorage.removeItem(classroomStorageKey);timeBadge.textContent='수업 종료';timedTitle.textContent='시간 종료 · 최종 순위';timedDetail.textContent='탐사와 점수 변경이 종료되었습니다.'}
+          else if(now>=end){timeBadge.textContent='수업 종료';timedTitle.textContent='시간 종료 · 최종 순위';timedDetail.textContent='탐사와 점수 변경이 종료되었습니다.'}
           else{const n=Math.max(0,Math.ceil((end-now)/1000));timeBadge.textContent='남은 시간 '+Math.floor(n/60)+':'+String(n%60).padStart(2,'0')}
         }
         returnToEntry.hidden=!(classTiming?.endsAt&&classNow()>=Date.parse(classTiming.endsAt));timedOverlay.style.display=blocked?'block':'none';
@@ -715,22 +732,24 @@
         teacherPart('status').textContent='수업 '+teacherSession.code+' · '+data.participantCount+'명 · '+(data.timing.state==='ended'?'종료':data.timing.state==='waiting'?'시작 대기':'진행 중');teacherPart('start').hidden=!!data.timing.startedAt||data.timing.durationSeconds==null;teacherPart('start').disabled=teacherBusy;
         const canvas=teacherPart('map'),c=canvas.getContext('2d'),project=(x,z)=>[40+(Number(x)+2600)/5200*920,30+(3100-Number(z))/4500*500];c.clearRect(0,0,1000,560);c.fillStyle='#7891ad';c.font='11px sans-serif';
         for(const g of galaxies){const [x,y]=project(g.position[0],g.position[2]);c.beginPath();c.arc(x,y,3,0,Math.PI*2);c.fill();c.fillText(g.name,x+5,y)}
-        teacherPart('students').replaceChildren();
-        for(const p of data.leaders||[]){const online=p.flight_at&&Date.parse(data.timing.serverTime)-Date.parse(p.flight_at)<8000;const b=document.createElement('button');b.type='button';b.className='modalButton';b.textContent=p.nickname+' · '+p.score+'점 · 발견 '+p.observations.length+'/'+galaxies.length+' · 분류 '+p.classifications.length+'/'+galaxies.length+(online?'':' · 위치 미수신');b.addEventListener('click',()=>{watchedPlayer=p.id;renderTeacherSnapshot()});teacherPart('students').append(b);if(!online)continue;const [x,y]=project(p.x,p.z);c.fillStyle='#ffdb48';c.beginPath();c.moveTo(x,y-8);c.lineTo(x-7,y+7);c.lineTo(x,y+3);c.lineTo(x+7,y+7);c.closePath();c.fill();c.fillText(p.nickname,x+9,y);if(p.id===watchedPlayer){c.strokeStyle='#fff';c.beginPath();c.arc(x,y,14,0,Math.PI*2);c.stroke()}}
+        const ids=new Set((data.leaders||[]).map(p=>p.id));for(const [id,b] of teacherButtons)if(!ids.has(id)){b.remove();teacherButtons.delete(id)}
+        let studentIndex=0;for(const p of data.leaders||[]){const online=p.flight_at&&Date.parse(data.timing.serverTime)-Date.parse(p.flight_at)<8000;let b=teacherButtons.get(p.id);if(!b){b=document.createElement('button');b.type='button';b.className='modalButton';b.addEventListener('click',()=>{watchedPlayer=p.id;renderTeacherSnapshot()});teacherButtons.set(p.id,b)}setText(b,p.nickname+' · '+p.score+'점 · 발견 '+p.observations.length+'/'+galaxies.length+' · 분류 '+p.classifications.length+'/'+galaxies.length+(online?'':' · 위치 미수신'));if(teacherPart('students').children[studentIndex]!==b)teacherPart('students').insertBefore(b,teacherPart('students').children[studentIndex]||null);studentIndex++;if(!online)continue;const [x,y]=project(p.x,p.z);c.fillStyle='#ffdb48';c.beginPath();c.moveTo(x,y-8);c.lineTo(x-7,y+7);c.lineTo(x,y+3);c.lineTo(x+7,y+7);c.closePath();c.fill();c.fillText(p.nickname,x+9,y);if(p.id===watchedPlayer){c.strokeStyle='#fff';c.beginPath();c.arc(x,y,14,0,Math.PI*2);c.stroke()}}
         const p=(data.leaders||[]).find(p=>p.id===watchedPlayer);if(p){const names=items=>items.map(key=>galaxies.find(g=>g.key===key.split(':').slice(1).join(':'))?.name||key).join(', ')||'없음';teacherPart('detail').textContent=p.nickname+' · '+p.score+'점 | 발견: '+names(p.observations)+' | 분류 완료: '+names(p.classifications)}
       }
 
       async function refreshTeacher(start=false){
-        if(!teacherSession||teacherBusy)return;teacherBusy=true;teacherStart.disabled=true;
-        try{const {response,data}=await requestJson('/api/labs/galaxy-voyage/sessions/'+teacherSession.code+'/control',{method:start?'POST':'GET',headers:{'x-teacher-key':teacherSession.teacherKey},cache:'no-store'});
-          if(!response.ok)throw new Error(data.error||'교사 연결 실패');teacherSnapshot=data;renderTeacherSnapshot();
+        if(!teacherSession||teacherBusy)return;const session=teacherSession;teacherBusy=true;teacherStart.disabled=true;
+        try{const {response,data}=await requestJson('/api/labs/galaxy-voyage/sessions/'+teacherSession.code+(start?'/control':'/sync'),{method:'POST',headers:{'x-teacher-key':teacherSession.teacherKey,'content-type':'application/json'},body:JSON.stringify({progress:teacherProgress,flights:teacherFlights}),cache:'no-store'});
+          if(!response.ok)throw new Error(data.error||'교사 연결 실패');if(session!==teacherSession)return;
+          if(data.protocol===2){for(const p of data.players){const previous=teacherPlayers.get(p.id)||{observations:[],classifications:[]};teacherPlayers.set(p.id,{...previous,...p,...(p.progress||{})});teacherProgress[p.id]=p.progressVersion;teacherFlights[p.id]=p.flightVersion}const ids=new Set(data.playerIds);for(const id of teacherPlayers.keys())if(!ids.has(id)){teacherPlayers.delete(id);delete teacherProgress[id];delete teacherFlights[id]}data.leaders=data.playerIds.map((id,index)=>({...teacherPlayers.get(id),rank:index+1}))}
+          teacherSnapshot=data;renderTeacherSnapshot();
           teacherInfo.textContent='입장 '+data.participantCount+'명 · '+(data.timing.startedAt?(data.timing.state==='ended'?'수업 종료':'시작 시각 확정'):'시작 대기');
           teacherStart.hidden=!!data.timing.startedAt;
           if(data.timing.state==='ended'){teacherInfo.replaceChildren(document.createTextNode('수업 종료 · 최종 순위'));for(const p of data.leaders||[]){const line=document.createElement('div');line.textContent=p.rank+'위 · '+p.nickname+' · '+p.score+'점';teacherInfo.append(line)}}
         }catch(e){teacherInfo.textContent=e.message;teacherPart('status').textContent=e.message}finally{teacherBusy=false;teacherStart.disabled=false;teacherPart('start').disabled=false}
       }
       teacherStart.addEventListener('click',()=>void refreshTeacher(true));
-      setInterval(()=>{if(!document.hidden)void refreshTeacher()},3000);
+      setTimeout(function teacherLoop(){if(!document.hidden)void refreshTeacher().finally(()=>setTimeout(teacherLoop,3000+Math.random()*300));else setTimeout(teacherLoop,3000)},Math.random()*1000);
       try{teacherSession=JSON.parse(localStorage.getItem(teacherStorageKey)||'null');if(teacherSession){el('createdClassCode').textContent=teacherSession.code;el('createClassResult').hidden=false;teacherStart.hidden=false;void refreshTeacher()}}catch{}
 
       function classroomHeaders(){return classroom?{'x-player-id':classroom.player.id,'x-player-key':classroom.playerKey}:{}}
@@ -743,46 +762,70 @@
         visited=new Set(Array.isArray(state.visited)?state.visited:[]);discovered=new Set(Array.isArray(state.discovered)?state.discovered:[]);assigned=new Map(Array.isArray(state.assigned)?state.assigned:[]);visitedLandmarks=new Set(Array.isArray(state.visitedLandmarks)?state.visitedLandmarks:[]);localVoyageRestored=true;
       }
       function restoreServerProgress(self){
-        if(voyageRestored||!self)return;voyageRestored=true;
-        if(!localVoyageRestored&&self.flightAt&&[self.x,self.y,self.z].every(Number.isFinite)){camera.x=self.x;camera.y=self.y;camera.z=self.z}
-        for(const value of self.observations||[]){const key=eventObjectKey(value);if(galaxyByKey(key)){visited.add(key);discovered.add(key)}}
-        for(const value of self.classifications||[]){const key=eventObjectKey(value),galaxy=galaxyByKey(key);if(galaxy){visited.add(key);discovered.add(key);assigned.set(key,galaxy.type)}}
-        classificationComplete=visited.size>=classificationUnlockCount&&assigned.size===visited.size;render();updateRadar();
+        if(!self||!Array.isArray(self.observations))return;
+        if(!voyageRestored&&!localVoyageRestored&&self.flightAt&&[self.x,self.y,self.z].every(Number.isFinite)){camera.x=self.x;camera.y=self.y;camera.z=self.z}
+        let changed=false;
+        for(const value of self.observations){confirmedProgress.add(value);const key=eventObjectKey(value);if(galaxyByKey(key)){if(!visited.has(key))changed=true;visited.add(key);discovered.add(key)}}
+        for(const value of self.classifications||[]){confirmedProgress.add(value);const key=eventObjectKey(value),galaxy=galaxyByKey(key);if(galaxy){if(!assigned.has(key))changed=true;visited.add(key);discovered.add(key);assigned.set(key,galaxy.type)}}
+        if(!voyageRestored){voyageRestored=true;const observed=new Set(self.observations.map(eventObjectKey)),classified=new Set((self.classifications||[]).map(eventObjectKey));
+          // Recover unsent discoveries from older saved browser state as well.
+          for(const key of visited)if(galaxyByKey(key)&&!observed.has(key))void actionQueue.enqueue({kind:'observation',reference:key,localDelta:observationPoints});
+          for(const [key] of assigned)if(galaxyByKey(key)&&!classified.has(key))void actionQueue.enqueue({kind:'classification_correct',reference:key,localDelta:classificationPoints});
+        }
+        redUfoUnlocked=self.observations.length>=galaxies.length;flightUnlocked=redUfoUnlocked;updateUfoAppearance();
+        if(changed){classificationComplete=visited.size>=classificationUnlockCount&&assigned.size===visited.size;render();updateRadar()}
       }
       function renderScoreboard(data){
-        syncTiming(data?.timing);showFinalRanks(data?.leaders);
-        if(data?.ufoBonus||data?.milkyWayUfoBonus){redUfoUnlocked=true;updateUfoAppearance()}
-        if(data?.self){restoreServerProgress(data.self);setScore(data.self.score);ui.scorePlayerName.textContent=`${data.self.nickname} · ${classroom.code}`;ui.scoreRank.textContent=`${data.self.rank}위`;}
-        ui.scoreLeaders.innerHTML='';(data?.leaders||[]).slice(0,5).forEach(player=>{const item=document.createElement('li');if(player.id===classroom?.player.id)item.classList.add('me');const rank=document.createElement('span'),name=document.createElement('span'),score=document.createElement('strong');rank.textContent=String(player.rank);name.textContent=player.nickname;score.textContent=String(player.score);item.append(rank,name,score);ui.scoreLeaders.appendChild(item)});
+        syncTiming(data?.timing);if(Array.isArray(data?.leaders))lastLeaders=data.leaders;showFinalRanks(lastLeaders);
+        if(data?.self){restoreServerProgress(data.self);setScore(Number(data.self.score)+pendingScore());setText(ui.scorePlayerName,`${data.self.nickname} · ${classroom.code}`);setText(ui.scoreRank,`${data.self.rank}위`)}
+        const leaders=lastLeaders.slice(0,5),paint=JSON.stringify(leaders.map(p=>[p.id,p.rank,p.nickname,p.score]));if(paint===lastScorePaint)return;lastScorePaint=paint;
+        ui.scoreLeaders.replaceChildren();leaders.forEach(player=>{const item=document.createElement('li');if(player.id===classroom?.player.id)item.classList.add('me');const rank=document.createElement('span'),name=document.createElement('span'),score=document.createElement('strong');rank.textContent=String(player.rank);name.textContent=player.nickname;score.textContent=String(player.score);item.append(rank,name,score);ui.scoreLeaders.appendChild(item)});
       }
+      function scheduleClassSync(delay){clearTimeout(scoreboardTimer);scoreboardTimer=setTimeout(()=>void loadScoreboard(),delay)}
       async function loadScoreboard(){
-        if(!classroom||scoreboardLoading)return;scoreboardLoading=true;
-        try{const {response,data}=await requestJson(`/api/labs/galaxy-voyage/sessions/${classroom.code}/scoreboard?since=${encodeURIComponent(scoreSince)}`,{headers:classroomHeaders(),cache:'no-store'});if(!response.ok)throw new Error(data.error||'점수 확인 실패');renderScoreboard(data);const newNotes=(data.notifications||[]).filter(note=>!notificationSeen.has(note.id));newNotes.forEach(note=>notificationSeen.add(note.id));if(newNotes.length)showToast(newNotes.map(note=>note.message).join(' · '),'bad');scoreSince=data.serverTime||new Date().toISOString();classroom.lastScoreSync=scoreSince;saveClassroom()}catch(error){console.warn(error)}finally{scoreboardLoading=false}
+        if(!classroom||scoreboardLoading)return false;
+        if(document.hidden){scheduleClassSync(3000);return false}
+        scoreboardLoading=true;const value=classroom,epoch=actionEpoch,began=performance.now();let more=false;
+        try{const position=started&&!classBlocked()?[camera.x,camera.y,camera.z]:undefined;
+          const {response,data}=await requestJson(`/api/labs/galaxy-voyage/sessions/${value.code}/sync`,{method:'POST',headers:{...classroomHeaders(),'content-type':'application/json'},body:JSON.stringify({position,boardVersion,progressVersion,peers:peerVersions,notifications:notificationCursor}),cache:'no-store'});
+          if(!response.ok)throw new Error(data.error||'점수 확인 실패');if(classroom!==value)return false;syncFailures=0;
+          if(epoch===actionEpoch&&!actionQueue.busy){boardVersion=data.boardVersion;progressVersion=data.progressVersion;renderScoreboard(data)}else syncTiming(data.timing);
+          applyFlightSnapshot(data.flight);
+          const newNotes=(data.notifications||[]).filter(note=>!notificationSeen.has(note.id));newNotes.forEach(note=>notificationSeen.add(note.id));if(newNotes.length)showToast(newNotes.map(note=>note.message).join(' · '),'bad');
+          notificationCursor=data.notificationCursor;more=data.moreNotifications;scoreSince=data.serverTime;value.lastScoreSync=scoreSince;value.notificationCursor=notificationCursor;
+          if(performance.now()-lastLocalSave>5000){saveClassroom();lastLocalSave=performance.now()}
+          void actionQueue.flush();return true;
+        }catch(error){syncFailures++;setText(ui.scoreRank,'연결 재시도 · 기록 보관 중');return false}
+        finally{scoreboardLoading=false;const delay=syncFailures?Math.min(15000,1500*2**Math.min(syncFailures,4)):more?100:classBlocked()||mode!=='map'?3000:1500;scheduleClassSync(Math.max(100,delay-(performance.now()-began))+Math.random()*150)}
       }
-      function activateClassroom(value){classroom=value;classTiming=null;tickClassClock();redUfoUnlocked=false;updateUfoAppearance();scoreSince=value.lastScoreSync||new Date().toISOString();localStorage.setItem(classroomStorageKey,JSON.stringify(value));ui.scorePlayerName.textContent=`${value.player.nickname} · ${value.code}`;ui.scoreRank.textContent='순위 확인 중';if(!scoreboardTimer)scoreboardTimer=window.setInterval(()=>{if(!document.hidden)void loadScoreboard()},3000);void loadScoreboard()}
+      function activateClassroom(value){
+        classroom=value;classTiming=null;confirmedProgress.clear();boardVersion='';progressVersion='';notificationCursor=value.notificationCursor||{at:value.lastScoreSync||'1970-01-01T00:00:00Z',id:''};voyageRestored=false;redUfoUnlocked=false;updateUfoAppearance();scoreSince=value.lastScoreSync||new Date().toISOString();setupActionQueue(value);saveClassroom();tickClassClock();ui.scorePlayerName.textContent=`${value.player.nickname} · ${value.code}`;ui.scoreRank.textContent='순위 확인 중';scheduleClassSync(0);
+      }
       async function joinClassroom(){
         const code=el('classCodeInput').value.trim().toUpperCase(),nickname=el('playerNameInput').value.trim();showClassroomError();if(!code||!nickname){showClassroomError('수업 코드와 이름을 입력하세요.');return}el('joinClassButton').disabled=true;
-        try{const {response,data}=await requestJson(`/api/labs/galaxy-voyage/sessions/${encodeURIComponent(code)}/players`,{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({nickname})});if(!response.ok)throw new Error(data.error||'입장 실패');activateClassroom({code:data.session.code,player:data.player,playerKey:data.playerKey,lastScoreSync:new Date().toISOString()});startVoyage(`${data.player.nickname} · 수업에 입장했습니다.`)}catch(error){showClassroomError(error.message||'수업에 입장하지 못했습니다.')}finally{el('joinClassButton').disabled=false}
+        try{let joining;try{joining=JSON.parse(localStorage.getItem(classroomStorageKey+'-joining')||'null')}catch{}if(!joining||joining.code!==code||joining.nickname!==nickname){joining={code,nickname,joinId:crypto.randomUUID(),joinKey:crypto.randomUUID()};localStorage.setItem(classroomStorageKey+'-joining',JSON.stringify(joining))}const {response,data}=await requestJson(`/api/labs/galaxy-voyage/sessions/${encodeURIComponent(code)}/players`,{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify(joining)});if(!response.ok)throw new Error(data.error||'입장 실패');activateClassroom({code:data.session.code,player:data.player,playerKey:data.playerKey,lastScoreSync:new Date().toISOString()});localStorage.removeItem(classroomStorageKey+'-joining');startVoyage(`${data.player.nickname} · 수업에 입장했습니다.`)}catch(error){showClassroomError(error.message||'수업에 입장하지 못했습니다.')}finally{el('joinClassButton').disabled=false}
       }
       async function createClassroom(){
         showClassroomError();el('createClassButton').disabled=true;
-        try{const {response,data}=await requestJson('/api/labs/galaxy-voyage/sessions',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({title:isMilkyWayObjects?'우리은하 천체 탐사 수업':'은하 분류 수업',durationSeconds:Number(durationInput.value)*60})});if(!response.ok)throw new Error(data.error||'수업 생성 실패');teacherSession={code:data.session.code,teacherKey:data.teacherKey};localStorage.setItem(teacherStorageKey,JSON.stringify(teacherSession));teacherStart.hidden=false;void refreshTeacher();el('createdClassCode').textContent=data.session.code;el('classCodeInput').value=data.session.code;el('createClassResult').hidden=false;const url=new URL(location.href);url.searchParams.set('class',data.session.code);history.replaceState(null,'',`${url.pathname}${url.search}`)}catch(error){showClassroomError(error.message||'수업을 만들지 못했습니다.')}finally{el('createClassButton').disabled=false}
+        try{const {response,data}=await requestJson('/api/labs/galaxy-voyage/sessions',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({title:isMilkyWayObjects?'우리은하 천체 탐사 수업':'은하 분류 수업',durationSeconds:Number(durationInput.value)*60})});if(!response.ok)throw new Error(data.error||'수업 생성 실패');teacherSession={code:data.session.code,teacherKey:data.teacherKey};teacherPlayers.clear();for(const key of Object.keys(teacherProgress))delete teacherProgress[key];for(const key of Object.keys(teacherFlights))delete teacherFlights[key];localStorage.setItem(teacherStorageKey,JSON.stringify(teacherSession));teacherStart.hidden=false;void refreshTeacher();el('createdClassCode').textContent=data.session.code;el('classCodeInput').value=data.session.code;el('createClassResult').hidden=false;const url=new URL(location.href);url.searchParams.set('class',data.session.code);history.replaceState(null,'',`${url.pathname}${url.search}`)}catch(error){showClassroomError(error.message||'수업을 만들지 못했습니다.')}finally{el('createClassButton').disabled=false}
       }
       async function copyClassLink(){const code=el('createdClassCode').textContent;if(!code)return;const url=new URL(location.href);url.searchParams.set('class',code);try{await navigator.clipboard.writeText(url.href);showToast('수업 링크를 복사했습니다.')}catch{showClassroomError(`수업 코드: ${code}`)}}
       function saveClassroom(){
         if(!classroom)return;
-        if(classTiming?.state==='ended'||(classTiming?.endsAt&&classNow()>=Date.parse(classTiming.endsAt))){localStorage.removeItem(classroomStorageKey);return}
         if(started)classroom.voyageState={camera:{...camera},visited:[...visited],discovered:[...discovered],assigned:[...assigned],visitedLandmarks:[...visitedLandmarks]};
-        localStorage.setItem(classroomStorageKey,JSON.stringify(classroom));
+        try{localStorage.setItem(classroomStorageKey,JSON.stringify(classroom))}catch{showToast('브라우저 저장 공간을 확인해 주세요. 연결 중에는 서버에 기록합니다.','bad')}
       }
       function clearOldClassroom(){
+        classroom=null;actionQueue=null;clearTimeout(scoreboardTimer);
         localStorage.removeItem(classroomStorageKey);
         const url=new URL(location.href);url.searchParams.delete('class');history.replaceState(null,'',url.pathname+url.search+url.hash);
         el('classCodeInput').value='';showClassroomError('이전 수업이 끝났습니다. 새 수업 코드를 입력해 주세요.');
       }
       async function restoreClassroom(){
         const saved=localStorage.getItem(classroomStorageKey);if(!saved)return false;
-        try{const value=JSON.parse(saved);const requested=new URL(location.href).searchParams.get('class');if(requested&&requested!==value.code){localStorage.removeItem(classroomStorageKey);return false}if(!Number.isFinite(Date.parse(value.lastScoreSync))||Date.now()-Date.parse(value.lastScoreSync)>2*60*60*1000){clearOldClassroom();return false}restoreSavedVoyage(value);const since=value.lastScoreSync||new Date(0).toISOString(),{response,data}=await requestJson(`/api/labs/galaxy-voyage/sessions/${value.code}/scoreboard?since=${encodeURIComponent(since)}`,{headers:{'x-player-id':value.player.id,'x-player-key':value.playerKey},cache:'no-store'});if(!response.ok||data.timing?.state==='ended'){clearOldClassroom();return false}activateClassroom(value);renderScoreboard(data);const notes=data.notifications||[];notes.forEach(note=>notificationSeen.add(note.id));scoreSince=data.serverTime||new Date().toISOString();classroom.lastScoreSync=scoreSince;saveClassroom();startVoyage(notes.length?notes.map(note=>note.message).join(' · '):`${value.player.nickname} · 수업에 다시 연결했습니다.`,notes.length?'bad':'good');return true}catch{localStorage.removeItem(classroomStorageKey);return false}
+        try{const value=JSON.parse(saved),requested=new URL(location.href).searchParams.get('class');if(requested&&requested!==value.code)return false;
+          if(!value.code||!value.player?.id||!value.playerKey)return false;restoreSavedVoyage(value);activateClassroom(value);startVoyage(`${value.player.nickname} · 저장한 수업에 다시 연결합니다.`);return true;
+        }catch{showClassroomError('저장한 입장 정보를 확인하지 못했습니다.');return false}
       }
 
       function buildParticles(){
@@ -825,32 +868,29 @@
         ctx.restore();
       }
 
-      const flightPeers=new Map();let flightBusy=false,attackBusy=false,flightUnlocked=false,attackReadyAt=0,flightSeenAt=0,disabledUntil=0,disabledNoticeAt=0;
+      const flightPeers=new Map();let attackBusy=false,flightUnlocked=false,attackReadyAt=0,flightSeenAt=0,disabledUntil=0,disabledNoticeAt=0;
       const flightLayer=document.createElement('div');flightLayer.style.cssText='position:absolute;inset:0;z-index:16;pointer-events:none;overflow:hidden';ui.visitors.parentElement.append(flightLayer);
       const flightRadar=document.createElement('div');flightRadar.style.cssText='position:absolute;inset:0;pointer-events:none';ui.radarDots.parentElement.append(flightRadar);
       const flightStatus=document.createElement('div');flightStatus.style.cssText='position:absolute;left:8px;bottom:8px;color:#ffe269;font-size:11px;pointer-events:none';flightLayer.append(flightStatus);
-      async function syncFlight(){
-        if(!classroom||!started||classBlocked()||document.hidden||flightBusy)return;
-        flightBusy=true;
-        try{const {response,data}=await requestJson(`/api/labs/galaxy-voyage/sessions/${classroom.code}/flight`,{method:'POST',headers:{...classroomHeaders(),'Content-Type':'application/json'},body:JSON.stringify({position:[camera.x,camera.y,camera.z]})});
-          if(!response.ok)return;flightSeenAt=performance.now();flightUnlocked=Boolean(data.unlocked);const server=Date.parse(data.server_time),now=performance.now(),nextDisabled=now+Math.max(0,Date.parse(data.disabled_until||0)-server);attackReadyAt=now+Math.max(0,Date.parse(data.attack_at||0)+2000-server);if(nextDisabled>now&&disabledUntil<=now&&now-disabledNoticeAt>1000){disabledNoticeAt=now;showToast('집중 공격으로 우주선이 30초간 불능 상태입니다.','bad')}disabledUntil=nextDisabled;
-          const seen=new Set();for(const p of data.peers||[]){seen.add(p.id);let item=flightPeers.get(p.id);if(!item){const button=document.createElement('button');button.type='button';button.style.cssText='position:absolute;transform:translate(-50%,-50%);color:#ffe269;background:transparent;border:0;padding:3px;width:100px;pointer-events:auto;font-size:11px;white-space:nowrap;touch-action:manipulation;filter:drop-shadow(0 0 7px rgba(255,211,65,.55))';button.innerHTML='<svg viewBox="0 0 100 80" width="42" height="34" aria-hidden="true"><path d="M41 58 L45 78 L50 69 L55 78 L59 58" fill="#ff982e"/><path d="M50 3 L64 34 L91 58 L65 55 L61 65 L39 65 L35 55 L9 58 L36 34 Z" fill="#ffd447" stroke="#fff5b0" stroke-width="2"/><path d="M50 14 L57 35 L50 43 L43 35 Z" fill="#36566b" stroke="#fff8c7"/><path d="M36 34 L35 55 M64 34 L65 55 M50 44 L50 61" stroke="#a47410" stroke-width="2"/></svg><span style="display:block;text-shadow:0 2px 3px #000"></span>';const dot=document.createElement('span');dot.style.cssText='position:absolute;width:6px;height:6px;border-radius:50%;background:#ffe269;transform:translate(-50%,-50%)';button.addEventListener('pointerdown',e=>e.stopPropagation());button.addEventListener('click',e=>{e.stopPropagation();void fireAt(p.id)});flightLayer.append(button);flightRadar.append(dot);item={button,dot,label:button.querySelector('span'),current:[p.x,p.y,p.z]};flightPeers.set(p.id,item)}Object.assign(item,{target:[p.x,p.y,p.z],name:p.nickname,disabled:now+Math.max(0,Date.parse(p.disabled_until||0)-server)})}
-          for(const [id,p] of flightPeers)if(!seen.has(id)){p.button.remove();p.dot.remove();flightPeers.delete(id)}
-        }catch{}finally{flightBusy=false}
+      function syncFlight(){return loadScoreboard()}
+      function applyFlightSnapshot(data){if(!data)return;
+        flightSeenAt=performance.now();const server=Date.parse(data.server_time),now=performance.now(),nextDisabled=now+Math.max(0,Date.parse(data.disabled_until||0)-server);attackReadyAt=now+Math.max(0,Date.parse(data.attack_at||0)+2000-server);if(nextDisabled>now&&disabledUntil<=now&&now-disabledNoticeAt>1000){disabledNoticeAt=now;showToast('집중 공격으로 우주선이 30초간 불능 상태입니다.','bad')}disabledUntil=nextDisabled;
+          const seen=new Set();for(const p of data.peers||[]){seen.add(p.id);let item=flightPeers.get(p.id);if(!item){const button=document.createElement('button');button.type='button';button.style.cssText='position:absolute;transform:translate(-50%,-50%);color:#ffe269;background:transparent;border:0;padding:3px;width:100px;pointer-events:auto;font-size:11px;white-space:nowrap;touch-action:manipulation;filter:drop-shadow(0 0 7px rgba(255,211,65,.55))';button.innerHTML='<svg viewBox="0 0 100 80" width="42" height="34" aria-hidden="true"><path d="M41 58 L45 78 L50 69 L55 78 L59 58" fill="#ff982e"/><path d="M50 3 L64 34 L91 58 L65 55 L61 65 L39 65 L35 55 L9 58 L36 34 Z" fill="#ffd447" stroke="#fff5b0" stroke-width="2"/><path d="M50 14 L57 35 L50 43 L43 35 Z" fill="#36566b" stroke="#fff8c7"/><path d="M36 34 L35 55 M64 34 L65 55 M50 44 L50 61" stroke="#a47410" stroke-width="2"/></svg><span style="display:block;text-shadow:0 2px 3px #000"></span>';const dot=document.createElement('span');dot.style.cssText='position:absolute;width:6px;height:6px;border-radius:50%;background:#ffe269;transform:translate(-50%,-50%)';button.addEventListener('pointerdown',e=>e.stopPropagation());button.addEventListener('click',e=>{e.stopPropagation();void fireAt(p.id)});flightLayer.append(button);flightRadar.append(dot);item={button,dot,label:button.querySelector('span'),current:[p.x,p.y,p.z]};flightPeers.set(p.id,item)}GalaxyClassroomSync.updatePose(item,[p.x,p.y,p.z],now);peerVersions[p.id]=p.version;Object.assign(item,{name:p.nickname,disabled:now+Math.max(0,Date.parse(p.disabled_until||0)-server)})}
+          for(const [id,p] of flightPeers)if(!(data.peerIds||[...seen]).includes(id)){p.button.remove();p.dot.remove();flightPeers.delete(id);delete peerVersions[id]}
       }
       async function fireAt(id){
         const p=flightPeers.get(id);if(!p||classBlocked()||!flightUnlocked||attackBusy||performance.now()<attackReadyAt||performance.now()<disabledUntil||performance.now()-flightSeenAt>8000)return;
         if(Math.hypot(p.target[0]-camera.x,p.target[1]-camera.y,p.target[2]-camera.z)>900){showToast('친구에게 더 가까이 다가가세요.','bad');return}
-        attackBusy=true;try{const {response,data}=await requestJson(`/api/labs/galaxy-voyage/sessions/${classroom.code}/flight`,{method:'POST',headers:{...classroomHeaders(),'Content-Type':'application/json'},body:JSON.stringify({action:'attack',targetId:id,shotId:crypto.randomUUID()})});if(!response.ok){showToast(data.error||'공격 대기 중입니다.','bad');return}attackReadyAt=performance.now()+2000;p.button.animate([{background:'#fff',transform:'translate(-50%,-50%) scale(1.4)'},{background:'rgba(30,25,5,.75)',transform:'translate(-50%,-50%) scale(1)'}],{duration:350});showToast(data.message);void loadScoreboard()}catch{showToast('통신이 지연되었습니다.','bad')}finally{attackBusy=false}
+        attackBusy=true;actionEpoch++;try{const data=await actionQueue.enqueue({kind:'attack',targetId:id,reference:crypto.randomUUID()});if(!data.ok){showToast(data.error||'공격 대기 중입니다.','bad');return}attackReadyAt=performance.now()+2000;p.button.animate([{background:'#fff',transform:'translate(-50%,-50%) scale(1.4)'},{background:'rgba(30,25,5,.75)',transform:'translate(-50%,-50%) scale(1)'}],{duration:350});showToast(data.message);void loadScoreboard()}catch{showToast('통신이 지연되었습니다.','bad')}finally{attackBusy=false}
       }
       function drawFlight(delta){
         const visible=classroom&&started&&!classBlocked()&&mode==='map'&&performance.now()-flightSeenAt<8000;flightLayer.hidden=!visible;flightRadar.hidden=!visible;if(!visible)return;
-        const now=performance.now();flightStatus.textContent=now<disabledUntil?'우주선 불능 · '+Math.ceil((disabledUntil-now)/1000)+'초':flightUnlocked?(now<attackReadyAt?'공격 충전 '+Math.ceil((attackReadyAt-now)/1000)+'초':'노란 우주선을 눌러 공격 · 최대 50점'):'노란색: 친구 · '+entityName+' '+galaxies.length+'개 발견 시 공격 해제';
-        for(const p of flightPeers.values()){const blend=1-Math.exp(-delta/280);for(let i=0;i<3;i++)p.current[i]+=(p.target[i]-p.current[i])*blend;const q=projectWorld(p.current),range=Math.hypot(p.current[0]-camera.x,p.current[1]-camera.y,p.current[2]-camera.z),peerDisabled=now<p.disabled;p.button.hidden=!q.visible||range>2400;p.button.style.left=q.x+'px';p.button.style.top=q.y+'px';p.label.textContent=p.name+' · '+Math.round(range)+(peerDisabled?' · 불능':'');p.button.setAttribute('aria-label',p.name+' 우주선 공격');p.button.disabled=!flightUnlocked||now<attackReadyAt||now<disabledUntil||range>900;
+        const now=performance.now();setText(flightStatus,now<disabledUntil?'우주선 불능 · '+Math.ceil((disabledUntil-now)/1000)+'초':flightUnlocked?(now<attackReadyAt?'공격 충전 '+Math.ceil((attackReadyAt-now)/1000)+'초':'노란 우주선을 눌러 공격 · 최대 50점'):'노란색: 친구 · '+entityName+' '+galaxies.length+'개 발견 시 공격 해제');
+        for(const p of flightPeers.values()){GalaxyClassroomSync.samplePose(p,now);const q=projectWorld(p.current),range=Math.hypot(p.current[0]-camera.x,p.current[1]-camera.y,p.current[2]-camera.z),peerDisabled=now<p.disabled;p.button.hidden=!q.visible||range>2400;p.button.style.left=q.x+'px';p.button.style.top=q.y+'px';setText(p.label,p.name+' · '+Math.round(range)+(peerDisabled?' · 불능':''));setAttribute(p.button,'aria-label',p.name+' 우주선 공격');p.button.disabled=!flightUnlocked||now<attackReadyAt||now<disabledUntil||range>900;
           const angle=Math.atan2(p.current[0]-camera.x,p.current[2]-camera.z)-camera.yaw,r=Math.min(1,range/3200)*42;p.dot.style.left=(50+Math.sin(angle)*r)+'%';p.dot.style.top=(50-Math.cos(angle)*r)+'%';p.dot.title=p.name;
         }
       }
-      setTimeout(function flightLoop(){void syncFlight().finally(()=>setTimeout(flightLoop,1500+Math.random()*150))},Math.random()*1500);
+      // Position, score, timing and peer changes share the single sync loop above.
 
       function cameraBasis(){return{cy:Math.cos(camera.yaw),sy:Math.sin(camera.yaw),cp:Math.cos(camera.pitch),sp:Math.sin(camera.pitch)}}
       function projectWorld(position,basis=cameraBasis()){
@@ -939,7 +979,7 @@
         const delta=Math.min(40,time-(lastFrame||time));lastFrame=time;ctx.clearRect(0,0,width,height);
         if(mode==='map'&&!warping){const move=delta*.19*moveSpeed,turn=delta*.0015*turnSpeed;if(keys.has('w'))moveCamera(move,false);if(keys.has('s'))moveCamera(-move,false);if(keys.has('a'))strafeCamera(-move,false);if(keys.has('d'))strafeCamera(move,false);if(keys.has('q'))moveVertical(move,false);if(keys.has('e'))moveVertical(-move,false);if(keys.has('arrowleft'))camera.yaw-=turn;if(keys.has('arrowright'))camera.yaw+=turn;if(keys.has('arrowup'))camera.pitch=clamp(camera.pitch+turn,-1.05,1.05);if(keys.has('arrowdown'))camera.pitch=clamp(camera.pitch-turn,-1.05,1.05);if(Math.abs(touchInput.moveY)>.06)moveCamera(-touchInput.moveY*move*.92,false);if(Math.abs(touchInput.moveX)>.06)strafeCamera(touchInput.moveX*move*.92,false);if(Math.abs(touchInput.lookX)>.06)camera.yaw+=touchInput.lookX*turn*1.8;if(Math.abs(touchInput.lookY)>.06)camera.pitch=clamp(camera.pitch-touchInput.lookY*turn*1.65,-1.05,1.05)}
         look.x+=(targetLook.x-look.x)*.045;look.y+=(targetLook.y-look.y)*.045;warpPower*=.94;drawStars();
-        if(mode==='map'){drawNavigationStars();drawSpaceLandmarks(time);drawMapGlows();updateLandmarks();updateRadar();updateSpaceVisitors(time);updateBeacons();drawFlight(delta)}else if(observingKey){const galaxy=galaxyByKey(observingKey);ui.observedPhoto.style.left=`calc(50% + ${look.x*18}px)`;ui.observedPhoto.style.top=`calc(${width<700?46:51}% + ${look.y*12}px)`;if(galaxy.key==='milkyway'&&viewMode==='side')drawEdgeGalaxy();else if(!solarView&&ui.observedPhoto.hidden)drawParticleGalaxy(galaxy,time)}
+        if(mode==='map'){drawNavigationStars();drawSpaceLandmarks(time);drawMapGlows();if(time-lastHudFrame>=50){lastHudFrame=time;updateLandmarks();updateRadar();updateBeacons()}updateSpaceVisitors(time);drawFlight(delta)}else if(observingKey){const galaxy=galaxyByKey(observingKey);ui.observedPhoto.style.left=`calc(50% + ${look.x*18}px)`;ui.observedPhoto.style.top=`calc(${width<700?46:51}% + ${look.y*12}px)`;if(galaxy.key==='milkyway'&&viewMode==='side')drawEdgeGalaxy();else if(!solarView&&ui.observedPhoto.hidden)drawParticleGalaxy(galaxy,time)}
         if(mode!=='map'){flightLayer.hidden=true;flightRadar.hidden=true}requestAnimationFrame(drawScene);
       }
 
@@ -993,7 +1033,7 @@
       async function resolveVisitor(visitor){if(classBlocked())return;
         if(mode!=='map'||visitor.resolving)return;const now=performance.now(),wait=Math.ceil((visitor.cooldownUntil-now)/1000);if(wait>0){showToast(`레이저 충전 중 · ${wait}초`);return}const range=Math.hypot(visitor.worldPosition[0]-camera.x,visitor.worldPosition[1]-camera.y,visitor.worldPosition[2]-camera.z);if(range>UFO_TAP_DISTANCE){holdVisitor(visitor);showToast(`격추 사거리 밖 · 거리 ${Math.round(range)}`,'bad');return}
         visitor.resolving=true;visitor.element.classList.remove('encountered');void visitor.element.offsetWidth;visitor.element.classList.add('encountered');visitor.cooldownUntil=now+UFO_COMM_COOLDOWN;visitor.element.classList.add('cooldown');visitorEncounters++;
-        try{let result;if(classroom){const reference=globalThis.crypto?.randomUUID?.()||`${Date.now()}-${Math.random().toString(36).slice(2)}`,{response,data}=await requestJson(`/api/labs/galaxy-voyage/sessions/${classroom.code}/events`,{method:'POST',headers:{'content-type':'application/json',...classroomHeaders()},body:JSON.stringify({kind:'ufo',reference,experience:isMilkyWayObjects?'milky-way-objects':'galaxy-voyage'})});result=data;if(!response.ok)throw new Error(result.error||'UFO 이벤트 실패');setScore(result.score);if(result.ufoBonus||result.milkyWayUfoBonus){redUfoUnlocked=true;updateUfoAppearance()}}else{result=localUfoResult();updateScore(result.delta)}showToast(result.message,result.delta<0?'bad':'good');if(!selectedKey)renderPanel()}catch(error){showToast(error.message||'UFO 신호가 끊겼습니다.','bad');void loadScoreboard()}finally{visitor.resolving=false;setTimeout(()=>visitor.element.classList.remove('cooldown'),UFO_COMM_COOLDOWN)}
+        try{let result;if(classroom){const reference=globalThis.crypto?.randomUUID?.()||`${Date.now()}-${Math.random().toString(36).slice(2)}`;actionEpoch++;result=await actionQueue.enqueue({kind:'ufo',reference});if(!result.ok)throw new Error(result.error||'UFO 이벤트 실패');if(result.ufoBonus||result.milkyWayUfoBonus){redUfoUnlocked=true;updateUfoAppearance()}}else{result=localUfoResult();updateScore(result.delta)}showToast(result.message,result.delta<0?'bad':'good');if(!selectedKey)renderPanel()}catch(error){showToast(error.message||'UFO 신호가 끊겼습니다.','bad');void loadScoreboard()}finally{visitor.resolving=false;setTimeout(()=>visitor.element.classList.remove('cooldown'),UFO_COMM_COOLDOWN)}
       }
       function updateSpaceVisitors(time){
         if(mode!=='map')return;visitorStates.forEach(visitor=>{const phase=time*.000052+visitor.index*2.17,moving=[Math.sin(phase)*(1150+visitor.index*210),Math.sin(phase*(.69+visitor.index*.07)+1.15)*520,1280+visitor.index*470+Math.cos(phase*.81)*610],position=time<visitor.holdUntil&&visitor.holdPosition?visitor.holdPosition:moving;if(time>=visitor.holdUntil)visitor.holdPosition=moving;visitor.worldPosition=[...position];const point=projectWorld(position),range=Math.hypot(position[0]-camera.x,position[1]-camera.y,position[2]-camera.z),scale=clamp(920/Math.max(1,point.depth),.48,1.12),label=visitor.element.querySelector('.visitorLabel');visitor.element.style.transform=`translate(${point.x-viewWidth/2}px,${point.y-viewHeight/2}px) scale(${scale}) rotate(${Math.sin(phase*.9)*5}deg)`;visitor.element.style.opacity=point.visible?'1':'0';visitor.element.style.pointerEvents=point.visible?'auto':'none';setText(label,(range<=UFO_TAP_DISTANCE?'격추':'UFO')+(ufoRewardMultiplier()===2?' ×2':''))})
@@ -1019,7 +1059,7 @@
           setAttribute(button,'aria-label',known?`${galaxy.name}, ${galaxy.distance}, 근접 거리 ${Math.round(range)}${visited.has(galaxy.key)?', 관측 목록 등록':''}`:`미확인 ${entityName} 신호, 가까이 이동하면 확인할 수 있습니다`);
           button.style.transform=`translate(${point.x-viewWidth/2}px,${point.y-viewHeight/2}px) scale(${scale})`;if(label)label.style.transform=`translateX(-50%) scale(${1/scale})`;button.style.opacity=point.visible?'1':'0';button.style.pointerEvents=point.visible?'auto':'none';button.style.zIndex=String(Math.round(5000-point.depth));button.classList.toggle('selected',selectedKey===galaxy.key);button.classList.toggle('visited',visited.has(galaxy.key));if(selectedKey===galaxy.key&&range<=DOCK_DISTANCE+1)queueProximityObservation(galaxy)
         });
-        const selected=selectedKey?galaxyByKey(selectedKey):null,selectedRange=selected?Math.round(galaxyDistance(selected)):null,nearest=[...spaceLandmarks].sort((a,b)=>landmarkDistance(a)-landmarkDistance(b))[0],nearestRange=Math.round(landmarkDistance(nearest)),encounterStatus=visitorEncounters?` · UFO 격추 ${visitorEncounters}`:'';setText(ui.mapScale,`발견 ${discovered.size} / ${galaxies.length} · 이정표 ${visitedLandmarks.size}/${spaceLandmarks.length} · 시야 내 ${visibleCount}${selectedRange!==null?` · 목표까지 ${selectedRange}`:` · ${nearest.shortName} ${nearestRange}`}${encounterStatus}`);
+        const selected=selectedKey?galaxyByKey(selectedKey):null,selectedRange=selected?Math.round(galaxyDistance(selected)):null,nearest=spaceLandmarks.reduce((best,item)=>landmarkDistance(item)<landmarkDistance(best)?item:best),nearestRange=Math.round(landmarkDistance(nearest)),encounterStatus=visitorEncounters?` · UFO 격추 ${visitorEncounters}`:'';setText(ui.mapScale,`발견 ${discovered.size} / ${galaxies.length} · 이정표 ${visitedLandmarks.size}/${spaceLandmarks.length} · 시야 내 ${visibleCount}${selectedRange!==null?` · 목표까지 ${selectedRange}`:` · ${nearest.shortName} ${nearestRange}`}${encounterStatus}`);
         if(mode==='map'){setText(ui.zoomReadout,selectedRange!==null?`거리 ${selectedRange}`:`Z ${Math.round(camera.z)}`);setText(ui.navReadout,warping?'항해 중':selectedRange!==null&&selectedRange<=DOCK_DISTANCE?'근접 스캔 진입':`${entityName} 신호 탐색`)}
         if(newlyObserved.length){showToast(`+${newlyObserved.length*observationPoints}점 · 가까이 지나간 ${newlyObserved.map(galaxy=>galaxy.name).join(', ')}을 관측 목록에 추가했습니다.`);if(visited.size===classificationUnlockCount)setTimeout(()=>showToast(`관측 ${entityName} ${classificationUnlockCount}개 확보 · 나의 분류 활동이 열렸습니다!`),700)}
         else if(newlyDiscovered.length&&started)showToast(`✦ 새 ${entityName} 발견: ${newlyDiscovered.map(galaxy=>galaxy.name).join(', ')}`);
@@ -1185,7 +1225,7 @@
       window.addEventListener('resize',resize,{passive:true});window.addEventListener('orientationchange',()=>setTimeout(resize,120),{passive:true});
 
       const requestedClass=searchParams.get('class');if(requestedClass)el('classCodeInput').value=requestedClass.toUpperCase().slice(0,6);
-      document.addEventListener('visibilitychange',()=>{if(document.hidden)saveClassroom();else{void loadScoreboard();void syncFlight()}});window.addEventListener('pagehide',saveClassroom);
+      document.addEventListener('visibilitychange',()=>{if(document.hidden){saveClassroom();keys.clear()}else{void loadScoreboard();void actionQueue?.flush();void refreshTeacher()}});window.addEventListener('online',()=>{void loadScoreboard();void actionQueue?.flush()});window.addEventListener('pagehide',saveClassroom);
       buildParticles();buildNavigationStars();buildBeacons();buildLandmarks();buildVisitors();buildRadar();bindNavigation();bindTouchJoysticks();bindPanelSwipe();resize();render();updateRadar();void restoreClassroom();requestAnimationFrame(drawScene);
     })();
   </script>
