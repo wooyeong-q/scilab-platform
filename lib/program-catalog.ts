@@ -27,6 +27,11 @@ function compareSubjects(a: string, b: string): number {
     || a.localeCompare(b, 'ko');
 }
 
+function manualOrder(program: Program): number {
+  return typeof program.sortOrder === 'number' && Number.isFinite(program.sortOrder)
+    ? program.sortOrder : Number.MAX_SAFE_INTEGER;
+}
+
 export function groupPrograms(programs: readonly Program[]): ProgramGroup[] {
   const groups = new Map<string, Program[]>();
   for (const program of programs) {
@@ -35,7 +40,8 @@ export function groupPrograms(programs: readonly Program[]): ProgramGroup[] {
     if (group) group.push(program);
     else groups.set(name, [program]);
   }
-  return [...groups].sort(([a], [b]) => compareSubjects(a, b))
+  return [...groups].sort(([a, ap], [b, bp]) =>
+    Math.min(...ap.map(manualOrder)) - Math.min(...bp.map(manualOrder)) || compareSubjects(a, b))
     .map(([name, items]) => ({ name, programs: items }));
 }
 
@@ -49,6 +55,8 @@ export function selectPrograms(
       .join(' ').normalize('NFKC').toLocaleLowerCase('ko');
     return words.every(word => text.includes(word));
   }).sort((a, b) => {
+    const savedOrder = sort === 'recommended' ? manualOrder(a) - manualOrder(b) : 0;
+    if (savedOrder) return savedOrder;
     const metric = sort === 'views'
       ? (b.viewCount || 0) - (a.viewCount || 0)
       : sort === 'popular'

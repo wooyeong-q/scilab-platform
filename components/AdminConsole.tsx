@@ -1,8 +1,9 @@
 'use client';
 
-import { useEffect, useState } from 'react';
-import { LogOut, PencilLine, Save, Trash2, Check, X, Eye, Play, Heart } from 'lucide-react';
+import { useCallback, useEffect, useState } from 'react';
+import { LogOut, Save, Check, X } from 'lucide-react';
 import { ProgramAssetEditor } from './ProgramAssetEditor';
+import { ProgramOrderList } from './ProgramOrderList';
 import type { Program } from '@/lib/programs';
 
 type Submission = { id:string; title:string; author:string; url:string; category:string; grade:string; summary:string; tags:string[]; status:string; createdAt:string };
@@ -17,24 +18,26 @@ export function AdminConsole() {
   const [tagInput,setTagInput]=useState('');
   const [uploading,setUploading]=useState(false);
   const [saving,setSaving]=useState(false);
-  function closeEdit(){if(uploading||saving)return;setEditing(null);setTagInput('');setError('');}
+  const [ordering,setOrdering]=useState(false);
+  const [usageInput,setUsageInput]=useState('');
+  function closeEdit(){if(uploading||saving)return;setEditing(null);setTagInput('');setUsageInput('');setError('');}
   function moveAsset(id:string,direction:number){setEditing(current=>{if(!current)return current;const assets=[...(current.assets||[])];const index=assets.findIndex(asset=>asset.id===id);if(index<0)return current;let target=index+direction;while(target>=0&&target<assets.length&&assets[target].kind!==assets[index].kind)target+=direction;if(target<0||target>=assets.length)return current;[assets[index],assets[target]]=[assets[target],assets[index]];return {...current,assets};});}
 
-  async function load(){const response=await fetch('/api/admin/data',{cache:'no-store'});if(response.status===401){setAuthenticated(false);return;}const data=await response.json();if(!response.ok){setError(data.error||'불러오지 못했습니다.');setAuthenticated(false);return;}setPrograms(data.programs);setSubmissions(data.submissions);setAuthenticated(true);}
-  useEffect(()=>{load();},[]);
+  const load=useCallback(async()=>{const response=await fetch('/api/admin/data',{cache:'no-store'});if(response.status===401){setAuthenticated(false);return;}const data=await response.json();if(!response.ok){setError(data.error||'불러오지 못했습니다.');setAuthenticated(false);return;}setPrograms(data.programs);setSubmissions(data.submissions);setAuthenticated(true);},[]);
+  useEffect(()=>{void load();},[load]);
   async function login(e:React.FormEvent){e.preventDefault();setError('');const r=await fetch('/api/admin/login',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({password})});const d=await r.json();if(!r.ok){setError(d.error);return;}setPassword('');load();}
   async function logout(){await fetch('/api/admin/logout',{method:'POST'});setAuthenticated(false);}
   async function review(id:string,action:'approve'|'reject'){setError('');const response=await fetch(`/api/admin/submissions/${id}`,{method:'PATCH',headers:{'Content-Type':'application/json'},body:JSON.stringify({action})});const data=await response.json().catch(()=>({}));if(!response.ok){setError(data.error||'처리하지 못했습니다.');return;}await load();}
   async function removeProgram(id:string){if(!confirm('이 프로그램을 삭제할까요?'))return;setError('');const response=await fetch(`/api/admin/programs/${id}`,{method:'DELETE'});const data=await response.json().catch(()=>({}));if(!response.ok){setError(data.error||'삭제하지 못했습니다.');return;}setPrograms((current)=>current.filter((program)=>program.id!==id));await load();}
-  function startEdit(program:Program){setError('');setEditing({...program});setTagInput(program.tags.join(', '));}
+  function startEdit(program:Program){setError('');setEditing({...program});setTagInput(program.tags.join(', '));setUsageInput((program.usageSteps||[]).join('\n'));}
   async function save(e:React.FormEvent){
     e.preventDefault();if(!editing||uploading||saving)return;setError('');setSaving(true);
     try{
       const tags=Array.from(new Set(tagInput.split(',').map((tag)=>tag.trim()).filter(Boolean)));
-      const response=await fetch(`/api/admin/programs/${editing.id}`,{method:'PATCH',headers:{'Content-Type':'application/json'},body:JSON.stringify({...editing,tags})});
+      const response=await fetch(`/api/admin/programs/${editing.id}`,{method:'PATCH',headers:{'Content-Type':'application/json'},body:JSON.stringify({...editing,tags,usageSteps:usageInput.split('\n').map(step=>step.trim()).filter(Boolean)})});
       const data=await response.json().catch(()=>({}));
       if(!response.ok)throw new Error(data.error||'저장하지 못했습니다.');
-      setEditing(null);setTagInput('');await load();
+      setEditing(null);setTagInput('');setUsageInput('');await load();
     }catch(error){setError(error instanceof Error?error.message:'저장하지 못했습니다. 다시 시도해 주세요.');}
     finally{setSaving(false);}
   }
@@ -44,16 +47,17 @@ export function AdminConsole() {
 
   return <>
     {error&&<div className="adminNotice" style={{color:'#dc2626'}}>{error}</div>}
-    <div style={{display:'flex',justifyContent:'flex-end',marginBottom:16}}><button className="saveButton" onClick={logout}><LogOut size={16}/> 로그아웃</button></div>
+    <div style={{display:'flex',justifyContent:'flex-end',marginBottom:16}}><button className="saveButton" disabled={ordering} onClick={logout}><LogOut size={16}/> 로그아웃</button></div>
     <h2>등록 제안</h2>
-    <section className="adminList">{submissions.length===0?<div className="adminNotice">대기 중인 제안이 없습니다.</div>:submissions.map((item)=><article className="adminCard" key={item.id}><div className="adminIcon">🧪</div><div className="adminInfo"><span>{item.status} · {item.category} · {item.grade}</span><h2>{item.title}</h2><p>{item.author} · {item.summary}</p></div><div className="adminActions">{item.status==='pending'&&<><button onClick={()=>review(item.id,'approve')}><Check size={16}/> 승인</button><button className="danger" onClick={()=>review(item.id,'reject')}><X size={16}/> 반려</button></>}</div></article>)}</section>
+    <section className="adminList">{submissions.length===0?<div className="adminNotice">대기 중인 제안이 없습니다.</div>:submissions.map((item)=><article className="adminCard" key={item.id}><div className="adminIcon">🧪</div><div className="adminInfo"><span>{item.status} · {item.category} · {item.grade}</span><h2>{item.title}</h2><p>{item.author} · {item.summary}</p></div><div className="adminActions">{item.status==='pending'&&<><button disabled={ordering} onClick={()=>review(item.id,'approve')}><Check size={16}/> 승인</button><button className="danger" disabled={ordering} onClick={()=>review(item.id,'reject')}><X size={16}/> 반려</button></>}</div></article>)}</section>
     <h2 style={{marginTop:38}}>공개 프로그램</h2>
-    <section className="adminList">{programs.map((program)=><article className="adminCard" key={program.id}><div className="adminIcon">{program.icon}</div><div className="adminInfo"><span>{program.category} · {program.grade}</span><h2>{program.title}</h2><a href={program.url} target="_blank" rel="noreferrer">{program.url}</a><div className="adminStats"><span><Eye size={13}/> 조회 {program.viewCount||0}</span><span><Play size={13}/> 실행 {program.launchCount||0}</span><span><Heart size={13}/> 추천 {program.likeCount||0}</span></div></div><div className="adminActions"><button onClick={()=>startEdit(program)}><PencilLine size={16}/> 수정</button><button className="danger" onClick={()=>removeProgram(program.id)}><Trash2 size={16}/> 삭제</button></div></article>)}</section>
+    <ProgramOrderList programs={programs} onEdit={startEdit} onRemove={removeProgram} onReload={load} onBusyChange={setOrdering}/>
     {editing&&<div className="modalBackdrop" onMouseDown={closeEdit}><form className="editModal" onSubmit={save} onMouseDown={(e)=>e.stopPropagation()}><div className="modalHeader"><div><span>EDIT PROGRAM</span><h2>{editing.title}</h2></div><button type="button" disabled={uploading||saving} onClick={closeEdit} aria-label="닫기">×</button></div>
       <label>프로그램 이름<input value={editing.title} onChange={(e)=>setEditing({...editing,title:e.target.value})} required/></label>
       <label>실행 주소<input type="url" value={editing.url} onChange={(e)=>setEditing({...editing,url:e.target.value})} required/></label>
       <label>목록용 짧은 소개<textarea value={editing.summary} onChange={(e)=>setEditing({...editing,summary:e.target.value})} required/></label>
       <label>프로그램 설명<textarea value={editing.description} onChange={(e)=>setEditing({...editing,description:e.target.value})} required/></label>
+      <label>사용법<textarea className="usageStepsEditor" value={usageInput} onChange={event=>setUsageInput(event.target.value)} placeholder="한 줄에 한 단계씩 입력하세요."/><small style={{color:'#667085',fontWeight:500}}>한 줄을 한 단계로 표시합니다. 최대 12단계까지 작성할 수 있습니다.</small></label>
       <ProgramAssetEditor key={editing.id} programId={editing.id} assets={editing.assets||[]} disabled={uploading||saving} onBusy={setUploading}
         onAdd={asset=>setEditing(current=>current?{...current,assets:[...(current.assets||[]),asset]}:current)}
         onRemove={id=>setEditing(current=>current?{...current,assets:(current.assets||[]).filter(asset=>asset.id!==id)}:current)} onMove={moveAsset}/>

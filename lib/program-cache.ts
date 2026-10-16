@@ -3,8 +3,8 @@ import { getPrograms as readPrograms, getProgram as readProgram } from './db';
 
 // Cache only the public catalog. Admin data and classroom state stay live.
 const options = { revalidate: 60, tags: ['programs'] };
-export const getPrograms = unstable_cache(readPrograms, ['public-programs-v2'], options);
-export const getProgram = unstable_cache(readProgram, ['public-program-v2'], options);
+export const getPrograms = unstable_cache(readPrograms, ['public-programs-v3'], options);
+export const getProgram = unstable_cache(readProgram, ['public-program-v3'], options);
 
 export function revalidatePrograms() {
   revalidateTag('programs');

@@ -8,7 +8,7 @@ test('the complete deployment command performs no program registration or catalo
  const resolve=command=>command.replace(/npm run ([\w:-]+)/g,(_,name)=>resolve(pkg.scripts[name]||''));
  const command=resolve(pkg.scripts.build);
  assert.match(command,/next build/);
- assert.doesNotMatch(command,/register-|retire-|catalog:register|seed/i);
+ assert.doesNotMatch(command,/register-|retire-|catalog:register|seed|update-catalog|apply-guides/i);
  // Additive schema changes may run, but catalog content cannot be changed by them.
  const statements=fs.readFileSync('scripts/schema.sql','utf8').replace(/^--.*$/gm,'').split(';').map(s=>s.trim()).filter(Boolean);
  assert.ok(statements.every(s=>/^(CREATE (TABLE|INDEX) IF NOT EXISTS|ALTER TABLE \w+ ADD COLUMN IF NOT EXISTS)\b/.test(s)));

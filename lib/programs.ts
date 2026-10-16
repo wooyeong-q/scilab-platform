@@ -4,6 +4,8 @@ import type { ProgramAsset } from './program-assets';
 
 export type Program = {
   assets?: ProgramAsset[];
+  sortOrder?: number | null;
+  usageSteps?: string[];
   id: string;
   title: string;
   summary: string;

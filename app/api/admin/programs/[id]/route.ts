@@ -16,6 +16,13 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ id
   if (!title) return NextResponse.json({ error: '프로그램 이름을 입력해 주세요.' }, { status: 400 });
 
   await ensureDatabase();
+  let usageJson: string | null = null;
+  if (body.usageSteps !== undefined) {
+    if (!Array.isArray(body.usageSteps) || body.usageSteps.length > 12 || body.usageSteps.some((step: unknown) => typeof step !== 'string' || step.length > 800)) {
+      return NextResponse.json({ error: '사용법은 단계당 800자, 최대 12단계까지 입력해 주세요.' }, { status: 400 });
+    }
+    usageJson = JSON.stringify(body.usageSteps.map((step: string) => step.trim()).filter(Boolean));
+  }
   let assetJson: string | null = null;
   if (body.assets !== undefined) {
     if (!Array.isArray(body.assets) || body.assets.length > MAX_ASSETS) return NextResponse.json({ error: `이미지와 첨부파일은 합쳐서 ${MAX_ASSETS}개까지 등록할 수 있습니다.` }, { status: 400 });
@@ -34,7 +41,8 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ id
       duration=${String(body.duration || '수업에 따라')}, format=${String(body.format || '웹 프로그램')},
       worksheet_url=${String(body.worksheetUrl || '')}, ppt_url=${String(body.pptUrl || '')},
       video_url=${String(body.videoUrl || '')}, source_url=${String(body.sourceUrl || '')},
-      guide_url=${String(body.guideUrl || '')}, assets=COALESCE(${assetJson}::jsonb,assets), updated_at=NOW()
+      guide_url=${String(body.guideUrl || '')}, assets=COALESCE(${assetJson}::jsonb,assets),
+      usage_steps=COALESCE(${usageJson}::jsonb,usage_steps), updated_at=NOW()
     WHERE id=${id} AND deleted_at IS NULL
     RETURNING id
   `;

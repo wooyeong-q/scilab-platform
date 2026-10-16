@@ -54,7 +54,7 @@ export function ProgramExplorer({ programs }: { programs: Program[] }) {
         </div>
         <label className="catalogSort">정렬
           <select value={sort} onChange={event => setSort(event.target.value as CatalogSort)}>
-            <option value="recommended">분야별 · 추천순</option>
+            <option value="recommended">기본순</option>
             <option value="popular">추천 많은 순</option>
             <option value="views">조회 많은 순</option>
           </select>

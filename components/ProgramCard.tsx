@@ -37,7 +37,7 @@ export function ProgramCard({ program }: { program: Program }) {
           <span><Eye size={13} aria-hidden="true"/><span className="catalogSrOnly">조회 </span>{(program.viewCount || 0).toLocaleString('ko-KR')}</span>
           <span><Heart size={13} aria-hidden="true"/><span className="catalogSrOnly">추천 </span>{(program.likeCount || 0).toLocaleString('ko-KR')}</span>
         </span>
-        <span className="catalogCardAction">자세히 보기 <ArrowUpRight size={15} aria-hidden="true"/></span>
+        <span className="catalogCardAction">설명·사용법 <ArrowUpRight size={15} aria-hidden="true"/></span>
       </div>
     </article>
   </Link>;
