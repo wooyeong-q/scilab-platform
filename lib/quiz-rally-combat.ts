@@ -75,7 +75,7 @@ export class QuizWorldFeed{
   const previous=new Map(this.effectRevision===(room.arenaRevision||0)?this.previous:[]);
   for(const t of times){
    const poses=players.map(p=>{const prior=previous.get(p.id),r=sampleRunner(p.runner,t,arena,effects,p.id,prior),pose=runnerPose(r,arena,prior);previous.set(p.id,r);return {id:p.id,pose};});
-   for(let i=0;i<poses.length;i+=20)messages.push({type:'world',code:this.code,roomRevision:room.metaRevision,arenaRevision,at:t,through:at,players:poses.slice(i,i+20)});
+   for(let i=0;i<poses.length;i+=20)messages.push({type:'world',code:this.code,roomRevision:room.metaRevision,arenaRevision,at:t,through:at,serverAt:now,players:poses.slice(i,i+20)});
   }
   const payloads=messages.map(message=>JSON.stringify(message)).map(message=>Buffer.byteLength(message)<7900?message:JSON.stringify({type:'refresh'}));
   const saved=await this.query(`WITH committed AS (

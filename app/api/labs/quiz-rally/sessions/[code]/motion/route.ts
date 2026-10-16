@@ -4,10 +4,11 @@ import { quizBody,quizFailure,quizIdentity } from '@/lib/quiz-rally-http';
 export const runtime='nodejs';
 export const dynamic='force-dynamic';
 export async function POST(request:Request,context:{params:Promise<{code:string}>}){
+  const started=performance.now();
   try{
     const body=await quizBody(request);let inputs;
     try{inputs=motionInputs(body.inputs);}catch{throw new QuizError('이동 입력을 확인해 주세요.');}
     await publishQuizMotion((await context.params).code,quizIdentity(request),inputs,body.roomRevision as number,body.arenaRevision as number);
-    return new Response(null,{status:204,headers:{'Cache-Control':'no-store'}});
+    return new Response(null,{status:204,headers:{'Cache-Control':'no-store','Server-Timing':`motion;dur=${(performance.now()-started).toFixed(1)}`}});
   }catch(error){return quizFailure(error);}
 }
