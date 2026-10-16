@@ -6,7 +6,7 @@ import { QuizError } from './quiz-rally-errors';
 import { QuizWorldFeed } from './quiz-rally-combat';
 import { robotFor, validateRobot, type RobotParts } from './quiz-rally-robot';
 import { advance, capsuleAt, freshRacer, gameClock, CHARGE, type Course, type Racer } from './quiz-rally-course';
-import { advanceRunner, control, freshRunner,raceLength, couldFinish, missileDirection, boxes, boxWait, BOX_RESPAWN, GEAR_NAMES, ENERGY_CHARGE, energyValue,withHistory,acceptedRunner,sampleRunner,runnerState,recordRunnerPatch,trimRunnerHistory, type Arena, type Runner, type Gear, type Effect,type ArenaInput } from './quiz-rally-arena';
+import { advanceRunner, control, freshRunner,raceLength, missileDirection, boxes, boxWait, BOX_RESPAWN, GEAR_NAMES, ENERGY_CHARGE, energyValue,withHistory,acceptedRunner,sampleRunner,runnerState,recordRunnerPatch,trimRunnerHistory, type Arena, type Runner, type Gear, type Effect,type ArenaInput } from './quiz-rally-arena';
 export { QuizError } from './quiz-rally-errors';
 
 type Phase = 'lobby' | 'running' | 'paused' | 'ended';
@@ -131,7 +131,7 @@ function publicTurn(p:Player,q:CustomQuestion,code:string){const revealed=p.turn
   feedback:p.turn.answered?{correct:p.turn.correct,selected:p.turn.selected,...(revealed?{correctOption:p.turn.order.indexOf(q.answer),explanation:q.explanation}:{}),points:p.runner?undefined:p.turn.points}:null,
   finishBonus:p.runner?undefined:p.turn.finishBonus||0,needsReward:p.turn.answered&&p.turn.correct&&!p.turn.reward,reward:p.turn.reward,
 };}
-function publicPlayer(p:Player,q:CustomQuestion,code:string,review:unknown[]=[]){return {review,runner:p.runner||null,gear:p.gear||[],answerAt:p.answerAt||0,racer:p.racer||null,finish:p.finish||null,id:p.id,nickname:p.nickname,avatar:avatarFor(p),robot:robotFor(p.robot,avatarFor(p)),score:p.runner?undefined:p.score,correct:p.correct,attempted:p.attempted,inventory:p.runner?undefined:p.inventory,boostActive:p.boostActive,shieldActive:p.shieldActive,protectedUntil:p.protectedUntil,turn:publicTurn(p,q,code),notice:p.notice,noticeId:p.noticeId};}
+function publicPlayer(p:Player,q:CustomQuestion,code:string,review:unknown[]=[]){return {review,version:p.version,runner:p.runner||null,gear:p.gear||[],answerAt:p.answerAt||0,racer:p.racer||null,finish:p.finish||null,id:p.id,nickname:p.nickname,avatar:avatarFor(p),robot:robotFor(p.robot,avatarFor(p)),score:p.runner?undefined:p.score,correct:p.correct,attempted:p.attempted,inventory:p.runner?undefined:p.inventory,boostActive:p.boostActive,shieldActive:p.shieldActive,protectedUntil:p.protectedUntil,turn:publicTurn(p,q,code),notice:p.notice,noticeId:p.noticeId};}
 
 export async function createQuizRoom(body:Record<string,unknown>){
   const duration=Number(body.durationSeconds??900);assert([300,480,600,900].includes(duration),'게임 시간을 다시 선택해 주세요.');
@@ -194,7 +194,7 @@ export async function getQuizSnapshot(code:string,identity:QuizIdentity){
   if(row.room.course&&(row.ranking as Array<{racer?:Racer;finish?:Finish}>).some(p=>p.racer&&!p.finish&&advance(p.racer,gameClock(row.room),row.room.course).finishAt!==undefined)){
     await settleCourse(code);row=(await query(`SELECT ${snapshotColumns} FROM quiz_rally_sessions WHERE code=$1 AND expires_at>NOW()`,[code,identity.playerId||'']))[0];
   }
-  if(row.room.arena&&(row.ranking as Array<{runner?:Runner;finish?:Finish;id:string}>).some(p=>p.runner&&!p.finish&&couldFinish(p.runner,gameClock(row.room),row.room.arena)&&advanceRunner(p.runner,gameClock(row.room),row.room.arena,row.room.arenaEffects||[],p.id).finishAt!==undefined)){
+  if(row.room.arena&&(row.ranking as Array<{runner?:Runner;finish?:Finish;id:string}>).some(p=>p.runner&&!p.finish&&p.runner.finishAt!==undefined)){
     await settleArena(code);row=(await query(`SELECT ${snapshotColumns} FROM quiz_rally_sessions WHERE code=$1 AND expires_at>NOW()`,[code,identity.playerId||'']))[0];
   }
   return snapshotFromRow(row,identity);
@@ -217,7 +217,7 @@ async function snapshotFromRow(r:Record<string,any>,identity:QuizIdentity){
     }
   }
   const now=Date.now(),ranking=(r.ranking as Array<{id:string;nickname:string;avatar?:number;robot?:RobotParts;activity:string;racer?:Racer;runner?:Runner;finish?:Finish;score:number;correct:number;attempted:number;shield:boolean;protectedUntil:number}>).map(p=>({...p,avatar:avatarFor(p),robot:robotFor(p.robot,avatarFor(p))})).sort((a,b)=>b.score-a.score||b.correct-a.correct||a.nickname.localeCompare(b.nickname,'ko'));
-  if(room.arena){const positions=new Map(ranking.map(p=>[p.id,phase(room,now)==='ended'?advanceRunner(p.runner!,gameClock(room,now),room.arena!,room.arenaEffects||[],p.id).y:p.runner!.y]));ranking.sort((a,b)=>{if(a.finish||b.finish)return(a.finish?.place||999)-(b.finish?.place||999);return positions.get(b.id)!-positions.get(a.id)!||a.nickname.localeCompare(b.nickname,'ko');});}
+  if(room.arena){const positions=new Map(ranking.map(p=>[p.id,advanceRunner(p.runner!,gameClock(room,now),room.arena!,room.arenaEffects||[],p.id).y]));ranking.sort((a,b)=>{if(a.finish||b.finish)return(a.finish?.place||999)-(b.finish?.place||999);return positions.get(b.id)!-positions.get(a.id)!||a.nickname.localeCompare(b.nickname,'ko');});}
   const review=[];if(identity.role==='student'&&phase(room,now)==='ended'){
     const ids=Object.entries(p!.stats).filter(([,v])=>v[0]>v[1]).slice(0,6).map(([id])=>id);
     const custom=room.questionIds&&ids.length?await query(`SELECT value AS q FROM quiz_rally_sessions,jsonb_each(question_bank) WHERE code=$1 AND key=ANY($2::text[])`,[code,ids]):[];
@@ -259,7 +259,7 @@ function modifyArena(room:Room,p:Player,body:Record<string,unknown>,q:CustomQues
   p.runner=withHistory(p.runner);
   const now=gameClock(room),action=body.action;
   if(action==='arena-input'||((action==='arena-collect'||action==='arena-use')&&Array.isArray(body.inputs))){
-    const batch=Array.isArray(body.inputs)?body.inputs:[body];assert((batch.length>0||action!=='arena-input')&&batch.length<=24,'조작 값을 확인해 주세요.');
+    const batch=Array.isArray(body.inputs)?body.inputs:[body];assert((batch.length>0||action!=='arena-input')&&batch.length<=(action==='arena-use'?96:24),'조작 값을 확인해 주세요.');
     let last=-1;
     for(const value of batch){assert(value&&typeof value==='object'&&!Array.isArray(value),'조작 값을 확인해 주세요.');const input=value as Record<string,unknown>;
       const dx=Number(input.dx),dy=Number(input.dy),seq=Number(input.seq);assert(Number.isFinite(dx)&&Number.isFinite(dy)&&Math.abs(dx)<=1&&Math.abs(dy)<=1&&Number.isSafeInteger(seq)&&seq>=0&&seq>last,'조작 값을 확인해 주세요.');last=seq;
@@ -271,8 +271,8 @@ function modifyArena(room:Room,p:Player,body:Record<string,unknown>,q:CustomQues
     // New inputs may already have happened while this response is in flight.
     // Advancing this anchor to `now` would push those inputs (including jumps)
     // into the future on the next request and repeatedly rewind the client.
-    // Snapshots and arrival settlement still project the runner to current time.
-    if(action==='arena-input')return;
+    // Rendering may project ahead; finish settlement uses confirmed controls.
+    if(action==='arena-input'||p.runner.finishAt!==undefined)return;
   }
   // Item/popup actions share the input timeline, including when they waited
   // behind another request. Keep validation/cooldown time authoritative.
@@ -318,6 +318,7 @@ function modifyArena(room:Room,p:Player,body:Record<string,unknown>,q:CustomQues
   if(action==='reveal'){assert(r.open&&body.nonce===p.turn.nonce&&p.turn.answered&&!p.turn.correct,'해설을 볼 문제를 확인해 주세요.',409);p.turn.revealed=true;return;}
   if(action==='arena-use'){
     assert(!r.open&&!r.fallUntil,'코스에서 아이템을 사용해 주세요.',409);assert(now-(p.useAt??-5000)>=900,'잠시 뒤 다음 아이템을 사용해 주세요.',409);
+    if(body.gear!==undefined)assert(body.gear===(p.gear||[]).join(','),'아이템이 바뀌었어요. 가방을 다시 확인해 주세요.',409);
     const slot=Number(body.slot);assert(Number.isInteger(slot)&&slot>=0&&slot<(p.gear||[]).length,'아이템을 선택해 주세요.');const gear=p.gear![slot];
     if(gear==='shield')r.shieldUntil=actionClock+4000;
     else if(gear==='boost')r.boostUntil=actionClock+3000;
@@ -339,14 +340,23 @@ async function settleArena(code:string){
     const effects=room.arenaEffects||[],now=gameClock(room),waiting=effects.some(e=>e.shared&&!e.victim&&e.expires>(room.arenaCombatAt||0)&&e.born<=now),clock=waiting?Math.min(now,room.arenaCombatAt||0):now;
     const journals=await query('SELECT player_id,inputs FROM quiz_rally_motion_inputs WHERE code=$1',[code]);
     for(const journal of journals){const p=room.players[journal.player_id];if(p?.runner&&!p.removed&&!p.finish)p.runner=acceptedRunner(p.runner,journal.inputs,now,room.arena,effects,p.id);}
-    const project=(p:Player)=>waiting?sampleRunner(p.runner!,clock,room.arena!,effects,p.id):advanceRunner(p.runner!,clock,room.arena!,effects,p.id);
+    // Never award a finish from extrapolated held input: an unseen release may
+    // still be in flight. Only replay through the latest accepted control.
+    const project=(p:Player)=>sampleRunner(p.runner!,Math.min(clock,p.runner!.t),room.arena!,effects,p.id);
     const projected=Object.values(room.players).filter(p=>!p.removed&&!p.finish&&p.runner).map(p=>({p,r:project(p)}));
     // Resolve a trap to one victim before deriving the final arrival order.
     const hits=projected.flatMap(({p,r})=>r.hits.filter(h=>!p.runner!.usedEffects.includes(h.id)).map(h=>({...h,id:h.id,playerId:p.id}))).sort((a,b)=>a.t-b.t||a.playerId.localeCompare(b.playerId));
     for(const hit of hits){const e=effects.find(e=>e.id===hit.id);if(e&&!e.victim){e.victim=hit.playerId;e.hitAt=hit.t;}}
     const arrivals=projected.map(({p})=>({p,r:project(p)})).filter(x=>x.r.finishAt!==undefined).sort((a,b)=>a.r.finishAt!-b.r.finishAt!||a.p.id.localeCompare(b.p.id));if(!arrivals.length)return;
-    const winners=[...(room.finishers||[])],patch:Record<string,Player>={},params:unknown[]=[code,room.metaRevision,room.arenaRevision||0];let guards='';
-    for(const {p,r} of arrivals){params.push(p.id,p.version);guards+=` AND (state #>> ARRAY['players',$${params.length-1},'version'])::int=$${params.length}`;winners.push(p.id);p.runner={...r,open:false};p.finish={place:winners.length,bonus:0};p.version++;notice(p,`결승선 ${winners.length}등 통과!`);patch[p.id]=p;}
+    // A later upload can contain an earlier crossing. Sort confirmed arrivals
+    // together with existing finishers, not by HTTP response order.
+    const ordered=[...Object.values(room.players).filter(p=>p.finish&&p.runner?.finishAt!==undefined).map(p=>({p,r:p.runner!})),...arrivals]
+      .sort((a,b)=>a.r.finishAt!-b.r.finishAt!||a.p.id.localeCompare(b.p.id));
+    const winners=ordered.map(({p})=>p.id),patch:Record<string,Player>={},params:unknown[]=[code,room.metaRevision,room.arenaRevision||0];let guards='';
+    for(let i=0;i<ordered.length;i++){const {p,r}=ordered[i],place=i+1;if(p.finish?.place===place)continue;
+      params.push(p.id,p.version);guards+=` AND (state #>> ARRAY['players',$${params.length-1},'version'])::int=$${params.length}`;
+      p.runner={...r,open:false};p.finish={place,bonus:0};p.version++;notice(p,`결승선 ${place}등 통과!`);patch[p.id]=p;
+    }
     params.push(JSON.stringify(patch),JSON.stringify(winners),JSON.stringify(effects));
     const rows=await query(`UPDATE quiz_rally_sessions SET state=jsonb_set(jsonb_set(jsonb_set(state,'{players}',(state->'players') || $${params.length-2}::jsonb),'{finishers}',$${params.length-1}::jsonb),'{arenaEffects}',$${params.length}::jsonb) || jsonb_build_object('metaRevision',(state->>'metaRevision')::int+1,'arenaRevision',COALESCE((state->>'arenaRevision')::int,0)+1)
       WHERE code=$1 AND expires_at>NOW() AND (state->>'metaRevision')::int=$2 AND COALESCE((state->>'arenaRevision')::int,0)=$3 ${guards} RETURNING code,${arenaNotice()}`,params);if(rows.length)return;
@@ -456,7 +466,7 @@ export async function actQuizRoom(code:string,identity:QuizIdentity,body:Record<
     else assert(phase(room)==='running',phase(room)==='paused'?'선생님이 게임을 잠시 멈췄습니다.':'진행 중인 게임에서 사용할 수 있습니다.',409);
     if(room.course&&p.racer&&!p.finish){p.racer=advance(p.racer,gameClock(room),room.course);if(p.racer.finishAt!==undefined){await settleCourse(code);return getQuizSnapshot(code,identity);}}
     if(room.arena&&p.runner&&!p.finish&&row.motion_inputs?.length)p.runner=acceptedRunner(p.runner,row.motion_inputs,gameClock(room),room.arena,room.arenaEffects||[],p.id);
-    if(room.arena&&p.runner){if(p.finish&&body.action==='arena-input')return getQuizSnapshot(code,identity);if(!p.finish&&couldFinish(p.runner,gameClock(room),room.arena)&&advanceRunner(p.runner,gameClock(room),room.arena,room.arenaEffects||[],p.id).finishAt!==undefined){await settleArena(code);return getQuizSnapshot(code,identity);}}
+    if(room.arena&&p.runner){if(p.finish&&body.action==='arena-input')return getQuizSnapshot(code,identity);if(!p.finish&&p.runner.finishAt!==undefined){await settleArena(code);return getQuizSnapshot(code,identity);}}
     const priorArenaEffects=JSON.stringify(room.arenaEffects||[]);
     const oldVersion=p.version,target=body.action==='item'&&body.item==='steal'?room.players[String(body.targetId)]:undefined,targetVersion=target?.version;
     if(room.course&&target?.racer&&!target.finish&&advance(target.racer,gameClock(room),room.course).finishAt!==undefined){await settleCourse(code);continue;}
@@ -506,9 +516,9 @@ export async function actQuizRoom(code:string,identity:QuizIdentity,body:Record<
     statement+=arenaGuards;
     // A newer accepted fast input can advance the room watermark while this
     // older prefix is saved. The durable queue preserves that suffix for replay.
-    if(room.arena&&p.runner&&!customizing&&!row.motion_inputs?.length)statement+=` AND COALESCE((state->>'arenaCombatAt')::double precision,0)<=($3::jsonb #>> '{runner,t}')::double precision`;
+    if(room.arena&&p.runner&&p.runner.finishAt===undefined&&!customizing&&!row.motion_inputs?.length)statement+=` AND COALESCE((state->>'arenaCombatAt')::double precision,0)<=($3::jsonb #>> '{runner,t}')::double precision`;
     const result=await query(statement+' RETURNING '+snapshotColumns+','+arenaNotice(!arenaChanged&&!finishClaim&&!customizing,!finishClaim&&!customizing?effectDelta:''),params);
-    if(result.length)return snapshotFromRow(result[0],identity);
+    if(result.length){if(room.arena&&p.runner?.finishAt!==undefined&&!p.finish){await settleArena(code);return getQuizSnapshot(code,identity);}return snapshotFromRow(result[0],identity);}
   }
   throw new QuizError('동시에 요청이 많습니다. 같은 동작을 다시 시도해 주세요.',409);
 }

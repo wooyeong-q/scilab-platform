@@ -104,5 +104,18 @@ class RemoteTrack{
   return {...target,...this.visual};
  }
 }
-window.quizArenaSync={Keyboard,Timeline,RemoteTrack,reconcile};
+// The input save and an urgent item can finish in either order. A late
+// response must never restore spent gear or rewind anyone's accepted controls.
+function mergeSnapshot(previous,next){
+ if(!previous||previous.code!==next.code)return next;
+ if((next.roomRevision||0)<(previous.roomRevision||0))return null;
+ const merged={...next};
+ if((previous.arenaRevision||0)>(next.arenaRevision||0)){merged.arenaRevision=previous.arenaRevision;merged.arenaEffects=previous.arenaEffects;}
+ const peers=new Map(previous.ranking.map(p=>[p.id,p]));
+ merged.ranking=next.ranking.map(p=>(peers.get(p.id)?.version||0)>(p.version||0)?peers.get(p.id):p);
+ if(previous.player?.id===next.player?.id&&(previous.player?.version||0)>(next.player?.version||0))merged.player=previous.player;
+ return merged;
+}
+function orderPlayers(players){return players.sort((a,b)=>a.p.finish||b.p.finish?(a.p.finish?.place||999)-(b.p.finish?.place||999):b.shown.y-a.shown.y||a.p.nickname.localeCompare(b.p.nickname,'ko'));}
+window.quizArenaSync={Keyboard,Timeline,RemoteTrack,reconcile,mergeSnapshot,orderPlayers};
 })();
