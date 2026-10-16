@@ -39,15 +39,15 @@ test('server validation errors are preserved and do not become duplicate HTTP ac
   socket.event({type:'error',id:sent.id,status:409,error:'아이템이 바뀌었습니다.'});await assert.rejects(reply,e=>e.status===409);assert.equal(h.fetches.length,0);
  }finally{h.live.stop();}
 });
-test('reconnect restores its snapshot before replaying a 96-event input backlog as one message',()=>{
+test('reconnect restores its snapshot before compacting a 96-event backlog to jumps and latest movement',()=>{
  const h=client();try{
   const socket=h.sockets[0];socket.open();socket.event({type:'ready'});
   assert.equal(h.live.ready,false,'unacknowledged old inputs must wait for the snapshot');
   socket.event({type:'snapshot',data:{code:'ABC234'}});assert.equal(h.live.ready,true);
   const inputs=Array.from({length:96},(_,i)=>({seq:i+1,at:4000+i,dx:0,dy:i<95?1:0,jump:i===70,dash:false}));
   assert.equal(h.live.sendInputs(inputs,{roomRevision:3,arenaRevision:0}),true);
-  const sent=socket.sent.filter(e=>e.type==='input');assert.equal(sent.length,1);assert.equal(sent[0].inputs.length,96);
-  assert.equal(sent[0].inputs[70].jump,true);assert.equal(sent[0].inputs.at(-1).dy,0);
+  const sent=socket.sent.filter(e=>e.type==='input');assert.equal(sent.length,1);assert.equal(sent[0].inputs.length,2);assert.deepEqual(sent[0].inputs.map(e=>e.seq),[71,96]);
+  assert.equal(sent[0].inputs[0].jump,true);assert.equal(sent[0].inputs.at(-1).dy,0);
  }finally{h.live.stop();}
 });
 test('temporary socket backpressure queues controls without disconnecting and retains jump/release',async()=>{

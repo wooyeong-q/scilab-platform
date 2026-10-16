@@ -150,7 +150,7 @@ function liveMotion(event){
   return true;
  }
  if(event.roomRevision!==state.roomRevision||event.arenaRevision>state.arenaRevision||event.type==='motion'&&event.status!==state.status)return false;
- if(event.type==='world'){for(const entry of event.players||[])if(entry.id!==state.player?.id){const track=remoteTracks.get(entry.id);if(track)track.pushPose(entry.pose,clock(),[],event.through??event.at);}return true;}
+ if(event.type==='world'){for(const entry of event.players||[])if(entry.id!==state.player?.id){const track=remoteTracks.get(entry.id);if(track)track.pushPose(entry.pose,clock(),[],event.through??event.at,event.authoritative===true);}return true;}
  if(event.arenaRevision<state.arenaRevision)return true;
  if(event.id===state.player?.id)return true;
  const player=state.ranking.find(p=>p.id===event.id);if(!player)return false;

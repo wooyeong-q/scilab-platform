@@ -8,15 +8,15 @@ function hermite(a,b,va,vb,k,seconds){
 }
 class PoseTrack{
  constructor(){this.clear();}
- clear(){this.samples=[];this.offset=null;this.cursor=null;this.clock=null;this.arrival=-Infinity;this.visual=null;this.cadence=null;this.jitter=0;this.delay=140;this.sealed=false;this.batch=null;this.batchArrival=null;}
- push(pose,clock,through){
+ clear(){this.samples=[];this.offset=null;this.cursor=null;this.clock=null;this.arrival=-Infinity;this.visual=null;this.cadence=null;this.jitter=0;this.delay=140;this.sealed=false;this.authoritative=false;this.batch=null;this.batchArrival=null;}
+ push(pose,clock,through,authoritative=false){
   if(!Array.isArray(pose)||pose.length!==13||!pose.every(Number.isFinite))return false;
   const [t,x,y,z,vx,vy,vz,fx,fy,flags,seq,falls,jumpAt]=pose,last=this.samples.at(-1);
   if(last&&(t<=last.t||seq<last.seq))return false;
   const settled=Number.isFinite(through),newBatch=settled&&through!==this.batch;
-  if(newBatch){this.sealed=true;const spacing=this.batchArrival===null?0:clock-this.batchArrival;
-   if(spacing>20&&spacing<2500){this.cadence=this.cadence===null?spacing:this.cadence+(spacing-this.cadence)*.2;this.jitter+=(Math.abs(spacing-this.cadence)-this.jitter)*.15;this.delay=clamp(this.cadence*1.1+40+this.jitter*2,250,1400);}
-   else if(this.batchArrival===null)this.delay=400;
+  if(newBatch){this.sealed=true;this.authoritative=authoritative;const spacing=this.batchArrival===null?0:clock-this.batchArrival;
+   if(spacing>20&&spacing<2500){this.cadence=this.cadence===null?spacing:this.cadence+(spacing-this.cadence)*.2;this.jitter+=(Math.abs(spacing-this.cadence)-this.jitter)*.15;this.delay=clamp(this.cadence*1.1+40+this.jitter*2,authoritative?140:250,authoritative?500:1400);}
+   else if(this.batchArrival===null)this.delay=authoritative?180:400;
    this.batch=through;this.batchArrival=clock;
   }
   if(last&&!settled){const spacing=t-last.t,moving=Math.hypot(vx,vy,vz,last.vx,last.vy,last.vz)>.1;
@@ -51,7 +51,7 @@ class PoseTrack{
   if(at<a.t)target={...a};
   else if(b){
    const before=this.samples[this.samples.indexOf(b)-1],seconds=(b.t-before.t)/1000,k=clamp((at-before.t)/(b.t-before.t),0,1);
-   const respawn=(before.flags&4)&&!(b.flags&4);
+   const respawn=b.falls>before.falls||(before.flags&4)&&!(b.flags&4);
    target={...before,t:at};
    if(!respawn){for(const [key,velocity] of [['x','vx'],['y','vy']])target[key]=hermite(before[key],b[key],before[velocity],b[velocity],k,seconds);
     target.z=before.z+(b.z-before.z)*k;
@@ -67,7 +67,9 @@ class PoseTrack{
    if(!(last.flags&4))target.z=Math.max(0,last.z+last.vz*Math.min(age,1)-340*Math.min(age,1)**2);
   }
   const previous=this.visual,respawn=previous&&(previous.flags&4)&&!(target.flags&4);
-  if(!previous||respawn||elapsed>2000)this.visual={...target};
+  // Settled server poses are already interpolated. A second low-pass filter
+  // would put the visible victim behind the projectile's collision timestamp.
+  if(this.authoritative||!previous||respawn||elapsed>2000)this.visual={...target};
   else{
    const dt=Math.min(80,elapsed),blend=1-Math.exp(-dt/35),dx=(target.x-previous.x)*blend,dy=(target.y-previous.y)*blend;
    const distance=Math.hypot(dx,dy),limit=((target.flags&16)?580:335)*dt/1000,k=Math.min(1,limit/(distance||1));

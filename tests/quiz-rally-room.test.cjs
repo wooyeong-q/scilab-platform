@@ -121,3 +121,13 @@ test('30 participants simulate 20 Hz and broadcast together with zero database o
  assert.equal(frames,300);assert.ok(elapsed<15000,`30-second simulation took ${elapsed.toFixed(0)} ms`);
  console.log(JSON.stringify({players:30,simulatedSeconds:30,ticks:600,frames,elapsedMs:Math.round(elapsed),databaseCalls:0}));
 }));
+
+test('compacted jump batches are acknowledged once even when resent with an item request',()=>frozen(advance=>{
+ const {game,students,p}=fixture(1);p.gear=['shield'];
+ const inputs=[{seq:3,at:4000,dx:1,dy:1,jump:true,dash:true},{seq:120,at:4000,dx:0,dy:0,jump:false,dash:false}];
+ game.input(students[0],inputs,game.room.metaRevision);assert.equal(p.runner.jumpAt,4000);assert.equal(p.runner.seq,120);assert.equal(p.runner.dy,0);
+ advance(100);game.tick();const jumpAt=p.runner.jumpAt;
+ game.input(students[0],inputs,game.room.metaRevision);assert.equal(p.runner.jumpAt,jumpAt);assert.equal(p.runner.jumpQueuedUntil,0);
+ const command={action:'arena-use',slot:0,gear:'shield',inputs,requestId:randomUUID()};game.act(students[0],command);game.act(students[0],command);
+ const after=game.room.players[p.id];assert.equal(after.gear.length,0);assert.equal(after.runner.jumpAt,jumpAt);assert.equal(after.runner.seq,120);
+}));

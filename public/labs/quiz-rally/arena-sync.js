@@ -41,7 +41,7 @@ function reconcile(M,source,pending,clock,arena,effects,id){let r=source;for(con
 // their own simulation. A small bounded history absorbs uneven classroom polls.
 class RemoteTrack{
  constructor(){this.samples=[];this.interval=650;this.delay=650;this.cursor=null;this.clock=null;this.visual=null;this.prediction=null;this.live=false;this.poses=window.quizArenaMotion?new window.quizArenaMotion.PoseTrack():null;}
- pushPose(pose,clock,hits=[],through){if(this.poses?.push(pose,clock,through))this.hitHints=hits;}
+ pushPose(pose,clock,hits=[],through,authoritative=false){if(this.poses?.push(pose,clock,through,authoritative))this.hitHints=hits;}
  setLive(live){if(this.live===live)return;this.live=live;if(!live){if(!this.poses?.sealed)this.poses?.clear();this.hitHints=[];}this.delay=live?120:650;this.cursor=null;this.prediction=null;}
  push(r,clock){
   const last=this.samples.at(-1);
@@ -64,7 +64,7 @@ class RemoteTrack{
    const previous=this.visual,elapsed=this.clock===null?0:Math.max(0,clock-this.clock);
    // Switching between the durable fallback and fast poses is also a
    // correction. Bound that handover, including the first socket packet.
-   if(previous&&elapsed<2000&&!(previous.fallUntil&&!streamed.fallUntil)){
+   if(!this.poses.authoritative&&previous&&elapsed<2000&&!(streamed.falls>previous.falls||previous.fallUntil&&!streamed.fallUntil)){
     const dx=streamed.x-previous.x,dy=streamed.y-previous.y,limit=(streamed.boostUntil>clock?580:335)*Math.min(80,elapsed)/1000,k=Math.min(1,limit/(Math.hypot(dx,dy)||1));
     streamed.x=previous.x+dx*k;streamed.y=previous.y+dy*k;
    }

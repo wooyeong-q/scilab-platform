@@ -124,3 +124,16 @@ test('30 simultaneous answers and items send deltas, and durable actions survive
   console.log(JSON.stringify({simultaneousStudents:30,answerP95Ms:Math.round(answers.map(x=>x.ms).sort((a,b)=>a-b)[28]),itemP95Ms:Math.round(used.map(x=>x.ms).sort((a,b)=>a-b)[28]),fullRoomBroadcastsFor90Actions:0,recoveredPlayers:30}));
  }finally{for(const c of clients)try{c.ws.close();}catch{}await h.mf.dispose();}
 });
+
+test('crossing the finish line is confirmed to student and teacher and survives reconnect',async()=>{
+ const student={role:'student',token:token(),playerId:randomUUID()};
+ const h=await worker(record=>{const game=new QuizArenaRoom(record);game.join(student,{nickname:'결승검사'});game.room.status='running';game.room.endsAt=Date.now()+296000;Object.assign(game.room.players[student.playerId].runner,{x:M.center(game.room.arena.length),y:game.room.arena.length-20,t:4000});record.state=game.room;record.revision=game.record.revision;});
+ const clients=[];try{
+ const teacher=await h.connect(h.teacher),c=await h.connect(student);clients.push(teacher,c);const before=c.events.find(e=>e.type==='snapshot').data;assert.equal(before.player.finish,null);
+ c.ws.send(JSON.stringify({type:'input',roomRevision:before.roomRevision,inputs:[{seq:1,at:before.raceClock,dx:0,dy:1,jump:false,dash:false}]}));
+ await until(()=>c.events.some(e=>e.type==='snapshot'&&e.data.player?.finish?.place===1));
+ await until(()=>teacher.events.some(e=>e.type==='snapshot'&&e.data.ranking[0]?.finish?.place===1));
+ const finished=c.events.find(e=>e.type==='snapshot'&&e.data.player?.finish);assert.ok(finished.data.player.runner.y>=finished.data.arena.length);assert.ok(Number.isFinite(finished.data.player.runner.finishAt));
+ c.ws.close();const again=await h.connect(student);clients.push(again);assert.equal(again.events.find(e=>e.type==='snapshot').data.player.finish.place,1);
+ }finally{for(const c of clients)try{c.ws.close();}catch{}await h.mf.dispose();}
+});

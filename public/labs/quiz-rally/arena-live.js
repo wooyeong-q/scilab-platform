@@ -50,7 +50,7 @@ class Live{
 // A real-time room never falls back to the independent Neon motion publisher.
 // HTTP retries are routed to the same room authority by the application API.
 class RealtimeLive {
- constructor(callbacks){Object.assign(this,callbacks);this.key='';this.ready=false;this.fast=false;this.pending=new Map();this.generation=0;this.attempt=0;this.inputQueue=[];this.lastInputSend=0;}
+ constructor(callbacks){Object.assign(this,callbacks);this.key='';this.ready=false;this.fast=false;this.pending=new Map();this.generation=0;this.attempt=0;this.inputQueue=[];this.lastInputSend=0;this.sentSeq=-1;this.ackSeq=-1;}
  state(ready){if(this.ready!==ready){this.ready=ready;this.fast=ready;this.status(ready,ready);}}
  configure(url,who,enabled,realtime){const key=enabled&&who?realtime.url+':'+who.role+':'+who.playerId+':'+who.token:'';if(key===this.key)return;this.stop();if(!key)return;this.key=key;this.url=realtime.url;this.who={...who};this.attempt=0;this.connect();}
  stop(){this.key='';this.generation++;clearTimeout(this.timer);clearTimeout(this.watchdog);clearTimeout(this.inputTimer);this.inputTimer=0;this.inputQueue=[];clearInterval(this.heartbeat);if(this.socket){this.socket.onclose=null;this.socket.close();this.socket=null;}for(const p of this.pending.values()){clearTimeout(p.timer);p.reject(new Error('실시간 서버에 다시 연결하고 있어요.'));}this.pending.clear();this.state(false);}
@@ -58,11 +58,14 @@ class RealtimeLive {
  connect(){
   if(!this.key)return;const generation=++this.generation;let socket;
   try{socket=new WebSocket(this.url);}catch{this.timer=setTimeout(()=>this.connect(),2000);return;}
-  this.socket=socket;this.awaitingSnapshot=true;this.lastInputSend=0;this.arm();
+  this.socket=socket;this.awaitingSnapshot=true;this.lastInputSend=0;this.sentSeq=-1;this.ackSeq=-1;this.arm();
   socket.onopen=()=>{if(generation!==this.generation)return;socket.send(JSON.stringify({type:'auth',identity:this.who,playerDeltas:1}));};
   socket.onmessage=message=>{
    if(generation!==this.generation)return;this.arm();
    try{const event=JSON.parse(message.data);
+    const snapshot=event.data,ack=event.type==='world'?event.self?.runner:snapshot?.player?.runner;
+    if(snapshot&&snapshot.status!=='running'){this.inputQueue=[];clearTimeout(this.inputTimer);this.inputTimer=0;}
+    if(ack){this.ackSeq=Math.max(this.ackSeq,ack.seq);this.inputQueue=this.inputQueue.filter(e=>e.seq>this.ackSeq);if(!this.inputQueue.length){clearTimeout(this.inputTimer);this.inputTimer=0;}}
     if(event.type==='ready'){this.attempt=0;clearInterval(this.heartbeat);this.heartbeat=setInterval(()=>{if(socket.readyState===WebSocket.OPEN){this.pingAt=performance.now();socket.send('{"type":"ping"}');}},4000);}
     else if(event.type==='pong'){if(this.pingAt)this.transit=Math.min(250,(performance.now()-this.pingAt)/2);}
     else if(event.type==='response'||event.type==='error'){
@@ -78,16 +81,25 @@ class RealtimeLive {
  sendInput(input,revision){return this.sendInputs([input],revision);}
  sendInputs(inputs,revision){
   if(!this.ready||this.socket?.readyState!==WebSocket.OPEN||this.who.role!=='student'||!inputs.length)return false;
-  if(this.inputRevision?.roomRevision!==revision.roomRevision)this.inputQueue=[];
-  this.inputRevision={...revision};const queued=new Map(this.inputQueue.map(e=>[e.seq,e]));for(const e of inputs)queued.set(e.seq,e);
-  this.inputQueue=[...queued.values()].sort((a,b)=>a.seq-b.seq).slice(-96);this.flushInputs();return true;
+  // Movement is a held state; jumps are edge events. Keep every unacknowledged
+  // jump (with its direction/dash state), plus the newest held state.
+  this.inputRevision={...revision};const queued=new Map(this.inputQueue.map(e=>[e.seq,e]));for(const e of inputs)if(e.seq>this.ackSeq)queued.set(e.seq,e);
+  const ordered=[...queued.values()].sort((a,b)=>a.seq-b.seq),latest=ordered.at(-1);
+  this.inputQueue=ordered.filter(e=>e.jump||e===latest);
+  if(this.inputQueue.length>96){this.refresh();this.socket.close();return false;}
+  this.flushInputs(inputs.some(e=>e.jump&&e.seq>this.sentSeq));return true;
  }
  flushInputs(urgent=false){
   clearTimeout(this.inputTimer);this.inputTimer=0;
   if(!this.ready||this.socket?.readyState!==WebSocket.OPEN||!this.inputQueue.length)return;
-  const wait=this.socket.bufferedAmount>65536?50:urgent?0:Math.max(0,60-(Date.now()-this.lastInputSend));
+  // Never add another batch to an already congested socket. Retain edges until
+  // a common frame acknowledges them; sequence numbers make retries harmless.
+  const retry=this.inputQueue.at(-1).seq<=this.sentSeq;
+  const wait=this.socket.bufferedAmount>65536?50:urgent?0:Math.max(0,(retry?250:60)-(Date.now()-this.lastInputSend));
   if(wait){this.inputTimer=setTimeout(()=>this.flushInputs(),wait);return;}
-  this.socket.send(JSON.stringify({type:'input',inputs:this.inputQueue,...this.inputRevision}));this.inputQueue=[];this.lastInputSend=Date.now();
+  this.socket.send(JSON.stringify({type:'input',inputs:this.inputQueue,...this.inputRevision}));
+  this.sentSeq=Math.max(this.sentSeq,this.inputQueue.at(-1).seq);this.lastInputSend=Date.now();
+  this.inputTimer=setTimeout(()=>this.flushInputs(),250);
  }
  request(body){
   if(!this.ready||this.socket?.readyState!==WebSocket.OPEN)return Promise.reject(new Error('실시간 서버에 다시 연결하고 있어요.'));

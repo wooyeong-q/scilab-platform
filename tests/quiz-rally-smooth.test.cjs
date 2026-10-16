@@ -140,3 +140,16 @@ test('a late join watermark cannot permanently add seconds to every subsequent p
  for(let clock=4000;clock<40000;clock+=1000/60){if(clock>=next){const through=next===4000?0:next-500;track.push([through,0,through*.1,0,0,100,0,0,1,0,1,0,-2000],clock,through);next+=500;}shown=track.sample(clock,r());}
  assert.ok(40000-shown.t<1600,'playback catches up smoothly after the room watermark catches up');
 });
+
+test('authoritative 10 Hz poses use one bounded interpolation buffer without double smoothing',()=>{
+ const track=new PoseTrack();let previous,next=4000;const steps=[];
+ for(let clock=4000;clock<10000;clock+=1000/60){if(clock>=next){track.push([next,0,300+(next-4000)*.175,0,0,175,0,0,1,0,1,0,-2000],clock,next,true);next+=100;}
+ const shown=track.sample(clock,r());if(!shown)continue;assert.ok(shown.t<=track.samples.at(-1).t);if(previous&&clock>6000)steps.push(shown.y-previous.y);previous=shown;
+ assert.ok(Math.abs(shown.y-(300+(shown.t-4000)*.175))<.001,'position matches displayed collision time');}
+ assert.ok(track.delay>=140&&track.delay<220);assert.ok(Math.min(...steps)>2.4);assert.ok(Math.max(...steps)<3.4);
+});
+test('authoritative checkpoint return does not interpolate across a missed falling pose',()=>{
+ const track=new PoseTrack();track.push([4000,0,900,0,0,100,0,0,1,0,1,0,-2000],4000,4000,true);track.push([4100,0,100,0,0,0,0,0,1,0,2,1,-2000],4100,4100,true);
+ const before=track.sample(4220,r());assert.equal(before.y,900,'stay on pre-respawn position until respawn time');
+ const after=track.sample(4500,r());assert.equal(after.y,100,'snap only for the actual checkpoint return');
+});
