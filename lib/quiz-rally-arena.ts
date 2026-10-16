@@ -11,8 +11,8 @@ export type ArenaInput={seq:number;at:number;dx:number;dy:number;jump:boolean;da
 export const GEAR_NAMES:Record<Gear,string>={mine:'폭탄',missile:'미사일',banana:'바나나',field:'감속 영역',shield:'보호막',boost:'질주'};
 export const GEAR_HELP:Record<Gear,string>={mine:'뒤에 설치 · 밟으면 밀려나고 0.85초 조작 불가',missile:'앞으로 발사 · 맞으면 밀려나고 0.85초 조작 불가',banana:'뒤에 놓기 · 밟으면 1.05초 미끄러집니다',field:'5초 유지 · 영역 안 친구의 이동 속도를 38%로 낮춤',shield:'4초 동안 공격을 막습니다',boost:'3초 동안 이동 속도 2배'};
 export const WIDTH=620, SPEED=175, RADIUS=18, COUNTDOWN=3000;
-export const ENERGY_DRAIN=4, ENERGY_CHARGE=45, MIN_ENERGY_SPEED=.35;
-export const DASH_SPEED=1.4, DASH_ENERGY_DRAIN=10, BOX_RESPAWN=8000;
+export const ENERGY_DRAIN=2.5, ENERGY_CHARGE=45, MIN_ENERGY_SPEED=.35;
+export const DASH_SPEED=1.4, DASH_ENERGY_DRAIN=6, BOX_RESPAWN=8000;
 export const MISSILE_SPEED=460, MISSILE_RADIUS=10, MISSILE_HALF_LENGTH=16, MISSILE_CENTER_OFFSET=4, MISSILE_CLEARANCE=50;
 export function energyValue(r:Runner){return Math.max(0,Math.min(100,r.energy??100));}
 export function energySpeed(r:Runner,arena:Arena){return arena.energy?MIN_ENERGY_SPEED+(1-MIN_ENERGY_SPEED)*energyValue(r)/100:1;}

@@ -18,11 +18,11 @@ test('energy drains only while moving, smoothly slows running, and freezes durin
  assert.equal(M.advanceRunner(r,19000,a).energy,100);assert.equal(M.advanceRunner(r,29000,a).energy,100);
  assert.equal(M.advanceRunner({...r,energy:20,open:true},44000,a).energy,20);
  const full=M.advanceRunner(M.control(r,0,1,false,false,4000,1),4500,a),low=M.advanceRunner(M.control({...r,energy:10},0,1,false,false,4000,1),4500,a),empty=M.advanceRunner(M.control({...r,energy:0},0,1,false,false,4000,1),4500,a);
- assert.ok(full.y>low.y&&low.y>empty.y&&empty.y>300);assert.ok(Math.abs(empty.y-330.625)<1e-7);assert.ok(Math.abs(low.energy-8)<1e-9);
+ assert.ok(full.y>low.y&&low.y>empty.y&&empty.y>300);assert.ok(Math.abs(empty.y-330.625)<1e-7);assert.ok(Math.abs(low.energy-8.75)<1e-9);
  // Actual travel, including sprinting and flat-ground jumps, follows charge.
  for(const energy of [100,50,0])for(const boost of [false,true]){
-  const source={...r,energy,boostUntil:boost?7000:0},powered=Math.min(.5,energy/4),factor=boost?2:1;
-  const distance=175*factor*(.35*.5+.65*(energy*powered-2*powered*powered)/100);
+  const source={...r,energy,boostUntil:boost?7000:0},powered=Math.min(.5,energy/2.5),factor=boost?2:1;
+  const distance=175*factor*(.35*.5+.65*(energy*powered-1.25*powered*powered)/100);
   const run=M.advanceRunner(M.control(source,0,1,false,false,4000,1),4500,a),leap=M.advanceRunner(M.control(source,0,1,true,false,4000,1),4500,a);
   assert.ok(Math.abs(run.y-300-distance)<1e-7,`${energy} charge, sprint ${boost}`);
   assert.ok(Math.abs(leap.y-run.y)<1e-7,'Jumping on flat ground must not bypass depleted energy');

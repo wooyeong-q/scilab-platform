@@ -30,10 +30,10 @@ test('idle, held Shift, released inputs, stun and expired input consume no energ
   near(M.advanceRunner(idle,24000,arena).energy,100,'idle charge');
  }
  const moving=M.control(runner(),0,1,false,true,4000,1),stopped=M.control(M.advanceRunner(moving,4500,arena),0,0,false,true,4500,2);
- near(stopped.energy,95,'moving dash drain');near(M.advanceRunner(stopped,24000,arena).energy,95,'released keys preserve remaining charge');
- const resumed=M.advanceRunner(M.control({...stopped,t:24000},0,1,false,false,24000,3),24500,arena);near(resumed.energy,93,'walk resumes base drain');
- const stunned=M.advanceRunner({...moving,stunUntil:4500},4800,arena);near(stunned.energy,97,'only 300 ms of active dash');
- near(M.advanceRunner(moving,24000,arena).energy,78,'expired input is not moving');
+ near(stopped.energy,97,'moving dash drain');near(M.advanceRunner(stopped,24000,arena).energy,97,'released keys preserve remaining charge');
+ const resumed=M.advanceRunner(M.control({...stopped,t:24000},0,1,false,false,24000,3),24500,arena);near(resumed.energy,95.75,'walk resumes base drain');
+ const stunned=M.advanceRunner({...moving,stunUntil:4500},4800,arena);near(stunned.energy,98.2,'only 300 ms of active dash');
+ near(M.advanceRunner(moving,24000,arena).energy,86.8,'expired input is not moving');
 });
 
 test('uneven remote snapshots and reversals are interpolated with bounded frame movement',()=>{
