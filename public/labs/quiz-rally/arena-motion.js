@@ -90,8 +90,8 @@ class LocalView{
   // Blend a trajectory, not an additive height offset: an offset can pull a
   // descending robot back upward when an acknowledgement retimes its apex.
   // End on the authoritative future arc; never change gameplay or collisions.
-  if((clockChanged||Math.abs(before.z-after.z)>.001)&&after.z>0){
-   const height=Math.max(0,clockChanged&&this.shownZ!==null?this.shownZ:before.z+this.z),descending=!!this.vertical?.descending||(clockChanged?(this.shownVz??before.vz):before.vz)<0;
+  if((clockChanged||Math.abs(before.z-after.z)>.001)&&(after.z>0||after.vz>0)){
+   const height=Math.max(0,clockChanged&&this.shownZ!==null?this.shownZ:before.z+this.z),descending=!!this.vertical?.descending||(this.vertical||clockChanged?(this.shownVz??before.vz):before.vz)<0;
    const velocity=height<.001&&after.vz>0?after.vz:this.vertical||clockChanged?(this.shownVz??before.vz):before.vz;
    const landing=(after.vz+Math.sqrt(after.vz**2+1360*after.z))/680;
    let seconds=Math.min(.18,landing);
@@ -105,8 +105,10 @@ class LocalView{
     target=Math.max(0,after.z+after.vz*seconds-340*seconds**2);
    }
    const slope=(target-height)/(seconds||1),endVelocity=after.vz-680*seconds;
-   const bounded=v=>slope<0?clamp(v,3*slope,0):v;
-   this.vertical={height,target,start:descending?bounded(velocity):velocity,end:descending?bounded(endVelocity):endVelocity,seconds,at:after.t,elapsed:0,descending};
+   // Bound both rising and falling tangents. Large upward velocities with a
+   // nearby higher target otherwise make the cubic dip and rise a second time.
+   const bounded=v=>slope<0?clamp(v,3*slope,0):clamp(v,0,3*slope);
+   this.vertical={height,target,start:bounded(velocity),end:bounded(endVelocity),seconds,at:after.t,elapsed:0,descending:descending||slope<0};
    this.z=height-after.z;this.zTime=seconds*1000;
   }
  }

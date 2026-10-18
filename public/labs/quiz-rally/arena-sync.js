@@ -22,7 +22,7 @@ class Timeline{
  // A confirmed own-player pose is a lower bound, not an RTT estimate. Without
  // this, a future anchor freezes local physics until the slow clock catches up.
  ensureAtLeast(confirmed,at=performance.now()){
-  if(!this.running||!Number.isFinite(confirmed)||confirmed<=this.now(at))return false;
+  if(!this.running||!Number.isFinite(confirmed)||confirmed<=this.now(at)+.5)return false;
   this.base=confirmed;this.received=at;this.correction=0;return true;
  }
  now(at=performance.now()){const elapsed=this.running?Math.max(0,at-this.received):0;return this.base+elapsed+Math.sign(this.correction)*Math.min(Math.abs(this.correction),elapsed*.02);}
@@ -42,7 +42,24 @@ class Timeline{
   this.received=at;this.running=running;this.ready=true;return this.now(at);
  }
 }
-function reconcile(M,source,pending,clock,arena,effects,id){let r=source;for(const event of pending){if(event.seq<=source.seq)continue;const at=Math.max(r.t,Math.min(clock,event.at));r=M.advanceRunner(r,at,arena,effects,id);r=M.control(r,event.dx,event.dy,event.jump,event.dash??event.dive,at,event.seq);}return M.advanceRunner(r,clock,arena,effects,id);}
+function reconcile(M,source,pending,clock,arena,effects,id,previous){
+ // A snapshot can be newer than a locally pressed jump without having
+ // acknowledged that input. Replaying that edge at snapshot.t would restart
+ // the same jump on every world frame. Retain its already simulated flight
+ // until the server accepts/rejects the edge; movement still reconciles.
+ const keepJump=previous&&!previous.fallUntil&&previous.falls===source.falls&&!source.fallUntil&&!source.open&&source.finishAt===undefined&&source.stunUntil<=previous.stunUntil&&source.t>=previous.jumpAt&&pending.some(e=>e.jump&&e.seq>source.seq&&e.seq<=previous.seq&&e.at<=previous.jumpAt);
+ let r=source;
+ if(keepJump){const seconds=(source.t-previous.jumpAt)/1000,z=Math.max(0,300*seconds-340*seconds**2);r={...source,z,vz:z>0||seconds===0?300-680*seconds:0,jumpAt:previous.jumpAt,jumpQueuedUntil:0};}
+ for(const event of pending){
+  if(event.seq<=source.seq)continue;
+  const at=Math.max(r.t,Math.min(clock,event.at));r=M.advanceRunner(r,at,arena,effects,id);
+  let jump=event.jump;
+  if(keepJump&&event.seq<=previous.seq&&event.at<=previous.jumpAt)jump=false;
+  else if(jump&&previous&&event.seq<=previous.seq&&event.at<at){r={...r,jumpQueuedUntil:event.at+150};jump=false;}
+  r=M.control(r,event.dx,event.dy,jump,event.dash??event.dive,at,event.seq);
+ }
+ return M.advanceRunner(r,clock,arena,effects,id);
+}
 // Presentation only: authoritative ranking, hits and the local player keep
 // their own simulation. A small bounded history absorbs uneven classroom polls.
 class RemoteTrack{

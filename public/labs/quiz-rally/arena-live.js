@@ -54,7 +54,26 @@ class RealtimeLive {
  state(ready){if(this.ready!==ready){this.ready=ready;this.fast=ready;this.status(ready,ready);}}
  configure(url,who,enabled,realtime){const key=enabled&&who?realtime.url+':'+who.role+':'+who.playerId+':'+who.token:'';if(key===this.key)return;this.stop();if(!key)return;this.key=key;this.url=realtime.url;this.who={...who};this.attempt=0;this.connect();}
  stop(){this.key='';this.generation++;clearTimeout(this.timer);clearTimeout(this.watchdog);clearTimeout(this.inputTimer);this.inputTimer=0;this.inputQueue=[];clearInterval(this.heartbeat);if(this.socket){this.socket.onclose=null;this.socket.close();this.socket=null;}for(const p of this.pending.values()){clearTimeout(p.timer);p.reject(new Error('실시간 서버에 다시 연결하고 있어요.'));}this.pending.clear();this.state(false);}
- arm(){clearTimeout(this.watchdog);this.watchdog=setTimeout(()=>this.socket?.close(),12000);}
+ deliver(event){
+  try{this.event(event);return true;}catch(error){
+   // A UI exception is not a broken WebSocket. Refresh the snapshot on this
+   // connection instead of entering an endless close/auth/render/close loop.
+   if(!this.renderErrorAt||performance.now()-this.renderErrorAt>1000){this.renderErrorAt=performance.now()||1;console.error('경기 화면 갱신 오류',error);this.refresh();}
+   return false;
+  }
+ }
+ disconnected(socket,generation,code=1006){
+  if(generation!==this.generation)return;
+  // On a suspended mobile connection, close() may remain CLOSING without a
+  // close event. Retire it now; late callbacks must not affect its replacement.
+  this.generation++;socket.onclose=null;socket.onmessage=null;socket.onerror=null;socket.onopen=null;
+  try{socket.close();}catch{}
+  this.socket=null;clearTimeout(this.watchdog);clearTimeout(this.inputTimer);this.inputTimer=0;this.inputQueue=[];clearInterval(this.heartbeat);this.state(false);
+  for(const p of this.pending.values()){clearTimeout(p.timer);p.reject(new Error('실시간 서버에 다시 연결하고 있어요.'));}this.pending.clear();
+  if(code===4001){this.key='';this.deliver({type:'superseded'});return;}
+  if(this.key)this.timer=setTimeout(()=>this.connect(),Math.min(10000,400*2**Math.min(this.attempt++,5))+Math.random()*300);
+ }
+ arm(){clearTimeout(this.watchdog);const socket=this.socket,generation=this.generation;this.watchdog=setTimeout(()=>this.disconnected(socket,generation),12000);}
  connect(){
   if(!this.key)return;const generation=++this.generation;let socket;
   try{socket=new WebSocket(this.url);}catch{this.timer=setTimeout(()=>this.connect(),2000);return;}
@@ -71,13 +90,13 @@ class RealtimeLive {
     else if(event.type==='response'||event.type==='error'){
      const pending=this.pending.get(event.id);if(pending){clearTimeout(pending.timer);this.pending.delete(event.id);if(event.type==='error'){const error=new Error(event.error);error.status=event.status;pending.reject(error);}else{if(event.data)Object.defineProperty(event.data,'_transitMs',{value:Math.min(250,(performance.now()-pending.started)/2)});pending.resolve(event.data);}}
      else if(event.type==='error'){this.refresh();if(event.status===403)socket.close();}
-    }else{if(event.type==='snapshot'&&event.data)Object.defineProperty(event.data,'_transitMs',{value:this.transit||0});if(event.type==='world'){event.authoritative=true;event.transitMs=this.transit||0;}this.event(event);if(event.type==='snapshot'&&this.awaitingSnapshot){this.awaitingSnapshot=false;this.state(true);}}
-   }catch{socket.close();}
+    }else{if(event.type==='snapshot'&&event.data)Object.defineProperty(event.data,'_transitMs',{value:this.transit||0});if(event.type==='world'){event.authoritative=true;event.transitMs=this.transit||0;}const delivered=this.deliver(event);if(delivered&&event.type==='snapshot'&&this.awaitingSnapshot){this.awaitingSnapshot=false;this.state(true);}}
+   }catch(error){console.error('경기 통신 처리 오류',error);this.disconnected(socket,generation);}
   };
-  socket.onclose=event=>{if(generation!==this.generation)return;this.socket=null;clearTimeout(this.watchdog);clearTimeout(this.inputTimer);this.inputTimer=0;this.inputQueue=[];clearInterval(this.heartbeat);this.state(false);for(const p of this.pending.values()){clearTimeout(p.timer);p.reject(new Error('실시간 서버에 다시 연결하고 있어요.'));}this.pending.clear();if(event.code===4001){this.key='';this.event({type:'superseded'});return;}if(this.key)this.timer=setTimeout(()=>this.connect(),Math.min(10000,400*2**Math.min(this.attempt++,5))+Math.random()*300);};
-  socket.onerror=()=>socket.close();
+  socket.onclose=event=>this.disconnected(socket,generation,event.code);
+  socket.onerror=()=>this.disconnected(socket,generation);
  }
- reconnect(){if(this.socket)this.socket.close();else if(this.key){clearTimeout(this.timer);this.connect();}}
+ reconnect(){if(this.socket)this.disconnected(this.socket,this.generation);else if(this.key){clearTimeout(this.timer);this.connect();}}
  sendInput(input,revision){return this.sendInputs([input],revision);}
  sendInputs(inputs,revision){
   if(!this.ready||this.socket?.readyState!==WebSocket.OPEN||this.who.role!=='student'||!inputs.length)return false;
