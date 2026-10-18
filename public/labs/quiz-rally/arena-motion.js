@@ -83,19 +83,46 @@ class PoseTrack{
 }
 class LocalView{
  constructor(){this.reset();}
- reset(){this.x=0;this.y=0;this.z=0;this.zTime=0;}
- correct(before,after){
+ reset(){this.x=0;this.y=0;this.z=0;this.zTime=0;this.vertical=null;this.shownZ=null;this.shownVz=null;this.position=null;}
+ correct(before,after,clockChanged=false){
   if(!before||before.falls!==after.falls||!!before.fallUntil!==!!after.fallUntil||after.open||after.finishAt!==undefined||Math.hypot(before.x-after.x,before.y-after.y)>250){this.reset();return;}
-  this.x=clamp(this.x+before.x-after.x,-100,100);this.y=clamp(this.y+before.y-after.y,-100,100);
-  // A server acknowledgement can retime an otherwise valid jump. Preserve
-  // the displayed height at that instant, then settle only its correction.
-  // Do not low-pass the jump itself or alter collision/landing physics.
-  if(Math.abs(before.z-after.z)>.001){this.z=clamp(this.z+before.z-after.z,-80,80);this.zTime=180;}
+  this.x=clamp(clockChanged&&this.position?this.position.x-after.x:this.x+before.x-after.x,-100,100);this.y=clamp(clockChanged&&this.position?this.position.y-after.y:this.y+before.y-after.y,-100,100);
+  // Blend a trajectory, not an additive height offset: an offset can pull a
+  // descending robot back upward when an acknowledgement retimes its apex.
+  // End on the authoritative future arc; never change gameplay or collisions.
+  if((clockChanged||Math.abs(before.z-after.z)>.001)&&after.z>0){
+   const height=Math.max(0,clockChanged&&this.shownZ!==null?this.shownZ:before.z+this.z),descending=!!this.vertical?.descending||(clockChanged?(this.shownVz??before.vz):before.vz)<0;
+   const velocity=height<.001&&after.vz>0?after.vz:this.vertical||clockChanged?(this.shownVz??before.vz):before.vz;
+   const landing=(after.vz+Math.sqrt(after.vz**2+1360*after.z))/680;
+   let seconds=Math.min(.18,landing);
+   let target=Math.max(0,after.z+after.vz*seconds-340*seconds**2);
+   if(!descending&&target<height&&after.vz-680*seconds>0){seconds=Math.min(landing,after.vz/680+.12);target=Math.max(0,after.z+after.vz*seconds-340*seconds**2);}
+   if(descending&&(target>=height||after.vz-680*seconds>=0)){
+    // Rejoin below our current height instead of hovering until the server
+    // catches up. A descending correction must have a strictly lower target.
+    const lower=height*.65;
+    seconds=Math.min(landing,Math.max(seconds,(after.vz+Math.sqrt(Math.max(0,after.vz**2+1360*(after.z-lower))))/680));
+    target=Math.max(0,after.z+after.vz*seconds-340*seconds**2);
+   }
+   const slope=(target-height)/(seconds||1),endVelocity=after.vz-680*seconds;
+   const bounded=v=>slope<0?clamp(v,3*slope,0):v;
+   this.vertical={height,target,start:descending?bounded(velocity):velocity,end:descending?bounded(endVelocity):endVelocity,seconds,at:after.t,elapsed:0,descending};
+   this.z=height-after.z;this.zTime=seconds*1000;
+  }
  }
  sample(r,dt){const elapsed=Math.max(0,dt),decay=Math.exp(-elapsed/80);this.x*=decay;this.y*=decay;
-  if(this.zTime){const step=Math.min(elapsed,this.zTime);this.z*=1-step/this.zTime;this.zTime-=step;}
-  if(!r.z&&!r.vz){this.z=0;this.zTime=0;}
-  return{x:r.x+this.x,y:r.y+this.y,z:r.fallUntil?r.z:Math.max(0,r.z+this.z)};}
+  let height=r.z;
+  if(this.vertical){const v=this.vertical;v.elapsed=clamp((r.t-v.at)/1000,0,v.seconds);const k=v.seconds?v.elapsed/v.seconds:1,k2=k*k,k3=k2*k;
+   height=(2*k3-3*k2+1)*v.height+(k3-2*k2+k)*v.start*v.seconds+(-2*k3+3*k2)*v.target+(k3-k2)*v.end*v.seconds;
+   this.z=height-r.z;this.zTime=Math.max(0,(v.seconds-v.elapsed)*1000);
+   if(k>=1){this.vertical=null;this.z=0;height=r.z;}
+  }
+  if(!r.z&&!r.vz||r.fallUntil||r.open){this.z=0;this.zTime=0;this.vertical=null;height=r.z;}
+  height=r.fallUntil?height:Math.max(0,height);
+  if(this.shownZ!==null&&elapsed>0)this.shownVz=(height-this.shownZ)*1000/elapsed;
+  else if(this.shownZ===null)this.shownVz=r.vz;
+  this.shownZ=height;
+  this.position={x:r.x+this.x,y:r.y+this.y,z:height};return this.position;}
 }
 function mergeEffects(effects,delta){return effects.filter(e=>e.expires>delta.cutoff).map(e=>({...e,...delta.claims[e.id]})).concat(delta.added);}
 // Projectiles and the player they hit must use the same presentation time.

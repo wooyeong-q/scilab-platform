@@ -112,6 +112,43 @@ body.arena-mode{background:#bccbd3;color:#e0ebf0}.arena-mode .site-header{backgr
  .arena-question-popup .feedback p{font-size:14px;line-height:1.3;margin-top:3px}
  .arena-question-popup .feedback .button{min-height:36px;font-size:14px;padding:7px 12px}
 }
+/* Keep persistent HUD information out of the road, on desktop as well as touch. */
+.arena-stage-name{grid-template-columns:minmax(0,1fr) auto;align-items:center;padding:7px 12px;gap:3px 9px;max-width:380px;pointer-events:none}
+.arena-stage-name>span{display:none}
+.arena-stage-name>b{font-size:17px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.arena-stage-name>em{font-size:12px;font-style:normal;font-variant-numeric:tabular-nums;color:#9fe0d5}
+.arena-stage-name>small{display:none}
+.arena-banner{top:78px;width:max-content;max-width:calc(100% - 32px);padding:8px 14px;gap:4px;white-space:normal}
+.arena-banner b{font-size:17px}.arena-banner small{font-size:12px;letter-spacing:0;line-height:1.35}
+.arena-touch-actions button[aria-pressed=true]{background:#8cddd0;color:#163b45;border-color:#d1fff2}
+@media(pointer:coarse),(max-width:700px),(max-height:620px){
+ .arena-mode .site-header{height:40px;min-height:40px;padding:4px max(10px,env(safe-area-inset-right)) 4px max(10px,env(safe-area-inset-left))}
+ .arena-mode .brand{font-size:13px;gap:7px}.arena-mode .brand-mark{width:28px;height:28px;font-size:21px}.arena-mode .brand small{display:none}
+ .arena-mode .connection{font-size:10px}.arena-mode .icon-button{width:30px;height:30px}
+ .arena-shell{height:calc(100dvh - 40px);min-height:0}
+ .arena-top{top:7px;left:max(8px,env(safe-area-inset-left));right:max(8px,env(safe-area-inset-right));display:grid;grid-template-columns:auto minmax(0,1fr) auto;align-items:start;gap:6px}
+ .arena-rank{min-width:0;padding:5px 8px;gap:2px}.arena-rank small{font-size:9px}.arena-rank strong{font-size:18px;white-space:nowrap;letter-spacing:-.5px}
+ .arena-stage-name{position:static;transform:none;width:auto;max-width:260px;min-width:0;justify-self:center;padding:6px 9px;gap:5px;margin-top:2px}
+ .arena-stage-name>b{font-size:13px}.arena-stage-name>em{font-size:10px}
+ .arena-top-right{gap:4px;align-items:start}.arena-clock{padding:5px 7px;gap:2px}.arena-clock small{font-size:8px}.arena-clock b{font-size:18px}
+ .arena-top-right>button{width:32px;height:36px}.arena-top-right>button svg{width:18px;height:18px}
+ .arena-banner{top:56px;padding:6px 10px;max-width:min(380px,calc(100% - 32px))}.arena-banner b{font-size:14px}.arena-banner small{font-size:11px}
+ .arena-energy{top:65px;left:max(8px,env(safe-area-inset-left));width:112px;padding:6px 8px;border-radius:7px}
+ .arena-energy>div{font-size:10px;gap:4px}.arena-energy-symbol{width:17px;height:19px;font-size:18px}.arena-energy output{font-size:16px}
+ .arena-energy progress{height:6px;margin:4px 0}.arena-energy small{font-size:9px}.arena-energy small>span:last-child{display:none}
+ .arena-inventory{top:65px;bottom:auto;right:max(8px,env(safe-area-inset-right));padding:5px;transform:none;border-radius:7px}
+ .arena-inventory-label{display:none}.arena-slots{gap:4px}.arena-slots button{width:44px;min-height:44px;padding:4px 2px;gap:0;border-radius:5px}
+ .arena-slots button>span{height:30px;font-size:24px}.arena-slots button>span svg{width:28px;height:28px}.arena-slots button>b{display:none}.arena-slots kbd{font-size:8px;left:3px;top:2px}
+ .arena-touch-pad{width:100px;height:100px;left:max(14px,env(safe-area-inset-left));bottom:max(14px,env(safe-area-inset-bottom))}
+ .arena-touch-pad>span{top:7px;font-size:11px}.arena-touch-pad i{width:45px;height:45px}
+ .arena-touch-actions{right:max(14px,env(safe-area-inset-right));bottom:max(16px,env(safe-area-inset-bottom));gap:10px}
+ .arena-touch-actions button{width:72px;height:72px;font-size:18px;touch-action:none;user-select:none;-webkit-user-select:none}
+ .arena-touch-actions button:first-child{width:62px;height:62px;font-size:14px}.arena-touch-actions button small{font-size:9px}
+ .arena-state-bubble{top:38%;font-size:16px;padding:8px 12px}.arena-finish-note{bottom:115px;max-width:calc(100% - 24px);padding:10px 14px}
+ .arena-finish-note strong{font-size:20px}.arena-finish-note span{font-size:12px}.arena-leaderboard{top:55px;right:8px;max-height:calc(100% - 175px);width:min(260px,calc(100% - 16px))}
+ .arena-results{height:auto;min-height:calc(100dvh - 40px);max-height:calc(100dvh - 40px);overflow:auto}
+ .arena-mode .toast{bottom:120px;max-width:calc(100% - 24px);font-size:12px;pointer-events:none}
+}
 @media(max-height:480px) and (min-width:600px){
  .arena-question-content.has-figure{grid-template-columns:minmax(0,1.05fr) minmax(0,1fr);grid-template-rows:minmax(0,1fr);gap:16px}
  .arena-question-popup .feedback{grid-template-columns:minmax(0,1fr) auto}

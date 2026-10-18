@@ -19,6 +19,12 @@ class Keyboard{
 }
 class Timeline{
  constructor(){this.base=0;this.received=0;this.correction=0;this.running=false;this.ready=false;}
+ // A confirmed own-player pose is a lower bound, not an RTT estimate. Without
+ // this, a future anchor freezes local physics until the slow clock catches up.
+ ensureAtLeast(confirmed,at=performance.now()){
+  if(!this.running||!Number.isFinite(confirmed)||confirmed<=this.now(at))return false;
+  this.base=confirmed;this.received=at;this.correction=0;return true;
+ }
  now(at=performance.now()){const elapsed=this.running?Math.max(0,at-this.received):0;return this.base+elapsed+Math.sign(this.correction)*Math.min(Math.abs(this.correction),elapsed*.02);}
  sync(raceClock,status,transit=0,at=performance.now()){
   // Half a round trip is not the response delay: asymmetric connections can
@@ -129,5 +135,8 @@ function mergeSnapshot(previous,next){
  return merged;
 }
 function orderPlayers(players,order){const places=new Map((order||[]).map((id,i)=>[id,i]));return players.sort((a,b)=>a.p.finish||b.p.finish?(a.p.finish?.place||999)-(b.p.finish?.place||999):order?(places.get(a.p.id)??999)-(places.get(b.p.id)??999):b.r.y-a.r.y||a.p.id.localeCompare(b.p.id));}
-window.quizArenaSync={Keyboard,Timeline,RemoteTrack,reconcile,mergeSnapshot,orderPlayers};
+// A small dead zone prevents drift. Full input is reachable without stretching
+// a thumb to the pad edge; preserve low-speed precision and diagonal magnitude.
+function touchVector(dx,dy){const distance=Math.hypot(dx,dy);if(distance<=4)return{x:0,y:0};const strength=Math.min(1,(distance-4)/20);return{x:dx/distance*strength,y:dy/distance*strength};}
+window.quizArenaSync={Keyboard,Timeline,RemoteTrack,reconcile,mergeSnapshot,orderPlayers,touchVector};
 })();

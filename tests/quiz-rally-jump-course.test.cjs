@@ -17,6 +17,22 @@ test('vertical corrections reset for respawn and never smooth an ordinary uncorr
  for(let t=4000;t<5000;t+=16){const physical=M.advanceRunner(start,t,arena);assert.equal(view.sample(physical,16).z,physical.z);}
  view.correct({...source(),z:50},{...source(),z:20,vz:100});view.correct({...source(),z:20},{...source(),falls:1,fallUntil:5000,z:-10});assert.equal(view.z,0);assert.equal(view.sample({...source(),fallUntil:5000,z:-20},16).z,-20,'fall stays below the floor');assert.equal(view.sample({...source(),falls:1},16).z,0);
 });
+test('late acknowledgements cannot restart ascent after a jump has begun descending',()=>{
+ for(const fps of [30,60,120])for(const delay of [80,160,240]){
+  const dt=1000/fps,start=source(),predicted=M.control(start,0,1,true,false,4000,1),confirmed=M.control({...start,t:4000+delay},0,1,true,false,4000+delay,1),view=new LocalView();let last=null,corrected=false;
+  for(let t=4000;t<5500;t+=dt){
+   if(!corrected&&t>=4500){const before=M.advanceRunner(predicted,t,arena),after=M.advanceRunner(confirmed,t,arena);view.correct(before,after);corrected=true;}
+   const physical=M.advanceRunner(corrected?confirmed:predicted,t,arena),shown=view.sample(physical,dt);
+   if(corrected&&last!==null)assert.ok(shown.z<=last+.001,`${fps}Hz / ${delay}ms: no second apex (${last} → ${shown.z})`);
+   if(physical.z===0&&t>4500)assert.equal(shown.z,0,'authoritative landing remains grounded');last=shown.z;
+  }
+ }
+});
+test('adopting a confirmed clock preserves the displayed pose and does not hide a newly accepted jump',()=>{
+ const view=new LocalView(),pred=M.control(source(),0,1,true,false,4000,1),shown=view.sample(M.advanceRunner(pred,4400,arena),16),before=M.advanceRunner(pred,4500,arena),after=M.advanceRunner(M.control({...source(),t:4160},0,1,true,false,4160,1),4500,arena);
+ view.correct(before,after,true);const first=view.sample(after,0);for(const k of ['x','y','z'])assert.ok(Math.abs(first[k]-shown[k])<1e-7,k+' must not snap when the clock adopts a confirmed pose');
+ const fresh=new LocalView();fresh.sample(source(),0);const accepted=M.advanceRunner(pred,4100,arena);fresh.correct(source(),accepted);assert.ok(fresh.sample(M.advanceRunner(pred,4160,arena),60).z>0,'an accepted jump must not be hidden for its whole flight');
+});
 test('new courses teach on safe wide ground and reserve tight, fast combinations for the finish',()=>{
  for(const duration of [300,480,600,900])for(const seed of [1,42,99999]){
   const a={...arena,length:M.raceLength(duration),seed},intro=a.length*5200/27000,final=a.length*21900/27000;
