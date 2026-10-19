@@ -9,7 +9,7 @@ const fields=['summary','description','grade','tags','format','standard'];
 
 test('matter zoom catalog describes middle/high modes and independent classroom access',()=>{
   assert.equal(program.id,'matter-zoom');
-  assert.equal(program.title,'확대! 물질 탐험 연구소');
+  assert.equal(program.title,'물질·원자 확대 탐구');
   assert.equal(program.url,'/labs/matter-zoom/index.html');
   assert.equal(program.author,'SciLab');
   assert.equal(program.grade,'중학교 · 고등학교');

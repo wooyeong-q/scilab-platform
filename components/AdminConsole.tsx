@@ -5,6 +5,7 @@ import { LogOut, Save, Check, X } from 'lucide-react';
 import { ProgramAssetEditor } from './ProgramAssetEditor';
 import { ProgramOrderList } from './ProgramOrderList';
 import type { Program } from '@/lib/programs';
+import { programLinkError } from '@/lib/program-links';
 
 type Submission = { id:string; title:string; author:string; url:string; category:string; grade:string; summary:string; tags:string[]; status:string; createdAt:string };
 
@@ -31,7 +32,8 @@ export function AdminConsole() {
   async function removeProgram(id:string){if(!confirm('이 프로그램을 삭제할까요?'))return;setError('');const response=await fetch(`/api/admin/programs/${id}`,{method:'DELETE'});const data=await response.json().catch(()=>({}));if(!response.ok){setError(data.error||'삭제하지 못했습니다.');return;}setPrograms((current)=>current.filter((program)=>program.id!==id));await load();}
   function startEdit(program:Program){setError('');setEditing({...program});setTagInput(program.tags.join(', '));setUsageInput((program.usageSteps||[]).join('\n'));}
   async function save(e:React.FormEvent){
-    e.preventDefault();if(!editing||uploading||saving)return;setError('');setSaving(true);
+    e.preventDefault();if(!editing||uploading||saving)return;setError('');
+    const linkError=programLinkError(editing);if(linkError){setError(linkError);return;}setSaving(true);
     try{
       const tags=Array.from(new Set(tagInput.split(',').map((tag)=>tag.trim()).filter(Boolean)));
       const response=await fetch(`/api/admin/programs/${editing.id}`,{method:'PATCH',headers:{'Content-Type':'application/json'},body:JSON.stringify({...editing,tags,usageSteps:usageInput.split('\n').map(step=>step.trim()).filter(Boolean)})});
@@ -54,7 +56,7 @@ export function AdminConsole() {
     <ProgramOrderList programs={programs} onEdit={startEdit} onRemove={removeProgram} onReload={load} onBusyChange={setOrdering}/>
     {editing&&<div className="modalBackdrop" onMouseDown={closeEdit}><form className="editModal" onSubmit={save} onMouseDown={(e)=>e.stopPropagation()}><div className="modalHeader"><div><span>EDIT PROGRAM</span><h2>{editing.title}</h2></div><button type="button" disabled={uploading||saving} onClick={closeEdit} aria-label="닫기">×</button></div>
       <label>프로그램 이름<input value={editing.title} onChange={(e)=>setEditing({...editing,title:e.target.value})} required/></label>
-      <label>실행 주소<input type="url" value={editing.url} onChange={(e)=>setEditing({...editing,url:e.target.value})} required/></label>
+      <label>실행 주소<input type="text" inputMode="url" value={editing.url} onChange={(e)=>setEditing({...editing,url:e.target.value})} required aria-describedby="program-url-help"/><small id="program-url-help" style={{color:'#667085',fontWeight:500}}>https://로 시작하는 주소 또는 /labs/처럼 이 사이트 안의 주소를 사용할 수 있습니다.</small></label>
       <label>목록용 짧은 소개<textarea value={editing.summary} onChange={(e)=>setEditing({...editing,summary:e.target.value})} required/></label>
       <label>프로그램 설명<textarea value={editing.description} onChange={(e)=>setEditing({...editing,description:e.target.value})} required/></label>
       <label>사용법<textarea className="usageStepsEditor" value={usageInput} onChange={event=>setUsageInput(event.target.value)} placeholder="한 줄에 한 단계씩 입력하세요."/><small style={{color:'#667085',fontWeight:500}}>한 줄을 한 단계로 표시합니다. 최대 12단계까지 작성할 수 있습니다.</small></label>
@@ -64,11 +66,11 @@ export function AdminConsole() {
       <div className="formColumns"><label>과학 영역<input value={editing.category} onChange={(e)=>setEditing({...editing,category:e.target.value})}/></label><label>대상 학년<input value={editing.grade} onChange={(e)=>setEditing({...editing,grade:e.target.value})}/></label></div>
       <label>핵심어<input value={tagInput} onChange={(e)=>setTagInput(e.target.value)} placeholder="예: 광물, 굳기, 조흔색"/><small style={{color:'#667085',fontWeight:500}}>쉼표로 구분하면 여러 개를 등록할 수 있습니다.</small></label>
       <h3 style={{margin:'8px 0 0'}}>연결 자료</h3>
-      <label>활동지 링크<input type="url" value={editing.worksheetUrl||''} onChange={(e)=>setEditing({...editing,worksheetUrl:e.target.value})} placeholder="Google Drive 또는 PDF 주소"/></label>
-      <label>PPT 링크<input type="url" value={editing.pptUrl||''} onChange={(e)=>setEditing({...editing,pptUrl:e.target.value})} placeholder="Google Drive 또는 공개 주소"/></label>
-      <label>수업 영상 링크<input type="url" value={editing.videoUrl||''} onChange={(e)=>setEditing({...editing,videoUrl:e.target.value})} placeholder="YouTube 등"/></label>
-      <label>소스코드 링크<input type="url" value={editing.sourceUrl||''} onChange={(e)=>setEditing({...editing,sourceUrl:e.target.value})} placeholder="GitHub 등"/></label>
-      <label>교사용 안내자료 링크<input type="url" value={editing.guideUrl||''} onChange={(e)=>setEditing({...editing,guideUrl:e.target.value})} placeholder="문서 또는 PDF 주소"/></label>
+      <label>활동지 링크<input type="text" inputMode="url" value={editing.worksheetUrl||''} onChange={(e)=>setEditing({...editing,worksheetUrl:e.target.value})} placeholder="Google Drive 또는 PDF 주소"/></label>
+      <label>PPT 링크<input type="text" inputMode="url" value={editing.pptUrl||''} onChange={(e)=>setEditing({...editing,pptUrl:e.target.value})} placeholder="Google Drive 또는 공개 주소"/></label>
+      <label>수업 영상 링크<input type="text" inputMode="url" value={editing.videoUrl||''} onChange={(e)=>setEditing({...editing,videoUrl:e.target.value})} placeholder="YouTube 등"/></label>
+      <label>소스코드 링크<input type="text" inputMode="url" value={editing.sourceUrl||''} onChange={(e)=>setEditing({...editing,sourceUrl:e.target.value})} placeholder="GitHub 등"/></label>
+      <label>교사용 안내자료 링크<input type="text" inputMode="url" value={editing.guideUrl||''} onChange={(e)=>setEditing({...editing,guideUrl:e.target.value})} placeholder="문서 또는 PDF 주소"/></label>
       <div className="assetSaveBar">{error&&<p className="assetError" role="alert">{error}</p>}<button className="saveButton" type="submit" disabled={uploading||saving}><Save size={17}/>{uploading?'파일 업로드 중…':saving?'저장 중…':'저장'}</button></div></form></div>}
   </>;
 }

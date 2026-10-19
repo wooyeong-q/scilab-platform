@@ -28,3 +28,17 @@ does not change order, counters, resources, attachments, or publication flags.
 **Never add this script to package.json build, migrations, regular deployments,
 or a registration command.** A normal deployment must preserve current catalog
 content, order, and usage instructions.
+
+## Name-only edits and program addresses
+
+The program editor accepts both complete http(s) URLs and local paths such as
+`/labs/quiz-rally/index.html`. These addresses use text fields with URL keyboards;
+the same validation runs in the editor and API. Omitted PATCH fields preserve
+their existing values, so changing only a name never empties a program's links,
+description, instructions, category, featured flag, or attachments.
+
+The user requested clearer names for all nine public programs on 2026-10-19.
+`scripts/update-program-names-20261019.mjs --rename-programs-20261019` applies that
+one-time rename in production, only while each previous title still matches.
+It changes no IDs or URLs and does not insert, publish, restore, or reorder rows.
+Do not add it to build, migrations, registration, or automatic deployment commands.
