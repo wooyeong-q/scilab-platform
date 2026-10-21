@@ -78,3 +78,183 @@
   .s1-star-visual{width:54px;height:54px}
   .s4-uv-board{width:min(100%,calc(54dvh * 627 / 524))}
 }
+
+/* Shared instrument-panel design across the four rooms. */
+:root{
+  --escape-surface:#0a1523;
+  --escape-edge:#54758b70;
+  --escape-muted:#b8c8d8;
+  --escape-accent:#91e8e4;
+}
+.student{width:min(1560px,100%);grid-template-columns:minmax(0,1fr) clamp(220px,18vw,260px);gap:12px}
+.solo-mode .student{grid-template-columns:minmax(0,1fr)}
+.solo-mode .side,.solo-mode #sideBtn{display:none}
+.game{border-color:#3c536d;border-radius:16px}
+.brand small{font-size:9px;letter-spacing:.12em}
+.metric span{font-size:9px}.metric b{font-size:12px}
+.solo-mode .metric.time b{font-size:11px}
+.sidebox{background:#0b1627;border-color:#344a63}
+.stitle b{font-size:13px}.stitle span{font-size:10px}
+.member,.rank,.message{font-size:12px;line-height:1.55}
+
+/* Modal scrims also block room clicks while a compact puzzle is open. */
+.s1-shell:has(.s1-puzzle)::before,.s2-shell:has(.s2-puzzle)::before,.s3-shell:has(.s3-puzzle)::before{
+  content:"";position:absolute;inset:0;z-index:19;background:#02070ec9;backdrop-filter:blur(5px);
+}
+.s2-shell:has(.s2-puzzle)::before{z-index:21}
+.s3-shell:has(.s3-puzzle)::before{z-index:64}
+.s1-puzzle,.s2-puzzle,.s3-puzzle{
+  position:absolute;inset:auto;left:50%;top:50%;transform:translate(-50%,-50%);
+  display:flex;flex-direction:column;width:min(1160px,calc(100% - 28px));height:auto;max-height:calc(100% - 28px);
+  border:1px solid var(--escape-edge);border-radius:16px;background:var(--escape-surface);
+  box-shadow:0 24px 70px #0009;overflow:hidden;
+}
+.s1-puzzle-body,.s2-puzzle-body,.s3-puzzle-body{flex:0 1 auto;min-height:0;padding:20px;overflow:auto;scrollbar-width:thin;scrollbar-color:#486279 #0a1523}
+.s1-puzzle-body{display:block}
+.s3-puzzle-distance{height:calc(100% - 28px)}
+.s3-puzzle-distance .s3-puzzle-body{flex:1 1 auto}
+.s1-puzzle-head,.s2-puzzle-head,.s3-puzzle-head,.s4-modal-card>header{
+  flex:none;min-height:76px;padding:15px 20px;border-bottom:1px solid #526c824d;
+  background:linear-gradient(115deg,#172b3b,#0d1b2a);box-shadow:inset 3px 0 var(--escape-accent);
+}
+.s4-modal-card>header{padding-right:76px}
+.s1-puzzle-head small,.s2-puzzle-head small,.s3-puzzle-head small,.s4-modal-card>header small{
+  color:var(--escape-accent);font-size:10px;line-height:1.4;letter-spacing:.08em;font-weight:800;
+}
+.s1-puzzle-head h2,.s2-puzzle-head h2,.s3-puzzle-head h2,.s4-modal-card>header h2{
+  margin:4px 0 0;font-size:clamp(20px,1.8vw,25px);line-height:1.35;letter-spacing:-.035em;color:#f1f7fb;
+}
+.s1-close,.s2-close,.s3-close,.s4-close{
+  width:42px;height:42px;border:1px solid #6d8a9d66;border-radius:10px;background:#e5f3ff08;
+  color:#dcebf4;font-size:23px;line-height:1;
+}
+.s4-modal-card>header .s4-close{top:17px;right:18px}
+.s1-footer,.s2-footer,.s3-puzzle-footer{
+  flex:none;min-height:64px;padding:12px 20px;gap:12px;border-top:1px solid #526c824d;background:#102031;
+}
+.s1-feedback,.s2-feedback,.s3-feedback,.s4-feedback{font-size:14px;line-height:1.5;color:var(--escape-muted)}
+.s3-puzzle-footer .s3-feedback{flex:1 1 200px}
+.game .primary,.game .s3-primary,.game .s4-primary{
+  min-height:44px;padding:10px 18px;border:1px solid #b4ffed77;border-radius:10px;
+  background:linear-gradient(135deg,#93eddf,#6fd4dd);color:#072731;font-size:14px;font-weight:850;
+  box-shadow:0 3px 10px #0003;
+}
+.game .secondary,.game .s3-secondary,.game .s4-secondary{
+  min-height:44px;padding:9px 14px;border:1px solid #708da266;border-radius:10px;
+  background:#d9efff08;color:#dceaf5;font-size:13px;font-weight:750;
+}
+.game button:focus-visible{outline:2px solid #b5fff2;outline-offset:3px}
+.game button:disabled{cursor:default}
+@media(hover:hover){
+  .s1-close:hover,.s2-close:hover,.s3-close:hover,.s4-close:hover{background:#d9efff19;border-color:#a3d9e0}
+  .game .primary:hover:not(:disabled),.game .s3-primary:hover:not(:disabled),.game .s4-primary:hover:not(:disabled){filter:brightness(1.08)}
+}
+.s4-modal{padding:14px;background:#02070ec9;backdrop-filter:blur(5px)}
+.s4-modal-card{width:min(1160px,100%);border-color:var(--escape-edge);border-radius:16px;background:var(--escape-surface);box-shadow:0 24px 70px #0009}
+.s4-modal-body{padding:20px;scrollbar-width:thin;scrollbar-color:#486279 #0a1523}
+.s4-modal-body>p,.s4-sort-layout aside>p,.s4-core-layout aside>p{font-size:14px;line-height:1.6;color:var(--escape-muted)}
+.s4-modal:has(.s4-auth-success,.s4-exit-copy,.s4-knock,.s4-dialog-copy):not(:has(.s4-recorder)) .s4-modal-card{width:min(680px,100%)}
+
+/* Wiring is one instrument: guidance beside the board, controls just below. */
+.s1-wire-panel{width:100%;display:grid;grid-template-columns:230px minmax(0,1fr);gap:22px;padding:0;margin:0;border:0;border-radius:0;background:none;box-shadow:none}
+.s1-wire-guide{display:flex;flex-direction:column;gap:10px;margin:0;padding:6px 0}
+.s1-wire-guide>small{font-size:11px;color:var(--escape-accent);letter-spacing:.04em}
+.s1-wire-guide>b{font-size:21px;line-height:1.4;margin:0;color:#edf6ff;word-break:keep-all}
+.s1-wire-guide>p{font-size:14px;line-height:1.7;color:var(--escape-muted)}
+.s1-wire-steps{display:grid;gap:7px;padding-left:23px;margin:4px 0;font-size:13px;line-height:1.6;color:#e1edf8}
+.s1-wire-steps li::marker{color:var(--escape-accent);font-weight:800}
+.s1-temperature-note{padding:12px;border-left:2px solid #82c5d5;border-radius:0 8px 8px 0;background:#6aa9c512}
+.s1-temperature-note small{font-size:11px;letter-spacing:0;color:#a6c3d5}
+.s1-temperature-note strong{display:block;margin-top:6px;font-size:14px;line-height:1.65;color:#ebf4fc}
+.s1-wire-actions{position:static;display:flex;justify-content:space-between;margin-top:auto;padding-top:6px}
+.s1-wire-actions button,.s1-wire-actions span{min-height:38px;font-size:12px;padding:8px 12px;border-color:#577e9466;background:#d6eeff07;color:var(--escape-accent)}
+.s1-wire-board{min-height:388px;padding:16px;grid-template-columns:repeat(4,minmax(0,1fr));grid-template-rows:76px minmax(66px,1fr) 202px;gap:0 12px;border:1px solid #45617d66;border-radius:12px;background:radial-gradient(ellipse at 50% 45%,#182d435c,transparent 70%),#060f1b}
+.s1-wire-bank.roles,.s1-wire-bank.colors{grid-column:1/-1;grid-template-columns:repeat(4,minmax(0,1fr));grid-template-rows:1fr;gap:12px}
+.s1-wire-bank.roles{grid-row:1}.s1-wire-bank.colors{grid-row:3}
+.s1-wire-node.role{display:flex;flex-direction:column;justify-content:center;gap:4px;min-height:76px;padding:10px 6px 19px;border-radius:10px;background:#102031}
+.s1-wire-node.role b{font-size:18px;line-height:1.15;color:#e4f2ff}
+.s1-wire-node.role small{max-width:100%;margin:0;font-size:12px;line-height:1.4;color:#bacddf}
+.s1-wire-node.role .s1-wire-plug{left:50%;right:auto;top:auto;bottom:-9px;width:18px;height:18px;box-shadow:0 0 0 4px #0b1624}
+.s1-wire-node.role.active{border-color:#f2d38b;background:#f2d38b12;box-shadow:inset 0 2px #f2d38b}
+.s1-wire-node.color{padding:12px 5px 10px;gap:2px;justify-content:center;border-color:#3e587280;background:#c3dfff04;border-radius:10px}
+.s1-wire-node.color.connected{border-color:color-mix(in srgb,var(--wire) 65%,#304759);background:color-mix(in srgb,var(--wire) 7%,#091421)}
+.s1-wire-node.color b{font-size:15px;line-height:1.4;color:#edf5ff}
+.s1-wire-node.color small{font-size:11px;line-height:1.5;color:#a9c1d8}
+.s1-wire-node.color .s1-wire-plug{top:-9px;width:18px;height:18px;box-shadow:0 0 0 4px #0b1624,0 0 9px color-mix(in srgb,var(--wire) 50%,transparent)}
+.s1-star-visual{flex:none;width:min(100%,clamp(100px,10vw,140px));height:auto;aspect-ratio:1;border:0;border-radius:0;background:transparent;box-shadow:none;mix-blend-mode:screen;mask-image:radial-gradient(circle,#000 40%,transparent 72%)}
+.s1-wire-node.color .s1-star-visual img{width:100%;height:100%;max-width:none;object-fit:cover;transform:scale(3.6);filter:saturate(.95)}
+.s1-wire-line{stroke-width:3;filter:drop-shadow(0 0 2px var(--wire))}
+.s1-wire-shadow{stroke-width:6;opacity:.65}
+
+/* Observations retain the whole photograph, with readable labels and controls. */
+.s1-record{padding:12px;border-color:#4a647e;border-radius:12px;background:#0d1c2d}
+.s1-record-copy>span{font-size:14px;line-height:1.6}.s1-record-copy>b{font-size:15px}
+.s1-record-image{background:transparent}
+.s1-record-image img{mix-blend-mode:screen}
+.s2-guide p,.s2-role-intel p,.s2-science-note,.s2-coop-note,.s2-selection-note{font-size:14px;line-height:1.6}
+.s2-card small,.s2-star-chip small,.s2-slot-label{font-size:12px}
+.s2-mission-chain span{font-size:11px}
+.s3-p1-bank p,.s3-analysis-side p,.s3-reference-bank p,.s3-lock-bank p,.s3-analysis-console p{font-size:14px;line-height:1.6}
+.s3-selection-help,.s3-distance-rule>b{font-size:12px;line-height:1.5}
+.s4-sort-layout h3{font-size:17px}.s4-token{font-size:15px;min-height:46px}
+.s4-observation-image{aspect-ratio:4/3;background:#030911}
+.s4-observation-image img{width:100%;height:100%;object-fit:contain}
+.s4-observation>img{height:auto;aspect-ratio:4/3;object-fit:contain;background:#030911}
+.s4-observation,.s4-sort-layout aside{border-color:#425c73;background:#0c1b2c}
+.s4-drop small{font-size:11px}.s4-drop b,.s4-drop span{font-size:14px}
+.s4-chip span{font-size:12px;line-height:1.4}.s4-chip{border-color:#5c839a88}
+.s4-puzzle-footer{gap:12px;margin-top:16px;padding-top:14px}
+
+@media(max-width:900px){
+  .student{display:block;width:100%}
+  .s1-wire-panel{grid-template-columns:190px minmax(0,1fr);gap:14px}
+  .s1-wire-guide>b{font-size:18px}.s1-wire-guide>p{font-size:13px}
+  .s1-wire-board{padding:12px 8px;gap:0 7px;grid-template-rows:70px minmax(60px,1fr) 166px;min-height:320px}
+  .s1-wire-bank.roles,.s1-wire-bank.colors{gap:7px}
+  .s1-wire-node.role{min-height:70px}.s1-wire-node.role b{font-size:16px}.s1-wire-node.role small{font-size:11px}
+  .s1-wire-node.color b{font-size:13px}.s1-star-visual{width:min(100%,88px);height:auto}
+}
+@media(max-width:700px){
+  .s1-puzzle,.s2-puzzle,.s3-puzzle{width:calc(100% - 12px);max-height:calc(100% - 12px);border-radius:12px}
+  .s3-puzzle-distance{height:calc(100% - 12px)}
+  .s1-puzzle-body,.s2-puzzle-body,.s3-puzzle-body,.s4-modal-body{padding:12px}
+  .s1-puzzle-head,.s2-puzzle-head,.s3-puzzle-head,.s4-modal-card>header{min-height:65px;padding:11px 12px}
+  .s4-modal-card>header{padding-right:63px}.s4-modal-card>header .s4-close{top:11px;right:11px}
+  .s1-puzzle-head h2,.s2-puzzle-head h2,.s3-puzzle-head h2,.s4-modal-card>header h2{font-size:18px}
+  .s1-puzzle-head small,.s2-puzzle-head small,.s3-puzzle-head small,.s4-modal-card>header small{font-size:9px}
+  .s1-footer,.s2-footer,.s3-puzzle-footer{padding:10px 12px;gap:8px;min-height:60px}
+  .s1-feedback:empty,.s2-feedback:empty{display:none}
+  .s1-feedback,.s2-feedback,.s3-feedback,.s4-feedback{font-size:12px}
+  .s1-wire-panel{grid-template-columns:1fr;gap:14px}
+  .s1-wire-guide{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:7px 10px;padding:0}
+  .s1-wire-guide>small,.s1-wire-guide>b,.s1-wire-guide>p{grid-column:1/-1}
+  .s1-wire-guide>b{font-size:18px}.s1-wire-guide>p{font-size:12px;line-height:1.55}
+  .s1-wire-steps{font-size:11px;gap:2px;margin:0;align-self:center}
+  .s1-temperature-note{padding:7px}.s1-temperature-note small{font-size:9px}.s1-temperature-note strong{font-size:11px;line-height:1.4;margin-top:3px}
+  .s1-wire-actions{grid-column:1/-1;padding:0;margin:0;justify-content:flex-end;gap:8px}
+  .s1-wire-actions button,.s1-wire-actions span{min-height:32px;padding:6px 9px;font-size:11px}
+  .s1-wire-board{min-height:260px;grid-template-rows:70px 48px 124px;padding:8px 6px;column-gap:5px}
+  .s1-wire-bank.roles,.s1-wire-bank.colors{gap:5px}
+  .s1-wire-node.role{padding:7px 2px 18px}.s1-wire-node.role b{font-size:15px}.s1-wire-node.role small{font-size:10px}
+  .s1-wire-node.color{padding:9px 2px 6px}.s1-wire-node.color b{font-size:12px}.s1-wire-node.color small{font-size:10px}
+  .s1-star-visual{width:min(100%,clamp(45px,13vw,76px));height:auto}
+  .s4-modal{padding:6px}.s4-token{font-size:12px;min-height:42px}
+  .s4-chip span{font-size:10px}.s4-chip{padding:4px;min-height:85px}
+  .s4-sort-layout aside>p,.s4-core-layout aside>p,.s4-modal-body>p{font-size:12px}
+  .brand small{font-size:7px}.metric span{font-size:8px}
+}
+@media(max-height:620px) and (orientation:landscape){
+  .s1-puzzle,.s2-puzzle,.s3-puzzle{max-height:calc(100% - 10px);width:min(1160px,calc(100% - 10px))}
+  .s1-puzzle-head,.s2-puzzle-head,.s3-puzzle-head,.s4-modal-card>header{min-height:54px;padding-top:8px;padding-bottom:8px}
+  .s1-puzzle-head h2,.s2-puzzle-head h2,.s3-puzzle-head h2,.s4-modal-card>header h2{font-size:17px}
+  .s1-puzzle-body,.s2-puzzle-body,.s3-puzzle-body,.s4-modal-body{padding:10px}
+  .s1-footer,.s2-footer,.s3-puzzle-footer{min-height:54px;padding:6px 12px}
+  .s1-wire-panel{grid-template-columns:190px minmax(0,1fr);gap:12px}
+  .s1-wire-guide{display:flex;gap:5px}.s1-wire-guide>b{font-size:16px}.s1-wire-guide>p{font-size:11px;line-height:1.5}
+  .s1-wire-steps{display:none}.s1-temperature-note{padding:6px}.s1-temperature-note strong{font-size:11px;line-height:1.4;margin-top:2px}
+  .s1-temperature-note small{font-size:10px}.s1-wire-actions{margin-top:auto;justify-content:space-between}
+  .s1-wire-board{min-height:238px;grid-template-rows:62px 40px 120px;padding:8px;column-gap:6px}
+  .s1-wire-node.role{min-height:62px;padding:6px 2px 16px;gap:2px}
+  .s1-wire-node.role b{font-size:15px}.s1-wire-node.role small{font-size:10px}
+  .s1-star-visual{width:min(100%,60px);height:auto}.s1-wire-node.color b{font-size:12px}.s1-wire-node.color small{font-size:10px}
+}
