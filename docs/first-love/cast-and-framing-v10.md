@@ -47,6 +47,14 @@ preserved. This resolves the reported desktop shrink without hiding objects.
 Saved dialogue indices remain compatible: no lines were added or removed.
 No database, catalog, lesson-content, scoring or ending-threshold changes.
 
+## Production verification
+
+Commit `72912dbce2eeda72ea9091419054d77633c2fb6d` is live through deployment
+`dpl_6Sdx8MG17TbtgZ4Nfe9p5HTqUtHy`, READY with the production alias attached.
+The existing SciLab run page loads `yunjae-v10.webp` on the cover and the bright
+Doha smile on P6 line 5/6. Production screenshot: `doha-smile-live-v10.jpg`.
+The managed preview was stopped after verification.
+
 ## Image generation record
 
 Tool mode: built-in image_gen. New Yunjae uses the old portrait as a style,
