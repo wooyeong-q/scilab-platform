@@ -1,0 +1,46 @@
+import {validateLesson,STAGES,PLAY_ORDER} from './content.mjs';
+import {SAMPLE} from './sample.mjs';
+import {esc,lines} from './puzzle-ui.mjs';
+const KEY='scilab-common-escape-teacher-v2';
+export class Author{
+ constructor(root,{preview,home}){this.root=root;this.preview=preview;this.home=home;this.lesson=SAMPLE;this.active=false;this.timer=null;this.polling=false;this.error='';this.warnings=[];this.view=null;this.busy=false;try{this.identity=JSON.parse(localStorage.getItem(KEY));}catch{this.identity=null;}}
+ pause(){this.active=false;clearTimeout(this.timer);}
+ async api(method='GET',data){const headers={'x-teacher-key':this.identity.teacherKey};if(data)headers['content-type']='application/json';const r=await fetch('/api/labs/common-escape/sessions/'+this.identity.code,{method,headers,body:data?JSON.stringify(data):undefined,cache:'no-store',signal:AbortSignal.timeout(12000)});const v=await r.json();if(!r.ok)throw new Error(v.error||'수업 연결을 확인해 주세요.');return v;}
+ show(){this.active=true;this.view=null;this.render();}
+ render(){
+   if(!this.active)return;
+   if(this.view)return this.renderClass();
+   const p=this.lesson;
+   this.root.innerHTML=`<main class="author-page"><header><div><span class="eyebrow">SCILAB · 마지막 방송</span><h1>방탈출 수업 준비</h1><p>엑셀을 바꾸면 같은 학교에서 다른 교과의 퍼즐이 펼쳐집니다.</p></div><nav class="author-nav" aria-label="수업 안내"><a class="guide-link" href="${window.__commonEscapeOffline?'https://scilab-platform.vercel.app/labs/common-escape/guide.html':'./guide.html'}" target="_blank" rel="noopener">자세한 사용법 ↗</a><button class="ghost-button" data-author="home">처음 화면</button></nav></header><section class="author-steps"><div><b>1</b><h2>양식과 프롬프트 받기</h2><p>두 파일과 수업 자료를 AI에 함께 전달하세요.</p><a class="ghost-button" download="공용방탈출_엑셀양식.xlsx" href="${window.__commonEscapeTemplateURL||'./common-escape-template.xlsx'}">엑셀 양식</a><a class="ghost-button" download="공용방탈출_AI작성프롬프트.txt" href="${window.__commonEscapePromptURL||'./authoring-prompt.txt'}">AI 작성 프롬프트</a><button data-author="copy-prompt" class="ghost-button">프롬프트 복사</button></div><div><b>2</b><h2>완성된 엑셀 올리기</h2><p>빈칸·정답 연결·네 자리의 단서·마지막 경로를 검사합니다.</p><label class="file-picker">엑셀 선택<input type="file" id="lesson-file" accept=".xlsx" ${this.busy?'disabled':''}></label><p class="file-status" role="status">${esc(this.error||'검사 후 아래에서 수업 내용을 확인하세요.')}</p></div><div><b>3</b><h2>학생 화면으로 확인</h2><p>배치와 단서를 확인한 뒤 수업을 개설하세요.</p><button class="primary" data-author="preview">전체 체험</button>${window.__commonEscapeOffline?'<p class="subtle">이 파일에서는 개인 체험과 엑셀 검사를 할 수 있어요. 모둠 수업은 웹사이트에서 개설하고 참여하세요.</p>':`<button class="ghost-button" data-author="create" ${this.busy?'disabled':''}>이 자료로 수업 만들기</button>`}</div></section>${this.warnings.map(w=>`<p class="author-warning">${esc(w)}</p>`).join('')}<section class="lesson-overview"><div><small>선택한 수업</small><h2>${esc(p.meta.title)}</h2><p>${esc(p.meta.grade)} · ${esc(p.meta.subject)} · ${esc(p.meta.unit)}</p></div><button class="ghost-button" data-author="sample">정수 연습 자료로 보기</button><table><thead><tr><th>장소</th><th>퍼즐</th><th>학생의 조작</th><th>확인</th></tr></thead><tbody>${PLAY_ORDER.map(id=>p.puzzles.find(s=>s.id===id)).map(s=>`<tr><td>${esc(s.room)}</td><td>${esc(s.title)}</td><td>${({'select-order':'기록 선별과 순서 복원',matrix:'두 기준으로 화면 복원',circuit:'연동 스위치 조작',order:'기록 순서 배치',match:'도서와 반납 칸 대응',classify:'자료 분류',compare:'달라진 방송 표시',connect:'전선 연결',photo:'사진 대조와 재탐색',route:'회전·경로·기호 통합'})[s.type]}</td><td><button data-author="stage" data-id="${s.id}">미리보기</button></td></tr>`).join('')}</tbody></table></section>${this.identity&&!window.__commonEscapeOffline?'<button class="ghost-button" data-author="resume">내 수업 이어보기</button>':''}</main>`;
+   this.bind();
+ }
+ bind(){this.root.querySelectorAll('[data-author]').forEach(b=>b.addEventListener('click',()=>this.action(b.dataset.author,b.dataset.id)));this.root.querySelector('#lesson-file')?.addEventListener('change',e=>this.upload(e.target.files[0]));}
+ async upload(file){
+   if(!file||this.busy)return;this.busy=true;this.error='엑셀을 확인하고 있어요.';this.render();
+   try{let result;if(window.__commonEscapeImport)result=await window.__commonEscapeImport(new Uint8Array(await file.arrayBuffer()),file.name);else{const r=await fetch('/api/labs/common-escape/import',{method:'POST',headers:{'content-type':'application/octet-stream','x-file-name':encodeURIComponent(file.name)},body:file,signal:AbortSignal.timeout(20000)});result=await r.json();if(!r.ok)throw new Error(result.error);}
+     this.lesson=validateLesson(result.lesson);this.warnings=result.warnings||[];this.error='불러왔어요. 단계별 미리보기에서 내용과 풀이를 확인하세요.';
+   }catch(e){this.error=e.message;this.warnings=[];}finally{this.busy=false;this.render();}
+ }
+ async action(action,id){
+   if(this.busy)return;
+   try{
+    if(action==='home'){this.pause();return this.home();}
+    if(action==='preview'||action==='stage'){this.pause();return this.preview(this.lesson,action==='stage'?id:null);}
+    if(action==='sample'){this.lesson=SAMPLE;this.error='정수 연습 자료를 선택했어요.';return this.render();}
+    if(action==='copy-prompt'){const t=window.__commonEscapePrompt||await (await fetch('./authoring-prompt.txt')).text();await navigator.clipboard.writeText(t);this.error='AI 작성 프롬프트를 복사했어요.';return this.render();}
+    if(action==='create'){
+      this.busy=true;const r=await fetch('/api/labs/common-escape/sessions',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({lesson:validateLesson(this.lesson)}),signal:AbortSignal.timeout(20000)});const v=await r.json();if(!r.ok)throw new Error(v.error);this.identity=v;localStorage.setItem(KEY,JSON.stringify(v));this.view=await this.api();this.poll();
+    }
+    if(action==='resume'){this.view=await this.api();this.poll();}
+    if(action==='back'){this.view=null;clearTimeout(this.timer);}
+    if(action==='copy'){await navigator.clipboard.writeText(this.identity.code);return;}
+    if(['start','end','remove'].includes(action)){
+      if(action==='end'&&!window.confirm('이 수업을 종료할까요? 학생들은 진행 결과를 확인할 수 있지만 더 풀 수 없게 됩니다.'))return;
+      if(action==='remove'&&!window.confirm('이 학생의 자리를 비울까요? 나머지 모둠원이 해당 단서를 확인할 수 있게 됩니다.'))return;
+      this.view=await this.api('POST',{action,playerId:id});
+    }
+   }catch(e){this.error=e.message;}finally{this.busy=false;this.render();}
+ }
+ renderClass(){const v=this.view;this.root.innerHTML=`<main class="author-page"><header><div><span class="eyebrow">수업 진행</span><h1>${esc(v.title)}</h1><p>${v.status==='waiting'?'학생들이 들어오면 수업을 시작하세요.':v.status==='ended'?'종료된 수업입니다.':'각 모둠은 자유롭게 이동하며 같은 퍼즐을 해결합니다.'}</p></div><nav class="author-nav" aria-label="수업 안내"><a class="guide-link" href="${window.__commonEscapeOffline?'https://scilab-platform.vercel.app/labs/common-escape/guide.html':'./guide.html'}" target="_blank" rel="noopener">자세한 사용법 ↗</a><button class="ghost-button" data-author="home">처음 화면</button></nav></header><section class="class-controls"><button class="group-code" data-author="copy">${esc(v.code)}<small>학생에게 안내할 수업 코드</small></button>${v.status==='waiting'?'<button class="primary" data-author="start">모든 모둠 시작</button>':''}${v.status!=='ended'?'<button class="ghost-button" data-author="end">수업 종료</button>':'<button class="ghost-button" data-author="back">새 수업 준비</button>'}<p class="file-status" role="status">${esc(this.error)}</p></section><div class="teacher-teams">${v.teams.length?v.teams.map(t=>`<section class="teacher-team"><h2>${t.number}모둠 <small>${t.members.length}/4명</small></h2><p>${esc(t.goal.text)}</p><div class="team-members">${[1,2,3,4].map(role=>{const m=t.members.find(m=>m.role===role);return `<div><b>${role}번</b><span>${m?esc(m.name):'빈자리 · 모두 열람 가능'}</span>${m?`<button data-author="remove" data-id="${m.id}">내보내기</button>`:''}</div>`;}).join('')}</div></section>`).join(''):'<p>아직 입장한 모둠이 없어요.</p>'}</div></main>`;this.bind();}
+ poll(){clearTimeout(this.timer);if(!this.active||!this.view)return;this.timer=setTimeout(async()=>{if(this.polling)return;this.polling=true;try{const v=await this.api();if(this.active&&this.view){this.view=v;this.error='';this.render();}}catch(e){this.error=e.message;if(this.active)this.render();}finally{this.polling=false;if(this.active&&this.view)this.poll();}},5000);}
+}

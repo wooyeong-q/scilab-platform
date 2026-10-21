@@ -1,0 +1,88 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="theme-color" content="#101816">
+  <meta name="description" content="마지막 방송 공용 방탈출: 교사용 엑셀·AI 문제 제작, 수업 개설과 학생 모둠 활동 사용법.">
+  <title>마지막 방송 · 사용법</title>
+  <style>
+    :root{color-scheme:dark;--bg:#101816;--panel:#19241f;--line:#849b853d;--text:#e9ebdf;--muted:#b3bfb2;--accent:#e4bb7b;font-family:"Pretendard","Noto Sans KR","Apple SD Gothic Neo","Malgun Gothic",sans-serif;font-synthesis:none}
+    *{box-sizing:border-box}html{scroll-behavior:smooth;scroll-padding-top:25px}body{margin:0;background:var(--bg);color:var(--text);line-height:1.8}a{color:var(--accent);text-underline-offset:4px}a:focus-visible,summary:focus-visible{outline:2px solid var(--accent);outline-offset:5px}p,li{word-break:keep-all;overflow-wrap:anywhere}h1,h2,h3{line-height:1.45;word-break:keep-all}h2{font-size:25px;margin:0 0 24px}h3{font-size:18px;margin:0 0 8px}p{margin:8px 0 16px}.wrap{width:min(100% - 40px,980px);margin:auto}.top{display:flex;justify-content:space-between;align-items:center;gap:20px;padding:24px 0;border-bottom:1px solid var(--line)}.brand{font-size:12px;letter-spacing:.14em;color:var(--muted)}.button{display:inline-flex;justify-content:center;align-items:center;min-height:44px;padding:10px 18px;border:1px solid var(--line);border-radius:4px;color:var(--text);text-decoration:none}.button:hover{background:#ffffff09}.button.primary{background:var(--accent);border-color:var(--accent);color:#17201b;font-weight:700}.eyebrow{color:var(--accent);font-size:12px;letter-spacing:.12em}.hero{padding:58px 0 32px}.hero h1{font-size:clamp(32px,5vw,50px);font-weight:500;margin:12px 0 18px;letter-spacing:-.04em}.intro{color:var(--muted);max-width:690px;font-size:17px}.facts{display:flex;flex-wrap:wrap;gap:8px;margin:24px 0}.facts span{font-size:13px;border:1px solid var(--line);padding:5px 12px;border-radius:30px}.nav{display:flex;flex-wrap:wrap;gap:12px 26px;padding:18px 0;border-block:1px solid var(--line);font-size:14px}.nav a{text-decoration:none}section{padding:40px 0;border-bottom:1px solid var(--line)}.section-label{font-size:12px;color:var(--accent);display:block;margin-bottom:8px}.steps{list-style:none;counter-reset:step;margin:0;padding:0;display:grid;gap:24px}.steps>li{position:relative;padding-left:48px;counter-increment:step}.steps>li::before{content:counter(step,decimal-leading-zero);position:absolute;left:0;top:2px;color:var(--accent);font:17px/1.8 monospace}.steps p{color:var(--muted);margin:0}.actions{display:flex;flex-wrap:wrap;gap:10px;margin:16px 0}.note{margin-top:24px;padding:18px 22px;background:var(--panel);border-left:3px solid var(--accent);border-radius:0 4px 4px 0}.note p:last-child{margin-bottom:0}.grid{display:grid;grid-template-columns:1fr 1fr;gap:16px}.card{border:1px solid var(--line);padding:22px;border-radius:5px}.card p{color:var(--muted);margin-bottom:0}.table-wrap{overflow-x:auto}table{width:100%;border-collapse:collapse;text-align:left;font-size:14px}th,td{border-bottom:1px solid var(--line);padding:13px 15px;vertical-align:top}th{color:var(--accent);font-weight:600}td:first-child{white-space:nowrap}td{color:var(--muted)}details{border-top:1px solid var(--line);padding:16px 0}details:last-child{border-bottom:1px solid var(--line)}summary{cursor:pointer;font-weight:600;min-height:30px}details p{margin:12px 0 0;color:var(--muted)}ul.checks{padding-left:22px;color:var(--muted)}ul.checks li+li{margin-top:8px}footer{padding:28px 0 40px;color:var(--muted);font-size:13px}.screen-only{display:inline-flex}
+    @media(max-width:620px){.wrap{width:calc(100% - 32px)}.hero{padding-top:38px}.grid{grid-template-columns:1fr}.top .brand{font-size:10px}.top .button{padding:8px 12px;font-size:13px}.steps>li{padding-left:38px}.card{padding:18px}section{padding:32px 0}th,td{padding:10px}}
+    @media(prefers-reduced-motion:reduce){html{scroll-behavior:auto}}
+    @media print{:root{color-scheme:light;--bg:#fff;--panel:#f3f5f3;--line:#ccc;--text:#111;--muted:#333;--accent:#344e3d}body{font-size:10pt}.wrap{width:100%}.top,.nav,.actions,.screen-only{display:none}.hero{padding:0 0 12px}.hero h1{font-size:25pt}section{padding:18px 0}h2{font-size:17pt;break-after:avoid}h3{font-size:12pt}.steps>li,.card,.note{break-inside:avoid}.grid{grid-template-columns:1fr 1fr}details{break-inside:avoid}details p{display:block}a{color:inherit;text-decoration:none}}
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <header class="top"><span class="brand">SCILAB / 마지막 방송</span><a class="button" href="./index.html">게임 열기</a></header>
+    <main>
+      <div class="hero">
+        <span class="eyebrow">교사 · 학생 사용법</span>
+        <h1>각자의 단서를 모아,<br>함께 학교를 탈출하세요.</h1>
+        <p class="intro">학교 괴담을 배경으로 한 공용 방탈출입니다. 이야기와 장치는 그대로 두고, 엑셀로 교과 자료·문제·대사·힌트를 바꿀 수 있습니다.</p>
+        <div class="facts"><span>총 10개 퍼즐</span><span>모둠당 1~4명</span><span>최대 12모둠</span><span>모든 교과 활용</span></div>
+        <p>처음이라면 <strong>혼자 체험하기</strong>로 흐름을 확인하세요. 기본 자료는 수학 ‘정수의 계산’입니다. 실제 모둠 수업에서는 학생이 각자 기기와 브라우저로 접속합니다.</p>
+      </div>
+      <nav class="nav" aria-label="사용법 목차"><a href="#teacher">교사: 수업 준비</a><a href="#student">학생: 모둠 활동</a><a href="#workbook">엑셀·AI 활용</a><a href="#help">자주 묻는 질문</a></nav>
+      <section id="teacher">
+        <span class="section-label">FOR TEACHERS</span><h2>교사: 준비부터 수업 종료까지</h2>
+        <ol class="steps">
+          <li><h3>수업 자료 준비하기</h3><p>첫 화면에서 <strong>교사 · 수업 준비</strong>를 누릅니다. 기본 자료를 바로 사용하거나, 아래 엑셀 양식과 AI 작성 프롬프트로 원하는 교과 자료를 만드세요.</p><div class="actions"><a class="button" href="./common-escape-template.xlsx" download="공용방탈출_엑셀양식.xlsx">엑셀 양식 받기</a><a class="button" href="./authoring-prompt.txt" download="공용방탈출_AI작성프롬프트.txt">AI 프롬프트 받기</a></div></li>
+          <li><h3>엑셀 올리고 미리보기</h3><p><strong>엑셀 선택</strong>으로 완성된 .xlsx 파일을 올립니다. 검사 결과를 확인하고, 각 퍼즐의 <strong>미리보기</strong>와 <strong>전체 체험</strong>에서 자료·정답·힌트를 검토하세요. 자동 검사는 파일 구조와 정답 연결을 확인하며, 교과 내용의 정확성은 교사가 확인해야 합니다.</p></li>
+          <li><h3>수업 만들고 코드 안내하기</h3><p><strong>이 자료로 수업 만들기</strong>를 누르면 8자리 수업 코드가 나옵니다. 학생에게 게임 주소, 수업 코드, 모둠 번호, 각자의 자리 번호(1~4번)를 알려 주세요. 코드 버튼을 누르면 복사됩니다.</p></li>
+          <li><h3>입장 확인 후 함께 시작하기</h3><p>모둠별 이름과 자리를 확인한 뒤 <strong>모든 모둠 시작</strong>을 누릅니다. 4명 미만인 모둠은 빈자리의 단서를 남은 학생이 확인할 수 있으므로 가상의 학생을 추가하지 않아도 됩니다.</p></li>
+          <li><h3>진행 살피고 마무리하기</h3><p>교사 화면에서 모둠별 현재 목표와 참여자를 확인합니다. 잘못 들어온 학생은 <strong>내보내기</strong>로 자리를 비울 수 있습니다. 활동이 끝나면 <strong>수업 종료</strong>를 누르세요. 종료 후에는 기존 참여자가 진행 결과를 볼 수 있지만 추가 풀이와 새 입장은 막힙니다.</p></li>
+        </ol>
+        <aside class="note"><strong>접속 정보는 같은 브라우저에 보관됩니다.</strong><p>수업은 개설 후 7일 동안 접속할 수 있습니다. 교사는 수업을 만든 기기·브라우저에서 <strong>교사 · 수업 준비 → 내 수업 이어보기</strong>를 이용하세요. 시크릿 모드나 브라우저 데이터 삭제 시 교사 접속 정보를 잃을 수 있습니다. 수업을 개설한 뒤에는 그 수업의 문제를 바꿀 수 없으며, 수정한 자료로 새 수업을 만들어야 합니다.</p></aside>
+      </section>
+      <section id="student">
+        <span class="section-label">FOR STUDENTS</span><h2>학생: 네 자리, 하나의 탈출</h2>
+        <ol class="steps">
+          <li><h3>내 모둠과 자리로 입장하기</h3><p>첫 화면의 <strong>수업에 참가</strong>를 누르고 이름, 수업 코드, 모둠 번호, 자리 번호를 입력합니다. 같은 모둠끼리는 모둠 번호를 맞추고, 자리는 서로 다르게 선택하세요. 선생님이 시작하면 탐색할 수 있습니다.</p></li>
+          <li><h3>현재 목표에 따라 학교 탐색하기</h3><p>새 목표가 나오면 안내 창과 화면 위 <strong>현재 목표</strong>를 확인하세요. 지도에서 장소를 옮기고 표시된 물건을 눌러 조사합니다. 아직 열리지 않는 물건은 다른 장소의 기록을 찾은 뒤 다시 확인해 보세요.</p></li>
+          <li><h3>내 단서를 말로 설명하고 함께 풀기</h3><p>네 자리는 서로 다른 기록을 봅니다. <strong>내 단서</strong>에서 자기 자료를 확인하고, 모둠원에게 내용과 판단 근거를 설명하세요. 풀이를 합의한 뒤 한 명이 장치를 조작하고 제출하면 됩니다.</p></li>
+        </ol>
+        <div class="grid" style="margin-top:26px">
+          <div class="card"><h3>공유되는 진행</h3><p>찾은 물건, 열린 장치, 해결한 퍼즐은 모둠에 함께 반영됩니다. 이동한 장소와 제출 전 배치는 각자 다를 수 있습니다.</p></div>
+          <div class="card"><h3>인원이 부족할 때</h3><p><strong>내 단서</strong>에서 빈자리 번호를 눌러 대신 확인하세요. 자리를 차지한 학생이 활동에 참여하지 못한다면 선생님에게 자리 정리를 요청합니다.</p></div>
+          <div class="card"><h3>막혔을 때</h3><p>현재 목표, 챙긴 물건, <strong>탐색 기록</strong>을 다시 확인하세요. 장치의 힌트를 하나씩 열어 모둠에서 풀이 방향을 의논합니다.</p></div>
+          <div class="card"><h3>소리와 공포 연출</h3><p>화면 위 소리 버튼으로 효과음을 켜거나 끕니다. 설정의 <strong>소리 확인</strong>으로 재생을 점검할 수 있고, <strong>공포 연출 줄이기</strong>를 켜면 등장과 화면 변화가 글 안내로 바뀝니다.</p></div>
+        </div>
+        <aside class="note"><strong>창이 닫혀도 다시 이어갈 수 있어요.</strong><p>같은 기기·브라우저로 게임을 열고 <strong>내 모둠 이어하기</strong>를 누르세요. 한 브라우저에는 한 학생의 접속 정보가 저장됩니다. 한 기기를 함께 볼 때는 한 자리로 입장해 빈자리 단서를 같이 읽을 수 있지만, 각자의 단서를 나눠 보는 활동은 개인별 기기를 권장합니다.</p></aside>
+      </section>
+      <section id="workbook">
+        <span class="section-label">BUILD YOUR LESSON</span><h2>엑셀과 AI로 교과 문제 바꾸기</h2>
+        <p>교과 문제는 수업 기록, 도서, 방송 대본 등 게임 속 자료로 제시됩니다. 공통 이야기와 10개 퍼즐의 흐름은 유지되며, 마지막 탐색·종합 퍼즐도 같은 장치 규칙 안에서 작동합니다.</p>
+        <ol class="steps">
+          <li><h3>양식과 수업 자료를 AI에 첨부</h3><p>내려받은 엑셀과 사용하려는 수업 자료를 ChatGPT 등 파일 편집이 가능한 AI에 올립니다. 프롬프트 파일의 내용을 붙여 넣고 과목·단원·학년·난이도·학습 목표를 함께 알려 주세요.</p></li>
+          <li><h3>채워진 엑셀 파일로 받기</h3><p>시트 이름, 열 이름, 퍼즐 ID와 형식을 유지한 .xlsx 파일을 요청하세요. 화면에 나온 표만 복사하는 방식보다 원래 양식에 값을 채운 파일을 받는 것이 좋습니다. 파일을 만들 수 없는 AI라면 생성한 내용을 교사가 양식의 해당 칸에 입력할 수 있습니다.</p></li>
+          <li><h3>오류를 고치고 실제 풀이 검토</h3><p>게임에 올렸을 때 오류가 나오면 해당 메시지와 파일을 AI에 다시 전달해 수정합니다. 검사에 통과한 뒤에도 복수 정답, 잘못된 지식, 정답을 노출하는 대사, 서로 맞지 않는 모둠 단서가 없는지 확인하세요.</p></li>
+        </ol>
+        <div class="table-wrap" style="margin-top:24px"><table><thead><tr><th scope="col">시트</th><th scope="col">바꾸는 내용</th></tr></thead><tbody>
+          <tr><td>설정</td><td>수업명·과목·단원·대상</td></tr>
+          <tr><td>퍼즐</td><td>과제·공통자료·도입과 완료 대사·단계별 힌트</td></tr>
+          <tr><td>자료</td><td>학생이 읽을 기록·담당 자리·정답·대본·그림</td></tr>
+          <tr><td>대상</td><td>자료를 놓거나 연결할 위치의 이름과 설명</td></tr>
+          <tr><td>모둠단서</td><td>각 자리가 확인할 단서</td></tr>
+          <tr><td>장치</td><td>사진·기호·경로 등 공통 장치의 설정</td></tr>
+        </tbody></table></div>
+        <ul class="checks"><li>행의 ID와 시트 구조는 유지하고, 수식 대신 결과 값을 입력하세요. .xls나 .csv가 아닌 <strong>.xlsx</strong>로 저장합니다.</li><li>전체 파일은 <strong>3MB 이하</strong>입니다. 삽입 그림은 PNG·JPG·WEBP 형식, 한 장당 500KB 이하로 준비하고 자료의 해당 행에 놓습니다. 그림이 있다면 그림 설명도 입력하세요.</li><li>프롬프트에는 선별·순서·분류·대조·연결·화면 배치·연동 스위치 등 각 퍼즐 형식의 작성 규칙이 들어 있습니다. 이를 유지하면 교과가 달라도 같은 게임 안에서 진행됩니다.</li></ul>
+      </section>
+      <section id="help">
+        <span class="section-label">HELP</span><h2>진행 중 궁금할 때</h2>
+        <details><summary>학생이 들어왔는데 시작되지 않아요.</summary><p>교사 화면에서 <strong>모든 모둠 시작</strong>을 눌렀는지 확인하세요. 학생 화면은 잠시 후 갱신됩니다. 계속 대기 상태라면 인터넷 연결을 확인하고 같은 브라우저에서 새로고침하세요.</p></details>
+        <details><summary>선택한 자리가 이미 사용 중이라고 나와요.</summary><p>모둠과 자리 번호를 먼저 확인하세요. 이전에 입장한 본인이라면 처음 화면의 <strong>내 모둠 이어하기</strong>를 사용합니다. 접속 정보를 잃었거나 다른 학생이 잘못 들어왔다면 교사가 그 학생을 내보낸 뒤 다시 입장하세요.</p></details>
+        <details><summary>모둠원이 보는 화면이 서로 달라요.</summary><p>장소와 제출 전 퍼즐 배치는 개인별로 유지되고, 담당 자료도 다릅니다. 같은 수업 코드·모둠 번호인지 확인하고 각자 찾은 정보를 말로 공유하세요. 정답을 제출해 해결한 결과와 수집한 기록은 함께 반영됩니다.</p></details>
+        <details><summary>소리가 안 들리거나 공포 연출이 부담스러워요.</summary><p>게임의 소리를 켜고 설정의 <strong>소리 확인</strong>을 눌러 보세요. 기기·브라우저의 음소거와 볼륨도 확인합니다. <strong>공포 연출 줄이기</strong>가 켜져 있으면 공포 배경음과 등장 연출이 줄어듭니다. 소리를 끄거나 연출을 줄여도 모든 문제를 풀 수 있습니다.</p></details>
+        <details><summary>엑셀 검사에 실패해요.</summary><p>화면에 표시된 시트·행·항목을 수정하세요. 최신 양식을 다시 받아 구조를 비교하고, ID·열 이름·담당 자리·정답 형식이 바뀌지 않았는지 확인합니다. 그림이 크면 용량을 줄여 다시 저장하세요.</p></details>
+        <details><summary>교사 화면을 닫았거나 다른 기기로 바꿨어요.</summary><p>수업을 만든 브라우저에 접속 정보가 남아 있으면 <strong>내 수업 이어보기</strong>로 돌아올 수 있습니다. 수업 코드만으로는 교사 권한을 복구할 수 없습니다. 원래 브라우저를 쓸 수 없다면 새 수업을 개설해 주세요. 새 수업에는 이전 모둠의 진행이 옮겨지지 않습니다.</p></details>
+        <details><summary>다운로드한 개인 체험 HTML에서도 모둠 수업을 할 수 있나요?</summary><p>개인 체험 파일은 혼자 플레이하고 엑셀을 검사하는 용도입니다. 학생들이 같은 진행을 공유하는 수업은 이 웹사이트의 게임 주소에서 개설하고 참여하세요.</p></details>
+      </section>
+      <div class="actions"><a class="button primary" href="./index.html">마지막 방송 시작하기</a><a class="button" href="#teacher">수업 준비 다시 보기</a></div>
+    </main>
+    <footer>마지막 방송 · 공용 방탈출 사용법 · 2026.10<br>교과 내용과 난이도는 수업 전에 미리 확인해 주세요.</footer>
+  </div>
+</body>
+</html>

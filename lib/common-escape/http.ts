@@ -1,0 +1,10 @@
+import {sql} from '@/lib/db';
+import {createService} from './service.mjs';
+import {ContentError} from '../../public/labs/common-escape/content.mjs';
+export const service=createService(async (statement,params=[])=>{if(!sql)throw new ContentError('수업 서버에 연결할 수 없습니다.',503);return await sql.query(statement,params,{fetchOptions:{signal:AbortSignal.timeout(10000),cache:'no-store'}}) as any[];});
+export const json=(v:unknown,status=200)=>Response.json(v,{status,headers:{'Cache-Control':'no-store','X-Content-Type-Options':'nosniff'}});
+export const token=(r:Request)=>(r.headers.get('authorization')||'').replace(/^Bearer /,'');
+export function checkOrigin(r:Request){const o=r.headers.get('origin');if(o&&o!==new URL(r.url).origin)throw new ContentError('같은 사이트에서 요청해 주세요.',403);}
+export async function limitedBytes(r:Request,max:number){if(Number(r.headers.get('content-length')||0)>max)throw new ContentError('전송할 파일이 너무 큽니다.',413);const reader=r.body?.getReader();if(!reader)return new Uint8Array();const chunks:Uint8Array[]=[];let size=0;try{while(true){const {value,done}=await reader.read();if(done)break;size+=value.length;if(size>max){await reader.cancel();throw new ContentError('전송할 파일이 너무 큽니다.',413);}chunks.push(value);}}finally{reader.releaseLock();}const bytes=new Uint8Array(size);let offset=0;for(const chunk of chunks){bytes.set(chunk,offset);offset+=chunk.length;}return bytes;}
+export async function body(r:Request,max=16384){checkOrigin(r);if(!r.headers.get('content-type')?.includes('application/json'))throw new ContentError('요청 형식을 확인해 주세요.',415);let value;try{value=JSON.parse(new TextDecoder().decode(await limitedBytes(r,max)));}catch(e){if(e instanceof ContentError)throw e;throw new ContentError('요청 형식을 확인해 주세요.');}if(!value||typeof value!=='object'||Array.isArray(value))throw new ContentError('요청 형식을 확인해 주세요.');return value;}
+export function failure(e:unknown){if(e instanceof ContentError)return json({error:e.message},e.status);console.error('Common escape request failed',e instanceof Error?e.name:'unknown');return json({error:'서버 연결을 확인하고 다시 시도해 주세요. 진행은 유지됩니다.'},503);}
