@@ -6,10 +6,10 @@ export const STAGES=[
  ['P2','library','match','같이 보던 책','반납대'],
  ['P3','library','classify','비밀 유지가 너무 철저한데','정리대'],
  ['P4','library','compare','수정본을 믿으면 안 되는 이유','전달표'],
- ['P5','club','route-match','내 것은 어느 쪽으로 갔는데','전달 기록'],
+ ['P5','corridor','route-match','내 것은 어느 쪽으로 갔는데','전달 기록'],
  ['P6','club','select-order','확성기는 왜 있는데','준비대'],
  ['P7','club','matrix','그냥 넣으면 안 되는 거야?','보관함'],
- ['P8','club','deduce','이제 네가 가면 돼','인수 기록'],
+ ['P8','corridor','deduce','이제 네가 가면 돼','인수 기록'],
  ['P9','classroom','photo','아까와 같은 교실인데','사진 속 자리'],
  ['P10','classroom','integrate','결국, 내가 쓴 말','마지막 자료함'],
 ].map(([id,room,type,title,object])=>({id,room,type,title,object}));
@@ -38,7 +38,7 @@ export function validateLesson(input){
  if(endings.neutralMax<=endings.positiveMax)fail('설정: 당황 최대 오답은 미소 최대 오답보다 커야 합니다.');
  const raw=arr(input.puzzles,'퍼즐',8);if(raw.length!==8)fail('퍼즐: P1~P8을 한 번씩 입력하세요. P9~P10은 고정 관찰·통합 단계입니다.');unique(raw.map(p=>p.id),'퍼즐ID');
  const puzzles=STAGES.slice(0,8).map(stage=>{
-  const src=raw.find(p=>p.id===stage.id),label='퍼즐 '+stage.id;if(!src||src.type!==stage.type||src.room!==stage.room)fail(label+': 장소·형식 고정값을 유지하세요.');
+  const src=raw.find(p=>p.id===stage.id),label='퍼즐 '+stage.id;if(!src||src.type!==stage.type||(src.room!==stage.room&&!(['P5','P8'].includes(stage.id)&&src.room==='club')))fail(label+': 장소·형식 고정값을 유지하세요.');
   const p={...stage,task:str(src.task,label+' 공동과제'),reference:str(src.reference,label+' 공통자료',2000,true),explanation:str(src.explanation,label+' 해설',2000),hints:arr(src.hints,label+' 힌트',3).map((v,i)=>str(v,label+' 힌트'+(i+1)))};
   if(p.hints.length!==3)fail(label+': 힌트 3개가 필요합니다.');
   p.items=arr(src.items,label+' 자료',8).map((i,n)=>{

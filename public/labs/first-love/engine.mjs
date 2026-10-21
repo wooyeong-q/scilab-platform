@@ -58,7 +58,7 @@ export function playerContent(lesson,roles,s){
  if(s.stage>=5&&roles.includes(2))evidence.push({id:'delivery',title:'전달 순서 기록',text:'화면 기준으로 '+d.route.map(x=>({up:'↑',right:'→',down:'↓',left:'←'})[x]).join(' ')+'\n화살표마다 한 칸. 시작 칸에서는 이동하지 않습니다.'});
  if(s.stage>=8&&roles.includes(3))evidence.push({id:'direction',title:'위치표를 읽는 방향',text:`처음 위치표에서 시계 방향으로 ${d.turns*90}° 회전. 이후 화살표는 화면 기준으로 읽습니다.`});
  if(s.stage>=9&&roles.includes(4))evidence.push({id:'drawers',title:'교실에서 확인한 자료함',text:d.grid.map(symbol=>`${symbol} → ${d.drawers[symbol]}번 자료함`).join(' / ')});
- if(s.stage===8){for(const role of roles)clues.push({role,title:`${role}번의 사진`,text:['책상 위 붉은 끈으로 묶인 파일.','오른쪽 벽의 아홉 칸 자료함.','교탁 가까이 비스듬히 놓인 파란 파일.','세 사진은 같은 교실이다. 자료함의 글자와 표식은 서로 다르니 위치를 확인하자.'][role-1]});}
+ if(s.stage===8){for(const role of roles)clues.push({role,title:`${role}번의 사진`,text:['책상 위 붉은 끈으로 묶인 파일.','오른쪽 벽의 아홉 칸 자료함.','중앙 왼쪽 책상 위의 파란 파일.','세 사진은 같은 교실이다. 자료함의 글자와 표식은 서로 다르니 위치를 확인하자.'][role-1]});}
  if(s.stage===9)for(const role of roles)clues.push({role,title:`${role}번의 연결 기록`,text:['책갈피의 시작 표식을 확인하자.','전달 기록의 화살표는 화면 기준이다.','위치표 방향을 맞춘 뒤 시작한다.','마지막 표식을 실제 자료함 글자와 대응한다.'][role-1]});
  const puzzle=p?{id:p.id,type:p.type,room:p.room,title:p.title,task:p.task,reference:p.reference,targets:p.targets,items:p.items.map(({answer,via,original,passes,...i})=>i.owner&&!roles.includes(i.owner)?{id:i.id,label:i.label,owner:i.owner,hidden:true}:{...i,hidden:false}),clues:p.clues.filter(c=>roles.includes(c.role))}:null;
  return {meta:lesson.meta,puzzle,clues,evidence,grid:s.stage>=9?d.grid:[],moveCount:d.route.length};

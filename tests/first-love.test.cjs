@@ -110,3 +110,23 @@ test('30 clients across eight teams: concurrent joins, polling and independent a
  const fresh=await Promise.all(players.map(p=>service.state(room.code,p.key)));const unchanged=await Promise.all(players.map((p,i)=>service.state(room.code,p.key,fresh[i].group.revision,fresh[i].contentKey)));assert.ok(unchanged.every(v=>v===null));
  t.diagnostic(`30 logical clients on in-memory PostgreSQL/PGlite: ${Math.round(performance.now()-started)} ms; not a production load guarantee.`);
 });
+
+test('placed answers display visible content without revealing another player’s private card',async()=>{
+ const {puzzleHTML,interactionGuide,progress}=await import('../public/labs/first-love/puzzle-ui.mjs');
+ const lesson=structuredClone(SAMPLE);lesson.puzzles[0].items[1].text='PRIVATE-OTHER-PLAYER';
+ const state=e.fresh(),visible=e.playerContent(lesson,[1],state),answer={order:['B','A','','']};
+ const html=puzzleHTML(visible.puzzle,answer,'',visible);
+ assert.doesNotMatch(html,/PRIVATE-OTHER-PLAYER/);
+ assert.match(html,/2번 친구의 자료/);assert.match(html,/−2/);assert.match(html,/배치 취소/);
+ assert.deepEqual(progress(visible.puzzle,answer,visible),{count:2,total:4,label:'카드 배치'});
+ const all=e.playerContent(lesson,[1,2,3,4],state),full={order:['A','B','C','D']};
+ assert.match(puzzleHTML(all.puzzle,full,'',all),/PRIVATE-OTHER-PLAYER/);
+ assert.match(interactionGuide(all.puzzle,full,'',all),/아직 제출 전/);
+ assert.doesNotMatch(interactionGuide(all.puzzle,full,'',all,true),/아직 제출 전/);
+});
+
+test('existing lesson templates migrate only the two relocated corridor scenes',()=>{
+ const old=structuredClone(SAMPLE);old.puzzles[4].room='club';old.puzzles[7].room='club';
+ assert.deepEqual(c.validateLesson(old),SAMPLE);
+ old.puzzles[0].room='club';assert.throws(()=>c.validateLesson(old),/장소/);
+});
