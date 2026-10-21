@@ -113,3 +113,8 @@
   .catalogProgramCard { transition: none; }
   .catalogProgramLink:hover .catalogProgramCard { transform: none; }
 }
+
+/* Landscape activity previews remain readable at every card width. */
+.catalogCardVisual { height: auto; aspect-ratio: 2 / 1; align-items: flex-end; padding: 16px; }
+.programPreviewArt { position: absolute; inset: 0; width: 100%; height: 100%; display: block; }
+.catalogVisualLabel { background: rgba(255,255,255,.94); color: #3c506c; }

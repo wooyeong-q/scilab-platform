@@ -1,6 +1,7 @@
 'use client';
 
 import Link from 'next/link';
+import { ProgramPreview } from './ProgramPreview';
 import { ArrowUpRight, Clock3, Eye, GraduationCap, Heart, Sparkles } from 'lucide-react';
 import { programSubject, rememberProgram } from '@/lib/program-catalog';
 import type { Program } from '@/lib/programs';
@@ -17,9 +18,7 @@ export function ProgramCard({ program }: { program: Program }) {
     prefetch={false} onClick={() => rememberProgram(program.id)} aria-labelledby={titleId}>
     <article className={'catalogProgramCard tone-' + tone}>
       <div className="catalogCardVisual">
-        {program.thumbnailUrl
-          ? <img src={program.thumbnailUrl} alt="" loading="lazy" decoding="async"/>
-          : <span className="catalogCardIcon" aria-hidden="true">{program.icon || '🧪'}</span>}
+        <ProgramPreview program={program}/>
         <span className="catalogVisualLabel">{program.category}</span>
         {program.featured ? <span className="catalogFeatured"><Sparkles size={12} aria-hidden="true"/> 추천</span> : null}
       </div>
