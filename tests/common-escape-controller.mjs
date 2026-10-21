@@ -29,6 +29,8 @@ if(process.env.COMMON_ESCAPE_OPENING){
  if(process.env.COMMON_ESCAPE_OPENING==='broadcast')resume.seen.push('opening:broadcast');
  saved.set('scilab-common-escape-solo-v2',JSON.stringify({state:resume}));
 }
+let previewAuthor;
+if(!process.env.COMMON_ESCAPE_PREVIEW){const {Author}=await import('../public/labs/common-escape/author.mjs');const show=Author.prototype.show;Author.prototype.show=function(){previewAuthor=this;return show.call(this);};}
 if(process.env.COMMON_ESCAPE_PREVIEW){
  const {readFileSync}=await import('node:fs'),{runInThisContext}=await import('node:vm');
  const source=readFileSync(process.env.COMMON_ESCAPE_PREVIEW,'utf8').match(/<script>([\s\S]*)<\/script>/)[1];
@@ -163,3 +165,38 @@ await click('home');assert.equal([...timers.values()].some(t=>t.delay===4800),fa
 staleReveal.fn();assert.equal(replayEnding.classList.contains('visitor-visible'),false,'a stale callback cannot reveal or play audio after leaving');
 await click('author');assert.match(elements['#app'].innerHTML,/방탈출 수업 준비/);
 console.log('PASS: opening, sound controls, ten puzzles, three environmental events, four apparitions, delayed ending, journal pause, replay/cancel, reduced motion and teacher entry. DOM adapter only, not browser layout/audio.');
+
+if(!process.env.COMMON_ESCAPE_PREVIEW){
+ const {PLAY_ORDER,exitCode}=await import('../public/labs/common-escape/content.mjs');
+ const {circuitLamps}=await import('../public/labs/common-escape/expansion.mjs');
+ const unchanged=saved.get('scilab-common-escape-solo-v2'),scares=effects.length,world=worldEffects.length;
+ const lesson=structuredClone(SAMPLE);lesson.meta.title='업로드한 교사 자료';previewAuthor.lesson=lesson;
+ for(const pid of PLAY_ORDER){
+  await previewAuthor.action('stage',pid);await flush();
+  assert.match(html(),/수업 준비로 돌아가기/);assert.doesNotMatch(elements['#app'].innerHTML,/class="game"/);
+  const p=lesson.puzzles.find(p=>p.id===pid);
+  if(pid==='P6'||pid==='P7'){
+   const lock=pid==='P6'?'drawer':'exit';
+   if(pid==='P6'){await click('photo-detail','chair');assert.match(html(),/지금 눈앞의 모습/);await click('preview-problem');}
+   else {await click('rotate-grid','1');}
+   await click('device-hints',pid);assert.match(html(),/힌트 1/);await click('preview-problem');
+   const answer=pid==='P6'?lesson.devices.photoOrder.map(id=>lesson.devices.photoDigits[id]).join(''):exitCode(lesson.devices);
+   await digits(lock,answer);await click('lock-submit',lock);
+  }else{
+   await click('puzzle-role','4');await click('puzzle-hint');assert.match(html(),/힌트 1/);
+   if(p.type==='compare'){for(const id of ['STORY1','STORY2',...p.items.filter(i=>i.answer==='수정').map(i=>i.id)])await click('puzzle-mark',id);}
+   else if(p.type==='circuit'){
+    const mask=Array.from({length:16},(_,n)=>n).find(n=>circuitLamps([0,1,2,3].map(i=>!!(n&(1<<i)))).every((on,i)=>on===(p.items[i].answer==='켜짐')));
+    for(let i=0;i<4;i++)if(mask&(1<<i))await click('puzzle-flip',String(i));
+   }else for(const i of p.items.filter(i=>i.answer!=='제외')){await click('puzzle-select',i.id);await click('puzzle-place',['order','select-order'].includes(p.type)?String(Number(i.answer)-1):i.answer);}
+   await click('puzzle-submit');
+  }
+  assert.match(html(),/정답입니다/);assert.doesNotMatch(html(),/복구된 기록|열린 문/);
+  await click('preview-exit');assert.match(elements['#app'].innerHTML,/방탈출 수업 준비/);
+  assert.equal(previewAuthor.lesson.meta.title,lesson.meta.title);assert.equal(saved.get('scilab-common-escape-solo-v2'),unchanged);
+ }
+ await previewAuthor.action('stage','P1');await click('close');assert.match(elements['#app'].innerHTML,/방탈출 수업 준비/);
+ await previewAuthor.action('stage','P7');elements['#dialog'].close();await flush();assert.match(elements['#app'].innerHTML,/방탈출 수업 준비/);
+ assert.equal(effects.length,scares);assert.equal(worldEffects.length,world);assert.equal(saved.get('scilab-common-escape-solo-v2'),unchanged);
+ console.log('PASS: all ten isolated previews, answer checks, hints, photo comparison, rotation, early back/close/Escape, uploaded lesson retention and unchanged saved progress; no horror or next-stage events.');
+}

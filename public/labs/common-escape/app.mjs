@@ -1,6 +1,6 @@
 import {SAMPLE} from './sample.mjs';
 import {playSound,stopSounds,warmSounds,setAmbience} from './sound.mjs';
-import {validateLesson,playerContent,exitCode} from './content.mjs';
+import {validateLesson,playerContent,exitCode,answerMatches} from './content.mjs';
 import {PUZZLE_EVENTS,previewState} from './engine.mjs';
 import {nextWorldEvent} from './world-events.mjs';
 import {puzzleMarkup,freshDraft,changeDraft,submission} from './puzzle-ui.mjs';
@@ -10,7 +10,7 @@ import {scene,sceneSpots,corridor,courtyard,photoArt,ghost,detailArt,foundBookAr
 import {GroupSession,ROLE_NAMES,RECORD_ROLES,PHOTO_ROLES} from './group-client.mjs';
 const $=s=>document.querySelector(s),app=$('#app'),dialog=$('#dialog'),content=$('#dialog-content');
 const KEY='scilab-common-escape-solo-v2';
-let currentLesson=SAMPLE,activePuzzle=null,puzzleRole=1;
+let currentLesson=SAMPLE,activePuzzle=null,puzzleRole=1,stagePreview=null;
 try{const saved=JSON.parse(localStorage.getItem(KEY));if(saved?.lesson)currentLesson=validateLesson(saved.lesson);}catch{}
 
 const esc=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
@@ -29,9 +29,30 @@ function photoOrder(){return groupMode?evidence(4)?.photoOrder||[]:currentLesson
 function photoOrderMarkup(){return photoOrder().map(id=>({chair:'의자',book:'책',notice:'게시물'})[id]).join(' → ');}
 function lessonMeta(){return groupMode?group.data.content.meta:currentLesson.meta;}
 function previewLesson(lesson,id=null){
- group.pause();groupMode=false;currentLesson=validateLesson(lesson);state=fresh();state.drafts={};pending=null;if(dialog.open)dialog.close();
- if(!id)return start();
- state=previewState(id);state.drafts={};persist();renderGame();if(id==='P6')item('photos');else if(id==='P7')showTerminal();else showCurriculum(id);
+ const selected=validateLesson(lesson);
+ if(id){
+  stagePreview={id,state,lesson:currentLesson,groupMode,locks:{...lockDrafts}};
+  group.pause();clearEffects();clearEnding();stopSounds();groupMode=false;currentLesson=selected;
+  state=previewState(id);state.drafts={};state.sound=false;state.soft=true;
+  if(id==='P6')state.photos=[...PHOTOS];
+  lockDrafts.drawer='';lockDrafts.exit='';puzzleRole=1;pending=null;view='preview';
+  app.innerHTML=`<main class="author-page"><header><div><span class="eyebrow">교사용 · 문제 미리보기</span><h1>${esc(selected.puzzles.find(p=>p.id===id).title)}</h1><p>선택한 문제만 확인합니다. 필요한 자료는 준비되어 있으며, 다음 단계로 넘어가지 않습니다.</p></div>${btn('수업 준비로 돌아가기','preview-exit','',false)}</header></main>`;
+  return showPreviewProblem();
+ }
+ group.pause();groupMode=false;currentLesson=selected;state=fresh();state.drafts={};pending=null;if(dialog.open)dialog.close();start();
+}
+function showPreviewProblem(){
+ if(!stagePreview)return;
+ if(stagePreview.id==='P6')return showDrawer();
+ if(stagePreview.id==='P7')return showTerminal();
+ showCurriculum(stagePreview.id);
+}
+function exitStagePreview(){
+ if(!stagePreview)return;
+ const lesson=currentLesson,previous=stagePreview;stagePreview=null;
+ state=previous.state;currentLesson=previous.lesson;groupMode=previous.groupMode;Object.assign(lockDrafts,previous.locks);
+ activePuzzle=null;pending=null;view='author';if(dialog.open)dialog.close();
+ author.lesson=lesson;author.show();
 }
 async function showDeviceHints(id,next=false){
  let p=publicContent().puzzles.find(p=>p.id===id);if(!p)return;
@@ -50,6 +71,7 @@ async function curriculumClick(action,id){
  if(action==='role'){puzzleRole=Number(id);return showCurriculum(pid);}
  if(action==='hint'){await update({type:'hint',id:pid});return showCurriculum(pid);}
  if(action==='submit'){
+  if(stagePreview){const correct=answerMatches(currentLesson.puzzles.find(p=>p.id===pid),submission(p,state.drafts[pid]));return showCurriculum(pid,correct?'정답입니다. 이 문제의 확인이 끝났어요. 다시 풀거나 수업 준비로 돌아갈 수 있어요.':'정답이 아닙니다. 자료와 배치를 다시 확인하세요.');}
   const accepted=await update({type:PUZZLE_EVENTS[pid],answer:submission(p,state.drafts[pid])},({P3:'script',P5:'power'})[pid]);
   if(!accepted)return showCurriculum(pid,'아직 맞지 않는다. 모둠원의 기록과 배치를 다시 대조해 보자.');
   if(pid==='P1'){log('locker','교실 · 사물함','자료를 맞추자 사물함의 걸쇠가 풀렸다. 안쪽은 아직 확인하지 않았다.');return showUnlockedLocker();}
@@ -63,7 +85,7 @@ const motionMedia=window.matchMedia('(prefers-reduced-motion: reduce)');
 const cardNames={desk1:'정리 자료',desk2:'활동 기록',board:'칠판에 붙은 메모',notebook:'공책 속 낱장'};
 const photoInfo={chair:{room:'classroom',n:'①',name:'앞줄 의자',get digit(){return photoDigit('chair')}},book:{room:'library',n:'②',name:'안쪽 책장',get digit(){return photoDigit('book')}},notice:{room:'entrance',n:'③',name:'게시판',get digit(){return photoDigit('notice')}}};
 const roomInfo={classroom:'문이 닫히자 복도 소리가 끊겼다. 시계는 5시 40분에 멈춰 있다.',library:'조금 전까지 들리던 발소리가 문 앞에서 멎었다. 반납함 안에서 종이 스치는 소리가 난다.',broadcast:'마이크의 전원선이 바닥에 놓여 있다. 천장 스피커에서는 방송이 계속 나온다.',entrance:'운동장은 평소와 같다. 유리문 손잡이는 움직이지 않는다.'};
-function persist(){if(groupMode){group.saveLocal(state);return;}try{localStorage.setItem(KEY,JSON.stringify({lesson:currentLesson,state}));}catch{if(!saveFailure){saveFailure=true;toast('자동 저장을 사용할 수 없어요. 이 창을 열어 둔 채 진행해 주세요.')}}}
+function persist(){if(stagePreview)return;if(groupMode){group.saveLocal(state);return;}try{localStorage.setItem(KEY,JSON.stringify({lesson:currentLesson,state}));}catch{if(!saveFailure){saveFailure=true;toast('자동 저장을 사용할 수 없어요. 이 창을 열어 둔 채 진행해 주세요.')}}}
 function dispatch(event){const result=act(state,event,currentLesson);state=result.state;if(result.accepted)persist();return result.accepted;}
 function log(id,title,text){dispatch({type:'journal',id,title,text});}
 function toast(t){$('#toast').textContent=t;$('#toast').classList.add('show');clearTimeout(toastTimer);toastTimer=setTimeout(()=>$('#toast').classList.remove('show'),4300);}
@@ -73,6 +95,7 @@ function clearEnding(){clearTimeout(endingTimer);endingTimer=0;endingEpoch++;}
 document.addEventListener('visibilitychange',()=>{if(document.hidden)stopSounds();else syncAmbience();});
 
 function openModal(title,body,buttons='',tag='조사 기록',kind=''){
+ if(stagePreview){tag='문제 미리보기 · '+stagePreview.id;body=`<nav class="preview-navigation" aria-label="미리보기 이동">${btn('수업 준비로 돌아가기','preview-exit','',false)}${btn('문제 화면','preview-problem','',false)}</nav>`+body;buttons=btn('수업 준비로 돌아가기','preview-exit');}
  if(kind!=='curriculum-dialog')activePuzzle=null;
  if(!dialog.open)lastFocus=document.activeElement;
  dialog.className=kind;
@@ -97,9 +120,9 @@ function showLibraryBook(id){
 function libraryBookPaper(i){return paper(esc(i.label),paragraph(esc(i.text))+(i.image?`<img class="material-image" src="${esc(i.image)}" alt="${esc(i.alt)}" referrerpolicy="no-referrer">`:'')+`<p class="tiny">찾은 곳 · ${LIBRARY_BOOKS[i.id].where}</p>`);}
 const scriptObservation='현관에서 들은 방송은 교실로 가라고 했다. 이 대본은 현관으로 나가라고 한다.';
 const scriptPaper=()=>paper('하교 안내 · 원본','<p>교내에 남아 있는 학생은 중앙 현관으로 이동해 주십시오.</p><p>퇴실할 때 교실 문은 열어 두시기 바랍니다.</p><div class="rule"></div><p><strong>방송 확인 안내</strong><br>실제 방송은 <strong>방송실</strong>에 녹음됩니다.<br>내용이 다르면 녹음 기록을 확인해 주세요.</p>');
-function closeModal(){dialog.close();}
+function closeModal(){if(stagePreview)return exitStagePreview();dialog.close();}
 dialog.addEventListener('close',()=>{
- if(dialog.open)return;const task=pending;pending=null;const f=lastFocus;if(f?.isConnected)f.focus({preventScroll:true});
+ if(dialog.open)return;if(stagePreview)return exitStagePreview();const task=pending;pending=null;const f=lastFocus;if(f?.isConnected)f.focus({preventScroll:true});
  if(view==='game')setTimeout(()=>{
   if(view!=='game'||dialog.open)return;
   if(task?.opening==='broadcast')return showOpeningBroadcast();
@@ -110,7 +133,7 @@ dialog.addEventListener('close',()=>{
 });
 dialog.addEventListener('click',e=>{if(e.target===dialog){const r=dialog.getBoundingClientRect();if(e.clientX<r.left||e.clientX>r.right||e.clientY<r.top||e.clientY>r.bottom)closeModal();}});
 function queueProgress(previous,scare){const changed=goal(state).id!==previous;pending={goal:changed||pending?.goal,scare:scare||pending?.scare};renderGame();}
-async function update(event,scare){if(groupMode&&group.data.group.status==='ended'){toast('수업이 종료되었습니다.');return false;}const prev=goal(state).id;if(groupMode){if(groupBusy)return false;groupBusy=true;try{const next=await group.send('event',{...event,room:state.room});mergeGroup(next);if(!next.accepted)return false;}catch(error){toast(error.message);return false;}finally{groupBusy=false;}}else if(!dispatch(event))return false;sound(({locker:'latch','locker-open':'latch','locker-records':'paper','library-book':'paper',collect:'paper',returns:'latch',script:'paper',compare:'unlock',power:'switch',order:'unlock',unlock:'unlock'})[event.type]||'tap');queueProgress(prev,scare);return true;}
+async function update(event,scare){if(stagePreview)return event.type==='hint'?dispatch(event):false;if(groupMode&&group.data.group.status==='ended'){toast('수업이 종료되었습니다.');return false;}const prev=goal(state).id;if(groupMode){if(groupBusy)return false;groupBusy=true;try{const next=await group.send('event',{...event,room:state.room});mergeGroup(next);if(!next.accepted)return false;}catch(error){toast(error.message);return false;}finally{groupBusy=false;}}else if(!dispatch(event))return false;sound(({locker:'latch','locker-open':'latch','locker-records':'paper','library-book':'paper',collect:'paper',returns:'latch',script:'paper',compare:'unlock',power:'switch',order:'unlock',unlock:'unlock'})[event.type]||'tap');queueProgress(prev,scare);return true;}
 function showGoal(){if(view!=='game'||state.finished)return;if(openingActive())return showOpening();const g=goal(state);sound('goal');openModal(g.title,`<div class="goal-number">${g.chapter}</div><div class="goal-rule"></div>${paragraph(g.text)}<p class="subtle">현재 목표는 화면 위에서 다시 확인할 수 있어요.</p>`,closeBtn('계속 탐색하기'),'새로운 목표','goal-modal');}
 function renderHome(){
  author.pause();group.pause();if(groupMode){group.saveLocal(state);groupMode=false;try{state=restore(JSON.parse(localStorage.getItem(KEY))?.state);}catch{state=fresh();}}
@@ -188,6 +211,7 @@ async function submitLock(id){
  const ready=id==='drawer'?has(state,'power')&&state.photos.length===3:has(state,'relay');
  if(!ready)return redrawLock(id,'아직 확인하지 못한 기록이 있다.');
  const code=lockDrafts[id];if(code.length!==(id==='drawer'?3:exitLength()))return redrawLock(id,'번호를 끝까지 입력해야 한다.');
+ if(stagePreview){const expected=id==='drawer'?photoOrder().map(id=>photoDigit(id)).join(''):exitCode(currentLesson.devices);return redrawLock(id,code===expected?'정답입니다. 이 문제의 확인이 끝났어요.':'정답이 아닙니다. 기록을 다시 확인하세요.');}
  if(!await update({type:id==='drawer'?'order':'unlock',code},id==='exit'?'unlock':null))return redrawLock(id,'잠금이 풀리지 않는다. 기록을 다시 살펴보자.');
  lockDrafts[id]='';sound('switch');
  if(id==='drawer'){log('order','방송실 · 보조 서랍','사진 순서대로 숫자를 맞춰 서랍을 열었다. 안에서 순서표를 찾았다.');return openModal('서랍 안의 순서표',paragraph(esc(publicContent().puzzles.find(p=>p.id==='P6').success))+paragraph('안에 있던 종이는 앞서 찾은 기호표, 배치표와 같은 양식이다.')+paper('출입 장치 · 확인 순서',orderSheet()),closeBtn('순서표 챙기기'));}
@@ -415,6 +439,8 @@ document.addEventListener('submit',e=>{if(e.target.id==='group-entry-form')e.pre
 document.addEventListener('visibilitychange',()=>{if(groupMode&&!document.hidden)group.schedule(0);});
 document.addEventListener('click',async e=>{
  const b=e.target.closest('button[data-action]');if(!b||effectBusy)return;const a=b.dataset.action,id=b.dataset.id;
+ if(a==='preview-exit')return exitStagePreview();
+ if(a==='preview-problem')return showPreviewProblem();
  if(a.startsWith('group-'))return groupClick(a,id);
  if(a==='author')return showAuthor();
  if(a==='device-hints'||a==='device-next-hint')return showDeviceHints(id,a==='device-next-hint');
@@ -438,7 +464,7 @@ document.addEventListener('click',async e=>{
  if(a==='goal')return showGoal();
  if(a==='journal')return showJournal();
  if(a==='item')return item(id);
- if(a==='photo-detail')return showPhoto(id);
+ if(a==='photo-detail')return showPhoto(id,!!stagePreview);
  if(a==='rotate-grid'){const lock=activeLock();if(dispatch({type:'rotate-grid',delta:Number(id)})){if(lock==='exit')showTerminal();else if(groupMode)showGroupClues(2);else item('grid');}return;}
  if(a==='lock-digit'){const [lock,n]=id.split(':');return editLock(lock,n);}
  if(a==='lock-erase')return editLock(id,'erase');

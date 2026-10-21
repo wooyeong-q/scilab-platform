@@ -122,3 +122,5 @@ dialog.lock-dialog{width:min(800px,calc(100vw - 28px))}.lock-dialog .story-text{
 
 /* Usage links remain available from preparation and live class screens. */
 .guide-link{display:inline-flex;align-items:center;min-height:44px;padding:10px 14px;border:1px solid var(--line);border-radius:3px;color:var(--amber);font-size:13px;text-decoration:none}.guide-link:hover{background:#ffffff0a}.guide-link:focus-visible{outline:2px solid var(--amber);outline-offset:4px}.author-nav{display:flex;align-items:center;gap:10px;flex-wrap:wrap}.lobby-actions{flex-wrap:wrap}
+
+.preview-navigation{position:sticky;top:0;z-index:4;display:flex;flex-wrap:wrap;gap:8px;background:var(--panel);padding:10px 0;margin-bottom:16px;border-bottom:1px solid var(--line)}
