@@ -50,3 +50,15 @@ Edit the provided heroine into a new high-quality expression sprite for the fina
 Edit the provided heroine into a new high-quality expression sprite for the final confession scene of the same Korean school romance visual novel. Preserve this EXACT character's recognizable face, long softly wavy brown hair, navy school blazer, white shirt and large slate-blue ribbon, and matching delicate painterly anime linework. An unmistakably uncomfortable, displeased reaction: subtle frown, brows pulled inward, lips pressed with corners slightly lowered, eyes look slightly away, shoulders subtly withdraw. Natural and restrained, no grotesque caricature, no tears, no smiling. One beautiful female student only, age-appropriate, fully clothed. Portrait 2:3, from above full head to waist, complete hair and shoulders inside frame with breathing room, camera at eye level. Soft warm pink sunset rim light, believable anatomy, polished romance game character art, clear expressive eyes. TRUE transparent background with clean silhouette. No background, no petals, no hearts, no written words, no frame, no other character. The expression must remain readable at small screen sizes.
 ```
 
+
+## 운영 배포 확인
+
+- 변경 커밋: `e43e0c171fb3248f9a98dd4cdf4eb6a9f6469ca7`.
+- Vercel 배포: `dpl_8ZxjrtBGbT8FZw7uFZnEn5pALLpA`, production `READY`, `scilab-platform.vercel.app` 연결 확인.
+- 실제 공개 주소의 P1에서 네 장을 잘못 놓고 제출: 카드 내용·배치 4/4·제출됨·지속 오답 안내를 확인했다.
+- 실제 공개 주소의 새 엔딩에서 투명 표정 이미지, 벚꽃 배경, 소리/볼륨, 다시 보기 버튼을 확인했다.
+- 운영 DB·홈페이지 목록·삭제 표식에는 변경하지 않았다. 검증은 교사 미리보기에서 진행했다.
+
+![운영 배포의 답안 배치와 오답 안내](answer-v3-20261021.jpg)
+
+![운영 배포의 벚꽃 엔딩](ending-v3-20261021.jpg)
