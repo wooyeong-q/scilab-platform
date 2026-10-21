@@ -2,7 +2,7 @@ export const CAST=[
  {name:'서윤재',role:'오늘은 말하기로 했다',short:'윤재',asset:'yunjae-v10',expressionAssets:{neutral:'yunjae-v10',nervous:'yunjae-nervous-v10',surprised:'yunjae-surprised-v10',smile:'yunjae-smile-v10'},moods:['neutral','nervous','surprised','smile'],faces:['차분한 표정','긴장하며 붉어진 얼굴','당황한 표정','마음을 정한 미소']},
  {name:'한서아',role:'벚꽃 아래, 기다리는 사람',short:'서아',asset:'seoa-v2',sheet:'seoa-expressions-v5',moods:['neutral','smile','surprised','shy'],faces:['차분한 표정','다정한 미소','궁금한 듯 놀란 표정','수줍게 붉어진 얼굴']},
  {name:'강도하',role:'응원이 조금 과한 친구',short:'도하',asset:'doha-v2',sheet:'doha-expressions-v5',expressionAssets:{panicked:'doha-worried-v9',sheepish:'doha-sheepish-v9',smile:'doha-v2'},moods:['neutral','excited','panicked','sincere','sheepish','smile'],faces:['차분한 표정','신이 난 장난스러운 표정','사고를 털어놓으며 걱정하는 표정','미안함을 담은 진지한 표정','머쓱하게 붉어진 표정','환하게 웃는 표정']},
- {name:'차시우',role:'조용히 등을 밀어 주는 친구',short:'시우',asset:'siwoo-v10',sheet:'siwoo-expressions-v10',sheetCenters:[280,248],expressionFrames:{neutral:0,amused:3,warm:3},expressionAssets:{concerned:'siwoo-concerned-v10'},moods:['neutral','amused','concerned','warm'],faces:['차분한 표정','웃음을 참는 표정','놀라고 걱정하는 표정','안심시키는 미소']}
+ {name:'차시우',role:'조용히 등을 밀어 주는 친구',short:'시우',asset:'siwoo-v11',expressionAssets:{neutral:'siwoo-v11',amused:'siwoo-amused-v11',concerned:'siwoo-concerned-v11',warm:'siwoo-warm-v11'},moods:['neutral','amused','concerned','warm'],faces:['차분한 표정','웃음을 참는 표정','걱정스러운 진지한 표정','안심시키는 미소']}
 ];
 export const STORY_VERSION=5;
 export const ROOMS={
