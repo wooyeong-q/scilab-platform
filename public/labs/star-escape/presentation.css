@@ -278,3 +278,55 @@
   .s1-wire-node.role b{font-size:14px}.s1-star-visual{width:min(100%,40px)}
   .s1-wire-node.color{padding:9px 2px 5px}
 }
+
+/* Scene 1 collected clues remain available over the room and every puzzle. */
+.s1-puzzle-actions{display:flex;align-items:center;gap:8px;flex:none}
+.s1-clue-button{display:flex;align-items:center;justify-content:center;gap:8px;min-height:42px;padding:8px 12px;border:1px solid #82cbdc88;border-radius:10px;background:#0a2437;color:#e4faff;font-size:14px;font-weight:800;box-shadow:0 3px 12px #0004}
+.s1-clue-button b{min-width:30px;padding:4px 7px;border-radius:20px;background:#8de6e3;color:#082c36;font-size:11px;line-height:1.25}
+.s1-clue-button.room{position:absolute;z-index:18;right:18px;bottom:18px}
+.s1-clue-saved{display:inline-block;margin-top:8px;color:#9ce9d6;font-size:12px;font-weight:750}
+.s1-clue-overlay{position:absolute;z-index:90;inset:0;display:grid;place-items:center;padding:14px;background:#020710d9;backdrop-filter:blur(5px)}
+.s1-clue-drawer{width:min(980px,100%);max-height:100%;display:flex;flex-direction:column;overflow:hidden;border:1px solid var(--escape-edge);border-radius:16px;background:var(--escape-surface);box-shadow:0 24px 70px #0009}
+.s1-clue-drawer>header{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:15px 20px;flex:none;background:linear-gradient(115deg,#172b3b,#0d1b2a);border-bottom:1px solid #526c824d;box-shadow:inset 3px 0 var(--escape-accent)}
+.s1-clue-drawer>header small{font-size:11px;color:var(--escape-accent)}
+.s1-clue-drawer h2{font-size:24px;line-height:1.3;margin:4px 0 0}
+.s1-clue-steps{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;padding:12px 20px 0;flex:none}
+.s1-clue-steps button{min-height:40px;padding:8px;border:1px solid #4b657d;border-radius:9px;background:#102031;color:#b9cbdc;font-size:13px;font-weight:750}
+.s1-clue-steps button[aria-pressed="true"]{border-color:#91e8e4;background:#143e4b;color:#e4ffff}
+.s1-clue-body{padding:14px 20px 20px;min-height:0;overflow:auto;scrollbar-width:thin;scrollbar-color:#486279 #0a1523}
+.s1-clue-help{margin:0 0 14px;color:var(--escape-muted);font-size:13px;line-height:1.6}
+.s1-clue-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
+.s1-clue-grid:has(>.s1-clue-record:only-child){grid-template-columns:1fr}
+.s1-clue-record{display:grid;grid-template-columns:84px minmax(0,1fr);align-items:start;gap:14px;padding:16px;border:1px solid #4d718b77;border-radius:12px;background:#102031}
+.s1-clue-image,.s1-clue-placeholder{width:84px;aspect-ratio:1;overflow:hidden;border-radius:10px;background:#050b16}
+.s1-clue-image img{width:100%;height:100%;object-fit:contain}
+.s1-clue-image.star img{transform:scale(3.6)}
+.s1-clue-placeholder{display:grid;place-items:center;border:1px dashed #587087;color:#8da4b9;font-size:28px}
+.s1-clue-record small{font-size:11px;line-height:1.4;color:#94d6de}
+.s1-clue-record h3{margin:5px 0 8px;font-size:16px;line-height:1.45;word-break:keep-all;color:#edf6ff}
+.s1-clue-record p,.s1-clue-manual p{margin:0;color:#d1e0ed;font-size:14px;line-height:1.65;word-break:keep-all}
+.s1-clue-record.missing{background:#0d1928;border-style:dashed}
+.s1-clue-record.missing h3{color:#b7c8d8}.s1-clue-record.missing p{color:#9bb1c6}
+.s1-clue-manual{margin-top:14px;padding:14px 16px;border-left:3px solid #e7ca8a;border-radius:0 10px 10px 0;background:#e7ca8a09}
+.s1-clue-manual>b{display:block;margin-bottom:6px;color:#ead8ad;font-size:14px}
+.s1-clue-drawer>footer{flex:none;padding:11px 20px;border-top:1px solid #526c824d;color:#9eb6cc;font-size:12px;background:#0c1b2b}
+@media(max-width:700px){
+  .s1-puzzle-head>div:first-child{min-width:0}
+  .s1-puzzle-actions{gap:5px}.s1-clue-button{gap:5px;min-height:38px;padding:7px;font-size:12px}.s1-clue-button b{min-width:26px;padding:3px 5px;font-size:10px}
+  .s1-clue-button.room{right:12px;bottom:12px}
+  .s1-clue-overlay{padding:6px}.s1-clue-drawer{border-radius:12px}
+  .s1-clue-drawer>header{padding:12px}.s1-clue-drawer h2{font-size:20px}
+  .s1-clue-steps{gap:5px;padding:10px 12px 0}.s1-clue-steps button{min-height:38px;padding:6px 3px;font-size:11px}
+  .s1-clue-body{padding:12px}.s1-clue-help{font-size:12px;margin-bottom:10px}
+  .s1-clue-grid{gap:8px}.s1-clue-record{grid-template-columns:1fr;gap:8px;padding:11px}
+  .s1-clue-image,.s1-clue-placeholder{width:58px}.s1-clue-record small{font-size:10px}.s1-clue-record h3{font-size:14px;margin:4px 0 6px}.s1-clue-record p,.s1-clue-manual p{font-size:12px;line-height:1.6}
+  .s1-clue-drawer>footer{padding:10px 12px;font-size:11px}
+}
+@media(max-height:450px) and (orientation:landscape){
+  .s1-clue-button{min-height:34px;padding:5px 9px;font-size:12px}
+  .s1-clue-drawer>header{padding:7px 12px}.s1-clue-drawer h2{font-size:18px}
+  .s1-clue-steps{padding:8px 12px 0}.s1-clue-steps button{min-height:32px;padding:5px}
+  .s1-clue-body{padding:10px 12px}.s1-clue-record{grid-template-columns:52px minmax(0,1fr);gap:10px;padding:10px}
+  .s1-clue-image,.s1-clue-placeholder{width:52px}.s1-clue-record h3{font-size:14px}.s1-clue-record p{font-size:12px}
+  .s1-clue-drawer>footer{padding:7px 12px;font-size:11px}
+}
