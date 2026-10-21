@@ -1,0 +1,66 @@
+/* Keep the stage quiet: objects live in the painting, tools stay out of the story. */
+.game{grid-template-rows:58px minmax(0,1fr) 52px}
+.game.in-dialogue{grid-template-rows:58px minmax(0,1fr) 30px}
+.game-footer{padding:5px 20px;gap:15px}
+.place-caption{font-size:12px;color:#7c7068;white-space:nowrap}
+.scene-controls{display:flex;gap:7px;margin-left:auto}
+.scene-controls button{font-size:12px;min-height:36px;padding:7px 13px}
+.game-footer #connection:empty{display:none}
+.game.in-dialogue .game-footer{border:0;background:#f6f1e9}
+.game.in-dialogue .place-caption{font-size:10px}
+.scene-briefing{padding:12px 24px;gap:20px}
+.scene-briefing p{max-width:440px}
+.ambient-point{width:42px;height:42px;background:none;border:0;box-shadow:none}
+.ambient-point>span{display:grid;place-items:center;margin:auto;width:19px;height:19px;line-height:1;background:#fff9ebbd;border:1px solid #fff9;border-radius:50%;font-size:22px;color:#5d605c;box-shadow:0 1px 6px #332d2433}
+.ambient-point:hover>span,.ambient-point:focus-visible>span{background:#fffaf0;box-shadow:0 0 0 4px #fff5}
+.ambient-point b{bottom:42px;left:50%;transform:translateX(-50%)}
+.hotspot{padding:7px 10px;min-height:35px}
+.scene-caption{position:absolute;left:28px;top:22px;padding:8px 14px;background:#fffaf1d9;border-left:2px solid #b8897c;font-size:12px;color:#786d63;letter-spacing:.06em}
+.school-map{display:grid;grid-template-columns:repeat(2,1fr);gap:12px;padding:24px}
+.school-map button{min-height:84px;display:flex;flex-direction:column;align-items:flex-start;text-align:left;background:#fffaf2}
+.school-map small{font-size:11px;color:#81736b}
+.school-map [aria-current=true]{border-color:#ab8173;background:#f2e6dc}
+dialog:has(.object-story){width:min(620px,92vw)}
+.object-story{padding:25px 32px}
+.object-story p{margin:0;font-size:17px;line-height:1.95}
+/* Messages are messages: no character sprite pretending to speak from another room. */
+.phone-scene,.note-scene{align-items:center;padding:22px}
+.story-phone{width:min(430px,100%);max-height:100%;display:flex;flex-direction:column;background:#f7f1e8;border:1px solid #fff9;border-radius:22px;box-shadow:0 18px 70px #31252040;overflow:hidden}
+.story-phone>header{display:flex;gap:10px;align-items:center;padding:18px 22px;border-bottom:1px solid #ddd3c8;background:#fffcf5}
+.story-phone>header>span{font-size:11px;color:#98776f}
+.story-phone>header b{font-size:17px;font-weight:600}
+.story-phone>header small{margin-left:auto;font-size:10px;color:#93877b}
+.phone-thread{display:flex;flex-direction:column;gap:13px;padding:22px;min-height:100px}
+.message-bubble{max-width:89%;padding:12px 16px;border-radius:3px 14px 14px;background:#fffdf8;border:1px solid #e3dbd0;align-self:flex-start}
+.message-bubble.outgoing{align-self:flex-end;border-radius:14px 3px 14px 14px;background:#e5ece6;border-color:#d8e1d8}
+.message-bubble small{display:block;font-size:10px;color:#8d7d71;margin-bottom:5px}
+.message-bubble p{margin:0;font-size:15px;line-height:1.7;white-space:pre-line;min-height:25px;word-break:keep-all}
+.message-bubble>span{display:block;margin-top:5px;font-size:9px;color:#819087;text-align:right}
+.story-phone>footer{padding:0 16px 13px;display:flex;justify-content:flex-end}
+.story-phone .next-line,.story-note .next-line{position:static;min-height:38px;padding:8px 13px;font-size:12px}
+.story-phone .next-line{background:#fffaf4;border:1px solid #ded3c6}
+.story-note{width:min(560px,100%);padding:35px 40px 25px;background:#fff9e9;border:1px solid #e7d8bf;box-shadow:0 15px 55px #3e302a38;transform:rotate(-1deg)}
+.story-note>small{color:#96776e;font-size:12px}
+.story-note p{font-family:'Batang',serif;font-size:23px;line-height:2;white-space:pre-line;margin:26px 0;min-height:90px}
+.story-note .next-line{display:flex;margin-left:auto}
+.ending-thumb.disgust{background-image:url('./assets/ending-disgust-v4.webp')}
+@media(max-width:700px){
+ .game{grid-template-rows:52px minmax(0,1fr) 48px}.game.in-dialogue{grid-template-rows:52px minmax(0,1fr) 25px}
+ .game-header{padding:5px 11px}.wordmark{font-size:18px}.game-header .game-tools button{font-size:11px;padding:7px 9px}
+ .game-footer{padding:5px 12px;flex-wrap:nowrap;gap:7px}.place-caption{font-size:11px}.scene-controls{gap:5px}.scene-controls button,.game-footer .clue-button{font-size:11px;min-height:34px;padding:6px 10px;margin:0}
+ .scene-briefing{padding:11px 14px}.scene-briefing h2{font-size:16px}.scene-briefing p{margin-top:5px;font-size:12px;line-height:1.65}
+ .ambient-point{width:42px;height:42px}.ambient-point>span{width:16px;height:16px;font-size:20px}.hotspot{min-height:32px}.hotspot b{font-size:10px}
+ .scene-caption{top:14px;left:14px;font-size:11px;padding:7px 11px}
+ .vn-dialogue{margin-bottom:18px;padding:25px 20px 43px;min-height:168px}.vn-dialogue p{font-size:16px;line-height:1.85}
+ .phone-scene,.note-scene{padding:18px}.story-phone{border-radius:18px}.story-phone>header{padding:15px 18px}.story-phone>header b{font-size:16px}.phone-thread{padding:18px;gap:11px}.message-bubble{padding:10px 13px}.message-bubble p{font-size:14px;line-height:1.75}
+ .story-note{padding:26px 25px 20px}.story-note p{font-size:21px;line-height:1.95}
+ .school-map{padding:18px;gap:9px}.school-map button{padding:12px;min-height:76px}.school-map small{font-size:10px}
+ .object-story{padding:22px}.object-story p{font-size:16px}
+}
+@media(max-height:600px) and (min-width:701px){
+ .game{grid-template-rows:45px minmax(0,1fr) 39px}.game.in-dialogue{grid-template-rows:45px minmax(0,1fr) 21px}
+ .game-footer{padding:2px 12px}.scene-controls button{min-height:30px;padding:4px 9px;font-size:10px}.scene-briefing{padding:7px 16px}.scene-briefing p{font-size:11px}
+ .phone-scene{padding:8px}.story-phone{width:min(540px,90%);border-radius:14px}.story-phone>header{padding:7px 16px}.story-phone>header b{font-size:14px}.phone-thread{padding:9px 16px;gap:7px}.message-bubble{padding:6px 11px;max-width:86%}.message-bubble p{font-size:12px;line-height:1.45;min-height:17px}.message-bubble small{font-size:9px;margin-bottom:2px}.message-bubble>span{font-size:8px;margin-top:2px}.phone-thread .message-bubble:nth-last-child(n+3){display:none}.story-phone>footer{padding:0 12px 6px}.story-phone .next-line{font-size:11px;padding:4px 9px;min-height:28px}
+ .story-note{padding:18px 28px 10px}.story-note p{font-size:18px;line-height:1.8;margin:14px 0;min-height:60px}.story-note .next-line{font-size:11px;min-height:28px;padding:5px 9px}
+ .scene-caption{top:10px;font-size:10px;padding:6px 10px}.school-map button{min-height:55px;padding:8px 12px}.school-map{padding:15px;gap:8px}
+}
