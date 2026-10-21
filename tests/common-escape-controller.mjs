@@ -99,13 +99,13 @@ await go('classroom');await click('inspect','locker');await click('locker-open')
 assert.match(html(),/사물함 안의 봉투/);assert.match(html(),/도서관 반납함/);assert.match(elements['#app'].innerHTML,/data-scene-part="open-locker"/);
 assert.doesNotMatch(elements['#app'].innerHTML,/data-id="slip"|data-id="key"/);await closeAll();
 await click('home');await click('resume');await closeAll();await click('inspect','locker');assert.match(html(),/사물함 안의 봉투/);await click('locker-take');await closeAll();
-assert.match(elements['#app'].innerHTML,/data-id="slip"/);assert.match(elements['#app'].innerHTML,/data-id="key"/);
+await click('bag');assert.match(html(),/data-id="slip"/);assert.match(html(),/data-id="key"/);await closeAll();
 await go('library');await click('inspect','returns');assert.match(html(),/모은 책 0\/4권/);assert.doesNotMatch(html(),/data-action="puzzle-select"/);await closeAll();
 for(const [id,spot]of [['A','checkout'],['B','books'],['C','footprints'],['D','book']]){
  await click('inspect',spot);assert.match(html(),/반납하지 않은 책/);await click('library-book-take',id);assert.match(html(),/책 속의 기록/);await closeAll();
  assert.doesNotMatch(elements['#app'].innerHTML,new RegExp('data-scene-book="'+id+'"'));
 }
-assert.equal(getState().libraryBooks.length,4);await click('item','library-books');assert.match(html(),/찾아낸 반납 도서/);await closeAll();
+assert.equal(getState().libraryBooks.length,4);await click('bag');await click('item','library-books');assert.match(html(),/찾아낸 반납 도서/);await closeAll();
 await click('inspect','returns');await solve(2);
 assert.ok(getState().seen.includes('event:box'));assert.match(elements['#app'].innerHTML,/data-scene-part="fallen-box"/);
 await click('inspect','books');assert.match(html(),/열쇠는 보관 상자/);await closeAll();
@@ -114,13 +114,13 @@ await click('home');await click('resume');await closeAll();assert.ok(getState().
 await click('inspect','fallen-box');await solve(8);
 await click('inspect','books');await solve(3);
 assert.match(elements['#app'].innerHTML,/방송실에서 화면에 남은 기록을 확인하세요/);
-await click('item','script');assert.match(html(),/실제 방송은 <strong>방송실<\/strong>에 녹음됩니다/);await closeAll();
+await click('bag');await click('item','script');assert.match(html(),/실제 방송은 <strong>방송실<\/strong>에 녹음됩니다/);await closeAll();
 await go('broadcast');assert.ok(getState().seen.includes('event:monitor'));
 await click('inspect','recorder');assert.match(html(),/기록 복원이 필요/);await closeAll();
 await click('inspect','monitor');await solve(9);
 await click('inspect','recorder');await solve(4);
 await click('inspect','control');await solve(5);
-await click('item','photos');assert.doesNotMatch(html(),/교실의 의자|뒤집힌 책|접힌 게시물/);await click('photo-detail','chair');assert.doesNotMatch(html(),/data-action="move"/);await closeAll();
+await click('bag');await click('item','photos');assert.doesNotMatch(html(),/교실의 의자|뒤집힌 책|접힌 게시물/);await click('photo-detail','chair');assert.doesNotMatch(html(),/data-action="move"/);await closeAll();
 for(const [room,id]of [['entrance','notice'],['library','book'],['classroom','chair']]){await go(room);await click('inspect',id);await click('photo-found',id);await closeAll();}
 await go('broadcast');await click('inspect','drawer');
 await digits('drawer','52');await click('lock-submit','drawer');assert.match(html(),/끝까지 입력/);await digits('drawer','7');await click('lock-submit','drawer');assert.match(html(),/잠금이 풀리지 않는다/);assert.equal(getState().flags.includes('order'),false);
