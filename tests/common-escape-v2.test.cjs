@@ -160,3 +160,45 @@ test('real exported .xlsx imports as the exact authoring contract; blank teacher
  await assert.rejects(importWorkbook(new Uint8Array([1,2,3]),'bad.xlsx'),/읽지 못/);
  await assert.rejects(importWorkbook(new Uint8Array([1]),'old.csv'),/지원하지/);
 });
+
+test('teacher force advances all ten puzzles safely; progress summary never contains private evidence',async()=>{
+ const session=await service.create({lesson:SAMPLE}),student=token();
+ await service.join(session.code,student,{name:'관제 검사',team:1,role:1});
+ await assert.rejects(service.teacherAction(session.code,student,{action:'force',team:1,puzzle:'P1',revision:1}),/교사/);
+ await assert.rejects(service.teacherAction(session.code,session.teacherKey,{action:'force',team:1,puzzle:'P1',revision:1}),/진행 중/);
+ let view=await service.teacherAction(session.code,session.teacherKey,{action:'start'});
+ for(const id of contract.PLAY_ORDER){
+  const t=view.teams[0],old=t.revision;
+  assert.equal(t.progress.current,id);
+  await assert.rejects(service.teacherAction(session.code,session.teacherKey,{action:'force',team:1,puzzle:id,revision:old-1}),/바뀌었/);
+  view=await service.teacherAction(session.code,session.teacherKey,{action:'force',team:1,puzzle:id,revision:old});
+  assert.equal(view.teams[0].state.flags.includes(engine.solvedFlag(id)),true);
+  assert.ok(view.teams[0].progress.lastProgressAt);
+  const snapshot=await service.state(session.code,student);
+  assert.ok(snapshot.state.journal.some(j=>j.id==='teacher-force:'+id));
+  await assert.rejects(service.teacherAction(session.code,session.teacherKey,{action:'force',team:1,puzzle:id,revision:view.teams[0].revision}),/현재 미해결/);
+ }
+ const summary=await service.progress(session.code,student);
+ assert.equal(summary.teams[0].solved.length,10);
+ for(const key of ['state','lesson','content','members','evidence','devices','teacherKey'])assert.equal(Object.hasOwn(summary.teams[0],key),false);
+ assert.equal(Object.hasOwn(await service.getTeacher(session.code,session.teacherKey,true),'lesson'),false);
+ assert.equal((await service.event(session.code,student,{type:'exit',room:'entrance'})).state.finished,true);
+ await assert.rejects(service.progress(session.code,token()),/접속 정보/);
+ const another=await service.create({lesson:SAMPLE});
+ await assert.rejects(service.teacherAction(session.code,another.teacherKey,{action:'force',team:1,puzzle:'P1',revision:1}),/교사/);
+});
+test('force prepares prerequisites while preserving existing discoveries and subsequent normal play',()=>{
+ for(const id of contract.PLAY_ORDER){
+  const s=engine.previewState(id);s.seen.push('explore:window-frame');s.journal.push({id:'existing',text:'retain'});
+  const forced=engine.forcePuzzle(s,id);
+  assert.ok(forced.seen.includes('explore:window-frame'));assert.equal(forced.journal[0].id,'existing');
+  const next=contract.PLAY_ORDER[contract.PLAY_ORDER.indexOf(id)+1];if(!next)continue;
+  // Next puzzle prerequisites include its exploration steps, which remain possible.
+  const prep=engine.previewState(next);
+  for(const flag of forced.flags)assert.ok(prep.flags.includes(flag),`${id}: ${flag}`);
+  if(id==='P1')assert.equal(engine.act({...forced,room:'classroom'},{type:'locker-open'},SAMPLE).accepted,true);
+  if(id==='P2')assert.equal(engine.act({...forced,room:'library'},{type:'box-open'},SAMPLE).accepted,true);
+  if(id==='P9')assert.equal(engine.act({...forced,room:'broadcast'},{type:'transcript'},SAMPLE).accepted,true);
+  if(id==='P5')assert.equal(engine.act({...forced,room:'classroom'},{type:'photo',id:'chair'},SAMPLE).accepted,true);
+ }
+});

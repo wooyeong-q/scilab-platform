@@ -1,3 +1,4 @@
+import {EXPLORATION} from './exploration.mjs';
 import {SAMPLE} from './sample.mjs';
 import {playSound,stopSounds,warmSounds,setAmbience} from './sound.mjs';
 import {validateLesson,playerContent,exitCode,answerMatches} from './content.mjs';
@@ -140,7 +141,7 @@ function renderHome(){
  view='home';pending=null;clearEnding();clearEffects();stopSounds();if(dialog.open)dialog.close();
  app.innerHTML=`<section class="landing">${corridor()}<header class="landing-head"><span class="brand">SCILAB <span style="opacity:.45;margin:0 12px">/</span> SCHOOL ARCHIVE</span><span class="badge">4인 모둠 탐색</span></header><div class="landing-copy"><div class="eyebrow">AFTER THE LAST CLASS</div><h1>마지막<br>방송</h1><p class="lead">수업이 끝났는데, 현관문이 열리지 않는다.<br>그때 교실로 돌아가라는 방송이 나왔다.</p><div class="landing-actions">${window.__commonEscapeOffline?'':btn('수업에 참가','group-gate','join')}${btn('교사 · 수업 준비','author','',false)}${group.available&&!window.__commonEscapeOffline?btn('내 모둠 이어하기','group-resume','',false):''}<div class="solo-actions">${state.started&&!state.finished?btn('혼자 이어서 체험','resume','',false):btn('혼자 체험하기','new','',false)}${state.finished?btn('마지막 장면 다시 보기','ending-replay','',false):''}${btn('사용법','about','',false)}</div></div></div><footer class="landing-foot"><p>지도 이동 · 물건 조사 · 학교 괴담<br>각자의 단서를 모아 함께 탈출하세요.<br>빈자리의 단서는 남은 모둠원이 확인할 수 있어요.</p><div class="landing-clock">17:40<small>AFTER SCHOOL</small></div></footer></section>`;
 }
-function isDone(id){return ({desk:state.cards.includes('desk1')&&state.cards.includes('desk2'),board:state.cards.includes('board'),notebook:state.cards.includes('notebook'),locker:has(state,'locker-records'),'fallen-box':has(state,'archive'),monitor:has(state,'monitor'),relay:has(state,'relay'),returns:has(state,'returns'),books:has(state,'script'),recorder:has(state,'compared'),control:has(state,'power'),drawer:has(state,'order'),chair:state.photos.includes('chair'),book:state.photos.includes('book'),notice:state.photos.includes('notice'),terminal:has(state,'unlocked')})[id]||false;}
+function isDone(id){if(id.startsWith('explore:'))return state.seen.includes(id);return ({desk:state.cards.includes('desk1')&&state.cards.includes('desk2'),board:state.cards.includes('board'),notebook:state.cards.includes('notebook'),locker:has(state,'locker-records'),'fallen-box':has(state,'archive'),monitor:has(state,'monitor'),relay:has(state,'relay'),returns:has(state,'returns'),books:has(state,'script'),recorder:has(state,'compared'),control:has(state,'power'),drawer:has(state,'order'),chair:state.photos.includes('chair'),book:state.photos.includes('book'),notice:state.photos.includes('notice'),terminal:has(state,'unlocked')})[id]||false;}
 function renderGame(){
  if(effectBusy)return;
  if(state.finished){renderEnding();return;}clearEnding();view='game';document.body.classList.toggle('no-motion',state.soft);syncAmbience();
@@ -219,6 +220,7 @@ async function submitLock(id){
  return openModal('열린 문',paragraph(esc(publicContent().puzzles.find(p=>p.id==='P7').success)),closeBtn('돌아가기'));
 }
 async function inspect(id){sound('tap');
+ const object=EXPLORATION.find(o=>o.id===id&&o.room===state.room);if(object){dispatch({type:'seen',id});renderGame();return openModal(esc(object.label),paragraph(esc(object.text)),closeBtn('주변 더 살펴보기'),'주변 조사');}
  if(state.room==='library'&&has(state,'locker-records')){const entry=Object.entries(LIBRARY_BOOKS).find(([,source])=>source.spot===id);if(entry&&!state.libraryBooks.includes(entry[0]))return showLibraryBook(entry[0]);}
  if(id==='desk')return showDesk();
  if(groupMode&&RECORD_ROLES[id]&&!canRole(RECORD_ROLES[id]))return openModal('모둠원의 수업 기록',restricted(RECORD_ROLES[id]),closeBtn());
@@ -383,7 +385,7 @@ function receiveGroup(next){
 }
 function changedPuzzle(pid){return has(state,({P1:'locker',P2:'returns',P3:'script',P4:'compared',P5:'power',P8:'archive',P9:'monitor',P10:'relay'})[pid]);}
 let displayedRoles='';
-function groupBar(){const d=group.data;return `<section class="groupbar" aria-label="모둠 활동"><div><b>${d.me.role}번 ${esc(d.me.name)}</b><span>${d.members.length}/4명 · <i id="group-connection" class="${groupStatus==='connected'?'':'offline'}">${groupStatus==='connected'?'연결됨':'연결 확인 중'}</i></span></div><div class="groupbar-actions"><button data-action="group-clues">내 단서${d.allowedRoles.length>1?` + 빈자리 ${d.allowedRoles.length-1}`:''}</button><button data-action="group-info">모둠 정보</button></div></section>`;}
+function groupBar(){const d=group.data;return `<section class="groupbar" aria-label="모둠 활동"><div><b>${d.me.role}번 ${esc(d.me.name)}</b><span>${d.members.length}/4명 · <i id="group-connection" class="${groupStatus==='connected'?'':'offline'}">${groupStatus==='connected'?'연결됨':'연결 확인 중'}</i></span></div><div class="groupbar-actions"><button data-action="group-clues">내 단서${d.allowedRoles.length>1?` + 빈자리 ${d.allowedRoles.length-1}`:''}</button><button data-action="group-info">모둠 정보</button><button data-action="group-progress">전체 모둠 현황</button></div></section>`;}
 function seatsMarkup(manage=false){const d=group.data;return `<div class="group-seats">${[1,2,3,4].map(role=>{const m=d.members.find(x=>x.role===role);return `<div class="group-seat ${m?'occupied':'vacant'}"><b class="seat-number">${role}</b><div><strong>${m?esc(m.name)+(m.id===d.me.id?' · 나':''):'빈자리'}</strong><span>${ROLE_NAMES[role-1]}${!m?' · 모두 열람 가능':''}</span></div>${m?`<small>${m.id===d.group.leaderId?'모둠장':'참여 중'}</small>`:'<small>대신 확인</small>'}${manage&&m&&d.me.id===d.group.leaderId&&m.id!==d.me.id?`<button class="seat-remove" data-action="group-remove-confirm" data-id="${m.id}">내보내기</button>`:''}</div>`;}).join('')}</div>`;}
 function renderLobby(){view='lobby';const d=group.data;app.innerHTML=`<section class="group-lobby">${corridor()}<div class="lobby-card"><div class="eyebrow">마지막 방송 · 수업 대기</div><h1>${esc(d.group.name)}</h1><p class="lobby-intro">${esc(d.content.meta.subject)} · ${esc(d.content.meta.unit)}<br>선생님이 수업을 시작하면 탐색할 수 있어요.</p><button class="group-code" data-action="group-copy">${d.group.code}<small>수업 코드</small></button>${seatsMarkup()}<p class="vacancy-note">${d.members.length<4?'빈자리의 단서는 남은 모둠원이 함께 확인할 수 있어요.':'각자 찾은 단서를 서로 설명하며 풀어보세요.'}</p><div class="lobby-actions"><button class="ghost-button" data-action="about">사용법</button><button class="ghost-button" data-action="group-info">내 모둠 확인</button><button class="ghost-button" data-action="home">처음 화면</button></div></div></section>`;}
 
@@ -422,6 +424,14 @@ function showGroupClues(role=clueRole){
  openModal(`${role}번 · ${ROLE_NAMES[role-1]}`,tabs+`<p class="clue-owner">${mine?'내가 확인하는 단서예요. 모둠원에게 내용을 설명해 주세요.':'빈자리의 단서를 대신 확인하고 있어요.'}</p>`+body,closeBtn('탐색으로 돌아가기'),'모둠의 단서');
 }
 async function groupClick(a,id){
+ if(a==='group-progress'){
+  if(!groupMode)return;
+  openModal('전체 모둠 현황',paragraph('현황을 불러오는 중입니다.'),closeBtn(),'수업 진행','progress-dialog');
+  try{const data=await group.request('progress');if(!dialog.open||dialog.className!=='progress-dialog')return;
+   openModal('전체 모둠 현황',paragraph('정답과 개인 단서는 공유되지 않습니다. 새로고침을 누르면 최근 진행을 확인합니다.')+`<div class="progress-teams">${data.teams.map(t=>`<article><h3>${t.number}모둠${t.number===Number(group.meta.team)?' · 우리 모둠':''}</h3><strong>${t.solved.length}/${t.total} 해결${t.finished?' · 탈출 완료':''}</strong><progress value="${t.solved.length}" max="${t.total}" aria-label="${t.number}모둠 진행"></progress><p>${esc(t.goal.text)}</p></article>`).join('')}</div>`,btn('새로고침','group-progress','',false)+closeBtn(),'수업 진행','progress-dialog');
+  }catch(e){if(dialog.open&&dialog.className==='progress-dialog')openModal('현황을 불러오지 못했어요',paragraph(esc(e.message)),btn('다시 시도','group-progress','',false)+closeBtn(),'수업 진행','progress-dialog');}return;
+ }
+
  if(a==='group-gate')return showGroupGate(id);
  if(a==='group-resume')return enterGroup('state');
  if(a==='group-connect'){const form=$('#group-entry-form');if(form?.reportValidity&&!form.reportValidity())return;return enterGroup(id,{name:$('#group-name').value,team:Number($('#group-team').value),code:$('#group-code-input')?.value,role:Number($('#group-role')?.value)});}

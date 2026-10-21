@@ -1,3 +1,4 @@
+import {EXPLORATION} from './exploration.mjs';
 import {artURL,warmArt} from './assets.mjs';
 
 // Hotspots, collectible props and photo crops share the same scene coordinates.
@@ -10,7 +11,7 @@ const SPOTS={
  broadcast:[['recorder','방송 기록',57,53],['control','제어함',81,37],['drawer','보조 서랍',89,75],['microphone','마이크',28,50,'optional'],['monitor','모니터',50,30,'optional'],['log','방송 일지',8,66,'optional']],
  entrance:[['door','현관문',60,48],['terminal','현관 제어 장치',85,43],['notice','게시판',32,34],['shoes','신발장',23,66,'optional']]
 };
-export function sceneSpots(room,s={}){const spots=[...SPOTS[room]];
+export function sceneSpots(room,s={}){const spots=[...SPOTS[room],...EXPLORATION.filter(o=>o.room===room).map(o=>[o.id,o.label,o.x,o.y,'optional'])];
  if(room==='library'&&has(s,'returns'))spots.push(['fallen-box','떨어진 상자',56,84]);
  if(room==='entrance'&&has(s,'power'))spots.push(['relay','비상 회로 점검판',85,66]);
  return spots.map(spot=>{

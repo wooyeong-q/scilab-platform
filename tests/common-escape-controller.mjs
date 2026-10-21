@@ -88,7 +88,7 @@ assert.match(elements['#app'].innerHTML,/교실에 남겨진 기록을 찾으세
 await go('entrance');await click('inspect','terminal');assert.match(html(),/화면이 꺼져/);await closeAll();
 await go('broadcast');await click('inspect','control');assert.match(html(),/덮개가 잠겨/);await closeAll();
 await click('inspect','drawer');assert.match(html(),/data-id="drawer" disabled/);await closeAll();
-await go('classroom');assert.match(elements['#app'].innerHTML,/data-scene-part="blood-trail"/);await click('inspect','blood');assert.match(html(),/scene-detail/);assert.match(html(),/손으로 끌고 간/);await closeAll();
+await go('classroom');await click('inspect','explore:window-frame');assert.match(html(),/창틀에 먼지/);await closeAll();assert.ok(getState().seen.includes('explore:window-frame'));assert.match(elements['#app'].innerHTML,/data-scene-part="blood-trail"/);await click('inspect','blood');assert.match(html(),/scene-detail/);assert.match(html(),/손으로 끌고 간/);await closeAll();
 for(const [spot,id]of [['board','board'],['desk','desk1'],['desk','desk2'],['notebook','notebook']]){await click('inspect',spot);await click('collect',id);await closeAll();}
 await click('inspect','locker');
 assert.ok((events.dragstart||[]).length===1);assert.ok((events.drop||[]).length===1);

@@ -10,7 +10,8 @@ export class GroupSession{
    if(!this.available)throw new Error('수업 코드로 입장해 주세요.');
    const headers={authorization:'Bearer '+this.meta.token},options={headers,cache:'no-store',signal:AbortSignal.timeout(12000)};
    let url=API+'/'+encodeURIComponent(this.meta.code);
-   if(action==='state'){if(body?.revision!==undefined)url+='?revision='+body.revision;}
+   if(action==='progress')url+='?view=progress';
+   else if(action==='state'){if(body?.revision!==undefined)url+='?revision='+body.revision;}
    else {options.method='POST';headers['content-type']='application/json';options.body=JSON.stringify(action==='event'?{action,event:body}:{action,...body});}
    const response=await fetch(url,options);if(response.status===204)return null;
    const value=await response.json();if(!response.ok){const e=new Error(value.error||'수업 연결을 확인해 주세요.');e.status=response.status;throw e;}return value;

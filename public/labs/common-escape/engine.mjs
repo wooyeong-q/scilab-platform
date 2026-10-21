@@ -99,3 +99,15 @@ export function inventory(s){const items=[];
  if(has(s,'order'))items.push({id:'order',name:'순서표',sub:'기록 3'});
  return items;
 }
+
+export const solvedFlag=id=>({compare:'compared',unlock:'unlocked'})[PUZZLE_EVENTS[id]]||PUZZLE_EVENTS[id];
+export function progress(s){const solved=PLAY_ORDER.filter(id=>has(s,solvedFlag(id)));return {solved,current:PLAY_ORDER.find(id=>!solved.includes(id))||null,total:PLAY_ORDER.length,finished:s.finished,lastProgressAt:s.lastProgressAt||null};}
+// Only the next unsolved puzzle can be bypassed; preserve local and shared history.
+export function forcePuzzle(state,id){
+ if(state.finished||progress(state).current!==id)throw new Error('현재 미해결 퍼즐만 통과시킬 수 있습니다. 현황을 새로 확인해 주세요.');
+ const s=structuredClone(state),prep=previewState(id);
+ for(const key of ['cards','libraryBooks','flags','photos'])s[key]=[...new Set([...s[key],...prep[key]])];
+ if(id==='P6')s.photos=[...PHOTOS];
+ s.flags=[...new Set([...s.flags,solvedFlag(id)])];
+ return s;
+}
