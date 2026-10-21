@@ -1,7 +1,7 @@
 export const CAST=[
  {name:'서윤재',role:'오늘은 말하기로 했다',short:'윤재',asset:'yunjae-v2',sheet:'yunjae-expressions-v5',moods:['neutral','nervous','surprised','smile'],faces:['차분한 표정','긴장하며 붉어진 얼굴','당황한 표정','마음을 정한 미소']},
  {name:'한서아',role:'벚꽃 아래, 기다리는 사람',short:'서아',asset:'seoa-v2',sheet:'seoa-expressions-v5',moods:['neutral','smile','surprised','shy'],faces:['차분한 표정','다정한 미소','궁금한 듯 놀란 표정','수줍게 붉어진 얼굴']},
- {name:'강도하',role:'응원이 조금 과한 친구',short:'도하',asset:'doha-v2',sheet:'doha-expressions-v5',moods:['neutral','excited','panicked','sincere'],faces:['차분한 표정','신이 난 장난스러운 표정','사고를 내고 당황한 표정','미안함을 담은 진지한 표정']},
+ {name:'강도하',role:'응원이 조금 과한 친구',short:'도하',asset:'doha-v2',sheet:'doha-expressions-v5',expressionAssets:{panicked:'doha-worried-v9',sheepish:'doha-sheepish-v9'},moods:['neutral','excited','panicked','sincere','sheepish'],faces:['차분한 표정','신이 난 장난스러운 표정','사고를 털어놓으며 걱정하는 표정','미안함을 담은 진지한 표정','머쓱하게 붉어진 표정']},
  {name:'차시우',role:'조용히 등을 밀어 주는 친구',short:'시우',asset:'siwoo-v3',sheet:'siwoo-expressions-v5',moods:['neutral','amused','concerned','warm'],faces:['차분한 표정','웃음을 참는 표정','놀라고 걱정하는 표정','안심시키는 미소']}
 ];
 export const STORY_VERSION=5;
@@ -66,7 +66,7 @@ export const BEFORE={
  5:[
   [-1,'복도 끝에서 도하가 동아리실 문을 열었다.\n준비대 위에 작은 확성기와 접힌 안내판이 놓여 있었다.',{room:'club',label:'동아리실'}],
   [0,'…확성기는 왜 있어?',{expression:'surprised'}],
-  [2,'목소리가 안 나오면 도움이 될까 해서.\n아주 작은 걸로 골랐는데…',{expression:'panicked'}],
+  [2,'목소리가 안 나오면 도움이 될까 해서.\n아주 작은 걸로 골랐는데…',{expression:'sheepish'}],
   [0,'크기 문제가 아니잖아. 서아 바로 앞에서 말할 건데.',{expression:'surprised'}],
   [-1,'시우가 말없이 확성기의 전원을 껐다.\n셋 다 잠깐 웃고 나니, 굳어 있던 어깨가 조금 풀렸다.'],
   [3,'확성기는 반납하자. 준비대에 상자 보관표가 있어.\n필요한 기록만 골라 보자.',{expression:'amused'}]
@@ -110,7 +110,7 @@ export const AFTER={
  2:[
   [-1,'자료를 나누자 도하의 대여표가 나왔다.\n구석에는 “고백 지원 작전 — 외부 공개 금지”가 큼직하게 적혀 있었다.',{room:'library'}],
   [0,'도하야. 이 이름이 제일 공개적인데.',{expression:'surprised'}],
-  [2,'…이름만큼은 잘 지었다고 생각했는데.',{expression:'panicked'}],
+  [2,'…이름만큼은 잘 지었다고 생각했는데.',{expression:'sheepish'}],
   [3,'나한테 상자 빌릴 때 이미 복도에서 다 외쳤어.',{expression:'amused'}],
   [-1,'도하의 귀가 빨개졌다. 나도 모르게 웃음이 났다.\n시우가 대여표 뒤에 붙은 보관 기록을 펼쳤다.']
  ],

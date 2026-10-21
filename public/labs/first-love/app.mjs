@@ -1,7 +1,7 @@
 import {SAMPLE} from './sample.mjs';
 import {STAGES,rotated,walk} from './content.mjs';
 import {fresh,transition,previewState,playerContent,hintsFor,normalizeDraft,chosenReasons} from './engine.mjs';
-import {CAST,ROOMS,GOALS,OPENING,BEFORE,AFTER,CONFESSION,WALK_TO_YOU,MEMORIES,STORY_VERSION} from './story.mjs';
+import {CAST,ROOMS,GOALS,OPENING,BEFORE,AFTER,CONFESSION,WALK_TO_YOU,MEMORIES,STORY_VERSION} from './story.mjs?v=9';
 import {esc,lines,puzzleHTML,interactionGuide} from './puzzle-ui.mjs';
 import {Session,secret} from './client.mjs';
 import {Author} from './author.mjs';
@@ -32,6 +32,8 @@ function portrait(index,extra='',expression=null){
  const actor=CAST[index];
  if(expression===null)return `<img class="portrait ${extra}" src="./assets/${actor.asset}.webp" alt="${actor.name}" width="800" height="1200" decoding="async" draggable="false">`;
  const frame=Math.max(0,actor.moods.indexOf(expression)),col=frame%2,row=Math.floor(frame/2);
+ const individual=actor.expressionAssets?.[actor.moods[frame]];
+ if(individual)return `<img class="portrait ${extra}" src="./assets/${individual}.webp" alt="${actor.name} · ${actor.faces[frame]}" data-expression="${actor.moods[frame]}" width="1024" height="1536" decoding="async" draggable="false">`;
  const split=index===2?541:512,x=col?split:0,width=col?1024-split:split;
  const centers=[[280,248],[308,238],[302,268],[316,287]],shift=256-(col*512+centers[index][col]-x);
  // Clip the original atlas before centering; never expose the neighboring figure.
