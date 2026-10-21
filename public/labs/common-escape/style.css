@@ -47,7 +47,7 @@ dialog.lock-dialog{width:min(800px,calc(100vw - 28px))}.lock-dialog .story-text{
 .scene-pan{position:absolute;inset:0;display:flex;overflow:auto;container-type:size;scrollbar-width:thin;scrollbar-color:#6c7463 #101819;overscroll-behavior:contain}
 .scene-inner{position:relative;inset:auto;flex:none;width:min(100cqw,calc(100cqh * 16 / 9));height:auto;aspect-ratio:16/9;margin:auto}
 .scene-art{height:auto;opacity:1}
-.scene-vignette{background:radial-gradient(ellipse at 51% 44%,transparent 50%,#050d102b 100%)}
+.scene-vignette{background:radial-gradient(ellipse at 51% 44%,transparent 34%,#03080f70 100%)}
 .scene-label{padding:12px 15px;top:12px;left:15px;border-left:1px solid #b8b59766;background:linear-gradient(90deg,#10181bba,#10181b00);max-width:55%}
 .scene-label h1{font-size:21px}.scene-label p{color:#c7ccbe}
 .hotspot{width:44px;height:44px;min-width:44px;min-height:44px;padding:0}
@@ -71,7 +71,7 @@ dialog.lock-dialog{width:min(800px,calc(100vw - 28px))}.lock-dialog .story-text{
 .scare-shade{animation:visitor-shade 5.2s ease-in-out both}
 .scare-caption{z-index:5;animation:scare-label 5.2s ease-out both}
 @keyframes scare-label{0%,78%{opacity:0}95%,100%{opacity:.75}}
-@keyframes visitor-appear{0%,4%{opacity:0}22%{opacity:.6}30%,65%{opacity:.68}100%{opacity:0}}
+@keyframes visitor-appear{0%,4%{opacity:0}22%{opacity:.6}30%,65%{opacity:.84}100%{opacity:0}}
 @keyframes visitor-focus{0%{filter:blur(5px)}24%,65%{filter:blur(.75px)}100%{filter:blur(7px)}}
 @keyframes visitor-shade{0%,100%{opacity:0}22%,65%{opacity:.1}}
 .apparition.broadcast{filter:brightness(1.1) contrast(1.05)}
@@ -124,3 +124,6 @@ dialog.lock-dialog{width:min(800px,calc(100vw - 28px))}.lock-dialog .story-text{
 .guide-link{display:inline-flex;align-items:center;min-height:44px;padding:10px 14px;border:1px solid var(--line);border-radius:3px;color:var(--amber);font-size:13px;text-decoration:none}.guide-link:hover{background:#ffffff0a}.guide-link:focus-visible{outline:2px solid var(--amber);outline-offset:4px}.author-nav{display:flex;align-items:center;gap:10px;flex-wrap:wrap}.lobby-actions{flex-wrap:wrap}
 
 .preview-navigation{position:sticky;top:0;z-index:4;display:flex;flex-wrap:wrap;gap:8px;background:var(--panel);padding:10px 0;margin-bottom:16px;border-bottom:1px solid var(--line)}
+
+/* Keep puzzle objects readable while giving empty rooms colder, deeper shadows. */
+.room-atmosphere{filter:saturate(.76) contrast(1.1) brightness(.94)}

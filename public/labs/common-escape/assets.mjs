@@ -3,7 +3,7 @@ export const IMAGE_FILES=Object.freeze(Object.fromEntries([
  'classroom','classroom-open','classroom-changed','library','library-changed',
  'broadcast','entrance','entrance-changed','corridor','courtyard','book','blood',
  'ghost-classroom','ghost-library','ghost-broadcast','ghost-hand','courtyard-haunted','archive-box'
-].map(name=>[name,`assets/${name}-v1.webp`])));
+].map(name=>[name,`assets/${name}-${["blood","ghost-classroom","ghost-library","ghost-broadcast"].includes(name)?"v2":"v1"}.webp`])));
 export const artURL=name=>globalThis.window?.__commonEscapeAssets?.[name]||`./${IMAGE_FILES[name]}`;
 const warmed=new Set();
 export function warmArt(names){

@@ -143,3 +143,13 @@ Use case: stylized-concept. Asset type: transparent game prop for a realistic Ko
 Built-in image_gen generation; output: `assets/blood-v1.webp`.
 
 Use case: stylized-concept. Asset type: isolated transparent dried-blood decal for the floor of a school horror mystery game. A single realistic short drag mark from a bloodied palm, five uneven finger streaks tapering from the left/lower broad palm to the right/upper end, with a small irregular trail of separate droplets extending in that direction. No body or actual hand, only the mark left behind. Dry dark crimson/burgundy center and clearly readable muted red-brown feathered edges, clotted thin rough texture, no wet shine. The whole decal lies on ONE horizontal ground plane viewed obliquely from above so the mark is foreshortened vertically; main trail runs horizontally left-to-right. It will be placed on a grey terrazzo classroom floor, but render NO FLOOR, no tile, no backing rectangle, no cast shadow. Genuine transparent RGBA background with clean alpha, surrounding transparency. Landscape 3:2, decal fills central 80% of width and 65% of height. A modest palm-sized eerie stain, not a pool, no splashing, no wounds, no dismemberment, no words or symbols.
+
+
+## 2026-10-21 atmosphere revision (built-in image_gen)
+
+- Blood v2: transparent, flat matte dark red-brown floor stain, three broken tapering drag traces and tiny droplets; no raised crust, palm silhouette, glow or shadow. Floor grain remains visible.
+- Classroom ghost v2: preserve charcoal uniform and maroon ribbon; long damp hair hides all facial features, head droops sideways, rigid torso, hand against glass, cold side light, transparent background.
+- Library ghost v2: same identity, leaning around shelf, head tilted and natural fingers gripping edge; concealed face, dark matte clothes, transparent background.
+- Broadcast ghost v2: same identity and obscured face, lowered tilted head, cold analogue-camera texture on the subject only, transparent background.
+
+Generated PNGs converted to small WebP sprites retaining alpha. Existing event duration and puzzle geometry retained.

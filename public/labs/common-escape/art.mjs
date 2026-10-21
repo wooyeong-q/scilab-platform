@@ -28,7 +28,7 @@ export function sceneAsset(room,s={}){
 // Individually removable transparent book props, with IDs printed by the game.
 const BOOKS={A:[1240,478,110,145,'1 0 -.42 .4 15 0'],B:[475,369,95,120,'1 0 -.65 .26 20 0'],C:[790,685,115,155,'1 .05 -.35 .6 25 0'],D:[1150,418,92,122,'1 0 -.55 .28 20 0']};
 function looseBooks(s){return Object.entries(BOOKS).filter(([id])=>!s.libraryBooks?.includes(id)).map(([id,[x,y,w,h,matrix]])=>`<g data-scene-book="${id}" transform="translate(${x} ${y}) matrix(${matrix})"><image href="${artURL('book')}" width="${w}" height="${h}" preserveAspectRatio="none"/><text x="${w*.52}" y="${h*.39}" text-anchor="middle" font-family="serif" font-size="${w*.14}" fill="#463e2b">${id}</text></g>`).join('');}
-const bloodTrail=()=>`<image data-scene-part="blood-trail" href="${artURL('blood')}" x="485" y="670" width="280" height="187" transform="rotate(-40 625 763)" opacity=".82"/>`;
+const bloodTrail=()=>`<image data-scene-part="blood-trail" href="${artURL('blood')}" x="520" y="738" width="240" height="96" opacity=".78" style="mix-blend-mode:multiply"/>`;
 const archiveBox=()=>`<g data-scene-part="fallen-box"><ellipse cx="910" cy="792" rx="99" ry="12" fill="#100d09" opacity=".42"/><image href="${artURL('archive-box')}" x="800" y="640" width="230" height="189"/></g>`;
 const monitorScreen=(active=false)=>`<g data-scene-part="lit-monitor"><path d="M532 126 1046 124 1046 390 532 391Z" fill="#1a3837"/><path d="M789 126V390M532 258H1046" stroke="#739a85" stroke-width="2" opacity=".65"/><text x="789" y="369" text-anchor="middle" fill="#b9d4b7" font-size="16" font-family="sans-serif">${active?'녹음 장치 연결됨':'기록 복원 대기'}</text></g>`;
 const roomImage=(name,attrs='')=>image(name,attrs)+(name.startsWith('classroom')?bloodTrail():'');
@@ -48,7 +48,7 @@ export function scene(room,s={flags:[]}){
  if(room==='broadcast'&&has(s,'power'))overlay+='<circle cx="1361" cy="432" r="3" fill="#bad4a5"/><circle cx="1361" cy="432" r="12" fill="#b5d59b" opacity=".12"/>';
  if(room==='entrance'&&has(s,'power'))overlay+=has(s,'relay')?`<text x="1368" y="371" text-anchor="middle" font-size="13" font-family="monospace" fill="#213727">${has(s,'unlocked')?'OPEN':'CODE'}</text>`:'<path d="M1333 340H1397V392H1333Z" fill="#14231c"/>';
  if(room==='entrance'&&s.photos?.includes('notice'))overlay+=`<image href="${artURL('ghost-hand')}" x="1060" y="310" width="70" height="105" opacity=".12"/>`;
- return `<svg class="scene-art" viewBox="0 0 ${W} ${H}" aria-hidden="true" xmlns="http://www.w3.org/2000/svg"><rect width="${W}" height="${H}" fill="#101819"/>${roomImage(name,marker)}${overlay}</svg>`;
+ return `<svg class="scene-art" viewBox="0 0 ${W} ${H}" aria-hidden="true" xmlns="http://www.w3.org/2000/svg"><rect width="${W}" height="${H}" fill="#101819"/><g class="room-atmosphere">${roomImage(name,marker)}${overlay}</g></svg>`;
 }
 export function corridor(){warmArt(['classroom','book','ghost-classroom']);return `<img class="landing-art" src="${artURL('corridor')}" alt="" fetchpriority="high" decoding="async"/>`;}
 export function courtyard(){
