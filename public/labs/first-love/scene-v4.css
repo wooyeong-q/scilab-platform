@@ -1,4 +1,12 @@
 /* Keep the stage quiet: objects live in the painting, tools stay out of the story. */
+.expression-sprite{aspect-ratio:2/3;overflow:hidden;pointer-events:none}
+.pair .expression-sprite{height:100%;width:auto;max-width:none}
+.reason-options{border:0;padding:7px 0 0;margin:0;display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:5px;min-width:0}
+.reason-options legend{font-size:11px;color:#635a50;padding:0;margin-bottom:5px}
+.reason-options button{display:flex;align-items:center;justify-content:center;gap:3px;white-space:nowrap;min-width:0;min-height:40px;padding:6px 2px;font-size:12px;border:1px solid #bcb6a9;background:#fffdf8;color:#4c514a}
+.reason-options button[aria-pressed=true]{background:#48665e;color:#fff;border-color:#48665e;box-shadow:inset 0 0 0 1px #fff8}
+.reason-options button[aria-pressed=true]::before{content:'✓ ';font-size:10px}
+.reason-help{padding:10px 13px;background:#edf1eb;border-radius:5px;line-height:1.8}
 .game{grid-template-rows:58px minmax(0,1fr) 52px}
 .game.in-dialogue{grid-template-rows:58px minmax(0,1fr) 30px}
 .game-footer{padding:5px 20px;gap:15px}
@@ -48,8 +56,9 @@ dialog:has(.object-story){width:min(620px,92vw)}
 .story-note>small{color:#96776e;font-size:12px}
 .story-note p{font-family:'Batang',serif;font-size:23px;line-height:2;white-space:pre-line;margin:26px 0;min-height:90px}
 .story-note .next-line{display:flex;margin-left:auto}
-.ending-thumb.disgust{background-image:url('./assets/ending-disgust-v4.webp')}
+.ending-thumb.disgust{background-image:url('./assets/ending-disgust-v5.webp')}
 @media(max-width:700px){
+ .reason-options{grid-template-columns:repeat(2,minmax(0,1fr))}.reason-options button{min-height:44px}
  .game{grid-template-rows:52px minmax(0,1fr) 48px}.game.in-dialogue{grid-template-rows:52px minmax(0,1fr) 25px}
  .game-header{padding:5px 11px}.wordmark{font-size:18px}.game-header .game-tools button{font-size:11px;padding:7px 9px}
  .game-footer{padding:5px 12px;flex-wrap:nowrap;gap:7px}.place-caption{font-size:11px}.scene-controls{gap:5px}.scene-controls button,.game-footer .clue-button{font-size:11px;min-height:34px;padding:6px 10px;margin:0}

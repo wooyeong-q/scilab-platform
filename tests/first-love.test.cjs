@@ -47,6 +47,39 @@ test('P8 needs each of four conditions; P10 requires distinct prior clues and on
  assert.equal(e.correct(9,null,solution(9),d),true);
 });
 
+test('P8 accepts any nonempty set of valid exclusion reasons, including legacy drafts',()=>{
+ const p=SAMPLE.puzzles[7];
+ for(const reasons of [[1],[4],[1,4],[4,1,4]]){
+  const input=solution(7);input.H={choice:'제외',reasons};
+  const d=e.normalizeDraft(7,p,input);assert.ok(e.complete(7,p,d,SAMPLE.devices));assert.ok(e.correct(7,p,d,SAMPLE.devices));
+  assert.deepEqual(d.H.reasons,[...new Set(reasons)].sort());
+ }
+ const bad=solution(7);bad.H={choice:'제외',reasons:[1,2]};assert.equal(e.correct(7,p,bad,SAMPLE.devices),false);
+ bad.H={choice:'제외',reason:1,reasons:[]};assert.equal(e.complete(7,p,bad,SAMPLE.devices),false);assert.equal(e.correct(7,p,bad,SAMPLE.devices),false);
+ const legacy=e.normalizeDraft(7,p,solution(7));assert.deepEqual(legacy.H.reasons,[1]);assert.ok(e.correct(7,p,legacy,SAMPLE.devices));
+ const all=solution(7);all.F={choice:'제외',reasons:[1,2,4]};all.G={choice:'제외',reasons:[2,3]};assert.ok(e.correct(7,p,all,SAMPLE.devices));
+});
+
+test('teacher subject data keeps alternative reasons and four private conditions through shared saves',async()=>{
+ const sheets=c.toSheets(SAMPLE);
+ sheets.설정.find(r=>r[0]==='과목')[1]='사회';
+ const row=sheets.퍼즐.find(r=>r[0]==='P8');row[4]='네 조건에 맞는 현장 학습 장소 하나를 고르세요.';row[5]='모든 장소와 정보는 활동을 위한 가상의 자료입니다.';row[6]='조건을 어기는 근거는 하나 이상 고를 수 있습니다.';
+ const places=['수목원 · 야외 · 도보 · 무료 · 해설 있음','박물관 · 실내 · 도보 · 무료 · 해설 있음','해변 · 야외 · 버스 · 무료 · 해설 있음','생태공원 · 야외 · 도보 · 15000원 · 해설 있음','운동장 · 야외 · 도보 · 무료 · 해설 없음','전시관 · 실내 · 버스 · 무료 · 해설 없음','유적지 · 야외 · 버스 · 15000원 · 해설 있음','체육관 · 실내 · 도보 · 무료 · 해설 없음'];
+ sheets.자료.filter(r=>r[0]==='P8').forEach((r,n)=>r[3]=places[n]);
+ const conditions=['야외에서 활동한다.','걸어서 이동한다.','입장료가 1만 원 미만이다.','해설 프로그램이 있다.'];
+ sheets.모둠단서.filter(r=>r[0]==='P8').forEach((r,n)=>r[3]=conditions[n]);
+ const lesson=c.fromSheets(sheets),room=await classroom(4,lesson);
+ for(let n=0;n<7;n++){await draft(room,solution(n,lesson));assert.equal((await submit(room)).outcome,'correct');}
+ for(let n=0;n<4;n++){
+  const view=await service.state(room.code,room.keys[n]);assert.equal(view.content.puzzle.clues.length,1);assert.equal(view.content.puzzle.clues[0].text,conditions[n]);
+  assert.ok(view.content.puzzle.items.every(i=>i.passes===undefined&&i.answer===undefined));
+ }
+ const answer=solution(7,lesson);answer.H={choice:'제외',reasons:[1,4]};
+ await draft(room,answer,room.keys[1]);
+ const reconnected=await service.state(room.code,room.keys[3]);assert.deepEqual(reconnected.state.draft.H.reasons,[1,4]);
+ assert.equal((await submit(room,room.keys[2])).outcome,'correct');assert.equal((await stats(room)).wrong,0);
+});
+
 test('one to four players can finish all ten stages; private clues, frozen endings and reconnect',async()=>{
  for(let count=1;count<=4;count++){
   const room=await classroom(count);

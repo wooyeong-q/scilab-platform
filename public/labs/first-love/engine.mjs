@@ -3,26 +3,28 @@ export const fresh=()=>({version:1,stage:0,solved:[],photos:[],hints:{},draft:{}
 export const branch=(wrong,limits)=>wrong<=limits.positiveMax?'smile':wrong<=limits.neutralMax?'surprise':'disgust';
 const fail=(s,status=400)=>{throw new ContentError(s,status);};
 export const canonical=v=>JSON.stringify(Array.isArray(v)?v.map(x=>JSON.parse(canonical(x))):v&&typeof v==='object'?Object.fromEntries(Object.keys(v).sort().map(k=>[k,JSON.parse(canonical(v[k]))])):v??null);
+// Old saved games used one scalar reason. An explicit empty array clears it.
+export const chosenReasons=v=>[...new Set((Array.isArray(v?.reasons)?v.reasons:[v?.reason]).map(Number).filter(n=>[1,2,3,4].includes(n)))].sort((a,b)=>a-b);
 export function normalizeDraft(stage,p,d={}){
  const out={};if(!d||typeof d!=='object'||Array.isArray(d))return out;
  if(stage===9){out.turns=Number.isInteger(d.turns)&&d.turns>=0&&d.turns<4?d.turns:0;out.start=typeof d.start==='string'?d.start.slice(0,4):'';out.moves=Array.isArray(d.moves)?d.moves.slice(0,12).filter(x=>['up','right','down','left'].includes(x)):[];out.drawer=/^[A-I]$/.test(d.drawer)?d.drawer:'';return out;}
  if(!p)return out;
  if(['order','select-order'].includes(p.type)){out.order=Array.from({length:4},(_,n)=>p.items.some(i=>i.id===d.order?.[n])?d.order[n]:'');if(new Set(out.order.filter(Boolean)).size!==out.order.filter(Boolean).length)fail('같은 카드를 두 칸에 놓을 수 없습니다.');return out;}
- for(const i of p.items){const v=d[i.id];if(p.type==='route-match')out[i.id]={via:p.targets.some(t=>t.kind==='중간'&&t.id===v?.via)?v.via:'',to:p.targets.some(t=>t.kind==='도착'&&t.id===v?.to)?v.to:''};else if(p.type==='deduce')out[i.id]={choice:['가능','제외'].includes(v?.choice)?v.choice:'',reason:[1,2,3,4].includes(Number(v?.reason))?Number(v.reason):0};else out[i.id]=['유지',...p.targets.map(t=>t.id)].includes(v)?v:'';}
+ for(const i of p.items){const v=d[i.id];if(p.type==='route-match')out[i.id]={via:p.targets.some(t=>t.kind==='중간'&&t.id===v?.via)?v.via:'',to:p.targets.some(t=>t.kind==='도착'&&t.id===v?.to)?v.to:''};else if(p.type==='deduce'){const reasons=chosenReasons(v);out[i.id]={choice:['가능','제외'].includes(v?.choice)?v.choice:'',reasons,reason:reasons[0]||0};}else out[i.id]=['유지',...p.targets.map(t=>t.id)].includes(v)?v:'';}
  return out;
 }
 export function complete(stage,p,d,devices){
  if(stage===9)return !!(d.start&&d.drawer&&Array.isArray(d.moves)&&d.moves.length===devices.route.length&&walk(rotated(devices.grid,d.turns),d.start,d.moves));
  if(['order','select-order'].includes(p.type))return d.order?.length===4&&d.order.every(Boolean)&&new Set(d.order).size===4;
  if(p.type==='route-match')return p.items.every(i=>d[i.id]?.via&&d[i.id]?.to);
- if(p.type==='deduce')return p.items.every(i=>d[i.id]?.choice&&(d[i.id].choice==='가능'||d[i.id].reason))&&p.items.filter(i=>d[i.id].choice==='가능').length===1;
+ if(p.type==='deduce')return p.items.every(i=>d[i.id]?.choice&&(d[i.id].choice==='가능'||chosenReasons(d[i.id]).length))&&p.items.filter(i=>d[i.id].choice==='가능').length===1;
  return p.items.every(i=>d[i.id]);
 }
 export function correct(stage,p,d,devices){
  if(stage===9){const a=finalAnswer(devices);return d.turns===a.turns&&d.start===a.start&&canonical(d.moves)===canonical(devices.route)&&d.drawer===a.drawer;}
  if(['order','select-order'].includes(p.type))return d.order.every((id,n)=>p.items.find(i=>i.id===id)?.answer===String(n+1));
  if(p.type==='route-match')return p.items.every(i=>d[i.id].via===i.via&&d[i.id].to===i.answer);
- if(p.type==='deduce')return p.items.every(i=>d[i.id].choice===i.answer&&(i.answer==='가능'||!i.passes.includes(d[i.id].reason)));
+ if(p.type==='deduce')return p.items.every(i=>d[i.id]?.choice===i.answer&&(i.answer==='가능'||(chosenReasons(d[i.id]).length>0&&chosenReasons(d[i.id]).every(n=>!i.passes.includes(n)))));
  return p.items.every(i=>d[i.id]===i.answer);
 }
 export function transition(state,e,lesson,roles=[1,2,3,4]){
