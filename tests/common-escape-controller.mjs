@@ -76,12 +76,12 @@ await click(process.env.COMMON_ESCAPE_OPENING?'resume':'new');
 assert.equal(getState().room,'entrance');
 if(process.env.COMMON_ESCAPE_OPENING!=='broadcast'){
  assert.match(html(),/잠긴 현관문/);assert.doesNotMatch(html(),/교실로 이동해 주십시오/);
- assert.match(html(),/효과음 켜기/);await click('sound');assert.equal(getState().sound,true);assert.match(html(),/효과음 끄기/);
+ assert.match(html(),/배경음·효과음 끄기/);assert.equal(getState().sound,true);await click('sound');assert.equal(getState().sound,false);assert.match(html(),/배경음·효과음 켜기/);await click('sound');assert.equal(getState().sound,true);
  await click('opening-next');
 }
 assert.match(html(),/현관 스피커에서 들린 방송/);assert.match(html(),/교실로 이동해 주십시오/);
 await click('opening-next');assert.match(html(),/교실에 남겨진 기록을 찾으세요/);await closeAll();
-await click('settings');assert.match(html(),/소리 확인/);await click('sound-test');assert.equal(getState().sound,true);await closeAll();
+await click('settings');assert.match(html(),/소리 확인/);for(const room of ['classroom','library','broadcast','entrance','ending'])await click('sound-scene',room);await click('sound-test');assert.equal(getState().sound,true);await closeAll();
 assert.equal(getState().room,'entrance','broadcast does not teleport the player');
 assert.ok(getState().seen.includes('opening:complete'));
 assert.match(elements['#app'].innerHTML,/교실에 남겨진 기록을 찾으세요/);

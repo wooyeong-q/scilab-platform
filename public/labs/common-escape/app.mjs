@@ -156,7 +156,7 @@ function beginOpening(){
 }
 function showOpening(){
  if(state.seen.includes('opening:broadcast'))return showOpeningBroadcast();
- renderGame();openModal('잠긴 현관문',`<div class="dialog-intro"><div class="intro-meta">오늘 마지막 수업 · ${esc(lessonMeta().subject)}</div><div class="intro-time">17:40</div>${paragraph('수업이 끝난 뒤 가방을 챙겨 중앙 현관으로 내려왔다.\n손잡이를 당겼지만 문이 열리지 않는다.')}${paragraph('유리 너머로 운동장이 보인다.\n문 옆의 출입 장치는 꺼져 있다.')}</div>`,btn('문을 다시 당겨 보기','opening-next')+btn(state.sound?'효과음 끄기':'효과음 켜기','sound','',false),'프롤로그');
+ renderGame();openModal('잠긴 현관문',`<div class="dialog-intro"><div class="intro-meta">오늘 마지막 수업 · ${esc(lessonMeta().subject)}</div><div class="intro-time">17:40</div>${paragraph('수업이 끝난 뒤 가방을 챙겨 중앙 현관으로 내려왔다.\n손잡이를 당겼지만 문이 열리지 않는다.')}${paragraph('유리 너머로 운동장이 보인다.\n문 옆의 출입 장치는 꺼져 있다.')}</div>`,btn('문을 다시 당겨 보기','opening-next')+btn(state.sound?'배경음·효과음 끄기':'배경음·효과음 켜기','sound','',false),'프롤로그');
  pending={opening:'broadcast'};
 }
 function showOpeningBroadcast(){
@@ -328,7 +328,7 @@ function runScare(id,done=()=>{}){
  effectTimer=setTimeout(()=>{effectBusy=false;document.querySelectorAll('.apparition,.scare-shade,.scare-caption').forEach(x=>x.remove());if(pan?.isConnected)pan.scrollLeft=previousPan;toast(text);renderGame();done();},5400);
 }
 function showJournal(){openModal('탐색 기록',state.journal.length?state.journal.map(j=>`<article class="journal-entry"><h3>${esc(j.title)}</h3><p>${esc(j.text)}</p></article>`).join(''):paragraph('아직 기록한 내용이 없어요.'),closeBtn('탐색으로 돌아가기'),'자동으로 기록한 내용');}
-function settings(){openModal('탐색 설정',`<div class="settings-row"><div><strong>효과음</strong><p>탐색 중 배경음과 등장 순간의 효과음. 꺼도 모든 내용을 확인할 수 있어요.</p></div><button class="toggle ${state.sound?'on':''}" data-action="sound" aria-pressed="${state.sound}">${state.sound?'켜짐':'꺼짐'}</button></div><div class="audio-check">${btn(state.sound?'소리 확인':'소리 켜고 확인','sound-test','',false)}</div><div class="settings-row"><div><strong>공포 연출 줄이기</strong><p>짧은 등장과 화면 변화 대신 글로 알려 주고 공포 배경음을 끕니다.</p></div><button class="toggle ${state.soft?'on':''}" data-action="soft" aria-pressed="${state.soft}">${state.soft?'켜짐':'꺼짐'}</button></div><p class="audio-credits">배경음: congusbongus · <a href="https://opengameart.org/content/a-lurking-evil-horror-ambience" target="_blank" rel="noopener noreferrer">A lurking evil</a> (CC0).</p><p class="subtle">${groupMode?'모둠의 진행은 함께 저장됩니다. 같은 브라우저에서 내 모둠 이어하기로 돌아올 수 있어요.':'진행은 이 브라우저에 자동 저장됩니다.'}</p>`,btn('사용법','about','',false)+(groupMode?btn('모둠 정보','group-info','',false):btn('처음부터 시작','restart','',false))+closeBtn('계속하기'),'설정');}
+function settings(){openModal('탐색 설정',`<div class="settings-row"><div><strong>배경음·효과음</strong><p>탐색 중 공포 배경음이 계속 흐르고, 장소마다 다른 등장음이 재생됩니다. 꺼도 모든 내용을 확인할 수 있어요.</p></div><button class="toggle ${state.sound?'on':''}" data-action="sound" aria-pressed="${state.sound}">${state.sound?'켜짐':'꺼짐'}</button></div><div class="audio-check">${btn(state.sound?'소리 확인':'소리 켜고 확인','sound-test','',false)}${[['classroom','교실'],['library','도서관'],['broadcast','방송실'],['entrance','현관'],['ending','엔딩']].map(([id,label])=>btn(label+' 등장음','sound-scene',id,false)).join('')}</div><div class="settings-row"><div><strong>공포 연출 줄이기</strong><p>짧은 등장과 화면 변화 대신 글로 알려 주고 공포 배경음을 끕니다.</p></div><button class="toggle ${state.soft?'on':''}" data-action="soft" aria-pressed="${state.soft}">${state.soft?'켜짐':'꺼짐'}</button></div><p class="audio-credits">배경음: congusbongus · <a href="https://opengameart.org/content/lost-in-a-bad-place-horror-ambience-loop" target="_blank" rel="noopener noreferrer">Lost in a bad place</a> (CC0).</p><p class="subtle">${groupMode?'모둠의 진행은 함께 저장됩니다. 같은 브라우저에서 내 모둠 이어하기로 돌아올 수 있어요.':'진행은 이 브라우저에 자동 저장됩니다.'}</p>`,btn('사용법','about','',false)+(groupMode?btn('모둠 정보','group-info','',false):btn('처음부터 시작','restart','',false))+closeBtn('계속하기'),'설정');}
 function renderEnding(){
  if(view==='ending')return;
  clearEnding();clearEffects();stopSounds();view='ending';pending=null;
@@ -441,6 +441,7 @@ document.addEventListener('click',async e=>{
  const b=e.target.closest('button[data-action]');if(!b||effectBusy)return;const a=b.dataset.action,id=b.dataset.id;
  if(a==='preview-exit')return exitStagePreview();
  if(a==='preview-problem')return showPreviewProblem();
+ if(state.sound&&['new','resume','group-connect','group-resume'].includes(a))warmSounds();
  if(a.startsWith('group-'))return groupClick(a,id);
  if(a==='author')return showAuthor();
  if(a==='device-hints'||a==='device-next-hint')return showDeviceHints(id,a==='device-next-hint');
@@ -455,6 +456,7 @@ document.addEventListener('click',async e=>{
  if(a==='home')return renderHome();
  if(a==='about')return openModal('함께 탐색하는 방법',paragraph('화면 위 현재 목표를 확인하고, 지도에서 장소를 옮겨 물건을 조사하세요. 챙긴 물건과 탐색 기록은 언제든 다시 볼 수 있어요.')+paper('모둠 활동',paragraph('각자의 내 단서를 읽고 서로 설명하세요. 빈자리의 단서는 남은 모둠원이 확인할 수 있어요. 풀이를 의논한 뒤 한 명이 장치를 조작해 제출하면 해결 결과가 모둠에 함께 반영됩니다.'))+paper('교사의 수업 준비',paragraph('엑셀 양식과 AI 프롬프트로 교과 자료를 만들고, 미리보기 후 수업 코드를 안내하세요. 학생들이 들어오면 모든 모둠 시작을 누릅니다.'))+paragraph('설정에서 소리를 확인하거나 공포 연출을 줄일 수 있어요.')+`<a class="guide-link" href="${window.__commonEscapeOffline?'https://scilab-platform.vercel.app/labs/common-escape/guide.html':'./guide.html'}" target="_blank" rel="noopener">자세한 사용법 ↗</a>`,closeBtn('돌아가기'),'사용법');
  if(a==='sound'){dispatch({type:'setting',key:'sound',value:!state.sound});if(!state.sound)stopSounds();if(view==='game')renderGame();sound();if(dialog.open){const title=$('#dialog-title').textContent;if(title==='탐색 설정')settings();else if(title==='잠긴 현관문')showOpening();}return;}
+ if(a==='sound-scene'){if(!['classroom','library','broadcast','entrance','ending'].includes(id))return;stopSounds();dispatch({type:'setting',key:'sound',value:true});syncAmbience();sound(id==='ending'?'ending-shadow':'apparition-'+id);settings();return;}
  if(a==='sound-test'){dispatch({type:'setting',key:'sound',value:true});syncAmbience();sound('preview');settings();return;}
  if(a==='ending-replay'&&state.finished)return renderEnding();
  if(a==='soft'){dispatch({type:'setting',key:'soft',value:!state.soft});document.body.classList.toggle('no-motion',state.soft);if(state.soft)stopSounds();syncAmbience();return settings();}

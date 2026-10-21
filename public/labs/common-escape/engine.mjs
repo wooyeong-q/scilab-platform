@@ -9,7 +9,7 @@ export const ROUTE_ARROWS={right:'→',down:'↓',left:'←',up:'↑'};
 export const rotatedGrid=(turns=0,devices=SAMPLE.devices)=>gridCells(devices,turns);
 export const exitSide=turns=>['top','right','bottom','left'][(3+turns)%4];
 export const EXIT_CODE_LENGTH=exitCode(SAMPLE.devices).length;
-export const fresh=()=>({version:VERSION,started:false,room:'entrance',cards:[],libraryBooks:[],flags:[],photos:[],hints:{},gridTurns:0,seen:[],journal:[],sound:false,soft:false,finished:false});
+export const fresh=()=>({version:VERSION,started:false,room:'entrance',cards:[],libraryBooks:[],flags:[],photos:[],hints:{},gridTurns:0,seen:[],journal:[],sound:true,soft:false,finished:false});
 export const has=(s,f)=>s.flags.includes(f);
 export function goal(s){
  if(s.finished)return {id:'end',chapter:'탈출',title:'학교 밖으로',text:'현관문을 나왔다. 멈춰 있던 시간이 다시 흐른다.'};

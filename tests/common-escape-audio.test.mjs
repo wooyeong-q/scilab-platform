@@ -86,3 +86,15 @@ test('leaving while ambience downloads cannot start a late loop',async()=>{
   assert.equal(await playing,false);assert.equal(state.starts.length,0);
  }finally{globalThis.window=originalWindow;globalThis.fetch=originalFetch;}
 });
+
+test('new sessions enable sound, saved mute is respected, and each apparition has a distinct recording',async()=>{
+ const {fresh:createState,restore}=await import('../public/labs/common-escape/engine.mjs');
+ assert.equal(createState().sound,true);assert.equal(restore({...createState(),sound:false}).sound,false);
+ const {SOUND_CUES,AUDIO_FILES}=await fresh();
+ const primary=['apparition-classroom','apparition-library','apparition-broadcast','apparition-entrance','ending-shadow'].map(k=>SOUND_CUES[k].at(-1)[0]);
+ assert.equal(new Set(primary).size,5);
+ assert.match(AUDIO_FILES.ambience,/ambience-v2/);
+ const {createHash}=await import('node:crypto');
+ const hashes=await Promise.all(primary.map(async name=>createHash('sha256').update(await readFile(new URL('../public/labs/common-escape/'+AUDIO_FILES[name],import.meta.url))).digest('hex')));
+ assert.equal(new Set(hashes).size,5,'different names must not disguise the same sound file');
+});

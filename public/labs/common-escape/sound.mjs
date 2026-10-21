@@ -1,8 +1,8 @@
 // Downloaded CC0 audio. Credits: docs/common-escape/AUDIO-SOURCES.json.
 // The standalone builder embeds these exact files; no third-party runtime requests.
 export const AUDIO_FILES=Object.freeze(Object.fromEntries([
- 'click','latch','door','paper','step-a','step-b','creak','breath','static','bell','ambience'
-].map(name=>[name,'assets/audio/'+name+(name==='breath'?'-v2.mp3':'-v1.mp3')])));
+ 'click','latch','door','paper','step-a','step-b','creak','breath','static','bell','ambience','ghost-library','ghost-entrance','ghost-ending'
+].map(name=>[name,'assets/audio/'+name+(['breath','ambience'].includes(name)?'-v2.mp3':'-v1.mp3')])));
 export const SOUND_CUES=Object.freeze({
  tap:[['click',.35]],goal:[['bell',.32]],bell:[['bell',.65]],
  step:[['step-a',.64],['step-b',.52,.38],['step-a',.42,.76]],
@@ -10,10 +10,10 @@ export const SOUND_CUES=Object.freeze({
  switch:[['click',.6]],paper:[['paper',.6]],
  broadcast:[['click',.45],['static',.55,.1]],
  'apparition-classroom':[['breath',.78,.08]],
- 'apparition-library':[['creak',.7],['breath',.62,.18]],
+ 'apparition-library':[['creak',.42],['ghost-library',.66,.18]],
  'apparition-broadcast':[['static',.58]],
- 'apparition-entrance':[['breath',.62,.08]],
- 'ending-shadow':[['breath',.56,.25]],
+ 'apparition-entrance':[['ghost-entrance',.66,.08]],
+ 'ending-shadow':[['ghost-ending',.58,.25]],
  'box-fall':[['creak',.46],['door',.78,1.04],['paper',.52,1.3]],
  'monitor-on':[['click',.55],['static',.52,.2]],
  'lights-out':[['click',.7]],
