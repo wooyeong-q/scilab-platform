@@ -10,11 +10,16 @@
 .game.in-dialogue .place-caption{font-size:10px}
 .scene-briefing{padding:12px 24px;gap:20px}
 .scene-briefing p{max-width:440px}
-.ambient-point{width:42px;height:42px;background:none;border:0;box-shadow:none}
-.ambient-point>span{display:grid;place-items:center;margin:auto;width:19px;height:19px;line-height:1;background:#fff9ebbd;border:1px solid #fff9;border-radius:50%;font-size:22px;color:#5d605c;box-shadow:0 1px 6px #332d2433}
-.ambient-point:hover>span,.ambient-point:focus-visible>span{background:#fffaf0;box-shadow:0 0 0 4px #fff5}
-.ambient-point b{bottom:42px;left:50%;transform:translateX(-50%)}
-.hotspot{padding:7px 10px;min-height:35px}
+/* Every inspectable object has the same marker, including the puzzle object. */
+.scene-point{position:absolute;transform:translate(-50%,-50%);display:grid;place-items:center;width:44px;height:44px;min-width:44px;min-height:44px;padding:0;border:0;border-radius:50%;background:transparent;box-shadow:none;z-index:2;touch-action:manipulation;cursor:pointer}
+.scene-point .point-icon{display:grid;place-items:center;width:32px;height:32px;border:2px solid #fffaf1;border-radius:50%;background:#496760;color:#fffdf5;box-shadow:0 2px 7px #252b294d,0 0 0 1px #384e4b66;pointer-events:none;transition:transform .15s,background .15s}
+.scene-point svg{width:20px;height:20px}
+.scene-point .point-label{position:absolute;bottom:46px;left:50%;transform:translateX(-50%);white-space:nowrap;padding:6px 9px;border:1px solid #d9cdbb;border-radius:5px;background:#fffaf1;color:#3d514c;font-size:11px;font-weight:500;box-shadow:0 2px 8px #342d2529;opacity:0;visibility:hidden;pointer-events:none}
+.scene-point[data-edge=left] .point-label{left:4px;transform:none}.scene-point[data-edge=right] .point-label{left:auto;right:4px;transform:none}
+.scene-point:focus-visible{outline:2px solid #fffaf1;outline-offset:1px;z-index:3}.scene-point:focus-visible .point-label{opacity:1;visibility:visible}
+.scene-point:active .point-icon{transform:scale(.93)}.scene-point:disabled{cursor:default;opacity:.55}.scene-point.found .point-icon{background:#60775c}
+@media(hover:hover){.scene-point:hover{z-index:3}.scene-point:hover .point-icon{background:#324f49;transform:scale(1.08)}.scene-point:hover .point-label{opacity:1;visibility:visible}}
+@media(prefers-reduced-motion:reduce){.scene-point .point-icon{transition:none}}
 .scene-caption{position:absolute;left:28px;top:22px;padding:8px 14px;background:#fffaf1d9;border-left:2px solid #b8897c;font-size:12px;color:#786d63;letter-spacing:.06em}
 .school-map{display:grid;grid-template-columns:repeat(2,1fr);gap:12px;padding:24px}
 .school-map button{min-height:84px;display:flex;flex-direction:column;align-items:flex-start;text-align:left;background:#fffaf2}
@@ -49,7 +54,7 @@ dialog:has(.object-story){width:min(620px,92vw)}
  .game-header{padding:5px 11px}.wordmark{font-size:18px}.game-header .game-tools button{font-size:11px;padding:7px 9px}
  .game-footer{padding:5px 12px;flex-wrap:nowrap;gap:7px}.place-caption{font-size:11px}.scene-controls{gap:5px}.scene-controls button,.game-footer .clue-button{font-size:11px;min-height:34px;padding:6px 10px;margin:0}
  .scene-briefing{padding:11px 14px}.scene-briefing h2{font-size:16px}.scene-briefing p{margin-top:5px;font-size:12px;line-height:1.65}
- .ambient-point{width:42px;height:42px}.ambient-point>span{width:16px;height:16px;font-size:20px}.hotspot{min-height:32px}.hotspot b{font-size:10px}
+ .scene-point .point-icon{width:30px;height:30px}.scene-point svg{width:18px;height:18px}
  .scene-caption{top:14px;left:14px;font-size:11px;padding:7px 11px}
  .vn-dialogue{margin-bottom:18px;padding:25px 20px 43px;min-height:168px}.vn-dialogue p{font-size:16px;line-height:1.85}
  .phone-scene,.note-scene{padding:18px}.story-phone{border-radius:18px}.story-phone>header{padding:15px 18px}.story-phone>header b{font-size:16px}.phone-thread{padding:18px;gap:11px}.message-bubble{padding:10px 13px}.message-bubble p{font-size:14px;line-height:1.75}

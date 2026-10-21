@@ -51,13 +51,17 @@ function renderScene(){
 }
 
 
+function scenePoint({x,y,name,action,value='',found=false,disabled=false}){
+ const icon=found?'<path d="m5 12 4 4L19 6"/>':'<circle cx="10.5" cy="10.5" r="5.5"/><path d="m15 15 4.5 4.5"/>';
+ return `<button class="scene-point${found?' found':''}" style="left:${x}%;top:${y}%" data-action="${action}" data-value="${esc(value)}" data-edge="${x<18?'left':x>82?'right':'center'}" aria-label="${esc(name)} 살펴보기${found?' · 확인한 사물':''}" ${disabled?'disabled':''}><span class="point-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">${icon}</svg></span><b class="point-label" aria-hidden="true">${esc(name)}</b></button>`;
+}
 function hotspots(st,waiting){
  if(!st)return '';
  const photo=s.stage===8&&room==='classroom';
  const main=room===st.room&&!photo;
  const [x,y]=s.stage===9?[88.7,42.8]:(MAIN_SPOTS[room]||[50,50]);
  const ambient=(EXPLORE[room]||[]).filter(a=>!(photo&&spots.some(p=>p.id===a.id))&&!(main&&Math.hypot(a.x-x,a.y-y)<8));
- return ambient.map(a=>`<button class="ambient-point" style="left:${a.x}%;top:${a.y}%" data-action="inspect" data-value="${a.id}" aria-label="${a.name} 살펴보기"><span aria-hidden="true">·</span><b>${a.name}</b></button>`).join('')+(photo?spots.map(a=>`<button class="hotspot photo-point ${s.photos.includes(a.id)?'found':''}" style="left:${a.x}%;top:${a.y}%" data-action="inspect-photo" data-value="${a.id}" ${waiting?'disabled':''}><span>${s.photos.includes(a.id)?'✓':'⌕'}</span><b>${a.name}</b></button>`).join(''):main?`<button class="hotspot active" style="left:${x}%;top:${y}%" data-action="object" ${waiting?'disabled':''}><span>＋</span><b>${st.object}</b></button>`:'');
+ return ambient.map(a=>scenePoint({...a,action:'inspect',value:a.id})).join('')+(photo?spots.map(a=>scenePoint({...a,action:'inspect-photo',value:a.id,found:s.photos.includes(a.id),disabled:waiting})).join(''):main?scenePoint({x,y,name:st.object,action:'object',disabled:waiting}):'');
 }
 
 function play(key,list,done){if(ui.seen.includes(key)){done?.();return;}dialogue={key,list,index:ui.dialogue?.key===key?Math.min(Math.max(ui.dialogue.index||0,0),list.length-1):0,done,full:false};closeModal();renderScene();saveUI();}
