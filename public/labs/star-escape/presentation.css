@@ -23,7 +23,8 @@
 .s1-wire-panel{min-width:0}
 .s1-wire-guide{padding-right:0;padding-bottom:0}
 .s1-wire-actions{position:static;justify-content:flex-end;gap:8px;margin-top:7px}
-.s1-wire-board{min-height:300px;grid-template-rows:52px minmax(76px,1fr) 150px}
+.s1-wire-board{min-height:310px;grid-template-rows:52px minmax(76px,1fr) minmax(160px,auto)}
+.s1-star-visual{flex:none;width:clamp(72px,8vw,100px);height:clamp(72px,8vw,100px);aspect-ratio:1}
 .s1-wire-guide p{font-size:13px}
 .s1-inspect p,.s2-inspect p{font-size:clamp(12px,1.15vw,15px);line-height:1.6}
 .s1-inspect b,.s2-inspect b{font-size:15px}
@@ -39,7 +40,7 @@
 :is(.s1-shell,.s2-shell,.s3-shell,.s4-shell):has(:is(.s1-puzzle,.s2-puzzle,.s3-puzzle,.s4-modal))>:is(.s1-title,.s2-title,.s3-title,.s4-title,.s1-objective,.s2-objective,.s3-objective,.s4-objective){visibility:hidden}
 
 /* A height cap must shrink the map width too; otherwise symbols get squashed. */
-.s4-uv-board{width:min(100%,760px,calc(55dvh * 627 / 524));max-height:none;height:auto;aspect-ratio:627/524}
+.s4-uv-board{width:min(100%,760px,calc(50dvh * 627 / 524));max-height:none;height:auto;aspect-ratio:627/524}
 .s4-uv-progress{flex-wrap:wrap}
 .s4-uv-progress span{font-size:12px;text-align:left}
 .s4-modal.uv .s4-help{font-size:13px}
@@ -61,7 +62,7 @@
   .s1-inspect.clue{grid-template-columns:76px minmax(0,1fr) 34px}
   .s1-inspect.clue img{width:72px;height:72px}
   .s1-inspect.clue p,.s2-inspect p{font-size:12px}
-  .s1-wire-board{grid-template-columns:repeat(4,minmax(0,1fr));grid-template-rows:50px 85px 116px;min-height:275px;gap:6px;padding:8px}
+  .s1-wire-board{grid-template-columns:repeat(4,minmax(0,1fr));grid-template-rows:50px 85px minmax(136px,auto);min-height:295px;gap:6px;padding:8px}
   .s1-wire-bank.roles,.s1-wire-bank.colors{grid-template-columns:repeat(4,minmax(0,1fr));grid-template-rows:1fr;gap:6px}
   .s1-wire-bank.roles{grid-row:1}.s1-wire-bank.colors{grid-row:3}
   .s1-star-visual{width:clamp(42px,12vw,76px);height:clamp(42px,12vw,76px)}
@@ -73,7 +74,7 @@
   .s1-title,.s2-title,.s3-title,.s4-title{top:6px;padding:5px 8px}
   .s1-title small,.s2-title small,.s3-title small,.s4-title small{display:none}
   .s1-objective,.s2-objective,.s3-objective,.s4-objective{top:6px;padding:5px 8px;font-size:11px}
-  .s1-wire-board{min-height:210px;grid-template-rows:40px 55px 90px;padding:6px}
+  .s1-wire-board{min-height:230px;grid-template-rows:40px 55px minmax(110px,auto);padding:6px}
   .s1-star-visual{width:54px;height:54px}
   .s4-uv-board{width:min(100%,calc(54dvh * 627 / 524))}
 }
