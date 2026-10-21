@@ -180,3 +180,49 @@ dialog.lock-dialog{width:min(800px,calc(100vw - 28px))}.lock-dialog .story-text{
 .game{--hud-top:calc(40px + env(safe-area-inset-top,0px))}.game .topbar{padding-top:env(safe-area-inset-top,0px);padding-left:max(10px,env(safe-area-inset-left,0px));padding-right:max(10px,env(safe-area-inset-right,0px))}.game .inventorybar{height:calc(40px + env(safe-area-inset-bottom,0px));padding-bottom:env(safe-area-inset-bottom,0px);padding-left:max(10px,env(safe-area-inset-left,0px));padding-right:max(10px,env(safe-area-inset-right,0px))}
 @media(max-height:500px) and (orientation:landscape){.game{--hud-top:calc(34px + env(safe-area-inset-top,0px))}.game .inventorybar{height:calc(34px + env(safe-area-inset-bottom,0px))}}
 @media(orientation:portrait){.game{padding-bottom:calc(42px + env(safe-area-inset-bottom,0px))}.game .inventorybar{height:calc(42px + env(safe-area-inset-bottom,0px))}}
+
+/* All game dialogs use a fixed reading viewport with explicit pages. */
+#dialog{width:min(1200px,calc(100vw - 16px));max-width:none;height:calc(100dvh - 16px);max-height:calc(100dvh - 16px);overflow:hidden}
+#dialog-content{height:100%;min-height:0}
+#dialog .modal-inner{height:100%;min-height:0;display:flex;flex-direction:column;padding:16px 20px;gap:8px}
+#dialog .modal-head{margin:0;flex:none;gap:12px}#dialog .modal-head h2{font-size:20px;margin:3px 0;line-height:1.3}#dialog .eyebrow{font-size:10px}
+#dialog .modal-body{flex:1;min-height:0;overflow:hidden;overscroll-behavior:none;touch-action:pan-y}
+#dialog .modal-flow{column-gap:24px;column-fill:auto;overflow:visible}
+#dialog .modal-flow>*{margin-top:0}
+#dialog .modal-actions{flex:none;margin:0;gap:6px}#dialog .modal-actions button{padding:8px 14px;font-size:12px}
+#dialog .modal-dock{flex:none}#dialog .modal-dock:empty{display:none}
+#dialog .page-controls{display:flex;justify-content:center;align-items:center;gap:18px;flex:none;height:32px;border-top:1px solid var(--line);padding-top:4px;font-size:12px}
+#dialog .page-controls[hidden]{display:none}#dialog .page-controls button{background:#35483b;padding:5px 18px;border-radius:3px;font-size:12px}
+#dialog .story-text{font-size:14px;line-height:1.65;margin:0 0 12px}
+#dialog .paper{padding:14px 18px;margin:8px 1px;transform:none}#dialog .paper h3{font-size:16px;margin:5px 0 8px}
+#dialog .curriculum-layout{display:block}#dialog .puzzle-workbench{display:contents}
+#dialog .puzzle-clues{max-height:none;overflow:visible;margin-top:10px;padding:10px;break-before:column}
+#dialog .puzzle-clues p{font-size:13px;line-height:1.6}#dialog .puzzle-clues h3{margin:8px 0}
+#dialog .puzzle-task p{font-size:14px;margin:0 0 8px}#dialog .puzzle-task{margin-bottom:8px}
+#dialog .puzzle-card{padding:8px;font-size:13px;min-height:0}#dialog .material-text{font-size:13px;line-height:1.5}
+#dialog .material-bank{margin:8px 0;gap:6px}#dialog .record-slots{padding:8px;gap:6px}#dialog .slot-target{min-height:74px;padding:8px}
+#dialog .material-image{max-height:120px;object-fit:contain}#dialog .puzzle-instruction{font-size:12px;margin:8px 0}
+#dialog .puzzle-footer{margin:0;padding:6px 0;gap:6px}#dialog .puzzle-footer p{margin:0;font-size:12px}#dialog .puzzle-footer button{padding:7px 10px;font-size:12px}
+#dialog .puzzle-footer>div{width:auto;gap:6px}#dialog .puzzle-hints{break-before:column}
+#dialog .puzzle-card,#dialog .broadcast-line,#dialog .record-slot,#dialog .circuit-lamp,#dialog .relay-switch,#dialog .journal-entry,#dialog .group-seat{break-inside:avoid}
+#dialog .lock-layout{gap:12px;break-inside:avoid}#dialog .lock-panel{padding:10px}#dialog .number-pad button{height:30px}
+#dialog .lock-message{min-height:0;margin:5px 0}#dialog .lock-label{margin-bottom:6px}#dialog .lock-readout{padding:6px}
+#dialog .photo-set{margin:8px 0}#dialog .photo-set svg{max-height:130px}#dialog .scene-detail{max-width:260px;margin:8px auto}
+#dialog .map{padding:12px}#dialog .map-grid{gap:24px 16px}#dialog .map-room{min-height:70px;padding:12px}
+#dialog .preview-navigation{margin:0 0 8px;padding:0}#dialog .preview-navigation button{padding:6px 10px}
+@media(max-height:500px){
+ #dialog .modal-inner{padding:8px 12px;gap:4px}#dialog .modal-head h2{font-size:16px}#dialog .modal-head .eyebrow{display:none}#dialog .modal-actions button{padding:6px 10px}#dialog .puzzle-footer{padding:3px 0}#dialog .puzzle-footer p{display:none}#dialog .puzzle-footer>div{margin-left:auto}#dialog .page-controls{height:28px}#dialog .page-controls button{padding:4px 14px}
+ #dialog .lock-layout{grid-template-columns:minmax(0,1fr) 210px}#dialog .lock-panel{display:block}#dialog .symbol-grid span{font-size:18px;line-height:1.5}#dialog .number-pad{gap:3px}#dialog .number-pad button{height:23px}#dialog .lock-readout b{font-size:20px}#dialog .evidence-paper{padding:8px}#dialog .evidence-paper h3{margin:0 0 5px}#dialog .route-steps>span{font-size:15px}#dialog .scene-detail{max-width:180px}
+}
+@media(max-width:600px){#dialog .modal-inner{padding:10px;gap:6px}#dialog .modal-head h2{font-size:17px}#dialog .puzzle-footer{display:block}#dialog .puzzle-footer>div{display:flex;justify-content:space-between}#dialog .material-bank{grid-template-columns:repeat(2,minmax(0,1fr))}#dialog .puzzle-clues{break-before:column}#dialog .puzzle-footer p{font-size:11px;margin-bottom:5px}}
+@media(max-height:500px){
+ #dialog .connection-board{display:block;padding:8px;border-width:4px;break-inside:avoid}
+ #dialog .wire-sources,#dialog .wire-targets{grid-template-columns:repeat(4,minmax(0,1fr));grid-template-rows:auto;gap:6px}
+ #dialog .connection-lines{display:none}#dialog .wire-sources .puzzle-card{min-height:0;padding:6px;gap:3px}#dialog .wire-targets{margin-top:8px}#dialog .terminal-target{min-height:38px;padding:6px;font-size:12px}
+ #dialog .wire-sources .material-text{font-size:12px}#dialog .wire-sources .puzzle-card>small{display:none}
+}
+#dialog .record-slots,#dialog .material-bank,#dialog .monitor-workbench,#dialog .circuit-switches,#dialog .evidence-paper{break-inside:avoid}
+#dialog .wire-sources,#dialog .wire-targets{gap:6px}#dialog .wire-sources .puzzle-card{min-height:60px;padding:6px;gap:4px}#dialog .connection-board{padding:8px;border-width:4px}#dialog .terminal-target{min-height:55px}
+@media(max-height:500px){#dialog .puzzle-footer p{display:block;min-width:0;max-width:40%;font-size:11px;line-height:1.3}#dialog .wire-sources .puzzle-card{min-height:0}}
+#dialog .photo-view svg,#dialog .group-photo svg{max-height:min(30dvh,200px);width:100%}#dialog .photo-view figure{break-inside:avoid}
+#dialog .long-record{break-before:column;font-size:14px;line-height:1.7}#dialog .long-record h3{font-size:16px;margin:0 0 10px}#dialog .long-record .material-text{display:block;font-size:14px;line-height:1.7;white-space:pre-wrap}#dialog .long-record>span{display:block}

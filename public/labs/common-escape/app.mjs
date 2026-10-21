@@ -1,3 +1,4 @@
+import {fitDialog} from './dialog-pages.mjs';
 import {EXPLORATION} from './exploration.mjs';
 import {SAMPLE} from './sample.mjs';
 import {playSound,stopSounds,warmSounds,setAmbience} from './sound.mjs';
@@ -100,8 +101,9 @@ function openModal(title,body,buttons='',tag='조사 기록',kind=''){
  if(kind!=='curriculum-dialog')activePuzzle=null;
  if(!dialog.open)lastFocus=document.activeElement;
  dialog.className=kind;
- content.innerHTML=`<div class="modal-inner"><div class="modal-head"><div><div class="eyebrow">${tag}</div><h2 id="dialog-title">${title}</h2></div><button class="close" data-action="close" aria-label="닫기">${icon('close')}</button></div>${body}${buttons?`<div class="modal-actions">${buttons}</div>`:''}</div>`;
+ content.innerHTML=`<div class="modal-inner"><div class="modal-head"><div><div class="eyebrow">${tag}</div><h2 id="dialog-title">${title}</h2></div><button class="close" data-action="close" aria-label="닫기">${icon('close')}</button></div><div class="modal-body"><div class="modal-flow">${body}</div></div><nav class="page-controls" aria-label="내용 페이지"><button data-page-prev>이전</button><span data-page-label aria-live="polite"></span><button data-page-next>다음</button></nav><div class="modal-dock"></div>${buttons?`<div class="modal-actions">${buttons}</div>`:''}</div>`;
  if(!dialog.open)dialog.showModal();
+ fitDialog(dialog,content);
 }
 const btn=(label,action,id='',primary=true)=>`<button class="${primary?'primary':'ghost-button'}" data-action="${action}"${id?` data-id="${id}"`:''}>${label}${primary?icon('arrow'):''}</button>`;
 const closeBtn=(label='확인')=>btn(label,'close');
