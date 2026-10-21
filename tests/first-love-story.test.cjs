@@ -35,9 +35,12 @@ test('expression cues remain actor-specific when resuming or moving through narr
  const seen=CAST.map(()=>new Set());
  for(const list of [OPENING,...Object.values(BEFORE),...Object.values(AFTER),CONFESSION])for(const [who,,o={}]of list){
   if(o.expression){assert.ok(CAST[who].moods.includes(o.expression));seen[who].add(o.expression);}
+  if(o.reaction){assert.ok(CAST[o.reaction.actor].moods.includes(o.reaction.expression));seen[o.reaction.actor].add(o.reaction.expression);}
  }
  assert.ok(seen.every(moods=>moods.size>=3));
  const last=dialogueFrame(CONFESSION,CONFESSION.length-1);assert.equal(last.expressions[0],'nervous');assert.equal(last.expressions[1],'neutral');
  const first=dialogueFrame(CONFESSION,0);assert.equal(first.expressions[1],'smile');assert.equal(first.expressions[0],undefined);
  const resumed=dialogueFrame(AFTER[1],8,'bench');assert.equal(resumed.room,'library');assert.equal(resumed.expressions[2],'panicked');
+ const laugh=dialogueFrame(BEFORE[5],4);assert.equal(laugh.who,-1);assert.equal(laugh.portraitActor,2);assert.equal(laugh.expressions[2],'smile');
+ const next=dialogueFrame(BEFORE[5],5);assert.equal(next.portraitActor,3);assert.equal(next.expressions[3],'amused');
 });

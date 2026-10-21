@@ -1,22 +1,29 @@
 import {SAMPLE} from './sample.mjs';
 import {STAGES,rotated,walk} from './content.mjs';
 import {fresh,transition,previewState,playerContent,hintsFor,normalizeDraft,chosenReasons} from './engine.mjs';
-import {CAST,ROOMS,GOALS,OPENING,BEFORE,AFTER,CONFESSION,WALK_TO_YOU,MEMORIES,STORY_VERSION} from './story.mjs?v=9';
+import {CAST,ROOMS,GOALS,OPENING,BEFORE,AFTER,CONFESSION,WALK_TO_YOU,MEMORIES,STORY_VERSION} from './story.mjs?v=10';
 import {esc,lines,puzzleHTML,interactionGuide} from './puzzle-ui.mjs';
 import {Session,secret} from './client.mjs';
 import {Author} from './author.mjs';
 import {PHOTO_SPOTS as spots,EXPLORE,MAIN_SPOTS} from './exploration.mjs';
 import {Sound} from './sound.mjs';
-import {dialogueFrame,restoreStoryUI} from './narrative.mjs';
-import {spreadScenePoints} from './scene-points.mjs';
+import {dialogueFrame,restoreStoryUI} from './narrative.mjs?v=10';
+import {fitRoomFrame,spreadScenePoints} from './scene-points.mjs?v=10';
 const root=document.querySelector('#app'),modal=document.querySelector('#modal'),toastNode=document.querySelector('#toast'),sound=new Sound();
-let pointWorld=null;
+let pointWorld=null,pointViewport=null;
 const pointObserver=new ResizeObserver(arrangeScenePoints);
 function arrangeScenePoints(){
- if(!pointWorld?.isConnected)return;
+ if(!pointWorld?.isConnected||!pointViewport?.isConnected)return;
+ const width=pointViewport.clientWidth,height=pointViewport.clientHeight;
+ if(!width||!height)return;
+ // Portrait phone conversations keep their full-height composition.
+ if(dialogue&&width<=700){pointWorld.removeAttribute('style');return;}
+ const frame=fitRoomFrame(EXPLORE[room]||[],width,height);
+ Object.assign(pointWorld.style,{width:frame.width+'px',height:frame.height+'px',left:frame.left+'px',top:frame.top+'px',transform:'none'});
  const buttons=[...pointWorld.querySelectorAll('.scene-point')];
- const positions=spreadScenePoints(buttons.map(b=>({x:Number(b.dataset.x),y:Number(b.dataset.y)})),pointWorld.clientWidth,pointWorld.clientHeight);
- buttons.forEach((button,i)=>{button.style.left=positions[i].left+'px';button.style.top=positions[i].top+'px';});
+ const anchors=buttons.map(b=>({x:(frame.left+Number(b.dataset.x)*frame.width/100)/width*100,y:(frame.top+Number(b.dataset.y)*frame.height/100)/height*100}));
+ const positions=spreadScenePoints(anchors,width,height);
+ buttons.forEach((button,i)=>{button.style.left=positions[i].left-frame.left+'px';button.style.top=positions[i].top-frame.top+'px';});
 }
 const SOLO='scilab-first-love-solo-v1';
 let mode='home',lesson=SAMPLE,s=fresh(),content=null,draft={},selected='',room='classroom',preview=null,ui={seen:[],history:[]},dialogue=null,busy=false,panel='',status='연결됨',saveTimer=null,dirty=false,typing=null,syncPromise=null,draftSerial=0,feedback=null;
@@ -31,13 +38,13 @@ function toast(t){if(modal.open&&panel==='puzzle'){feedback={kind:'notice',text:
 function portrait(index,extra='',expression=null){
  const actor=CAST[index];
  if(expression===null)return `<img class="portrait ${extra}" src="./assets/${actor.asset}.webp" alt="${actor.name}" width="800" height="1200" decoding="async" draggable="false">`;
- const frame=Math.max(0,actor.moods.indexOf(expression)),col=frame%2,row=Math.floor(frame/2);
- const individual=actor.expressionAssets?.[actor.moods[frame]];
- if(individual)return `<img class="portrait ${extra}" src="./assets/${individual}.webp" alt="${actor.name} · ${actor.faces[frame]}" data-expression="${actor.moods[frame]}" width="1024" height="1536" decoding="async" draggable="false">`;
+ const mood=Math.max(0,actor.moods.indexOf(expression)),individual=actor.expressionAssets?.[actor.moods[mood]];
+ if(individual)return `<img class="portrait ${extra}" src="./assets/${individual}.webp" alt="${actor.name} · ${actor.faces[mood]}" data-expression="${actor.moods[mood]}" width="1024" height="1536" decoding="async" draggable="false">`;
+ const frame=actor.expressionFrames?.[actor.moods[mood]]??mood,col=frame%2,row=Math.floor(frame/2);
  const split=index===2?541:512,x=col?split:0,width=col?1024-split:split;
- const centers=[[280,248],[308,238],[302,268],[316,287]],shift=256-(col*512+centers[index][col]-x);
+ const centers=actor.sheetCenters||[[280,248],[308,238],[302,268],[316,287]][index],shift=256-(col*512+centers[col]-x);
  // Clip the original atlas before centering; never expose the neighboring figure.
- return `<svg class="portrait expression-sprite ${extra}" viewBox="0 0 512 768" width="512" height="768" role="img" aria-label="${actor.name} · ${actor.faces[frame]}" data-expression="${actor.moods[frame]}"><svg x="${shift}" y="0" width="${width}" height="768" viewBox="${x} ${row*768} ${width} 768" overflow="hidden"><image href="./assets/${actor.sheet}.webp" width="1024" height="1536"/></svg></svg>`;
+ return `<svg class="portrait expression-sprite ${extra}" viewBox="0 0 512 768" width="512" height="768" role="img" aria-label="${actor.name} · ${actor.faces[mood]}" data-expression="${actor.moods[mood]}"><svg x="${shift}" y="0" width="${width}" height="768" viewBox="${x} ${row*768} ${width} 768" overflow="hidden"><image href="./assets/${actor.sheet}.webp" width="1024" height="1536"/></svg></svg>`;
 }
 
 function refreshContent(){if(mode!=='group')content=playerContent(lesson,[1,2,3,4],s);}
@@ -66,7 +73,7 @@ function renderScene(){
  <div class="scene-viewport" style="--scene:url('./assets/room-${r.art}-v3.webp')"><div class="scene-soft-backdrop"></div><div class="world ${s.stage>=8?'late':''}"><div class="room-art"></div><div class="light-overlay"></div>${!dialogue?hotspots(st,waiting):''}</div><div id="dialogue-layer"></div>${s.stage===10&&!dialogue?'<button class="to-bench primary" data-action="confession">벚꽃나무 아래로 걸어간다 →</button>':''}</div>
  </div>
  <footer class="game-footer"><span class="place-caption">${r.name}</span>${!dialogue&&s.stage<10?`<div class="scene-controls"><button data-action="map">장소 이동</button>${s.stage===8?'<button class="clue-button" data-action="photos">사진 보기</button>':''}${content?.evidence?.length||s.stage===8?'<button class="clue-button" data-action="clues">단서함</button>':''}</div>`:''}<span id="connection">${mode==='group'?status:''}</span></footer></section>`;
- pointObserver.disconnect();pointWorld=root.querySelector('.world');if(pointWorld&&!dialogue){arrangeScenePoints();pointObserver.observe(pointWorld);}
+ pointObserver.disconnect();pointWorld=root.querySelector('.world');pointViewport=root.querySelector('.scene-viewport');if(pointViewport){arrangeScenePoints();pointObserver.observe(pointViewport);}
  root.querySelector('#volume')?.addEventListener('input',e=>{sound.volume=Number(e.target.value);sound.settings();});if(dialogue)renderDialogue();
 }
 
@@ -89,7 +96,7 @@ function arrive(){room=STAGES[s.stage]?.room||'courtyard';saveUI();if(BEFORE[s.s
 function resumeDialogue(){const {key}=ui.dialogue||{};if(key==='opening')play(key,OPENING,()=>renderScene());else if(key?.startsWith('after:')){const n=Number(key.split(':')[1]);play(key,AFTER[n]||[],()=>arrive());}else if(key?.startsWith('before:')){const n=Number(key.split(':')[1]);play(key,BEFORE[n]||[],()=>renderScene());}else if(key==='walk')confession();else if(key==='said')play('said',[[0,'나, 너 좋아해.',{expression:'smile'}]],()=>ending());else if(key==='confession')play(key,CONFESSION,()=>letterPrompt());else renderScene();}
 function renderDialogue(){
  clearInterval(typing);const box=document.querySelector('#dialogue-layer');if(!dialogue||!box)return;
- const {who,text,options,channel,messages,expressions}=dialogueFrame(dialogue.list,dialogue.index,room);
+ const {who,text,options,channel,messages,expressions,portraitActor}=dialogueFrame(dialogue.list,dialogue.index,room);
  const finale=['confession','said'].includes(dialogue.key),slow=options.pace||(dialogue.key==='said'?90:28);
  root.querySelector('.scene-area').dataset.channel=channel;
  const cueKey=dialogue.key+':'+dialogue.index;
@@ -99,7 +106,7 @@ function renderDialogue(){
  }else if(channel==='note'){
   box.innerHTML=`<div class="vn note-scene"><article class="story-note"><small>${esc(options.label||'남겨 둔 글씨')}</small><p id="dialogue-text" aria-label="${esc(text)}"></p><button data-action="next-line" class="next-line">책갈피를 챙긴다 <span>▸</span></button></article></div>`;
  }else{
-  box.innerHTML=`<div class="vn ${who<0?'inner-thought':''} ${finale?'confession-scene':''}">${!finale?`<div class="scene-caption">${esc(options.label||ROOMS[room].name)}</div>`:''}${finale?`<div class="pair"><div class="pair-yunjae ${who===0?'speaking':''}">${portrait(0,'',expressions[0]||'nervous')}</div><div class="pair-seoa ${who===1?'speaking':''}">${portrait(1,'',expressions[1]||'neutral')}</div></div><div class="petals" aria-hidden="true">${petals()}</div>`:who>=0?portrait(who,'vn-person',expressions[who]||'neutral'):''}<div class="vn-dialogue" role="group" aria-label="대화"><div class="speaker">${who<0?'윤재의 시선':CAST[who].name}</div><p id="dialogue-text" aria-label="${esc(text)}"></p><button data-action="next-line" class="next-line">${dialogue.key==='said'?'서아를 바라본다':'계속'} <span>▸</span></button><small>${dialogue.index+1} / ${dialogue.list.length}</small></div></div>`;
+  box.innerHTML=`<div class="vn ${who<0?'inner-thought':''} ${finale?'confession-scene':''}">${!finale?`<div class="scene-caption">${esc(options.label||ROOMS[room].name)}</div>`:''}${finale?`<div class="pair"><div class="pair-yunjae ${who===0?'speaking':''}">${portrait(0,'',expressions[0]||'nervous')}</div><div class="pair-seoa ${who===1?'speaking':''}">${portrait(1,'',expressions[1]||'neutral')}</div></div><div class="petals" aria-hidden="true">${petals()}</div>`:portraitActor!==undefined?portrait(portraitActor,'vn-person',expressions[portraitActor]||'neutral'):''}<div class="vn-dialogue" role="group" aria-label="대화"><div class="speaker">${who<0?'윤재의 시선':CAST[who].name}</div><p id="dialogue-text" aria-label="${esc(text)}"></p><button data-action="next-line" class="next-line">${dialogue.key==='said'?'서아를 바라본다':'계속'} <span>▸</span></button><small>${dialogue.index+1} / ${dialogue.list.length}</small></div></div>`;
  }
  const el=box.querySelector('#dialogue-text');let pos=0;const chars=[...text];dialogue.full=false;
  typing=setInterval(()=>{if(!dialogue){clearInterval(typing);return;}pos++;el.textContent=chars.slice(0,pos).join('');if(pos>=chars.length){clearInterval(typing);dialogue.full=true;}},slow);saveUI();

@@ -59,6 +59,12 @@ dialog:has(.object-story){width:min(620px,92vw)}
 .story-note p{font-family:'Batang',serif;font-size:23px;line-height:2;white-space:pre-line;margin:26px 0;min-height:90px}
 .story-note .next-line{display:flex;margin-left:auto}
 .ending-thumb.disgust{background-image:url('./assets/ending-disgust-v5.webp')}
+/* Keep the same stage bounds while dialogue gives way to exploration. */
+@media(min-width:701px){
+ .game.in-dialogue{grid-template-rows:58px minmax(0,1fr) 52px}
+ .scene-briefing{position:absolute;left:20px;top:16px;display:block;width:max-content;max-width:min(460px,48%);padding:12px 18px;border:1px solid #ddcfc1;border-left:3px solid #b8897c;border-radius:4px 12px 4px 4px;background:#fffaf1ed;box-shadow:0 4px 18px #392c2414;pointer-events:none;z-index:3}
+ .scene-briefing p{margin:5px 0 0;font-size:13px;max-width:none}
+}
 @media(max-width:700px){
  .reason-options{grid-template-columns:repeat(2,minmax(0,1fr))}.reason-options button{min-height:44px}
  .game{grid-template-rows:52px minmax(0,1fr) 48px}.game.in-dialogue{grid-template-rows:52px minmax(0,1fr) 25px}
@@ -74,7 +80,7 @@ dialog:has(.object-story){width:min(620px,92vw)}
  .object-story{padding:22px}.object-story p{font-size:16px}
 }
 @media(max-height:600px) and (min-width:701px){
- .game{grid-template-rows:45px minmax(0,1fr) 39px}.game.in-dialogue{grid-template-rows:45px minmax(0,1fr) 21px}
+ .game{grid-template-rows:45px minmax(0,1fr) 39px}.game.in-dialogue{grid-template-rows:45px minmax(0,1fr) 39px}
  .game-footer{padding:2px 12px}.scene-controls button{min-height:30px;padding:4px 9px;font-size:10px}.scene-briefing{padding:7px 16px}.scene-briefing p{font-size:11px}
  .phone-scene{padding:8px}.story-phone{width:min(540px,90%);border-radius:14px}.story-phone>header{padding:7px 16px}.story-phone>header b{font-size:14px}.phone-thread{padding:9px 16px;gap:7px}.message-bubble{padding:6px 11px;max-width:86%}.message-bubble p{font-size:12px;line-height:1.45;min-height:17px}.message-bubble small{font-size:9px;margin-bottom:2px}.message-bubble>span{font-size:8px;margin-top:2px}.phone-thread .message-bubble:nth-last-child(n+3){display:none}.story-phone>footer{padding:0 12px 6px}.story-phone .next-line{font-size:11px;padding:4px 9px;min-height:28px}
  .story-note{padding:18px 28px 10px}.story-note p{font-size:18px;line-height:1.8;margin:14px 0;min-height:60px}.story-note .next-line{font-size:11px;min-height:28px;padding:5px 9px}

@@ -1,8 +1,8 @@
 export const CAST=[
- {name:'서윤재',role:'오늘은 말하기로 했다',short:'윤재',asset:'yunjae-v2',sheet:'yunjae-expressions-v5',moods:['neutral','nervous','surprised','smile'],faces:['차분한 표정','긴장하며 붉어진 얼굴','당황한 표정','마음을 정한 미소']},
+ {name:'서윤재',role:'오늘은 말하기로 했다',short:'윤재',asset:'yunjae-v10',expressionAssets:{neutral:'yunjae-v10',nervous:'yunjae-nervous-v10',surprised:'yunjae-surprised-v10',smile:'yunjae-smile-v10'},moods:['neutral','nervous','surprised','smile'],faces:['차분한 표정','긴장하며 붉어진 얼굴','당황한 표정','마음을 정한 미소']},
  {name:'한서아',role:'벚꽃 아래, 기다리는 사람',short:'서아',asset:'seoa-v2',sheet:'seoa-expressions-v5',moods:['neutral','smile','surprised','shy'],faces:['차분한 표정','다정한 미소','궁금한 듯 놀란 표정','수줍게 붉어진 얼굴']},
- {name:'강도하',role:'응원이 조금 과한 친구',short:'도하',asset:'doha-v2',sheet:'doha-expressions-v5',expressionAssets:{panicked:'doha-worried-v9',sheepish:'doha-sheepish-v9'},moods:['neutral','excited','panicked','sincere','sheepish'],faces:['차분한 표정','신이 난 장난스러운 표정','사고를 털어놓으며 걱정하는 표정','미안함을 담은 진지한 표정','머쓱하게 붉어진 표정']},
- {name:'차시우',role:'조용히 등을 밀어 주는 친구',short:'시우',asset:'siwoo-v3',sheet:'siwoo-expressions-v5',moods:['neutral','amused','concerned','warm'],faces:['차분한 표정','웃음을 참는 표정','놀라고 걱정하는 표정','안심시키는 미소']}
+ {name:'강도하',role:'응원이 조금 과한 친구',short:'도하',asset:'doha-v2',sheet:'doha-expressions-v5',expressionAssets:{panicked:'doha-worried-v9',sheepish:'doha-sheepish-v9',smile:'doha-v2'},moods:['neutral','excited','panicked','sincere','sheepish','smile'],faces:['차분한 표정','신이 난 장난스러운 표정','사고를 털어놓으며 걱정하는 표정','미안함을 담은 진지한 표정','머쓱하게 붉어진 표정','환하게 웃는 표정']},
+ {name:'차시우',role:'조용히 등을 밀어 주는 친구',short:'시우',asset:'siwoo-v10',sheet:'siwoo-expressions-v10',sheetCenters:[280,248],expressionFrames:{neutral:0,amused:3,warm:3},expressionAssets:{concerned:'siwoo-concerned-v10'},moods:['neutral','amused','concerned','warm'],faces:['차분한 표정','웃음을 참는 표정','놀라고 걱정하는 표정','안심시키는 미소']}
 ];
 export const STORY_VERSION=5;
 export const ROOMS={
@@ -36,7 +36,7 @@ export const OPENING=[
  [-1,'그때 복도에서 빠른 발소리가 가까워졌다.\n열린 뒷문으로 도하가 고개를 내밀었다.',{label:'교실 뒷문',cue:'steps',arrival:2}],
  [2,'드디어 오늘이지? 내가 작은 이벤트 준비했어!\n리본이랑 조명만 있으면 분위기가 확—',{expression:'excited'}],
  [0,'잠깐. 나 그냥 직접 말할 거야.\n서아랑 벚꽃나무 아래에서 보기로 했어.',{expression:'nervous'}],
- [2,'알았어, 알았어. 아주 작게! 물건만 챙겨 올게.',{expression:'excited'}],
+ [2,'알았어, 알았어. 아주 작게! 물건만 챙겨 올게.',{expression:'smile'}],
  [0,'아주 작게도 말고. 여기서 더 벌이지 마…!',{expression:'surprised'}],
  [-1,'끝까지 듣기도 전에 도하가 복도 쪽으로 사라졌다.\n나는 붉은 끈 파일을 당겼다. 반납 메모부터 찾아야 했다.',{exit:2}]
 ];
@@ -50,7 +50,7 @@ export const BEFORE={
   [-1,'시우가 정리대 위의 행사 준비 자료를 펼쳤다.\n도하가 빌려 간 상자의 대여표도 이 안에 있다고 했다.',{room:'library'}],
   [3,'상자는 교실에 그대로 있어. 여기서는 어떤 상자인지만 찾자.\n두 묶음으로 나누면 도하가 쓴 대여표가 나올 거야.',{expression:'neutral'}],
   [2,'급하게 치워서 상자에 뭐라고 쓰였는지도 못 봤어…',{expression:'sincere'}],
-  [0,'괜찮아. 지금부터 같이 확인하면 돼.',{expression:'neutral'}]
+  [0,'괜찮아. 지금부터 같이 확인하면 돼.',{expression:'smile'}]
  ],
  3:[
   [-1,'대여표에는 도하가 급히 옮겨 쓴 보관 기록이 붙어 있었다.\n시우가 원본을 나란히 펼쳤다. 몇 군데가 서로 달랐다.',{room:'library'}],
@@ -67,8 +67,8 @@ export const BEFORE={
   [-1,'복도 끝에서 도하가 동아리실 문을 열었다.\n준비대 위에 작은 확성기와 접힌 안내판이 놓여 있었다.',{room:'club',label:'동아리실'}],
   [0,'…확성기는 왜 있어?',{expression:'surprised'}],
   [2,'목소리가 안 나오면 도움이 될까 해서.\n아주 작은 걸로 골랐는데…',{expression:'sheepish'}],
-  [0,'크기 문제가 아니잖아. 서아 바로 앞에서 말할 건데.',{expression:'surprised'}],
-  [-1,'시우가 말없이 확성기의 전원을 껐다.\n셋 다 잠깐 웃고 나니, 굳어 있던 어깨가 조금 풀렸다.'],
+  [0,'크기 문제가 아니잖아. 서아 바로 앞에서 말할 건데.',{expression:'smile'}],
+  [-1,'시우가 말없이 확성기의 전원을 껐다.\n셋 다 잠깐 웃고 나니, 굳어 있던 어깨가 조금 풀렸다.',{reaction:{actor:2,expression:'smile'}}],
   [3,'확성기는 반납하자. 준비대에 상자 보관표가 있어.\n필요한 기록만 골라 보자.',{expression:'amused'}]
  ],
  6:[
@@ -112,7 +112,7 @@ export const AFTER={
   [0,'도하야. 이 이름이 제일 공개적인데.',{expression:'surprised'}],
   [2,'…이름만큼은 잘 지었다고 생각했는데.',{expression:'sheepish'}],
   [3,'나한테 상자 빌릴 때 이미 복도에서 다 외쳤어.',{expression:'amused'}],
-  [-1,'도하의 귀가 빨개졌다. 나도 모르게 웃음이 났다.\n시우가 대여표 뒤에 붙은 보관 기록을 펼쳤다.']
+  [-1,'도하의 귀가 빨개졌다. 나도 모르게 웃음이 났다.\n시우가 대여표 뒤에 붙은 보관 기록을 펼쳤다.',{reaction:{actor:0,expression:'smile'}}]
  ],
  3:[
   [-1,'원본과 맞춘 기록에서 상자 표식을 찾았다.\n종이를 접어 주머니에 넣는데 휴대전화가 짧게 울렸다.',{room:'library',cue:'message'}],
@@ -124,26 +124,26 @@ export const AFTER={
  4:[
   [-1,'상자의 반납 장소는 “교실 뒤 자료함”이었다.\n도하의 기억과 같았다. 정확한 칸은 보관표의 표식을 읽어야 했다.',{room:'corridor'}],
   [3,'보관표는 여기서 가까운 동아리실에 있어. 그것만 챙겨서 교실로 가자.',{expression:'warm'}],
-  [2,'내가 꺼내 둘게. 이쪽이야.',{expression:'sincere'}],
+  [2,'내가 꺼내 둘게. 이쪽이야.',{expression:'smile'}],
   [-1,'도하가 먼저 문 쪽으로 걸어갔다.\n시우는 내가 놓칠 뻔한 기록을 접어 건넸다.']
  ],
  5:[
   [-1,'필요한 기록을 챙겼다.\n도하는 확성기를 가방에 넣고 안내판도 접었다.',{room:'club'}],
   [2,'내가 더 신났나 봐. 서아가 부담스러울 수도 있는데.\n사고까지 내서 미안해.',{expression:'sincere'}],
   [0,'응. 오늘은 둘이 얘기하고 싶어.\n그래도 도와주려던 마음은 알아.',{expression:'smile'}],
-  [2,'그냥 네가 잘됐으면 좋겠어서.\n정리는 우리가 할게. 넌 하고 싶은 말만 생각해.',{expression:'sincere'}],
+  [2,'그냥 네가 잘됐으면 좋겠어서.\n정리는 우리가 할게. 넌 하고 싶은 말만 생각해.',{expression:'smile'}],
   [-1,'농담인 줄 알고 웃으려다가 도하의 얼굴을 다시 봤다.\n이번에는 나도 짧게 고맙다고 말했다.']
  ],
  6:[
   [-1,'보관표의 네 칸이 맞춰졌다.\n시우는 같은 표식이 붙은 인수 기록의 위치를 찾아냈다.',{room:'club'}],
-  [3,'이 표식이네. 복도의 인수 기록하고 마지막으로 맞춰 보자.',{expression:'neutral'}],
+  [3,'이 표식이네. 복도의 인수 기록하고 마지막으로 맞춰 보자.',{expression:'warm'}],
   [-1,'책상 위를 정리하던 도하가 창밖을 보았다.\n노을이 운동장 절반을 덮고 있었다.'],
-  [2,'아직 안 늦었어. 내가 같이 찾아 줄게.',{expression:'sincere'}]
+  [2,'아직 안 늦었어. 내가 같이 찾아 줄게.',{expression:'smile'}]
  ],
  7:[
   [-1,'조건이 모두 맞는 상자는 하나였다.\n시우가 자료함 위치표를 읽는 방향을 적어 건넸다.',{room:'corridor'}],
   [3,'준비하기 전에 찍어 둔 교실 사진도 보내 줄게.\n사물에 붙은 표식으로 자료함 글자를 확인할 수 있어.',{expression:'warm'}],
-  [2,'나는 남은 리본부터 치울게.\n오늘은 진짜, 네 말만 전하고 와.',{expression:'sincere'}],
+  [2,'나는 남은 리본부터 치울게.\n오늘은 진짜, 네 말만 전하고 와.',{expression:'smile'}],
   [0,'응. 둘 다 고마워.',{expression:'smile'}],
   [-1,'도하는 한 번 더 손을 흔들고 시우와 동아리실로 돌아갔다.\n둘의 발소리가 멀어진 뒤, 나는 교실 쪽으로 걸었다.',{exit:[2,3]}]
  ],
