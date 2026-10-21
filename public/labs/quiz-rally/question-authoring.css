@@ -1,0 +1,14 @@
+.question-authoring{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:14px 24px;margin:20px 0;padding:22px;border:1px solid #c9dbd0;border-radius:16px;background:#f2f7f3;color:#183d32}
+.question-authoring-kicker{font-size:12px;font-weight:750;color:#426954;letter-spacing:.03em}
+.question-authoring h3{margin:6px 0 10px;font-size:21px;line-height:1.35;letter-spacing:-.5px}
+.question-authoring p{font-size:14px;line-height:1.75;word-break:keep-all;overflow-wrap:anywhere}
+.question-authoring a{color:#245b45;font-weight:750;text-underline-offset:3px}
+.question-authoring-actions{display:flex;align-items:center;justify-content:flex-end;gap:8px;flex-wrap:wrap}
+.question-authoring-actions .button{font-size:14px;min-height:44px;padding:10px 15px}
+.question-authoring .question-authoring-next{grid-column:1/-1;margin:0;padding-top:12px;border-top:1px solid #d7e4da;font-size:13px;color:#426954}
+.question-authoring-modal{width:900px;max-width:calc(100% - 32px);overflow-y:auto}
+.question-authoring-text{display:block;box-sizing:border-box;width:100%;min-height:220px;height:38dvh;max-height:420px;resize:vertical;border:1px solid #aabfb1;border-radius:12px;background:#f8faf8;color:#183d32;padding:16px;font:14px/1.75 system-ui,sans-serif;white-space:pre-wrap;overflow-wrap:anywhere}
+.question-authoring-text:focus-visible,.question-authoring a:focus-visible{outline:3px solid #477b60;outline-offset:3px}
+.question-authoring-modal .question-authoring-status{margin:12px 0 0;font-size:13px;line-height:1.6;color:#496650}
+.question-authoring-modal .dialog-actions{flex-wrap:wrap}
+@media(max-width:760px){.question-authoring{grid-template-columns:minmax(0,1fr);gap:14px;padding:18px}.question-authoring h3{font-size:19px}.question-authoring-actions{justify-content:flex-start}.question-authoring-actions .button{flex:1}.question-authoring-modal .dialog-head{align-items:flex-start;gap:12px}.question-authoring-modal .dialog-head h2{font-size:21px}.question-authoring-modal .dialog-head .icon-button{flex-shrink:0}.question-authoring-modal .dialog-actions .button{flex:1 1 180px}.question-authoring-text{font-size:16px;height:32dvh;padding:12px}}

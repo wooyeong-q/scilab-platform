@@ -105,7 +105,61 @@ function showHome(role=homeRole,room=''){inputSave=null;live.stop();resetLobbyRo
 function rules(){return `<div class="rule"><span>01</span><div><strong>기본 조작</strong><p>WASD·방향키로 이동, Space로 점프, Shift를 누른 채 이동하면 대시합니다. 대시하면서 점프하면 더 멀리 뛸 수 있습니다.</p></div></div><div class="rule"><span>02</span><div><strong>문제 풀이와 에너지</strong><p>정답마다 에너지가 45 충전됩니다. 에너지는 이동 중 초당 2.5, 대시 중에는 6씩 줄어듭니다. 정지하거나 문제를 푸는 동안에는 줄어들지 않습니다. 아이템이 가득 차도 문제를 풀 수 있고, 사용한 상자는 8초 뒤 다시 생깁니다.</p></div></div><div class="rule"><span>03</span><div><strong>아이템 사용과 경기 순위</strong><p>1·2·3키 또는 아이템 칸을 눌러 바로 사용합니다. 낙하하면 체크포인트에서 다시 시작하며, 순위는 결승선 도착 순서로 정해집니다.</p></div></div>`;}
 
 function chosenQuestions(){return uploaded?.questions.filter(q=>!selectedTopic||q.topic===selectedTopic)||[];}
-function uploadPanel(){return `<section class="question-source"><h2>수업에 사용할 문제</h2><div class="source-choices"><label><input type="radio" name="source" value="builtin" ${questionSource==='builtin'?'checked':''}> 기본 문제 <small>중2 · 물질의 구성 24문제</small></label><label><input type="radio" name="source" value="upload" ${questionSource==='upload'?'checked':''}> 내 문제 파일 <small>다른 단원·과목도 가능</small></label></div><div id="upload-area" ${questionSource==='upload'?'':'hidden'}><div class="upload-toolbar"><label class="button secondary upload-button">엑셀·CSV 불러오기<input id="question-file" type="file" accept=".xlsx,.csv"></label><a class="button ghost" href="./question-template.xlsx" download>엑셀 양식 받기 ↓</a></div><p class="fine">첫 시트 · 4지선다 · 1~500문제 · 파일 3MB 이하<br>그림은 ‘셀 위에 배치’로 삽입하고 왼쪽 위를 해당 문제 행에 맞춰 주세요. 문제당 1장, 1MB 이하입니다.</p><div id="upload-preview">${uploadPreview()}</div></div></section>`;}
+const QUESTION_AUTHORING_PROMPT=`첨부한 문제 엑셀 양식을 채워 SciLab 「장애물레이스」에 바로 업로드할 수 있는 문제 파일을 만들어 줘.
+
+[수업 정보 — 이 부분을 수정]
+- 과목: [입력]
+- 단원: [입력]
+- 대상 학년: [입력]
+- 출제 범위: [예: 원소와 원자, 1~2차시]
+- 꼭 다룰 개념 또는 학습 목표: [입력]
+- 문항 수: 20문항
+- 난이도: 보통
+- 참고 자료: 첨부한 교과서·워크북·학습지·수업 자료를 우선 사용
+
+[자료 활용]
+1. 첨부 자료를 실제로 읽고, 지정한 출제 범위와 학생들이 배운 내용을 확인해.
+2. 교과서와 수업 자료의 용어를 우선 사용하고, 요청하지 않은 상위 학년 내용이나 심화 개념은 제외해.
+3. 첨부 자료에 없는 내용이나 읽을 수 없는 부분을 확인한 것처럼 꾸며 내지 마.
+4. 지정한 과목과 단원에 맞춰 출제하고, 다른 과목의 문제를 임의로 섞지 마.
+
+[문제 출제 기준]
+1. 모든 문제는 보기 4개, 정답 1개인 객관식으로 만들어.
+2. 학생들이 게임 도중 짧게 읽고 풀 수 있도록 문제와 보기를 간결하게 작성해. 긴 지문, 복잡한 계산, 여러 조건을 동시에 기억해야 하는 문제는 피하고 일반적으로 10~20초 안에 판단할 수 있게 해.
+3. 단순 암기뿐 아니라 개념 구별, 사례 적용, 학생들이 자주 하는 오개념을 확인하는 문제를 섞어.
+4. 같은 내용을 표현만 바꿔 반복하지 말고, 요청한 개념들이 고르게 포함되도록 해.
+5. 난이도는 쉬움 30%, 보통 50%, 도전 20% 정도로 구성하되 학습 범위 안에서 조절해. 도전 문제도 긴 글이나 말장난으로 어렵게 만들지 마.
+6. 오답은 실제로 학생들이 헷갈릴 만한 내용으로 만들고, 보기끼리 겹치거나 두 개 이상이 정답이 되지 않도록 해.
+7. 정답만 유난히 길거나 자세한 문장으로 만들지 마. ‘모두 정답’, ‘정답 없음’ 보기는 사용하지 마.
+8. 정답 번호 1~4가 가능한 한 고르게 나오도록 하되, 분포를 맞추느라 문제의 정확성을 해치지 마.
+9. 해설은 정답인 이유를 1~2문장으로 설명해. ‘정답은 2번입니다’만 적지 마.
+10. 실제 그림을 넣지 않았다면 ‘다음 그림을 보고’처럼 보이지 않는 자료를 전제로 출제하지 마.
+
+[엑셀 작성 규칙]
+1. 첨부 양식의 첫 번째 시트에 문제를 작성하고, 기존 열 제목과 열 순서를 유지해.
+2. 양식에 있는 예시 문제는 제거하고 요청한 문항으로 채워. 안내 시트가 있으면 유지하되 문제 시트를 첫 번째에 둬.
+3. 한 행에 한 문제씩 넣고, 문제 사이에 소제목·설명 행이나 병합 셀을 추가하지 마.
+4. 필수 열은 ‘문제, 보기1, 보기2, 보기3, 보기4, 정답’이야. 양식에 ‘해설’, ‘단원’ 열이 있으면 함께 채워.
+5. ‘정답’에는 보기 번호에 해당하는 숫자 1~4만 입력해. 정답 문장이나 ①·② 같은 문자를 넣지 마.
+6. 보기 셀에는 보기 내용만 입력하고 번호를 중복해서 붙이지 마. 네 보기의 내용은 서로 달라야 해.
+7. 문제는 최대 500자, 보기 각각 최대 200자, 해설 최대 1,000자, 단원 최대 40자를 지켜. 실제 문장은 이보다 충분히 짧게 작성해.
+8. 별도 요청이 없으면 그림 없이 이해할 수 있는 문제로 만들고 그림 관련 열은 비워 둬.
+9. 양식이 첨부되지 않았다면 첫 시트에 다음 열을 만들어:
+   문제 / 보기1 / 보기2 / 보기3 / 보기4 / 정답 / 해설 / 단원
+10. 최종 파일은 암호와 매크로가 없는 .xlsx 형식, 3MB 이하로 저장해.
+
+[최종 검수와 결과물]
+- 요청한 문항 수가 정확한지 확인해.
+- 각 문항을 다시 풀어 정답·보기·해설이 일치하는지 검수해.
+- 복수 정답, 중복 문제, 오탈자, 출제 범위 이탈, 필수 셀 누락을 확인해.
+- 완성 파일을 다시 열어 첫 시트의 열 제목과 실제 문항 수를 확인해.
+- 최종 결과는 바로 업로드할 수 있는 .xlsx 파일로 제공해. 채팅에 문제 목록만 적고 끝내지 마.
+- 파일과 함께 총 문항 수, 개념별 문항 수, 난이도별 문항 수, 정답 번호별 개수만 간단히 알려 줘.`;
+function questionAuthoringPanel(){return `<section class="question-authoring" aria-labelledby="question-authoring-title"><div><span class="question-authoring-kicker">교사용 문제 제작 도우미</span><h3 id="question-authoring-title">AI로 우리 수업 문제 만들기</h3><p><a href="./question-template.xlsx" download>엑셀 양식</a>과 교과서·학습지를 AI 채팅에 첨부하고 프롬프트를 붙여 넣으세요. 과목·단원·학년·출제 범위만 바꾸면 다른 수업에도 사용할 수 있습니다.</p></div><div class="question-authoring-actions"><button type="button" class="button secondary" data-action="question-prompt-copy">프롬프트 복사</button><button type="button" class="button ghost" data-action="question-prompt-view">내용 보기</button></div><p class="question-authoring-next">완성된 엑셀은 ‘내 문제 파일’에서 불러온 뒤 문제·정답 미리보기를 확인하세요.</p></section>`;}
+function showQuestionPrompt(){openDialog('AI 문제 만들기 프롬프트',`<p>엑셀 양식과 수업 자료를 AI 채팅에 함께 첨부하고, 아래 프롬프트의 수업 정보를 바꿔 사용하세요.</p><label class="field" for="question-authoring-text">복사할 프롬프트</label><textarea id="question-authoring-text" class="question-authoring-text" readonly spellcheck="false" rows="12" aria-describedby="question-authoring-status">${esc(QUESTION_AUTHORING_PROMPT)}</textarea><p id="question-authoring-status" class="question-authoring-status" role="status">복사 버튼을 누르거나 내용을 직접 선택해 복사할 수 있습니다.</p>`, '<button type="button" class="button ghost" data-action="question-prompt-download">텍스트 파일 받기 ↓</button><button type="button" class="button primary" data-action="question-prompt-copy">프롬프트 복사</button>');dialog.classList.add('question-authoring-modal');}
+async function copyQuestionPrompt(){try{await navigator.clipboard.writeText(QUESTION_AUTHORING_PROMPT);toast('프롬프트를 복사했어요. AI 채팅에 붙여 넣고 수업 정보를 바꿔 주세요.');}catch{if(!dialog.open||!$('#question-authoring-text'))showQuestionPrompt();const field=$('#question-authoring-text');field.focus();field.select();field.setSelectionRange(0,field.value.length);$('#question-authoring-status').textContent='자동 복사를 사용할 수 없어 내용을 모두 선택했어요. Ctrl+C 또는 길게 눌러 복사해 주세요.';}}
+function downloadQuestionPrompt(){const url=URL.createObjectURL(new Blob(['\ufeff'+QUESTION_AUTHORING_PROMPT],{type:'text/plain;charset=utf-8'})),a=document.createElement('a');a.href=url;a.download='장애물레이스_문제제작_프롬프트.txt';a.click();setTimeout(()=>URL.revokeObjectURL(url),1000);}
+function uploadPanel(){return `<section class="question-source"><h2>수업에 사용할 문제</h2><div class="source-choices"><label><input type="radio" name="source" value="builtin" ${questionSource==='builtin'?'checked':''}> 기본 문제 <small>중2 · 물질의 구성 24문제</small></label><label><input type="radio" name="source" value="upload" ${questionSource==='upload'?'checked':''}> 내 문제 파일 <small>다른 단원·과목도 가능</small></label></div>${questionAuthoringPanel()}<div id="upload-area" ${questionSource==='upload'?'':'hidden'}><div class="upload-toolbar"><label class="button secondary upload-button">엑셀·CSV 불러오기<input id="question-file" type="file" accept=".xlsx,.csv"></label><a class="button ghost" href="./question-template.xlsx" download>엑셀 양식 받기 ↓</a></div><p class="fine">첫 시트 · 4지선다 · 1~500문제 · 파일 3MB 이하<br>그림은 ‘셀 위에 배치’로 삽입하고 왼쪽 위를 해당 문제 행에 맞춰 주세요. 문제당 1장, 1MB 이하입니다.</p><div id="upload-preview">${uploadPreview()}</div></div></section>`;}
 function uploadPreview(){if(!uploaded)return '<p class="upload-empty">파일을 올리면 문제와 그림을 먼저 확인할 수 있습니다.</p>';const qs=chosenQuestions(),topics=[...new Set(uploaded.questions.map(q=>q.topic))];return `<div class="upload-success"><strong>${esc(uploaded.name)} · ${qs.length}문제 준비됨</strong><span>그림 ${qs.filter(q=>q.image||q.imageUrl).length}개</span></div>${uploaded.warnings.map(w=>`<p class="upload-warning">${esc(w)}</p>`).join('')}${topics.length>1?`<label class="field topic-filter">사용할 단원<select id="topic-filter"><option value="">전체 단원</option>${topics.map(t=>`<option ${selectedTopic===t?'selected':''}>${esc(t)}</option>`).join('')}</select></label>`:''}<details class="preview-list"><summary>문제·정답·그림 미리보기 (${qs.length}개)</summary>${qs.map((q,i)=>`<article class="preview-question"><strong>${i+1}. ${esc(q.prompt)}</strong>${q.image||q.imageUrl?`<img loading="lazy" referrerpolicy="no-referrer" src="${esc(q.image?'data:'+q.image.mime+';base64,'+q.image.data:q.imageUrl)}" alt="${esc(q.imageAlt)}">`:''}<ol>${q.options.map((o,j)=>`<li class="${j===q.answer?'preview-answer':''}">${esc(o)}${j===q.answer?' ✓ 정답':''}</li>`).join('')}</ol><p>${esc(q.explanation)}</p></article>`).join('')}</details><p class="fine">이 문제의 복사본이 새 게임방에 저장됩니다. 다른 반의 문제는 바뀌지 않습니다.</p>`;}
 async function importFile(file){if(!file)return;if(file.size>3*1024*1024){toast('파일은 3MB 이하로 올려 주세요.',true);return;}setBusy(true);const button=$('.upload-button');button?.setAttribute('aria-busy','true');$('#upload-preview').innerHTML='<p class="upload-empty" role="status">문제와 그림을 읽고 있어요…</p>';try{const data=new FormData();data.append('file',file);const response=await fetch('/api/labs/quiz-rally/import',{method:'POST',body:data,signal:AbortSignal.timeout(30000)}),result=await response.json();if(!response.ok)throw new Error(result.error);uploaded=result;selectedTopic='';$('#upload-preview').innerHTML=uploadPreview();toast(`${result.questions.length}문제를 불러왔습니다. 미리보기를 확인하세요.`);}catch(e){$('#upload-preview').innerHTML=uploadPreview();toast(e.message||'파일을 읽지 못했습니다.',true,8000);}finally{setBusy(false);button?.removeAttribute('aria-busy');}}
 function questionPicture(t){return t.imageUrl?`<img class="question-image" src="${esc(t.imageUrl)}" alt="${esc(t.imageAlt)}" referrerpolicy="no-referrer"><p class="image-error" hidden>그림을 불러오지 못했습니다. 연결을 확인하거나 선생님께 알려 주세요.</p>`:t.diagram?diagram(t.diagram):'';}
@@ -157,7 +211,7 @@ function podium(){const top=snapshot.ranking.slice(0,3);return `<div class="podi
 function teacherEnd(){const s=snapshot;return `<div class="end-heading"><span class="pill">${esc(s.title)} · FINISH</span><h1>우리 반의 도전, 완료!</h1><p>게임 점수와 함께, 어떤 개념을 이해했는지도 돌아보세요.</p></div>${s.course?window.quizRace.summary(s):city(s)}${podium()}<div class="leader-heading"><h2>학급 결과</h2><button class="button secondary" data-action="csv">결과 CSV 저장 ↓</button></div><div class="table-wrap"><table class="results-table"><thead><tr><th>순위</th><th>닉네임</th><th>게임 점수</th><th>정답 / 도전</th><th>정답률</th></tr></thead><tbody>${s.ranking.map((p,i)=>`<tr><td>${i+1}</td><td>${esc(p.nickname)}</td><td><strong>${fmt(p.score)}점</strong></td><td>${p.correct} / ${p.attempted}</td><td>${p.attempted?Math.round(p.correct/p.attempted*100)+'%':'—'}</td></tr>`).join('')}</tbody></table></div><p class="fine form-note">문제 순서와 보상은 학생마다 다릅니다. 게임 점수는 성적이 아닙니다. 같은 문제를 다시 풀면 도전 횟수에 포함됩니다.</p><div class="center-actions"><button class="button primary" data-action="new-game">새 게임 만들기 →</button><button class="button ghost" data-action="home">처음으로</button></div>`;}
 function studentEnd(){const p=snapshot.player,rank=snapshot.ranking.findIndex(x=>x.id===p.id)+1;return `<section class="personal-result"><div class="end-heading"><span class="pill">CHALLENGE COMPLETE</span><h1>${esc(p.nickname)}, 수고했어요!</h1><p>우리 반 ${snapshot.ranking.length}명과 함께한 도전</p></div>${snapshot.course?window.quizRace.summary(snapshot):city(snapshot)}<div class="result-stats"><div class="result-stat"><strong>${fmt(p.score)}</strong><span>게임 점수</span></div><div class="result-stat"><strong>${rank}<small>위</small></strong><span>최종 점수 순위</span></div><div class="result-stat"><strong>${p.correct}<small> / ${p.attempted}</small></strong><span>정답 / 도전</span></div></div><section class="card review"><h2>이 개념, 한 번 더!</h2>${p.review?.length?p.review.map(q=>`<details><summary>${esc(q.prompt)}</summary><p><strong>정답: ${esc(q.answer)}</strong><br>${esc(q.explanation)}</p></details>`).join(''):`<p class="subline">${p.attempted?'이번 도전에서 틀린 문제가 없어요. 친구에게 기억나는 개념을 설명해 볼까요?':'다음 게임에서는 문제 캡슐을 찾아 도전해 보세요.'}</p>`}</section><p class="fine form-note">게임 점수에는 아이템과 보상이 포함돼요. 순위보다 새롭게 알게 된 개념도 기억해 주세요.</p><div class="center-actions"><button class="button primary" data-action="home">다음 게임 참여하기 →</button></div></section>`;}
 function tick(){if(!snapshot)return;const s=snapshot,remaining=s.status==='paused'?s.remainingMs:Math.max(0,(s.endsAt||0)-(Date.now()+offset)),seconds=Math.ceil(remaining/1000),display=Math.floor(seconds/60)+':'+String(seconds%60).padStart(2,'0');document.querySelectorAll('[data-timer]').forEach(el=>{el.textContent=display;el.classList.toggle('urgent',seconds<=30);});if(s.status==='running'&&remaining===0&&!busy&&!polling){connection('결과 확인 중…');clearTimeout(pollTimer);pollTimer=setTimeout(poll,500);}}
-function openDialog(title,body,actions=''){delete dialog.dataset.journeyZone;dialog.classList.remove('diagram-modal','city-modal','crew-modal','robot-modal');dialog.innerHTML=`<div class="dialog-head"><h2 id="dialog-title">${esc(title)}</h2><button class="icon-button" data-action="close" aria-label="닫기">✕</button></div><div class="dialog-body">${body}</div>${actions?`<div class="dialog-actions">${actions}</div>`:''}`;if(!dialog.open)dialog.showModal();}
+function openDialog(title,body,actions=''){delete dialog.dataset.journeyZone;dialog.classList.remove('diagram-modal','city-modal','crew-modal','robot-modal','question-authoring-modal');dialog.innerHTML=`<div class="dialog-head"><h2 id="dialog-title">${esc(title)}</h2><button class="icon-button" data-action="close" aria-label="닫기">✕</button></div><div class="dialog-body">${body}</div>${actions?`<div class="dialog-actions">${actions}</div>`:''}`;if(!dialog.open)dialog.showModal();}
 function showTargets(){const p=snapshot.player,targets=snapshot.ranking.filter(x=>x.id!==p.id&&x.score>p.score&&x.score>0&&!x.finish&&x.protectedUntil<=Date.now()+offset);openDialog('누구에게서 가져올까요?',`<p>나보다 점수가 높은 친구에게서 50~150점을 10점 단위로 랜덤하게 가져옵니다. 상대의 남은 점수까지만 가져올 수 있어요.<br>친구에게 방어막이 있으면 아이템만 소모돼요.</p><div class="target-list">${targets.length?targets.map(x=>`<button class="target-button" data-action="steal-target" data-target="${esc(x.id)}" data-mutate><span>${esc(x.nickname)}${x.shield?'<small>방어막 작동 중</small>':''}</span><strong>${fmt(x.score)}점</strong></button>`).join(''):'<p class="empty">지금은 가져올 수 있는 친구가 없어요.<br>아이템을 아껴 뒀다가 사용해 보세요.</p>'}</div>`);}
 function manage(){openDialog('참여자 관리',`<p>참여를 종료한 학생은 이 참여 정보로 다시 들어올 수 없습니다.</p>${snapshot.ranking.map(p=>`<div class="management-row"><span>${esc(p.nickname)}</span><button class="button danger" data-action="confirm-remove" data-target="${esc(p.id)}" data-name="${esc(p.nickname)}">참여 종료</button></div>`).join('')||'<p>아직 참여한 학생이 없습니다.</p>'}`);}
 // At most one background save runs beside an item/question action. Both
@@ -173,6 +227,9 @@ async function mutate(action,extras={}){if(action==='arena-input')return saveAre
 async function copyLink(){try{await navigator.clipboard.writeText(shareURL());toast('학생 참여 링크를 복사했어요. 학생들에게 공유해 주세요.');}catch{openDialog('학생 참여 링크',`<p>아래 주소를 복사해서 학생들에게 전달해 주세요.</p><label class="field">참여 링크<input readonly value="${esc(shareURL())}" id="share-input"></label>`);$('#share-input').select();}}
 function downloadCSV(){const rows=[['게임방',snapshot.title],['참여 코드',code],['순위','닉네임','게임 점수','정답 수','도전 수','정답률'],...snapshot.ranking.map((p,i)=>[i+1,p.nickname,p.score,p.correct,p.attempted,p.attempted?Math.round(p.correct/p.attempted*100)+'%':''])];const csv='\ufeff'+rows.map(row=>row.map(v=>{let value=String(v);if(/^[=+\-@\t\r]/.test(value))value="'"+value;return '"'+value.replace(/"/g,'""')+'"';}).join(',')).join('\r\n');const url=URL.createObjectURL(new Blob([csv],{type:'text/csv;charset=utf-8'})),a=document.createElement('a');a.href=url;a.download='퀴즈챌린지-'+code+'.csv';a.click();setTimeout(()=>URL.revokeObjectURL(url),1000);}
 document.addEventListener('click',async e=>{const b=e.target.closest('[data-action]');if(!b||b.disabled||busy)return;const action=b.dataset.action;
+ if(action==='question-prompt-view'){showQuestionPrompt();return;}
+ if(action==='question-prompt-copy'){await copyQuestionPrompt();return;}
+ if(action==='question-prompt-download'){downloadQuestionPrompt();return;}
  if(action.startsWith('robot-')){const builder=b.closest('.robot-builder'),inLobby=!!b.closest('[data-lobby-workbench]');window.quizRobot.select(b);if(inLobby&&action!=='robot-tab')queueLobbyRobot(builder);return;}
  if(action==='lobby-save'){saveLobbyRobot();return;}
  if(action==='customize-open'&&snapshot?.player&&snapshot.status!=='ended'){openDialog('내 로봇 꾸미기',crew.picker(snapshot.player),'<button class="button secondary" data-action="close">취소</button><button class="button primary" data-action="customize-save" data-mutate>이 모습으로 저장</button>');dialog.classList.add('robot-modal');}
