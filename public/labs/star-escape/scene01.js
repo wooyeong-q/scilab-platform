@@ -7,6 +7,8 @@
   var visited = new Set();
   var inspect = null;
   var puzzleOpen = false;
+  var clueTabOpen = false;
+  var clueQuestion = 1;
   var codeValue = '';
   var activeWire = 'R1';
   var wireMapping = {};
@@ -142,6 +144,79 @@
     });
   }
 
+  function clueCount(question) {
+    if (question === 3) return { found: 4, total: 4 };
+    var roles = availableRoles();
+    return { found: roles.filter(function (role) {
+      return visited.has('q' + question + ':' + roleClue(question, role).id);
+    }).length, total: roles.length };
+  }
+
+  function clueTabButton(location) {
+    var count = clueCount(currentQuestion());
+    return '<button type="button" class="s1-clue-button ' + (location || '') + '" id="s1ClueTab" aria-haspopup="dialog" aria-expanded="' + clueTabOpen + '"><span>단서 탭</span><b>' + count.found + '/' + count.total + '</b></button>';
+  }
+
+  function clueTabMarkup() {
+    var question = Math.min(clueQuestion, currentQuestion());
+    var names = ['전력 복구', '배선 연결', '기록 검증'];
+    var steps = names.map(function (name, index) {
+      var step = index + 1;
+      return '<button type="button" id="s1ClueStep' + step + '" data-s1-clue-step="' + step + '" aria-pressed="' + (step === question) + '"' + (step > currentQuestion() ? ' disabled' : '') + '>' + step + '. ' + name + '</button>';
+    }).join('');
+    var cards = question === 3 ? verificationRecords.map(function (record) {
+      return '<article class="s1-clue-record"><div class="s1-clue-image stellar"><img src="' + image(record.image) + '" alt="' + esc(record.color) + '"></div><div><small>수납함에서 전송된 검증 기록</small><h3>' + record.label + ' · ' + esc(record.color) + '</h3><p>“' + esc(record.statement) + '”</p></div></article>';
+    }).join('') : availableRoles().map(function (role) {
+      var clue = roleClue(question, role);
+      var found = visited.has('q' + question + ':' + clue.id);
+      var owner = role === context.state.player.role ? '내 단서 · 대원 R' + role : '빈자리 단서 · 대원 R' + role;
+      if (!found) return '<article class="s1-clue-record missing"><div class="s1-clue-placeholder" aria-hidden="true">?</div><div><small>' + owner + '</small><h3>아직 발견하지 못한 단서</h3><p>방 안의 물건을 조사해 기록을 끝까지 확인하세요.</p></div></article>';
+      return '<article class="s1-clue-record"><div class="s1-clue-image' + (clue.image.indexOf('stars/') === 0 ? ' stellar' : '') + '"><img src="' + image(clue.image) + '" alt=""></div><div><small>' + owner + '</small><h3>' + esc(clue.title) + '</h3><p>' + esc(clue.text) + '</p></div></article>';
+    }).join('');
+    var manual = question === 1 && visited.has('q1:communicator') ? '<aside class="s1-clue-manual"><b>통신기 · 복구 설명서</b><p>' + esc(objectText('communicator', 1)) + '</p></aside>' : '';
+    var help = question === 3 ? '수납함에서 전송된 네 기록입니다. 별의 색과 문장을 비교하세요.' : '끝까지 확인한 단서는 자동 저장됩니다. 다른 대원이 맡은 단서는 서로 말로 공유하세요.';
+    return '<section class="s1-clue-overlay"><div class="s1-clue-drawer" role="dialog" aria-modal="true" aria-labelledby="s1ClueTitle"><header><div><small>관측실 01 · 수집한 기록</small><h2 id="s1ClueTitle">단서 탭</h2></div><button type="button" class="s1-close" id="s1ClueClose" aria-label="단서 탭 닫기">×</button></header><nav class="s1-clue-steps" aria-label="단서의 문제 단계">' + steps + '</nav><div class="s1-clue-body"><p class="s1-clue-help">' + help + '</p><div class="s1-clue-grid">' + cards + '</div>' + manual + '</div><footer>단서 탭을 닫으면 조사하던 화면으로 돌아갑니다.</footer></div></section>';
+  }
+
+  function refreshClueTab(focusId) {
+    var layer = document.getElementById('s1ClueLayer');
+    if (!layer) return;
+    layer.innerHTML = clueTabOpen ? clueTabMarkup() : '';
+    var tab = document.getElementById('s1ClueTab');
+    if (tab) tab.setAttribute('aria-expanded', String(clueTabOpen));
+    bindClueDrawer();
+    var focus = focusId && document.getElementById(focusId);
+    if (focus) focus.focus();
+  }
+
+  function closeClueTab() {
+    clueTabOpen = false;
+    refreshClueTab('s1ClueTab');
+  }
+
+  function bindClueDrawer() {
+    var layer = document.getElementById('s1ClueLayer');
+    var close = document.getElementById('s1ClueClose');
+    if (close) close.onclick = closeClueTab;
+    document.querySelectorAll('[data-s1-clue-step]').forEach(function (button) {
+      button.onclick = function () {
+        var step = Number(button.dataset.s1ClueStep);
+        if (step < 1 || step > currentQuestion()) return;
+        clueQuestion = step;
+        refreshClueTab('s1ClueStep' + step);
+      };
+    });
+    if (layer) layer.onkeydown = function (event) {
+      if (!clueTabOpen) return;
+      if (event.key === 'Escape') { event.preventDefault(); closeClueTab(); return; }
+      if (event.key !== 'Tab') return;
+      var buttons = layer.querySelectorAll('button:not(:disabled)');
+      var first = buttons[0], last = buttons[buttons.length - 1];
+      if (event.shiftKey && document.activeElement === first) { event.preventDefault(); last.focus(); }
+      else if (!event.shiftKey && document.activeElement === last) { event.preventDefault(); first.focus(); }
+    };
+  }
+
   function objectText(id, question) {
     var powered = question > 1;
     var common = {
@@ -230,6 +305,8 @@
       (introStep < intro.length ? dialogueMarkup() : '') +
       '</div>' +
       (puzzleOpen ? puzzleMarkup(question) : '') +
+      (!puzzleOpen && !inspect && !nextGuideOpen && introStep >= intro.length ? clueTabButton('room') : '') +
+      '<div id="s1ClueLayer">' + (clueTabOpen ? clueTabMarkup() : '') + '</div>' +
       '</div>';
   }
 
@@ -251,7 +328,8 @@
     return '<section class="s1-inspect ' + (inspect.clue ? 'clue' : '') + '">' +
       '<img src="' + image(inspect.image) + '" alt="">' +
       '<div><small>' + (inspect.clue ? (inspect.revealed ? '대원 ' + inspect.role + ' 전용 단서' : '이상한 흔적 발견') : 'INVESTIGATION') + '</small><b>' + esc(inspect.name) + '</b><p>' + esc(inspect.text) + '</p>' +
-      (inspect.clue && !inspect.revealed ? inspectTaskMarkup() : '') + '</div>' +
+      (inspect.clue && !inspect.revealed ? inspectTaskMarkup() : '') +
+      (inspect.clue && inspect.revealed ? '<span class="s1-clue-saved">단서 탭에 저장됨</span>' : '') + '</div>' +
       '<button id="inspectClose" aria-label="닫기">×</button></section>';
   }
 
@@ -318,7 +396,7 @@
 
   function puzzleMarkup(question) {
     var lock = locks[question];
-    return '<section class="s1-puzzle"><header class="s1-puzzle-head"><div><small>SCENE 01 · LOCK ' + question + '/3</small><h2>' + lock.title + '</h2></div><button class="s1-close" id="s1PuzzleClose" aria-label="닫기">×</button></header>' +
+    return '<section class="s1-puzzle"><header class="s1-puzzle-head"><div><small>SCENE 01 · LOCK ' + question + '/3</small><h2>' + lock.title + '</h2></div><div class="s1-puzzle-actions">' + clueTabButton() + '<button class="s1-close" id="s1PuzzleClose" aria-label="닫기">×</button></div></header>' +
       '<div class="s1-puzzle-body">' + activityMarkup(question) + '<div class="s1-hintbox" id="hintbox"></div></div>' +
       '<footer class="s1-footer"><p class="s1-feedback" id="feedback" aria-live="polite"></p><button class="secondary" id="hintBtn">힌트 · ' + Math.min(context.state.progress.hintCount, 3) + '/3 무료</button><button class="primary" id="s1Submit">' + (question === 2 ? '연결 확인' : question === 3 ? '검증 완료' : '입력') + '</button></footer></section>';
   }
@@ -457,6 +535,13 @@
   }
 
   function bindRoom() {
+    var clueTab = document.getElementById('s1ClueTab');
+    if (clueTab) clueTab.onclick = function () {
+      clueTabOpen = true;
+      clueQuestion = currentQuestion();
+      refreshClueTab('s1ClueClose');
+    };
+    bindClueDrawer();
     document.querySelectorAll('[data-object]').forEach(function (button) {
       button.addEventListener('click', function () { inspectObject(button.dataset.object); });
     });
@@ -628,10 +713,15 @@
 
   function draw() {
     if (!context || !context.game) return;
+    var clueFocus = clueTabOpen && document.activeElement && document.activeElement.id;
     var question = currentQuestion();
     context.game.innerHTML = roomMarkup(question);
     bindRoom();
     if (puzzleOpen) bindPuzzle(question);
+    if (clueTabOpen) {
+      var focus = document.getElementById(clueFocus || 's1ClueClose');
+      if (focus) focus.focus();
+    }
     if (banner) setTimeout(function () {
       var element = document.querySelector('.s1-system');
       if (element) element.remove();
@@ -651,6 +741,8 @@
       nextGuideOpen = false;
       inspect = null;
       puzzleOpen = false;
+      clueTabOpen = false;
+      clueQuestion = currentQuestion();
       lastQuestion = 0;
       endingStep = 0;
       endingIdentity = '';
@@ -660,6 +752,8 @@
       if (lastQuestion === 2 && question === 3 && context.sound && typeof context.sound.play === 'function') context.sound.play('cabinetOpen12');
       inspect = null;
       puzzleOpen = false;
+      clueTabOpen = false;
+      clueQuestion = question;
       codeValue = '';
       activeWire = question === 2 ? 'R1' : null;
       wireMapping = {};
