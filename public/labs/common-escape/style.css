@@ -344,6 +344,9 @@ dialog.lock-dialog{width:min(800px,calc(100vw - 28px))}.lock-dialog .story-text{
 #dialog.puzzle-screen .puzzle-hints p{font-size:var(--ui-size,12px);margin:6px 0}
 #dialog.puzzle-screen .record-slots{padding:8px;gap:8px}
 #dialog.puzzle-screen .slot-target{min-height:74px;padding:8px;gap:6px}
+#dialog.puzzle-screen .record-slot,#dialog.puzzle-screen .matrix-cell{position:relative}
+#dialog.puzzle-screen .record-slot>.unplace,#dialog.puzzle-screen .matrix-cell>.unplace{position:absolute;right:3px;top:3px;width:22px;height:22px;padding:0;line-height:20px;font-size:18px;border:1px solid #63735b;border-radius:3px;background:#17231a;color:#f0e5c5}
+#dialog.puzzle-screen .slot-target>small{align-self:flex-start}
 #dialog.puzzle-screen .material-bank{gap:8px;margin:10px 0 0}
 #dialog.puzzle-screen .material-bank:empty{display:none}
 #dialog.puzzle-screen .puzzle-card{padding:10px;gap:5px;min-height:0}
@@ -358,6 +361,11 @@ dialog.lock-dialog{width:min(800px,calc(100vw - 28px))}.lock-dialog .story-text{
 #dialog.puzzle-screen .shelved-card .puzzle-card>small{display:none}
 #dialog.puzzle-screen .shelved-card .puzzle-card strong{flex:none;font-size:var(--ui-size,12px)}
 #dialog.puzzle-screen .shelved-card .material-text{min-width:0}
+#dialog.puzzle-screen .puzzle-card.placed{border-color:#b59a63;box-shadow:inset 0 0 0 1px #b59a63}
+#dialog.puzzle-screen .placed-record{display:block;font-size:var(--caption-size,12px);line-height:1.4;overflow-wrap:anywhere;text-align:center}
+#dialog.puzzle-screen .shelved-card{display:flex;align-items:center;gap:3px}
+#dialog.puzzle-screen .shelved-card .placed-record{flex:1;min-width:0}
+#dialog.puzzle-screen .shelved-card .unplace{flex:none;width:22px;height:22px;padding:0;line-height:20px;font-size:18px;border:1px solid #63735b;border-radius:3px}
 #dialog.puzzle-screen .connection-board{display:grid;grid-template-columns:minmax(0,1fr) 70px minmax(0,.65fr);padding:8px;gap:0}
 #dialog.puzzle-screen .wire-sources,#dialog.puzzle-screen .wire-targets{grid-template-columns:1fr;grid-template-rows:repeat(4,1fr);gap:6px;margin:0}
 #dialog.puzzle-screen .connection-lines{display:block}
@@ -373,6 +381,7 @@ dialog.lock-dialog{width:min(800px,calc(100vw - 28px))}.lock-dialog .story-text{
 #dialog.puzzle-screen .broadcast-line>span>span{line-height:1.4}
 #dialog.puzzle-screen .broadcast-line>span>small{margin-bottom:3px}
 #dialog.puzzle-screen .matrix-target{min-height:80px;padding:8px;gap:4px}
+#dialog.puzzle-screen .matrix-target{padding-right:28px}
 #dialog.puzzle-screen .matrix-target>small{display:none}
 #dialog.puzzle-screen .monitor-workbench{padding:10px;border-width:5px}
 #dialog.puzzle-screen .monitor-status{margin-bottom:6px}
@@ -383,6 +392,8 @@ dialog.lock-dialog{width:min(800px,calc(100vw - 28px))}.lock-dialog .story-text{
 #dialog.puzzle-screen .relay-switch{padding:8px;gap:4px 8px;display:grid;grid-template-columns:18px 1fr;text-align:left}
 #dialog.puzzle-screen .relay-switch .switch-lever{grid-row:span 2}
 #dialog.puzzle-screen .circuit-panel>p{margin:8px 0 0;line-height:1.4}
+/* The switch labels and dock already explain the toggle operation. */
+#dialog.puzzle-screen .circuit-panel>p{display:none}
 #dialog.puzzle-screen .lock-layout{grid-template-columns:minmax(0,1fr) 240px;gap:20px;min-height:0}
 #dialog.puzzle-screen .evidence-sheets{grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;align-items:start}
 #dialog.puzzle-screen .order-paper{grid-column:auto}
@@ -427,6 +438,10 @@ dialog.lock-dialog{width:min(800px,calc(100vw - 28px))}.lock-dialog .story-text{
  #dialog.puzzle-screen .puzzle-clues .paper{padding:10px 12px}
  #dialog.puzzle-screen .monitor-status{display:none}
  #dialog.puzzle-screen .puzzle-clues .puzzle-reference{font-size:14px;margin-top:6px;padding-top:6px}
+ #dialog.puzzle-screen .record-slots{padding:8px;border-width:4px}
+ #dialog.puzzle-screen .broadcast-reference{display:grid;grid-template-columns:1fr 1fr;gap:4px 12px;padding:6px 10px;margin-bottom:6px}
+ #dialog.puzzle-screen .broadcast-reference>small{grid-column:1/-1}
+ #dialog.puzzle-screen .broadcast-reference p{margin:0}
 }
 @media(max-width:999px){
  #dialog.puzzle-screen .modal-inner{padding:10px;gap:6px}
@@ -473,10 +488,19 @@ dialog.lock-dialog{width:min(800px,calc(100vw - 28px))}.lock-dialog .story-text{
  #dialog.puzzle-screen .broadcast-line .line-number{display:none}
  #dialog.puzzle-screen .broadcast-line b{font-size:10px;text-align:right}
  #dialog.puzzle-screen .circuit-lamp{padding:6px;gap:4px}
+ #dialog.puzzle-screen .circuit-lamps{grid-template-columns:repeat(2,minmax(0,1fr))}
+ #dialog.puzzle-screen .circuit-lamp{display:grid;grid-template-columns:18px 1fr auto;align-items:center;align-content:start}
+ #dialog.puzzle-screen .circuit-lamp .material-text,#dialog.puzzle-screen .circuit-lamp .private-material{grid-column:1/-1}
+ #dialog.puzzle-screen .connection-board{grid-template-columns:minmax(0,1fr) 30px minmax(0,.55fr);padding:4px}
+ #dialog.puzzle-screen .wire-sources .puzzle-card{padding:5px 6px}
+ #dialog.puzzle-screen .terminal-target b{font-size:14px;line-height:1.4}
  #dialog.puzzle-screen .circuit-lamp strong,#dialog.puzzle-screen .relay-switch b{font-size:12px}
  #dialog.puzzle-screen .circuit-lamp small,#dialog.puzzle-screen .relay-switch small{font-size:10px}
  #dialog.puzzle-screen .lamp-bulb{width:18px;height:18px}
  #dialog.puzzle-screen .relay-switch{padding:5px;gap:4px}
+ #dialog.puzzle-screen .relay-switch{grid-template-columns:1fr;text-align:center}
+ #dialog.puzzle-screen .relay-switch .switch-lever{display:none}
+ #dialog.puzzle-screen .relay-switch.raised{background:#45513b;border-color:#d9c180}
  #dialog.puzzle-screen .switch-lever{height:24px}
  #dialog.puzzle-screen .lock-layout{display:flex;flex-direction:column;gap:8px}
  #dialog.puzzle-screen .lock-panel{width:100%;display:grid;grid-template-columns:1fr 150px;padding:8px;gap:4px 12px}
