@@ -197,8 +197,8 @@
 .s3-p1-bank p,.s3-analysis-side p,.s3-reference-bank p,.s3-lock-bank p,.s3-analysis-console p{font-size:14px;line-height:1.6}
 .s3-selection-help,.s3-distance-rule>b{font-size:12px;line-height:1.5}
 .s4-sort-layout h3{font-size:17px}.s4-token{font-size:15px;min-height:46px}
-.s4-observation-image{aspect-ratio:4/3;background:#030911}
-.s4-observation-image img{width:100%;height:100%;object-fit:contain}
+.s4-observation-image{position:relative;aspect-ratio:4/3;background:#030911}
+.s4-observation-image img{position:absolute;inset:0;width:100%;height:100%;object-fit:contain}
 .s4-observation>img{height:auto;aspect-ratio:4/3;object-fit:contain;background:#030911}
 .s4-observation,.s4-sort-layout aside{border-color:#425c73;background:#0c1b2c}
 .s4-drop small{font-size:11px}.s4-drop b,.s4-drop span{font-size:14px}
