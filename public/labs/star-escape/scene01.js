@@ -366,7 +366,7 @@
       return '<path class="s1-wire-shadow" data-wire-path="' + role + '"></path><path class="s1-wire-line" data-wire-path="' + role + '" style="--wire:' + color.wire + '"></path>';
     }).join('');
     var connectedCount = Object.keys(wireMapping).length;
-    return '<div class="s1-wire-panel"><div class="s1-wire-guide"><small>RESTORE WIRING</small><b>대원별 관측 전선 연결</b><p>① 단서에서 가장 뜨거운 별·가장 차가운 별·노란 별의 대원을 찾으세요. ② 남은 대원은 남은 별에 연결하세요.<br><strong>온도 높은 순서: 푸른색 → 흰색 → 노란색 → 붉은색</strong><br>위쪽 R 단자와 아래쪽 별을 차례로 누르면 연결됩니다.</p><div class="s1-wire-actions"><button type="button" id="s1WireReset" ' + (connectedCount ? '' : 'disabled') + '>초기화</button><span>' + connectedCount + ' / 4 연결</span></div></div>' +
+    return '<div class="s1-wire-panel"><div class="s1-wire-guide"><small>관측 기록 · 색 연결</small><b>대원별 관측 전선 연결</b><p>단서에서 가장 뜨거운 별·가장 차가운 별·노란 별의 대원을 찾으세요. 남은 대원은 남은 별에 연결하세요.</p><ol class="s1-wire-steps"><li>위쪽 대원 번호 선택</li><li>아래쪽 별을 눌러 연결</li><li>네 연결을 모두 확인</li></ol><div class="s1-temperature-note"><small>표면 온도가 높은 순서</small><strong>푸른색 → 흰색<br>→ 노란색 → 붉은색</strong></div><div class="s1-wire-actions"><button type="button" id="s1WireReset" ' + (connectedCount ? '' : 'disabled') + '>초기화</button><span>' + connectedCount + ' / 4 연결</span></div></div>' +
       '<div class="s1-wire-board"><div class="s1-wire-bank roles">' + roleButtons + '</div><svg class="s1-wire-canvas" aria-hidden="true">' + lines + '<path class="s1-wire-preview" id="s1WirePreview"></path></svg><div class="s1-wire-bank colors">' + colorButtons + '</div></div></div>';
   }
 
