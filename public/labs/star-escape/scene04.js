@@ -334,10 +334,10 @@
 
   function roomMarkup(state) {
     var photosReady = state.photosRestored.A && state.photosRestored.B && state.photosRestored.C;
-    return '<section class="s4-shell"><div class="s4-room">' +
-      '<img class="s4-room-image" src="' + img(roomStateFile(state)) + '" alt="최종 관측 통제실">' +
+    return '<section class="s4-shell">' +
       '<div class="s4-title"><small>04 — 최종 관측 통제실</small><b>마지막 인증</b></div>' +
       '<div class="s4-objective"><b>현재 목표</b><span>' + esc(objective(state)) + '</span></div>' +
+      '<div class="s4-room"><img class="s4-room-image" src="' + img(roomStateFile(state)) + '" alt="최종 관측 통제실">' +
       '<button class="s4-hotspot desk' + (state.patternA ? ' done' : '') + '" data-s4-object="desk" data-label="기록철" aria-label="기록철과 서류 더미"></button>' +
       '<button class="s4-hotspot case' + (state.filmB ? ' done' : '') + '" data-s4-object="case" data-label="관측도구 케이스" aria-label="관측도구 케이스"></button>' +
       ['A', 'B', 'C'].map(function (letter) {
@@ -348,7 +348,7 @@
       '<button class="s4-hotspot reflector' + (state.overlayComplete ? ' active' : '') + '" data-s4-object="reflector" data-label="반사판" aria-label="반사판"></button>' +
       '<button class="s4-hotspot locker' + (state.lockerActive ? ' active' : '') + (state.lockerOpen ? ' done' : '') + '" data-s4-object="locker" data-label="성단 관측 보관함" aria-label="성단 관측 보관함"></button>' +
       '<button class="s4-hotspot starmap' + (state.uvAcquired ? ' active' : '') + '" data-s4-object="starmap" data-label="오래된 별지도" aria-label="오래된 별지도"></button>' +
-      '<button class="s4-hotspot core' + (state.uvRevealed ? ' active' : '') + (state.authComplete ? ' done' : '') + '" data-s4-object="core" data-label="중앙 귀환 장치" aria-label="중앙 귀환 인증 장치"></button>' +
+      '<button class="s4-hotspot core' + (state.nebulaComplete && state.lockerOpen ? ' active' : '') + (state.authComplete ? ' done' : '') + '" data-s4-object="core" data-label="중앙 귀환 장치" aria-label="중앙 귀환 인증 장치"></button>' +
       (state.horrorSeen ? '<button class="s4-hotspot maintenance active" data-s4-object="maintenance" data-label="작은 정비 패널" aria-label="작은 정비 패널"></button>' : '') +
       (state.recordingComplete && !state.logSeen ? '<button class="s4-room-action log" data-s4-object="log">조작 로그 확인</button>' : '') +
       (state.logSeen && !state.cctvComplete ? '<button class="s4-room-action cctv" data-s4-object="cctv">CCTV 감시 기록</button>' : '') +
@@ -1082,7 +1082,11 @@
     var saveLog = document.getElementById('s4SaveLog'); if (saveLog) saveLog.onclick = function () { sync({ logSeen: true }).then(function () { modal = ''; ctx.toast('수동 조작 흔적을 확인했습니다.'); draw(); }); };
     var leave = document.getElementById('s4Leave'); if (leave) leave.onclick = function () {
       modal = ''; horrorVisible = true; play('scene4_exit'); draw();
-      setTimeout(function () { horrorVisible = false; ctx.submit('RETURN'); }, 400);
+      setTimeout(async function () {
+        horrorVisible = false;
+        var result = await ctx.submit('RETURN');
+        if (!result || result.status !== 'correct') { modal = 'exit'; draw(); }
+      }, 400);
     };
     document.querySelectorAll('[data-s4-hint]').forEach(function (hint) { hint.onclick = ctx.hint; });
     bindOverlayDrag();
@@ -1114,6 +1118,7 @@
     var state = sceneState();
     ctx.game.innerHTML = roomMarkup(state);
     bindRoom(state);
+    if (window.StarEscapeProgress) window.StarEscapeProgress.renderRecovery(ctx);
     setTimeout(function () { maybeStartSharedMoments(sceneState()); }, 0);
   }
 

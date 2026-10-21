@@ -219,16 +219,18 @@
       if (question === 3 && item.id === 'navigation') classes.push('required');
       return '<button class="' + classes.join(' ') + '" data-object="' + item.id + '" data-label="' + esc(item.name) + '" aria-label="' + esc(item.name) + '" style="left:' + item.box[0] + '%;top:' + item.box[1] + '%;width:' + item.box[2] + '%;height:' + item.box[3] + '%"></button>';
     }).join('');
-    return '<div class="s1-shell"><div class="s1-room ' + roomState(question) + '" data-power="' + roomState(question) + '">' +
+    return '<div class="s1-shell">' +
       '<div class="s1-title"><small>OBSERVATION ROOM 01</small><b>뒤바뀐 별 기록</b></div>' +
       '<div class="s1-objective">현재 목표 · ' + objective(question) + '</div>' +
+      '<div class="s1-room ' + roomState(question) + '" data-power="' + roomState(question) + '">' +
       hotspots +
       (banner ? '<div class="s1-system">' + esc(banner) + '</div>' : '') +
       (inspect ? inspectMarkup() : '') +
       (nextGuideOpen ? nextGuideMarkup() : '') +
       (introStep < intro.length ? dialogueMarkup() : '') +
+      '</div>' +
       (puzzleOpen ? puzzleMarkup(question) : '') +
-      '</div></div>';
+      '</div>';
   }
 
   function dialogueMarkup() {

@@ -235,9 +235,9 @@
     var screenIdentity = q >= 3 || state.q2Complete
       ? '<span class="s3-screen-label a">A</span><span class="s3-screen-label b">B</span><span class="s3-screen-label c">C</span><span class="s3-screen-label d">D</span><div class="s3-auto-result">분석 완료 · 가장 밝게 관측되는 별 <b>A</b></div>'
       : '<div class="s3-screen-locked">관측 채널 식별 코드 잠김</div>';
-    return '<div class="s3-room ' + roomClass(state, q) + '">' +
-      '<div class="s3-title"><small>03 — 별빛 분석 구획</small><b>가장 밝은 별은 누구인가?</b></div>' +
+    return '<div class="s3-title"><small>03 — 별빛 분석 구획</small><b>가장 밝은 별은 누구인가?</b></div>' +
       '<div class="s3-objective">' + objective(state, q) + '</div>' +
+      '<div class="s3-room ' + roomClass(state, q) + '">' +
       screenIdentity +
       '<button class="s3-hotspot s3-hotspot-magnitude' + magnitudeActive + '" data-s3-object="magnitude" data-label="' + (q === 1 ? '고장 난 별의 등급 측정 장치' : '복구된 별의 등급 측정 장치') + '" aria-label="별의 등급 측정 장치"></button>' +
       '<button class="s3-hotspot s3-hotspot-analysis' + analysisClass + '" data-s3-object="analysis" data-label="' + (q === 4 && !state.p4Complete ? '최종 거리 판정 화면' : '중앙 별빛 분석 장치') + '" aria-label="' + (q === 4 && !state.p4Complete ? '최종 거리 판정 화면' : '중앙 별빛 분석 장치') + '"></button>' +
@@ -250,8 +250,9 @@
 
   function inspectMarkup() {
     if (!inspect) return '';
+    var media = inspect.focus === 'magnitude' ? magnitudeDevice(sceneState(), true) : '<img src="' + esc(inspect.image || img('scene03_room_base.webp')) + '" alt="">';
     return '<section class="s3-inspect" role="dialog" aria-modal="true">' +
-      '<div class="s3-inspect-media' + (inspect.focus ? ' focus-' + esc(inspect.focus) : '') + '"><img src="' + esc(inspect.image || img('scene03_room_base.webp')) + '" alt=""></div>' +
+      '<div class="s3-inspect-media' + (inspect.focus ? ' focus-' + esc(inspect.focus) : '') + '">' + media + '</div>' +
       '<div><small>장치 조사</small><b>' + esc(inspect.title) + '</b><p>' + esc(inspect.text) + '</p>' + (inspect.state ? '<span>' + esc(inspect.state) + '</span>' : '') + '</div>' +
       '<button class="s3-close" id="s3InspectClose" aria-label="조사 화면 닫기">×</button></section>';
   }
@@ -261,14 +262,19 @@
       '<img src="' + img('scene03_p01_tile_0' + value + '.png') + '" alt="' + value + '"></button>';
   }
 
-  function p1Markup(state) {
+  function magnitudeDevice(state, readOnly) {
     var slots = state.p1Slots.map(function (value, index) {
-      return '<div class="s3-p1-slot' + (value ? ' filled' : '') + '" data-s3-drop="p1" data-slot="' + index + '">' + (value ? numberTile(value, true) : '') + '</div>';
+      var tile = value ? (readOnly ? '<span class="s3-number-tile"><img src="' + img('scene03_p01_tile_0' + value + '.png') + '" alt="' + value + '등급"></span>' : numberTile(value, true)) : '';
+      return '<div class="s3-p1-slot' + (value ? ' filled' : '') + '"' + (readOnly ? '' : ' data-s3-drop="p1" data-slot="' + index + '"') + '>' + tile + '</div>';
     }).join('');
+    return '<div class="s3-device-viewport s3-p1-base">' + slots + '</div>';
+  }
+
+  function p1Markup(state) {
     var bank = ['1', '2', '3', '4', '5', '6'].filter(function (value) { return state.p1Slots.indexOf(value) < 0; }).map(function (value) { return numberTile(value, false); }).join('');
     return '<section class="s3-puzzle" role="dialog" aria-modal="true">' + puzzleHeader(1, '고장 난 별의 등급 측정 장치') +
       '<div class="s3-puzzle-body"><div class="s3-device-grid">' +
-      '<div class="s3-device-viewport s3-p1-base">' + slots + '</div>' +
+      magnitudeDevice(state, false) +
       '<aside class="s3-p1-bank"><div><h3>빠진 숫자판 1~6</h3><p>빛의 밝기를 비교해 실제 기계 부품을 각 슬롯에 끼우세요.</p></div>' +
       '<div class="s3-tile-bank" data-s3-drop="p1" data-slot="bank">' + bank + '</div>' + selectionHelp('p1', '숫자판을 끌어 빛 아래 슬롯에 놓으세요.') + '</aside>' +
       '</div></div>' + puzzleFooter('빛의 밝기와 등급 표시를 맞춘 뒤 확인하세요.', true, '확인', state.p1Slots.some(function (value) { return !value; })) + '</section>';
@@ -753,7 +759,7 @@
         puzzle = 'p1';
         inspect = null;
       } else {
-        inspect = { title: '복구된 별의 등급 측정 장치', text: '숫자판이 밝은 빛부터 1, 2, 3, 4, 5, 6 순서로 고정되어 있습니다.', state: '별의 등급 표시 복구 완료', image: img('scene03_p01_magnitude_device_complete.webp') };
+        inspect = { title: '복구된 별의 등급 측정 장치', text: '왼쪽의 어두운 빛부터 6, 5, 4, 3, 2, 1등급입니다. 등급 숫자가 작을수록 밝습니다.', state: '별의 등급 표시 복구 완료', focus: 'magnitude' };
       }
       draw();
       return;
@@ -942,6 +948,7 @@
     bindRoom(state);
     if (puzzle) bindPuzzle(state, q);
     bindOverlays(state);
+    if (window.StarEscapeProgress) window.StarEscapeProgress.renderRecovery(ctx);
   }
 
   function render(options) {
