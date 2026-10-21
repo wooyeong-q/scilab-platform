@@ -114,9 +114,10 @@
   .catalogProgramLink:hover .catalogProgramCard { transform: none; }
 }
 
-/* Preserve the whole screenshot, including the program controls. */
-.catalogCardVisual { height: auto; aspect-ratio: 16 / 11; align-items: flex-end; padding: 12px; background: #e8eef5; }
-.catalogCardVisual > .programPreviewImage { object-fit: contain; }
+/* Compact catalog banners; full screenshots remain available on detail pages. */
+.catalogCardVisual { height: 92px; aspect-ratio: auto; align-items: flex-end; padding: 12px; background: #e8eef5; }
+.catalogCardVisual > .programPreviewImage { object-fit: cover; object-position: center; }
+@media (max-width: 620px) { .catalogCardVisual { height: 82px; } }
 .catalogVisualLabel { background: rgba(255,255,255,.94); color: #3c506c; }
 .programScreenshot { display: block; max-width: 1200px; margin: 0 auto; overflow: hidden; border: 1px solid var(--line); border-radius: 14px; background: #e8eef5; }
 .programScreenshot .programPreviewImage { display: block; width: 100%; height: auto; }
