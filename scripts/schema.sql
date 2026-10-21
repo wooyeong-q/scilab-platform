@@ -292,3 +292,24 @@ CREATE TABLE IF NOT EXISTS school_escape_players (
   FOREIGN KEY(session_id,team_no) REFERENCES school_escape_teams(session_id,team_no) ON DELETE CASCADE,
   UNIQUE(session_id,team_no,role)
 );
+
+-- First-love activity: isolated lessons, team state and credentials.
+
+CREATE TABLE IF NOT EXISTS first_love_sessions (
+  id UUID PRIMARY KEY, code VARCHAR(8) NOT NULL UNIQUE, title TEXT NOT NULL,
+  teacher_hash VARCHAR(64) NOT NULL, lesson JSONB NOT NULL,
+  status TEXT NOT NULL DEFAULT 'waiting' CHECK(status IN ('waiting','playing','ended')),
+  revision INTEGER NOT NULL DEFAULT 0, expires_at BIGINT NOT NULL
+);
+CREATE TABLE IF NOT EXISTS first_love_teams (
+  session_id UUID NOT NULL REFERENCES first_love_sessions(id) ON DELETE CASCADE,
+  team_no INTEGER NOT NULL CHECK(team_no BETWEEN 1 AND 12), state JSONB NOT NULL,
+  revision INTEGER NOT NULL DEFAULT 0, PRIMARY KEY(session_id,team_no)
+);
+CREATE TABLE IF NOT EXISTS first_love_players (
+  id UUID PRIMARY KEY, session_id UUID NOT NULL, team_no INTEGER NOT NULL,
+  role INTEGER NOT NULL CHECK(role BETWEEN 1 AND 4), nickname VARCHAR(20) NOT NULL,
+  token_hash VARCHAR(64) NOT NULL UNIQUE,
+  FOREIGN KEY(session_id,team_no) REFERENCES first_love_teams(session_id,team_no) ON DELETE CASCADE,
+  UNIQUE(session_id,team_no,role)
+);
