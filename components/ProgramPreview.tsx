@@ -1,21 +1,25 @@
 import type { Program } from '@/lib/programs';
 
-/** Static activity illustrations; saved administrator images take priority. */
-export function ProgramPreview({program}:{program:Pick<Program,'title'|'url'|'thumbnailUrl'>}) {
-  if(program.thumbnailUrl) return <img src={program.thumbnailUrl} alt={program.title+' 예시 이미지'} loading="lazy" decoding="async"/>;
-  const name=program.title+' '+program.url;
-  const kind=/장애물|quiz-rally/.test(name)?'race':/물질|원자|matter-zoom/.test(name)?'atom':/화성암/.test(name)?'rock':/광물/.test(name)?'mineral':/지진|earthquake/.test(name)?'map':/지구계/.test(name)?'earth':/방탈출|escape/.test(name)?'escape':/성운|성단/.test(name)?'cluster':/은하|galaxy/.test(name)?'galaxy':'escape';
-  const dark=['race','cluster','galaxy','escape'].includes(kind);
-  return <svg className="programPreviewArt" viewBox="0 0 640 320" role="img" aria-label={program.title+' 활동 예시 그림'}>
-    <rect width="640" height="320" fill={dark?'#14213b':'#e9f1fa'}/>
-    {dark?Array.from({length:35},(_,i)=><circle key={i} cx={(i*127+31)%640} cy={(i*61+17)%300} r={i%3?1:2} fill="#c9dcff" opacity=".6"/>):null}
-    {kind==='race'?<g><path d="M-10 261H135V212H280V162H430V113H650" fill="none" stroke="#73d7cf" strokeWidth="24" strokeLinejoin="round"/><path d="m185 200 17-29 17 29m115-50 17-29 17 29" fill="#f28b9c"/><g transform="translate(114 150)"><rect width="43" height="44" rx="9" fill="#f7ce77"/><rect x="7" y="10" width="29" height="15" rx="5" fill="#283a56"/><circle cx="15" cy="17" r="3" fill="#a4f4ed"/><circle cx="29" cy="17" r="3" fill="#a4f4ed"/><path d="M9 44v13m26-13v13" stroke="#f7ce77" strokeWidth="8"/></g><path d="M530 109V47h45v31h-45" fill="#f0b4cd" stroke="#fff" strokeWidth="3"/><text x="405" y="276" fill="#d6e8ff" fontSize="23">점프 · 대시 · 퀴즈</text></g>:null}
-    {kind==='atom'?<g><circle cx="144" cy="154" r="67" fill="white"/>{[[-22,-14],[20,-14],[0,22]].map(([x,y],i)=><circle key={i} cx={144+x} cy={154+y} r="22" fill={i===2?'#eb7488':'#73bce6'}/>)}<path d="M239 156h56m-13-13 13 13-13 13" stroke="#90a7c4" strokeWidth="4" fill="none"/><g transform="translate(438 156)"><circle r="87" fill="white"/>{[0,60,120].map(a=><ellipse key={a} rx="92" ry="35" transform={'rotate('+a+')'} fill="none" stroke="#8eafe1" strokeWidth="3"/>)}<circle r="23" fill="#eb7488"/><circle cx="84" cy="14" r="10" fill="#626dcd"/><circle cx="-39" cy="-69" r="10" fill="#626dcd"/></g><text x="144" y="275" textAnchor="middle" fill="#425775" fontSize="23">분자</text><text x="438" y="285" textAnchor="middle" fill="#425775" fontSize="23">원자 내부로 확대</text></g>:null}
-    {kind==='rock'?<g><path d="M0 184H640V320H0Z" fill="#bd9f8b"/><path d="M0 249H640V320H0Z" fill="#977461"/><path d="m43 184 122-123 122 123" fill="#7e8e9f"/><path d="M165 100v153h233" stroke="#fa9470" strokeWidth="18" fill="none" strokeLinejoin="round"/><rect x="322" y="51" width="271" height="125" rx="15" fill="white"/><text x="457" y="85" textAnchor="middle" fontSize="20" fill="#45546b">냉각 속도와 결정 크기</text>{[354,380,406].map(x=><circle key={x} cx={x} cy="131" r="5" fill="#8b96a7"/>)}{[491,544].map(x=><path key={x} d={'M'+x+' 108l18 20-18 20-18-20z'} fill="#8b96a7"/>)}<text x="404" y="299" textAnchor="middle" fontSize="21" fill="white">지표 부근 ↔ 지하 깊은 곳</text></g>:null}
-    {kind==='mineral'?<g>{['#bca2db','#e6c76c','#92b5ce'].map((c,i)=><g key={c} transform={'translate('+(145+i*175)+' 143)'}><path d="m0-67 46 32 12 81-58 30-58-30 12-81z" fill={c} stroke="white" strokeWidth="4"/><path d="M0-67V76m-46-111 46 23 46-23" stroke="white" strokeWidth="3" fill="none"/></g>)}<rect x="65" y="244" width="510" height="45" rx="12" fill="white"/><text x="320" y="275" textAnchor="middle" fontSize="24" fill="#425775">색 · 조흔색 · 굳기 · 자성</text></g>:null}
-    {kind==='earth'?<g><circle cx="320" cy="155" r="88" fill="#75bbdf"/><path d="m260 100 35-20 22 24-13 30-39 17-18-17zm54 60 40-30 38 25-13 46-28 28-27-30z" fill="#7fba91"/><path d="M212 152q-42-90 47-105m123 0q87 24 46 111m-9 53q-43 90-128 56" stroke="#a2b1ce" strokeWidth="5" strokeDasharray="8 7" fill="none"/>{[['기권',320,35],['수권',500,164],['지권',320,296],['생물권',135,164]].map(([s,x,y])=><text key={s} x={x} y={y} textAnchor="middle" fontSize="25" fill="#425775">{s}</text>)}</g>:null}
-    {kind==='map'?<g><rect x="45" y="44" width="550" height="230" rx="14" fill="#c7e2ed"/><path d="m75 90 77-25 60 36-28 45-44 14-13 47-43-38zm162 82 37 20 10 48-30 24-19-55zm78-88 76-18 67 21 21 35 70 3 20 42-65 14-44-28-40 26-33-30-46-5z" fill="#8db4a0"/><path d="m124 61 56 72-8 42 53 63m212-177-23 68 43 51 49 54" stroke="white" strokeWidth="4" strokeDasharray="8 5" fill="none"/>{Array.from({length:16},(_,i)=><circle key={i} cx={i<8?128+i*12:433+(i-8)*8} cy={i<8?77+i*22:63+(i-8)*25} r="5" fill={i%2?'#ef745d':'#edb342'}/>)}<text x="320" y="305" textAnchor="middle" fontSize="22" fill="#425775">지진과 화산의 분포 비교</text></g>:null}
-    {kind==='cluster'||kind==='galaxy'?<g>{[136,320,504].map((x,i)=><g key={x} transform={'translate('+x+' 150)'}>{kind==='cluster'?Array.from({length:28},(_,j)=><circle key={j} cx={Math.sin(j*5)*(i===2?8+(j%6)*6:15+(j%6)*8)} cy={Math.cos(j*7)*(i===2?8+(j%5)*6:15+(j%5)*8)} r={i===0?16:i===1?3:5} fill={i===0?'#ba95de':'#e5edff'} opacity={i===0?.2:.85}/>):i===2?<g>{[[-34,-8],[-13,-26],[14,-12],[36,12],[5,27],[-23,20]].map(([cx,cy],j)=><ellipse key={j} cx={cx} cy={cy} rx={22} ry={15} fill={j%2?'#c2c1ea':'#7f9ed9'} opacity={.55}/>)}</g>:<><ellipse rx={67} ry={i===1?47:26} transform="rotate(-25)" fill={i===1?'#eecb9d':'#889ad4'} opacity=".45"/><ellipse rx="37" ry="14" transform="rotate(-25)" fill="#f6dfc7" opacity=".65"/><circle r="8" fill="#fff1d4"/>{i===0?<path d="M-61 8Q-48-50 12-25T51 25Q24 49-11 20" stroke="#b5d6f4" strokeWidth="5" fill="none"/>:null}</>}</g>)}{(kind==='cluster'?['성운','산개 성단','구상 성단']:['나선 은하','타원 은하','불규칙 은하']).map((s,i)=><text key={s} x={136+i*184} y="269" textAnchor="middle" fontSize="23" fill="#dfeaff">{s}</text>)}</g>:null}
-    {kind==='escape'?<g><rect x="238" y="48" width="164" height="226" rx="15" fill="#465c80" stroke="#9bb8d9" strokeWidth="4"/><rect x="263" y="90" width="114" height="82" rx="8" fill="#17253d"/><text x="320" y="144" textAnchor="middle" fontSize="33" fill="#b5e3e7">? ? ?</text><circle cx="373" cy="217" r="9" fill="#f1d08b"/></g>:null}
-  </svg>;
+// Captured from the running programs. IDs remain stable when administrators rename entries.
+const SCREENSHOTS: Readonly<Record<string, string>> = {
+  'star-escape': '/program-previews/star-escape.webp',
+  'milky-way-objects': '/program-previews/milky-way-objects.webp',
+  'galaxy-voyage': '/program-previews/galaxy-voyage.webp',
+  'mineral': '/program-previews/mineral.webp',
+  'igneous': '/program-previews/igneous.webp',
+  'earth-system-ai': '/program-previews/earth-system-ai.webp',
+  'gas-learning-app': '/program-previews/gas-learning-app.webp',
+  'quiz-rally': '/program-previews/quiz-rally.webp',
+  'matter-zoom': '/program-previews/matter-zoom.webp',
+};
+
+export function getProgramPreviewUrl(program: Pick<Program, 'id' | 'thumbnailUrl'>): string | undefined {
+  return program.thumbnailUrl || SCREENSHOTS[program.id];
+}
+
+export function ProgramPreview({ program }: { program: Pick<Program, 'id' | 'title' | 'thumbnailUrl' | 'icon'> }) {
+  const src = getProgramPreviewUrl(program);
+  return src
+    ? <img className="programPreviewImage" src={src} alt={program.title + ' 실행 화면'} loading="lazy" decoding="async"/>
+    : <span className="catalogCardIcon" aria-hidden="true">{program.icon || '🧪'}</span>;
 }

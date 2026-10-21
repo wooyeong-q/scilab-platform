@@ -1,5 +1,5 @@
 import Link from 'next/link';
-import { ProgramPreview } from '@/components/ProgramPreview';
+import { ProgramPreview, getProgramPreviewUrl } from '@/components/ProgramPreview';
 import Image from 'next/image';
 import { assetUrl, fileSize } from '@/lib/program-assets';
 import { notFound } from 'next/navigation';
@@ -18,6 +18,7 @@ export default async function ProgramPage({params}:{params:Promise<{id:string}>}
   const {id}=await params;
   const program=await getProgram(id);
   if(!program) notFound();
+  const previewUrl=getProgramPreviewUrl(program);
   const images=(program.assets||[]).filter(asset=>asset.kind==='image');
   const files=(program.assets||[]).filter(asset=>asset.kind==='file');
   const resources=[
@@ -33,7 +34,7 @@ export default async function ProgramPage({params}:{params:Promise<{id:string}>}
     <section className="detailHero"><div className="detailIcon">{program.icon}</div><div className="detailCopy"><span>{program.category}</span><h1>{program.title}</h1><p>{program.summary}</p>{program.usageSteps?.length ? <a className="usageJump" href="#usage"><BookOpen size={15}/> 사용법 보기</a> : null}</div></section>
     <ProgramInteractions id={program.id} url={program.url} initialViews={program.viewCount} initialLaunches={program.launchCount} initialLikes={program.likeCount}/>
     <section className="detailGrid"><article><School/><span>대상</span><strong>{program.grade}</strong></article><article><Clock3/><span>예상 시간</span><strong>{program.duration}</strong></article><article><MonitorPlay/><span>활동 형태</span><strong>{program.format}</strong></article></section>
-    <section className="detailSection"><h2>활동 예시</h2><div style={{position:'relative',overflow:'hidden',aspectRatio:'2 / 1',maxWidth:960,margin:'0 auto',borderRadius:16}}><ProgramPreview program={program}/></div>{!program.thumbnailUrl ? <p style={{color:'#667085',fontSize:13}}>활동의 핵심 내용을 보여 주는 예시 그림입니다. 실제 실행 화면과 차이가 있습니다.</p> : null}</section>
+    {previewUrl ? <section className="detailSection"><h2>실제 실행 화면</h2><a className="programScreenshot" href={previewUrl} target="_blank" rel="noreferrer" aria-label={program.title+' 실행 화면 크게 보기'}><ProgramPreview program={program}/></a><p className="programScreenshotHint">이미지를 누르면 크게 볼 수 있습니다.</p></section> : null}
     <section className="detailSection programOverview"><h2>어떤 활동인가요?</h2><p>{program.description}</p></section>
     {program.usageSteps?.length ? <section id="usage" className="detailSection programUsage"><h2><BookOpen size={23}/> 사용 방법</h2><ol className="programUsageSteps">{program.usageSteps.map((step,index)=><li key={index}><span aria-hidden="true">{String(index+1).padStart(2,'0')}</span><p>{step}</p></li>)}</ol></section> : null}
     {images.length>0&&<section className="descriptionImages" aria-label="프로그램 설명 이미지">{images.map(image=><a key={image.id} href={assetUrl(image.id)} target="_blank" rel="noreferrer" aria-label={`${image.name} 원본 보기`}><Image unoptimized src={assetUrl(image.id)} width={1200} height={800} alt={image.name} loading="lazy"/></a>)}</section>}
