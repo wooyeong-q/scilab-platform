@@ -285,7 +285,8 @@
 .s1-clue-button b{min-width:30px;padding:4px 7px;border-radius:20px;background:#8de6e3;color:#082c36;font-size:11px;line-height:1.25}
 .s1-clue-button.room{position:absolute;z-index:18;right:18px;bottom:18px}
 .s1-clue-saved{display:inline-block;margin-top:8px;color:#9ce9d6;font-size:12px;font-weight:750}
-.s1-clue-overlay{position:absolute;z-index:90;inset:0;display:grid;place-items:center;padding:14px;background:#020710d9;backdrop-filter:blur(5px)}
+#s1ClueLayer{position:absolute;z-index:90;inset:0;pointer-events:none}
+.s1-clue-overlay{position:absolute;inset:0;display:grid;place-items:center;padding:14px;background:#020710d9;backdrop-filter:blur(5px);pointer-events:auto}
 .s1-clue-drawer{width:min(980px,100%);max-height:100%;display:flex;flex-direction:column;overflow:hidden;border:1px solid var(--escape-edge);border-radius:16px;background:var(--escape-surface);box-shadow:0 24px 70px #0009}
 .s1-clue-drawer>header{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:15px 20px;flex:none;background:linear-gradient(115deg,#172b3b,#0d1b2a);border-bottom:1px solid #526c824d;box-shadow:inset 3px 0 var(--escape-accent)}
 .s1-clue-drawer>header small{font-size:11px;color:var(--escape-accent)}
