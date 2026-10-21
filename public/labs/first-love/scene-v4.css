@@ -19,13 +19,15 @@
 .scene-briefing{padding:12px 24px;gap:20px}
 .scene-briefing p{max-width:440px}
 /* Every inspectable object has the same marker, including the puzzle object. */
-.scene-point{position:absolute;transform:translate(-50%,-50%);display:grid;place-items:center;width:44px;height:44px;min-width:44px;min-height:44px;padding:0;border:0;border-radius:50%;background:transparent;box-shadow:none;z-index:2;touch-action:manipulation;cursor:pointer}
+.scene-point{position:absolute;transform:translate(-50%,-50%);display:grid;place-items:center;width:48px;height:48px;min-width:48px;min-height:48px;padding:0;border:0;border-radius:50%;background:transparent;box-shadow:none;z-index:2;touch-action:manipulation;cursor:pointer}
 .scene-point .point-icon{display:grid;place-items:center;width:32px;height:32px;border:2px solid #fffaf1;border-radius:50%;background:#496760;color:#fffdf5;box-shadow:0 2px 7px #252b294d,0 0 0 1px #384e4b66;pointer-events:none;transition:transform .15s,background .15s}
 .scene-point svg{width:20px;height:20px}
 .scene-point .point-label{position:absolute;bottom:46px;left:50%;transform:translateX(-50%);white-space:nowrap;padding:6px 9px;border:1px solid #d9cdbb;border-radius:5px;background:#fffaf1;color:#3d514c;font-size:11px;font-weight:500;box-shadow:0 2px 8px #342d2529;opacity:0;visibility:hidden;pointer-events:none}
 .scene-point[data-edge=left] .point-label{left:4px;transform:none}.scene-point[data-edge=right] .point-label{left:auto;right:4px;transform:none}
 .scene-point:focus-visible{outline:2px solid #fffaf1;outline-offset:1px;z-index:3}.scene-point:focus-visible .point-label{opacity:1;visibility:visible}
-.scene-point:active .point-icon{transform:scale(.93)}.scene-point:disabled{cursor:default;opacity:.55}.scene-point.found .point-icon{background:#60775c}
+/* Press feedback belongs to the icon; the hit target must never move. */
+.scene-point:active{transform:translate(-50%,-50%);background:transparent;box-shadow:none}
+.scene-point:active .point-icon{transform:scale(.93);background:#324f49}.scene-point:disabled{cursor:default;opacity:.55}.scene-point.found .point-icon{background:#60775c}
 @media(hover:hover){.scene-point:hover{z-index:3}.scene-point:hover .point-icon{background:#324f49;transform:scale(1.08)}.scene-point:hover .point-label{opacity:1;visibility:visible}}
 @media(prefers-reduced-motion:reduce){.scene-point .point-icon{transition:none}}
 .scene-caption{position:absolute;left:28px;top:22px;padding:8px 14px;background:#fffaf1d9;border-left:2px solid #b8897c;font-size:12px;color:#786d63;letter-spacing:.06em}

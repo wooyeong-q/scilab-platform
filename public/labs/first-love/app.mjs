@@ -8,7 +8,16 @@ import {Author} from './author.mjs';
 import {PHOTO_SPOTS as spots,EXPLORE,MAIN_SPOTS} from './exploration.mjs';
 import {Sound} from './sound.mjs';
 import {dialogueFrame,restoreStoryUI} from './narrative.mjs';
+import {spreadScenePoints} from './scene-points.mjs';
 const root=document.querySelector('#app'),modal=document.querySelector('#modal'),toastNode=document.querySelector('#toast'),sound=new Sound();
+let pointWorld=null;
+const pointObserver=new ResizeObserver(arrangeScenePoints);
+function arrangeScenePoints(){
+ if(!pointWorld?.isConnected)return;
+ const buttons=[...pointWorld.querySelectorAll('.scene-point')];
+ const positions=spreadScenePoints(buttons.map(b=>({x:Number(b.dataset.x),y:Number(b.dataset.y)})),pointWorld.clientWidth,pointWorld.clientHeight);
+ buttons.forEach((button,i)=>{button.style.left=positions[i].left+'px';button.style.top=positions[i].top+'px';});
+}
 const SOLO='scilab-first-love-solo-v1';
 let mode='home',lesson=SAMPLE,s=fresh(),content=null,draft={},selected='',room='classroom',preview=null,ui={seen:[],history:[]},dialogue=null,busy=false,panel='',status='연결됨',saveTimer=null,dirty=false,typing=null,syncPromise=null,draftSerial=0,feedback=null;
 const session=new Session(remoteUpdate,t=>{status=t;document.querySelector('#connection')?.replaceChildren(document.createTextNode(t));});
@@ -55,13 +64,14 @@ function renderScene(){
  <div class="scene-viewport" style="--scene:url('./assets/room-${r.art}-v3.webp')"><div class="scene-soft-backdrop"></div><div class="world ${s.stage>=8?'late':''}"><div class="room-art"></div><div class="light-overlay"></div>${!dialogue?hotspots(st,waiting):''}</div><div id="dialogue-layer"></div>${s.stage===10&&!dialogue?'<button class="to-bench primary" data-action="confession">벚꽃나무 아래로 걸어간다 →</button>':''}</div>
  </div>
  <footer class="game-footer"><span class="place-caption">${r.name}</span>${!dialogue&&s.stage<10?`<div class="scene-controls"><button data-action="map">장소 이동</button>${s.stage===8?'<button class="clue-button" data-action="photos">사진 보기</button>':''}${content?.evidence?.length||s.stage===8?'<button class="clue-button" data-action="clues">단서함</button>':''}</div>`:''}<span id="connection">${mode==='group'?status:''}</span></footer></section>`;
+ pointObserver.disconnect();pointWorld=root.querySelector('.world');if(pointWorld&&!dialogue){arrangeScenePoints();pointObserver.observe(pointWorld);}
  root.querySelector('#volume')?.addEventListener('input',e=>{sound.volume=Number(e.target.value);sound.settings();});if(dialogue)renderDialogue();
 }
 
 
 function scenePoint({x,y,name,action,value='',found=false,disabled=false}){
  const icon=found?'<path d="m5 12 4 4L19 6"/>':'<circle cx="10.5" cy="10.5" r="5.5"/><path d="m15 15 4.5 4.5"/>';
- return `<button class="scene-point${found?' found':''}" style="left:${x}%;top:${y}%" data-action="${action}" data-value="${esc(value)}" data-edge="${x<18?'left':x>82?'right':'center'}" aria-label="${esc(name)} 살펴보기${found?' · 확인한 사물':''}" ${disabled?'disabled':''}><span class="point-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">${icon}</svg></span><b class="point-label" aria-hidden="true">${esc(name)}</b></button>`;
+ return `<button class="scene-point${found?' found':''}" style="left:${x}%;top:${y}%" data-x="${x}" data-y="${y}" data-action="${action}" data-value="${esc(value)}" data-edge="${x<18?'left':x>82?'right':'center'}" aria-label="${esc(name)} 살펴보기${found?' · 확인한 사물':''}" ${disabled?'disabled':''}><span class="point-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">${icon}</svg></span><b class="point-label" aria-hidden="true">${esc(name)}</b></button>`;
 }
 function hotspots(st,waiting){
  if(!st)return '';
