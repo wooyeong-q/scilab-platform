@@ -1,4 +1,4 @@
-import {SAMPLE} from './sample.mjs';
+import {SAMPLE} from './sample.mjs?v=12';
 import {validateLesson,STAGES} from './content.mjs';
 import {esc} from './puzzle-ui.mjs';
 const KEY='scilab-first-love-teacher-v1',API='/api/labs/first-love/sessions';

@@ -28,7 +28,7 @@ test('six-sheet XLSX round trip, compatibility rejection and meaningful validati
  await assert.rejects(importWorkbook(fs.readFileSync('tests/fixtures/common-escape-filled.xlsx'),'old.xlsx'),/TODAY-TO-YOU/);
  await assert.rejects(importWorkbook(new Uint8Array(3*1024*1024+1),'big.xlsx'),/3MB/);
  await assert.rejects(importWorkbook(new Uint8Array([1,2,3]),'bad.xlsx'),/엑셀을 읽지/);
- for(const change of [l=>l.puzzles[0].items[0].owner=2,l=>l.puzzles[3].items[0].answer='F1',l=>l.puzzles[5].items.find(i=>i.answer!=='제외').answer='제외',l=>l.puzzles[7].items[4].passes=[1,2],l=>l.devices.route=['up','up','up','up'],l=>l.endings.neutralMax=10]){
+ for(const change of [l=>l.puzzles[0].items[0].owner=2,l=>l.puzzles[3].items[0].answer='F1',l=>l.puzzles[5].items.find(i=>i.answer!=='제외').answer='제외',l=>l.puzzles[7].items[4].passes=[1,2],l=>l.devices.route=['up','up','up','up'],l=>l.endings.neutralMax=l.endings.positiveMax]){
   const l=structuredClone(SAMPLE);change(l);assert.throws(()=>c.validateLesson(l));
  }
  const swapped=structuredClone(SAMPLE);[swapped.puzzles[0].items[0].answer,swapped.puzzles[0].items[1].answer]=[swapped.puzzles[0].items[1].answer,swapped.puzzles[0].items[0].answer];c.validateLesson(swapped);
@@ -109,8 +109,8 @@ test('only complete wrong submissions count; retries, unchanged answers and simu
  await assert.rejects(service.event(room.code,room.keys[0],undefined),err=>err.status===400);
 });
 
-test('ending boundaries 10 / 29 / 30, teacher changes and ending freeze',()=>{
- for(const [wrong,ending]of [[0,'smile'],[10,'smile'],[11,'surprise'],[20,'surprise'],[29,'surprise'],[30,'disgust'],[100,'disgust']]){
+test('ending boundaries 5 / 14 / 15, teacher changes and ending freeze',()=>{
+ for(const [wrong,ending]of [[0,'smile'],[5,'smile'],[6,'surprise'],[10,'surprise'],[14,'surprise'],[15,'disgust'],[100,'disgust']]){
   let state={...e.previewState(9),wrong,draft:solution(9)};state=e.transition(state,{type:'submit',stage:9,draftVersion:state.draftVersion,attemptId:randomUUID()},SAMPLE).state;assert.equal(state.ending,ending);
   const changed=structuredClone(SAMPLE);changed.endings={positiveMax:0,neutralMax:1};assert.equal(e.transition(state,{type:'confess',stage:10},changed).state.ending,ending);
  }

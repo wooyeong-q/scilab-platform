@@ -1,10 +1,10 @@
-import {SAMPLE} from './sample.mjs';
+import {SAMPLE} from './sample.mjs?v=12';
 import {STAGES,rotated,walk} from './content.mjs';
 import {fresh,transition,previewState,playerContent,hintsFor,normalizeDraft,chosenReasons} from './engine.mjs';
 import {CAST,ROOMS,GOALS,OPENING,BEFORE,AFTER,CONFESSION,WALK_TO_YOU,MEMORIES,STORY_VERSION} from './story.mjs?v=11';
 import {esc,lines,puzzleHTML,interactionGuide} from './puzzle-ui.mjs';
 import {Session,secret} from './client.mjs';
-import {Author} from './author.mjs';
+import {Author} from './author.mjs?v=12';
 import {PHOTO_SPOTS as spots,EXPLORE,MAIN_SPOTS} from './exploration.mjs';
 import {Sound} from './sound.mjs';
 import {dialogueFrame,restoreStoryUI} from './narrative.mjs?v=10';
