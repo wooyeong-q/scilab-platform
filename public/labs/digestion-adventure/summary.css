@@ -1,4 +1,4 @@
-/* Large parallel pathways for projection. The complete table is optional. */
+/* Large nutrient pages and optional parallel comparison for projection. */
 .summary-view{padding:19px 0 15px;color:#263f39}
 .summary-top{display:flex;align-items:center;justify-content:space-between;gap:20px;margin-bottom:14px}.summary-top .eyebrow{font-size:11px;margin:0 0 6px;letter-spacing:1px;color:#58735c}.summary-top h1{font-size:32px;margin:0;letter-spacing:-1.1px;line-height:1.2}.summary-top .summary-recall{display:flex;flex-direction:column;align-items:flex-end;gap:7px;padding:0;margin:0;border:0;font-size:12px;color:#566f5c}.summary-definitions{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:15px}.summary-definitions p{display:flex;align-items:center;gap:12px;margin:0;padding:11px 16px;border-radius:12px;background:#e9eddf;color:#415e4c;font-size:15px;line-height:1.5;word-break:keep-all}.summary-definitions strong{font-size:18px;color:#245d50;white-space:nowrap}
 .summary-processes{gap:15px;margin:0 0 14px}.summary-processes .summary-card{display:flex;flex-direction:column;--path-color:#996d15;--path-soft:#f1e5bc;padding:15px 17px 14px;border-radius:20px;min-width:0;border-color:#dddccc;background:#fffcf0}.summary-processes .summary-card[data-team=protein]{--path-color:#3a6b96;--path-soft:#dce9f4;background:#f1f7fb;border-color:#d4e1e9}.summary-processes .summary-card[data-team=fat]{--path-color:#a55e29;--path-soft:#f7e1cd;background:#fff5ec;border-color:#e9dccc}.summary-processes .summary-card-heading{height:81px;margin:0 0 10px;gap:8px;align-items:center}.summary-processes .small{font-size:12px;font-weight:700;color:#59705e;line-height:1.4;display:block}.summary-processes h2{font-size:32px;line-height:1.2;margin:5px 0 0;letter-spacing:-.9px;color:#233f38}.summary-portraits{display:flex;gap:1px;align-items:center;justify-content:flex-end;min-width:0}.summary-portraits img{width:90px;height:90px;object-fit:contain;display:block}.summary-portraits-pair img{width:77px;height:81px}
@@ -25,6 +25,45 @@
  .summary-view{padding-bottom:0}
 }
 
+/* Teacher-controlled nutrient navigation. */
+.summary-navigation{display:flex;align-items:center;justify-content:space-between;gap:15px;margin:0 0 12px;min-width:0}
+.summary-nutrient-tabs{display:flex;align-items:stretch;gap:5px;padding:4px;background:#e9eddf;border:1px solid #e0e5d6;border-radius:14px;min-width:0}
+.summary-nutrient-tabs button{display:flex;align-items:center;justify-content:center;gap:10px;min-height:42px;padding:8px 25px;border-radius:10px;background:transparent;color:#526a55;font-size:19px;font-weight:800;white-space:nowrap}
+.summary-nutrient-tabs button>span{font-size:12px;font-weight:700;color:#81917d}
+.summary-nutrient-tabs button[aria-pressed=true]{background:#fffdf7;box-shadow:0 2px 6px #43564112;color:#805e16}
+.summary-nutrient-tabs button[data-summary-team=protein][aria-pressed=true]{color:#3b6c93;background:#f1f7fc}
+.summary-nutrient-tabs button[data-summary-team=fat][aria-pressed=true]{color:#9b5629;background:#fff5eb}
+.summary-view-actions{display:flex;align-items:center;gap:13px;flex:none}
+.summary-pagination{display:flex;align-items:center;gap:5px}
+.summary-pagination button,#summary-compare{min-height:39px;padding:9px 15px;border:1px solid #d5dfce;border-radius:11px;background:#fffef9;color:#3d5f48;font-size:13px;font-weight:750;white-space:nowrap}
+.summary-pagination button:not(:disabled):hover,#summary-compare:hover{background:#edf3e5;border-color:#acbea4}
+.summary-pagination button:disabled{opacity:.34}
+#summary-page-status{display:block;min-width:52px;text-align:center;font-size:14px;font-weight:800;color:#587453;font-variant-numeric:tabular-nums}
+#summary-compare{background:#e8efdf;border-color:#b4c4a9}
+#summary-compare[aria-pressed=true]{background:#236e63;border-color:#236e63;color:white}
+.summary-top h1{word-break:keep-all;text-wrap:balance}
+@media(min-width:901px) and (max-height:800px){
+ .summary-navigation{margin-bottom:9px;gap:12px}
+ .summary-nutrient-tabs button{min-height:36px;font-size:18px;padding:6px 23px}
+ .summary-pagination button,#summary-compare{min-height:36px;padding:7px 14px}
+}
+@media(max-width:900px){
+ .summary-navigation{flex-wrap:wrap;gap:10px}
+ .summary-nutrient-tabs{width:100%}
+ .summary-nutrient-tabs button{flex:1;padding:8px 10px;font-size:18px}
+ .summary-view-actions{width:100%;justify-content:space-between;gap:10px}
+ .summary-pagination button,#summary-compare{padding:8px 13px}
+ .summary-top .summary-recall>span{font-size:11px}
+}
+@media(max-width:480px){
+ .summary-nutrient-tabs button{gap:7px;font-size:17px;padding:7px 9px}
+ .summary-nutrient-tabs button>span{font-size:10px}
+ .summary-pagination{gap:2px}
+ .summary-pagination button,#summary-compare{font-size:12px;padding:8px 10px}
+ #summary-page-status{min-width:43px;font-size:13px}
+}
+@media print{.summary-navigation{display:none!important}}
+
 @media(min-width:901px) and (max-height:800px){
  .summary-processes .summary-card-heading{height:50px;flex:none}
  .summary-process-list{grid-template-rows:repeat(3,minmax(90px,1fr)) auto}
@@ -33,4 +72,133 @@
  .summary-process-step{gap:2px 8px;padding:7px 9px}.summary-absorption{min-height:58px}
  .summary-top{margin-bottom:8px}.summary-definitions{margin-bottom:9px}.summary-bottom .summary-foot button{padding:9px 15px}
  .app-shell:has(#summary-view:not([hidden])){padding-bottom:8px}
+}
+
+/* One nutrient at a time. Navigation and the surrounding screen stay app-owned. */
+.summary-processes .summary-step-number,.summary-processes .summary-step-organ{display:none}
+.summary-processes .summary-step-intro{min-width:0;grid-column:1;grid-row:1}
+.summary-processes[data-summary-layout="all"]{grid-template-columns:repeat(3,minmax(0,1fr))}
+.summary-processes[data-summary-layout="single"]{grid-template-columns:minmax(0,1fr);gap:0;margin:0 0 14px}
+.summary-processes[data-summary-layout="single"] .summary-card{height:340px;padding:12px 16px;min-width:0;border-radius:20px}
+.summary-processes[data-summary-layout="single"] .summary-card-heading{height:58px;min-height:58px;flex:none;margin:0 0 8px;gap:16px}
+.summary-processes[data-summary-layout="single"] .small{font-size:12px;line-height:1.35}
+.summary-processes[data-summary-layout="single"] h2{font-size:34px;line-height:1.1;margin:3px 0 0;letter-spacing:-1px}
+.summary-processes[data-summary-layout="single"] .summary-portraits{gap:5px}
+.summary-processes[data-summary-layout="single"] .summary-portraits img{width:74px;height:64px}
+.summary-processes[data-summary-layout="single"] .summary-portraits-pair img{width:66px;height:64px}
+.summary-processes[data-summary-layout="single"] .summary-process-list{grid-template-columns:repeat(3,minmax(0,1fr));grid-template-rows:minmax(0,1fr) 56px;gap:10px;min-height:0;flex:1}
+.summary-processes[data-summary-layout="single"] .summary-process-step{display:flex;flex-direction:column;gap:0;align-items:stretch;align-content:normal;padding:10px 13px;border-left:1px solid #e1e5da;border-top:4px solid var(--path-color);border-radius:12px;min-width:0}
+.summary-processes[data-summary-layout="single"] .summary-step-intro{display:flex;align-items:center;gap:9px;min-height:40px;height:40px;margin:0 0 6px;flex:none}
+.summary-processes[data-summary-layout="single"] .summary-step-number{display:grid;place-items:center;width:27px;height:27px;flex:0 0 27px;font-size:12px;font-weight:850;line-height:1;background:var(--path-soft);color:var(--path-color);border-radius:50%;font-variant-numeric:tabular-nums}
+.summary-processes[data-summary-layout="single"] .summary-step-organ{display:block;width:55px;height:38px;object-fit:cover;border-radius:8px;flex:0 0 55px}
+.summary-processes[data-summary-layout="single"] .summary-process-meta{display:flex;flex-direction:column;align-items:flex-start;justify-content:center;gap:3px;margin:0;min-width:0}
+.summary-processes[data-summary-layout="single"] .summary-place{font-size:14px;line-height:1.15;padding:3px 8px}
+.summary-processes[data-summary-layout="single"] .summary-fluid{font-size:12px;line-height:1.2}
+.summary-processes[data-summary-layout="single"] .summary-process-step h3{align-self:stretch;font-size:32px;line-height:1.2;font-weight:850;letter-spacing:-.8px;margin:0 0 5px;word-break:keep-all}
+.summary-processes[data-summary-layout="single"] .summary-process-step .enzyme-detail{display:inline;font-size:13px;line-height:1.3;font-weight:500;letter-spacing:0}
+.summary-processes[data-summary-layout="single"] .summary-not-enzyme{font-size:13px;padding:3px 7px}
+.summary-processes[data-summary-layout="single"] .summary-change{font-size:24px;line-height:1.28;letter-spacing:-.45px;margin:0;word-break:keep-all}
+.summary-processes[data-summary-layout="single"] .summary-extra{font-size:12px;line-height:1.4;margin:4px 0 0;word-break:keep-all}
+.summary-processes[data-summary-layout="single"] .summary-absorption{grid-column:1/-1;grid-row:2;display:flex;flex-direction:row;align-items:center;justify-content:space-between;gap:16px;min-height:0;padding:8px 16px;border-radius:11px}
+.summary-processes[data-summary-layout="single"] .summary-absorption>span{font-size:14px;line-height:1.4;flex:none}
+.summary-processes[data-summary-layout="single"] .summary-absorption>strong{font-size:25px;line-height:1.25;letter-spacing:-.5px;text-align:right}
+
+@media(min-width:901px) and (max-height:800px){
+ .summary-processes[data-summary-layout="all"]{margin-bottom:6px}
+ .summary-view[data-summary-layout="all"] .summary-definitions{margin-bottom:5px}
+ .summary-processes[data-summary-layout="all"] .summary-process-list{grid-template-rows:repeat(3,minmax(82px,1fr)) auto;gap:5px}
+ .summary-processes[data-summary-layout="all"] .summary-absorption{min-height:54px;padding:6px 10px}
+ .summary-processes[data-summary-layout="all"] .summary-absorption>span{line-height:1.2}
+ .summary-processes[data-summary-layout="all"] .summary-absorption>strong{line-height:1.25}
+}
+
+@media(min-width:1280px) and (min-height:850px){
+ .summary-processes[data-summary-layout="single"] .summary-card{height:clamp(400px,calc(100vh - 420px),550px);padding:16px 19px}
+ .summary-processes[data-summary-layout="single"] .summary-card-heading{height:74px;min-height:74px;margin-bottom:12px}
+ .summary-processes[data-summary-layout="single"] h2{font-size:40px}
+ .summary-processes[data-summary-layout="single"] .small{font-size:14px}
+ .summary-processes[data-summary-layout="single"] .summary-portraits img{width:94px;height:84px}
+ .summary-processes[data-summary-layout="single"] .summary-portraits-pair img{width:86px;height:84px}
+ .summary-processes[data-summary-layout="single"] .summary-process-list{grid-template-rows:minmax(0,1fr) 72px;gap:14px}
+ .summary-processes[data-summary-layout="single"] .summary-process-step{padding:16px 18px}
+ .summary-processes[data-summary-layout="single"] .summary-step-intro{height:66px;min-height:66px;margin-bottom:16px;gap:12px}
+ .summary-processes[data-summary-layout="single"] .summary-step-organ{width:86px;height:60px;flex-basis:86px}
+ .summary-processes[data-summary-layout="single"] .summary-step-number{width:30px;height:30px;flex-basis:30px;font-size:14px}
+ .summary-processes[data-summary-layout="single"] .summary-place{font-size:18px;padding:4px 10px}
+ .summary-processes[data-summary-layout="single"] .summary-fluid{font-size:13px}
+ .summary-processes[data-summary-layout="single"] .summary-process-step h3{font-size:38px;margin-bottom:10px}
+ .summary-processes[data-summary-layout="single"] .summary-change{font-size:28px;line-height:1.4}
+ .summary-processes[data-summary-layout="single"] .summary-extra{font-size:13px;margin-top:7px}
+ .summary-processes[data-summary-layout="single"] .summary-absorption>span{font-size:16px}
+ .summary-processes[data-summary-layout="single"] .summary-absorption>strong{font-size:31px}
+}
+@media(min-width:901px) and (max-width:1279px){
+ .summary-processes[data-summary-layout="single"] .summary-card{height:auto;min-height:340px}
+ .summary-processes[data-summary-layout="single"] .summary-process-list{grid-template-rows:minmax(184px,1fr) minmax(56px,auto)}
+ .summary-processes[data-summary-layout="single"] .summary-process-step{padding:10px}
+ .summary-processes[data-summary-layout="single"] .summary-step-intro{gap:7px}
+ .summary-processes[data-summary-layout="single"] .summary-step-organ{width:48px;flex-basis:48px;height:35px}
+ .summary-processes[data-summary-layout="single"] .summary-place{font-size:13px;padding:3px 6px}
+ .summary-processes[data-summary-layout="single"] .summary-fluid{font-size:11px}
+ .summary-processes[data-summary-layout="single"] .summary-process-step h3{font-size:30px}
+ .summary-processes[data-summary-layout="single"] .summary-change{font-size:22px}
+ .summary-processes[data-summary-layout="single"] .summary-process-step .enzyme-detail{font-size:12px}
+}
+
+@media(max-width:900px){
+ .summary-processes[data-summary-layout="all"]{grid-template-columns:minmax(0,1fr)}
+ .summary-processes[data-summary-layout="single"] .summary-card{height:auto;padding:15px;min-width:0}
+ .summary-processes[data-summary-layout="single"] .summary-card-heading{height:66px;min-height:66px;margin-bottom:12px}
+ .summary-processes[data-summary-layout="single"] h2{font-size:32px}
+ .summary-processes[data-summary-layout="single"] .summary-portraits img{width:78px;height:73px}
+ .summary-processes[data-summary-layout="single"] .summary-portraits-pair img{width:65px;height:70px}
+ .summary-processes[data-summary-layout="single"] .summary-process-list{grid-template-columns:minmax(0,1fr);grid-template-rows:none;gap:10px}
+ .summary-processes[data-summary-layout="single"] .summary-process-step{padding:12px 14px;border-left:4px solid var(--path-color);border-top:1px solid #e1e5da}
+ .summary-processes[data-summary-layout="single"] .summary-step-intro{height:auto;min-height:40px;margin-bottom:8px}
+ .summary-processes[data-summary-layout="single"] .summary-process-step h3{font-size:30px;margin-bottom:6px}
+ .summary-processes[data-summary-layout="single"] .summary-change{font-size:23px;line-height:1.4}
+ .summary-processes[data-summary-layout="single"] .summary-extra{font-size:12px;line-height:1.5}
+ .summary-processes[data-summary-layout="single"] .summary-absorption{grid-column:1;grid-row:auto;flex-direction:column;align-items:flex-start;gap:6px;padding:13px 14px}
+ .summary-processes[data-summary-layout="single"] .summary-absorption>span{font-size:12px}
+ .summary-processes[data-summary-layout="single"] .summary-absorption>strong{font-size:23px;line-height:1.4;text-align:left}
+}
+
+@media(max-width:480px){
+ .summary-processes[data-summary-layout="single"] .summary-card{padding:12px}
+ .summary-processes[data-summary-layout="single"] .summary-card-heading{gap:8px}
+ .summary-processes[data-summary-layout="single"] .small{font-size:11px}
+ .summary-processes[data-summary-layout="single"] h2{font-size:30px}
+ .summary-processes[data-summary-layout="single"] .summary-portraits-pair{gap:0}
+ .summary-processes[data-summary-layout="single"] .summary-portraits-pair img{width:57px;height:66px}
+ .summary-processes[data-summary-layout="single"] .summary-process-step{padding:11px 12px}
+ .summary-processes[data-summary-layout="single"] .summary-step-intro{gap:8px}
+ .summary-processes[data-summary-layout="single"] .summary-process-step h3{font-size:28px}
+ .summary-processes[data-summary-layout="single"] .summary-process-step .enzyme-detail{font-size:12px}
+ .summary-processes[data-summary-layout="single"] .summary-change{font-size:22px}
+ .summary-processes[data-summary-layout="single"] .summary-absorption>strong{font-size:21px}
+}
+
+@media print{
+ .summary-processes[data-summary-layout]{grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;margin:10px 0;break-inside:avoid}
+ .summary-processes[data-summary-layout] .summary-card,.summary-processes[data-summary-layout] .summary-card[hidden]{display:flex!important;height:auto;min-height:0;padding:9px;border-radius:12px;break-inside:avoid}
+ .summary-processes[data-summary-layout] .summary-card-heading{height:62px;min-height:62px;margin-bottom:7px;gap:6px}
+ .summary-processes[data-summary-layout] .small{font-size:9px}
+ .summary-processes[data-summary-layout] h2{font-size:23px;line-height:1.2;margin:3px 0 0}
+ .summary-processes[data-summary-layout] .summary-portraits img{width:58px;height:58px}
+ .summary-processes[data-summary-layout] .summary-portraits-pair img{width:42px;height:55px}
+ .summary-processes[data-summary-layout] .summary-process-list{grid-template-columns:minmax(0,1fr);grid-template-rows:repeat(3,minmax(86px,1fr)) auto;gap:6px;min-height:0}
+ .summary-processes[data-summary-layout] .summary-process-step{display:block;padding:7px;border-left:3px solid var(--path-color);border-top:1px solid #e1e5da;border-radius:8px}
+ .summary-processes[data-summary-layout] .summary-step-intro{display:block;height:auto;min-height:0;margin:0 0 4px}
+ .summary-processes[data-summary-layout] .summary-step-number,.summary-processes[data-summary-layout] .summary-step-organ{display:none}
+ .summary-processes[data-summary-layout] .summary-process-meta{display:flex;flex-direction:row;align-items:center;gap:5px;margin:0}
+ .summary-processes[data-summary-layout] .summary-place{font-size:10px;line-height:1.2;padding:2px 5px}
+ .summary-processes[data-summary-layout] .summary-fluid{font-size:9px;line-height:1.3}
+ .summary-processes[data-summary-layout] .summary-process-step h3{font-size:16px;line-height:1.3;margin:0 0 3px}
+ .summary-processes[data-summary-layout] .summary-process-step .enzyme-detail{display:inline;font-size:9px}
+ .summary-processes[data-summary-layout] .summary-not-enzyme{font-size:9px;padding:2px 4px}
+ .summary-processes[data-summary-layout] .summary-change{font-size:12px;line-height:1.4;letter-spacing:0}
+ .summary-processes[data-summary-layout] .summary-extra{font-size:9px;line-height:1.4;margin-top:3px}
+ .summary-processes[data-summary-layout] .summary-absorption{grid-column:1;grid-row:auto;display:flex;flex-direction:column;align-items:flex-start;justify-content:center;gap:4px;min-height:58px;padding:8px;border-radius:8px}
+ .summary-processes[data-summary-layout] .summary-absorption>span{font-size:9px}
+ .summary-processes[data-summary-layout] .summary-absorption>strong{font-size:14px;line-height:1.4;text-align:left}
 }
