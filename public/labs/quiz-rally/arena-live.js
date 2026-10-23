@@ -78,15 +78,15 @@ class RealtimeLive {
   if(!this.key)return;const generation=++this.generation;let socket;
   try{socket=new WebSocket(this.url);}catch{this.timer=setTimeout(()=>this.connect(),2000);return;}
   this.socket=socket;this.awaitingSnapshot=true;this.lastInputSend=0;this.sentSeq=-1;this.ackSeq=-1;this.arm();
-  socket.onopen=()=>{if(generation!==this.generation)return;socket.send(JSON.stringify({type:'auth',identity:this.who,playerDeltas:1}));};
+  socket.onopen=()=>{if(generation!==this.generation)return;this.authAt=performance.now();socket.send(JSON.stringify({type:'auth',identity:this.who,playerDeltas:1}));};
   socket.onmessage=message=>{
    if(generation!==this.generation)return;this.arm();
-   try{const event=JSON.parse(message.data);
+   try{const event=JSON.parse(message.data);if(event.type==='snapshot'&&this.awaitingSnapshot)this.transit=Math.min(250,Math.max(0,(performance.now()-this.authAt)/2));
     const snapshot=event.data,ack=event.type==='world'?event.self?.runner:snapshot?.player?.runner;
     if(snapshot&&snapshot.status!=='running'){this.inputQueue=[];clearTimeout(this.inputTimer);this.inputTimer=0;}
     if(ack){this.ackSeq=Math.max(this.ackSeq,ack.seq);this.inputQueue=this.inputQueue.filter(e=>e.seq>this.ackSeq);if(!this.inputQueue.length){clearTimeout(this.inputTimer);this.inputTimer=0;}}
-    if(event.type==='ready'){this.attempt=0;clearInterval(this.heartbeat);this.heartbeat=setInterval(()=>{if(socket.readyState===WebSocket.OPEN){this.pingAt=performance.now();socket.send('{"type":"ping"}');}},4000);}
-    else if(event.type==='pong'){if(this.pingAt)this.transit=Math.min(250,(performance.now()-this.pingAt)/2);}
+    if(event.type==='ready'){this.attempt=0;clearInterval(this.heartbeat);this.pingAt=performance.now();socket.send('{"type":"ping"}');this.heartbeat=setInterval(()=>{if(socket.readyState===WebSocket.OPEN){this.pingAt=performance.now();socket.send('{"type":"ping"}');}},4000);}
+    else if(event.type==='pong'){if(Number.isFinite(this.pingAt))this.transit=Math.min(250,Math.max(0,(performance.now()-this.pingAt)/2));}
     else if(event.type==='response'||event.type==='error'){
      const pending=this.pending.get(event.id);if(pending){clearTimeout(pending.timer);this.pending.delete(event.id);if(event.type==='error'){const error=new Error(event.error);error.status=event.status;pending.reject(error);}else{if(event.data)Object.defineProperty(event.data,'_transitMs',{value:Math.min(250,(performance.now()-pending.started)/2)});pending.resolve(event.data);}}
      else if(event.type==='error'){this.refresh();if(event.status===403)socket.close();}
@@ -133,3 +133,4 @@ class Transport {
 }
 window.quizArenaLive=Transport;
 })();
+

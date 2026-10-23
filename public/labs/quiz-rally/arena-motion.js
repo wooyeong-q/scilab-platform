@@ -1,6 +1,8 @@
 /* Presentation clocks are independent from authoritative gameplay state. */
 (()=>{'use strict';
 const clamp=(v,a,b)=>Math.max(a,Math.min(b,v));
+// Less than half a displayed pixel per 30 Hz frame at the largest arena scale.
+const LOCAL_CORRECTION_SPEED=14;
 function hermite(a,b,va,vb,k,seconds){
  const slope=(b-a)/seconds;if(!slope)return a;
  const tangent=v=>Math.sign(v)===Math.sign(slope)?Math.sign(slope)*Math.min(Math.abs(v),3*Math.abs(slope)):0;
@@ -85,7 +87,7 @@ class LocalView{
  constructor(){this.reset();}
  reset(){this.x=0;this.y=0;this.z=0;this.zTime=0;this.vertical=null;this.shownZ=null;this.shownVz=null;this.position=null;}
  correct(before,after,clockChanged=false){
-  if(!before||before.falls!==after.falls||!!before.fallUntil!==!!after.fallUntil||after.open||after.finishAt!==undefined||Math.hypot(before.x-after.x,before.y-after.y)>250){this.reset();return;}
+  if(!before||before.falls!==after.falls||!!before.fallUntil!==!!after.fallUntil||after.stunUntil>before.stunUntil&&after.stunUntil>after.t||after.open||after.finishAt!==undefined||Math.hypot(before.x-after.x,before.y-after.y)>250){this.reset();return;}
   this.x=clamp(clockChanged&&this.position?this.position.x-after.x:this.x+before.x-after.x,-100,100);this.y=clamp(clockChanged&&this.position?this.position.y-after.y:this.y+before.y-after.y,-100,100);
   // Blend a trajectory, not an additive height offset: an offset can pull a
   // descending robot back upward when an acknowledgement retimes its apex.
@@ -112,7 +114,11 @@ class LocalView{
    this.z=height-after.z;this.zTime=seconds*1000;
   }
  }
- sample(r,dt){const elapsed=Math.max(0,dt),decay=Math.exp(-elapsed/80);this.x*=decay;this.y*=decay;
+ sample(r,dt){const elapsed=Math.max(0,dt),blend=1-Math.exp(-elapsed/80),cx=this.x*blend,cy=this.y*blend;
+  // Packet corrections must not outrun normal movement or pull a released
+  // robot back by several pixels in one frame. This budget applies only to
+  // the display error; physical motion, hits and respawns stay authoritative.
+  const distance=Math.hypot(cx,cy),k=Math.min(1,LOCAL_CORRECTION_SPEED*elapsed/1000/(distance||1));this.x-=cx*k;this.y-=cy*k;
   let height=r.z;
   if(this.vertical){const v=this.vertical;v.elapsed=clamp((r.t-v.at)/1000,0,v.seconds);const k=v.seconds?v.elapsed/v.seconds:1,k2=k*k,k3=k2*k;
    height=(2*k3-3*k2+1)*v.height+(k3-2*k2+k)*v.start*v.seconds+(-2*k3+3*k2)*v.target+(k3-k2)*v.end*v.seconds;
@@ -164,3 +170,4 @@ class EffectView{
 }
 window.quizArenaMotion={PoseTrack,LocalView,EffectView,mergeEffects,hermite};
 })();
+

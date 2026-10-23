@@ -24,7 +24,7 @@ test('motion uploads overlap in bounded batches without losing inputs when respo
 test('local jump height and landing match the physics on every frame; only reconciliation corrections ease out',()=>{
  const view=new LocalView(),start=M.control(r(),1,1,true,true,4000,1);
  for(const fps of [30,60,120])for(let t=4000;t<5100;t+=1000/fps){const physical=M.advanceRunner(start,t,arena),shown=view.sample(physical,1000/fps);assert.equal(shown.z,physical.z);assert.equal(shown.x,physical.x);assert.equal(shown.y,physical.y);}
- view.correct({...r(),x:20},r());assert.ok(view.sample(r(),16).x>0);for(let i=0;i<40;i++)view.sample(r(),16);assert.ok(Math.abs(view.sample(r(),16).x)<.01);
+ view.correct({...r(),x:20},r());assert.ok(view.sample(r(),16).x>0);for(let i=0;i<160;i++)view.sample(r(),16);assert.ok(Math.abs(view.sample(r(),16).x)<.01);
  view.correct({...r(),falls:1},r());assert.equal(view.sample(r(),16).x,0);
 });
 test('10 Hz poses stay continuous through jitter, duplicate/reordered messages and a short loss; stale streams stop',()=>{
@@ -153,3 +153,4 @@ test('authoritative checkpoint return does not interpolate across a missed falli
  const before=track.sample(4220,r());assert.equal(before.y,900,'stay on pre-respawn position until respawn time');
  const after=track.sample(4500,r());assert.equal(after.y,100,'snap only for the actual checkpoint return');
 });
+

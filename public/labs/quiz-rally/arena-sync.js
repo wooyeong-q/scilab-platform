@@ -18,7 +18,7 @@ class Keyboard{
  controls(){const k=this.keys;return{x:(k.has('ArrowRight')||k.has('d')?1:0)-(k.has('ArrowLeft')||k.has('a')?1:0),y:(k.has('ArrowUp')||k.has('w')?1:0)-(k.has('ArrowDown')||k.has('s')?1:0),dash:this.shift};}
 }
 class Timeline{
- constructor(){this.base=0;this.received=0;this.correction=0;this.running=false;this.ready=false;}
+ constructor(){this.base=0;this.received=0;this.correction=0;this.running=false;this.ready=false;this.confirmed=-Infinity;}
  // A confirmed own-player pose is a lower bound, not an RTT estimate. Without
  // this, a future anchor freezes local physics until the slow clock catches up.
  ensureAtLeast(confirmed,at=performance.now()){
@@ -26,11 +26,18 @@ class Timeline{
   this.base=confirmed;this.received=at;this.correction=0;return true;
  }
  now(at=performance.now()){const elapsed=this.running?Math.max(0,at-this.received):0;return this.base+elapsed+Math.sign(this.correction)*Math.min(Math.abs(this.correction),elapsed*.02);}
- sync(raceClock,status,transit=0,at=performance.now()){
-  // Half a round trip is not the response delay: asymmetric connections can
-  // put the client ahead of the server and cause a jump to be retimed on ack.
-  // Use the confirmed clock as a conservative target and never skip play time.
-  const running=status==='running',target=raceClock,previous=this.now(at);
+ sync(raceClock,status,transit=0,at=performance.now(),anticipateInput=false){
+  const running=status==='running';
+  // HTTP snapshots and socket frames can finish in a different order. Their
+  // timestamps must not rewind the clock after a newer frame was accepted.
+  if(this.ready&&this.running&&running&&raceClock<this.confirmed)return this.now(at);
+  this.confirmed=raceClock;
+  // The room applies controls on arrival, not at the client's old timestamp.
+  // Predict that arrival: from a received server stamp, downlink + uplink is
+  // one measured RTT, including asymmetric links. Legacy journals and teacher
+  // views keep the confirmed clock; they do not use this input lead.
+  const lead=running&&anticipateInput?Math.min(500,Math.max(0,Number.isFinite(transit)?transit*2:0)):0;
+  const target=raceClock+lead,previous=this.now(at);
   if(!this.ready||!running||!this.running){this.base=target;this.correction=0;}
   // After an outage, drift beyond the server's input freshness window would
   // reject every jump for minutes at a 2% correction rate. Re-anchor once;
@@ -137,6 +144,9 @@ function mergeSnapshot(previous,next){
  if(!previous||previous.code!==next.code)return next;
  if((next.roomRevision||0)<(previous.roomRevision||0))return null;
  const merged={...next};
+ // Transport timing is deliberately non-enumerable. Preserve it across a
+ // player merge without adding per-packet timing to rendered UI identities.
+ if(Number.isFinite(next._transitMs))Object.defineProperty(merged,'_transitMs',{value:next._transitMs});
  if((previous.arenaRevision||0)>(next.arenaRevision||0)){merged.arenaRevision=previous.arenaRevision;merged.arenaEffects=previous.arenaEffects;}
  const mergePlayer=(old,p)=>{
   if(!old||old.id!==p.id)return p;
@@ -157,3 +167,4 @@ function orderPlayers(players,order){const places=new Map((order||[]).map((id,i)
 function touchVector(dx,dy){const distance=Math.hypot(dx,dy);if(distance<=4)return{x:0,y:0};const strength=Math.min(1,(distance-4)/20);return{x:dx/distance*strength,y:dy/distance*strength};}
 window.quizArenaSync={Keyboard,Timeline,RemoteTrack,reconcile,mergeSnapshot,orderPlayers,touchVector};
 })();
+

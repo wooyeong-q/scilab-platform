@@ -38,7 +38,7 @@ function client(time,who,onPacket,{width=1363,height=850,fps=60,WebSocket:Native
  vm.createContext(context);
  for(const file of ['arena-model.js','arena-motion.js','arena-sync.js','arena-live.js','arena.js']){
   let source=fs.readFileSync(path.join(root,'public/labs/quiz-rally',file),'utf8');
-  if(file==='arena.js')source=source.replace(/\}\)\(\);\s*$/,"window.__probe=()=>({at:performance.now(),clock:clock(),local:{...local},shown:{...visual},pending:pending.map(e=>({...e})),curve:ownView.vertical?{...ownView.vertical}:null,connected:liveFast,lost:connectionLost});})();");
+  if(file==='arena.js')source=source.replace(/\}\)\(\);\s*$/,"window.__probe=()=>({at:performance.now(),clock:clock(),local:{...local},shown:{...visual},camera:{x:camX,y:camY},pending:pending.map(e=>({...e})),curve:ownView.vertical?{...ownView.vertical}:null,connected:liveFast,lost:connectionLost});})();");
   vm.runInContext(source,context,{filename:file});
   if(file==='arena-motion.js'){const prototype=context.window.quizArenaMotion.LocalView.prototype,correct=prototype.correct;prototype.correct=function(before,after,changed){const result=correct.call(this,before,after,changed);corrections.push({at:time.now,before,after,changed,vertical:this.vertical?{...this.vertical}:null});return result;};}
  }
@@ -50,6 +50,7 @@ function client(time,who,onPacket,{width=1363,height=850,fps=60,WebSocket:Native
  transport.configure('',who,true,{version:1,url:'wss://test/room'});
  const key=(code,down=true,extra={})=>callbacks[down?'keydown':'keyup']({code,key:code==='Space'?' ':code,repeat:false,shiftKey:false,preventDefault:noop,...extra});
  const pointer=(type,pointerId,kind,x=50,y=26)=>callbacks[type]({pointerId,clientX:x,clientY:y,preventDefault:noop,target:{closest:s=>s===`[data-arena-action="${kind}"]`?{}:kind==='pad'&&s==='[data-arena-pad]'?node('pad'):null}});
- return {context,ui,transport,frames,errors,closes,sockets,key,pointer,sync,corrections};
+ return {context,ui,transport,frames,errors,closes,sockets,key,pointer,sync,corrections,viewport:{width,height}};
 }
 module.exports={client,scheduler,fixture,load};
+
