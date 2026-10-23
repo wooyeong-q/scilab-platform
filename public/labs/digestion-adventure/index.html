@@ -1,0 +1,71 @@
+<!doctype html>
+<html lang="ko">
+<head>
+ <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="theme-color" content="#f6f3eb">
+ <title>한 입의 모험 · 소화 탐험실</title>
+ <meta name="description" content="음식의 현재 위치를 크게 따라가며 소화액 분비, 효소의 분해, 영양소 흡수를 선생님이 단계별로 보여 주는 중학교 과학 수업.">
+ <link rel="stylesheet" href="./styles.css"><link rel="stylesheet" href="./associations.css"><link rel="stylesheet" href="./practice.css"><link rel="stylesheet" href="./summary.css"><link rel="preload" as="image" href="./assets/food-bite.png"><link rel="preload" as="image" href="./assets/mouth-organ-v3.png">
+</head>
+<body>
+<div class="app-shell">
+ <header class="topbar">
+  <a class="brand" href="./" aria-label="한 입의 모험 처음으로"><span class="brand-symbol" aria-hidden="true">한입</span><span>한 입의 모험<small>중2 과학 · 동물과 에너지</small></span></a>
+  <nav class="mode-tabs" aria-label="화면 선택"><button class="mode-tab active" data-mode="tour" aria-pressed="true">몸속 여행</button><button class="mode-tab" data-mode="memory" aria-pressed="false">연결해서 기억</button><button class="mode-tab" data-mode="summary" aria-pressed="false">한눈에 정리</button></nav>
+  <div class="header-actions"><button id="guide-btn" class="quiet-button">수업 안내</button><button id="fullscreen-btn" class="icon-button" aria-label="전체 화면" title="전체 화면">⛶</button></div>
+ </header>
+ <main>
+  <section id="tour-view" aria-label="단계별로 관찰하는 음식의 소화 과정">
+   <nav id="journey" class="journey" aria-label="소화 기관으로 이동"></nav>
+   <div class="theater">
+    <section class="route-panel panel" aria-labelledby="location-title">
+     <div class="route-heading"><p class="eyebrow"><span class="coral-dot"></span> 음식의 현재 위치</p><h1 id="location-title">음식은 지금 <strong>입</strong>에 있어요.</h1></div>
+     <div class="location-viewport" id="location-viewport">
+      <div id="body-route" class="body-route" hidden></div>
+      <figure class="organ-art" id="organ-art">
+       <div class="organ-canvas" id="organ-canvas"><img id="organ-image" src="./assets/mouth-organ-v3.png" alt="치아와 혀, 한 입의 음식이 보이는 입의 확대 삽화" width="1536" height="1024" fetchpriority="high">
+       <span class="food-pin" id="food-pin"><span class="pin-halo"></span><span class="pin-label" id="pin-label">음식은 여기!</span></span></div>
+       <span class="organ-art-label" id="organ-art-label">입 안 · 확대 모습</span>
+       <figcaption class="art-note">기관의 모습을 단순화한 삽화</figcaption>
+      </figure>
+     </div>
+     <div class="route-toolbar"><div class="segmented" role="group" aria-label="소화관 확대"><button data-camera="full" aria-pressed="false">전체 경로</button><button data-camera="focus" aria-pressed="true">현재 위치 확대 <span aria-hidden="true">＋</span></button></div><span id="route-stage" class="route-stage">01 / 06</span></div>
+     <p class="route-note">위치 표식을 보고, 오른쪽에서 이곳의 변화를 관찰해요.</p>
+    </section>
+    <section class="scene-panel panel" aria-labelledby="scene-title">
+     <div class="scene-heading"><div><p class="eyebrow">기관 안을 더 가까이</p><h2 id="scene-title">입 안에서 시작되는 소화</h2></div><span class="secretion-label" id="secretion-label">침샘 → 침 → 입</span></div>
+     <section id="enzyme-spotlight" class="enzyme-spotlight" aria-label="장소, 소화 효소, 영양소 연결하기">
+      <div id="spotlight-main" class="spotlight-main">
+       <p class="spotlight-kicker" id="spotlight-kicker"></p>
+       <div class="spotlight-link">
+        <div class="spotlight-place"><span>어디서?</span><strong id="spotlight-place"></strong></div><span class="spotlight-arrow" aria-hidden="true">→</span>
+        <div class="spotlight-enzyme"><img id="spotlight-image" src="./assets/enzyme-amylase-v7.png" alt="번개 옷의 달리기 토끼 모습의 녹말 담당 효소 캐릭터" width="1254" height="1254"><div><span>어떤 효소가?</span><h3 id="spotlight-name"></h3></div></div><span class="spotlight-arrow" aria-hidden="true">→</span>
+        <div class="spotlight-target"><span>무엇을?</span><strong id="spotlight-target"></strong></div>
+       </div>
+       <p class="spotlight-role" id="spotlight-role"></p>
+      </div>
+      <div id="spotlight-observation" class="spotlight-observation" hidden><img id="observation-image" src="./assets/food-bolus-v5.png" alt=""><div><p class="spotlight-kicker" id="observation-kicker"></p><h3 id="observation-name"></h3><p class="spotlight-role" id="observation-role"></p></div></div>
+      <div class="recall-controls spotlight-controls" role="group" aria-label="효소 이름 표시"><button data-recall="hidden">이름 가리기</button><button data-recall="hint">첫 글자 힌트</button><button data-recall="visible">정답 보기</button></div>
+     </section>
+     <div id="organ-scene" class="organ-scene"></div>
+     <div class="scene-legend" aria-label="영양소 모형 범례"><span><i class="legend-shape carb"></i>녹말·당</span><span><i class="legend-shape protein"></i>단백질</span><span><i class="legend-shape fat"></i>지방</span><span><i class="legend-shape enzyme"></i>효소</span><small>모양·색·크기는 학습용 모형</small></div>
+     <div id="caption" class="caption" aria-live="polite" aria-atomic="true"><span class="caption-step" id="caption-step">01</span><div><h3 id="caption-title"></h3><p id="caption-text"></p></div></div>
+    </section>
+   </div>
+   <section class="player" aria-label="선생님이 조절하는 단계별 관찰">
+    <div class="chapter-row"><span class="chapter-label">관찰 단계</span><div class="chapters" id="chapters" aria-label="현재 기관의 관찰 단계"></div></div>
+    <div class="step-controls">
+     <div class="step-status"><span class="status-dot" id="status-dot"></span><div><strong id="step-count">입 · 1 / 5단계</strong><span id="step-status-text">다음 단계를 누르면 진행해요.</span></div></div>
+     <div class="step-buttons"><button id="prev-step" class="previous-button"><span aria-hidden="true">←</span> 이전 단계</button><button id="replay-step" class="replay-button"><span aria-hidden="true">↻</span> 이 단계 다시 보기</button><button id="next-step" class="next-button"><span><strong>다음 단계</strong><small id="next-step-label">꼭꼭 씹기</small></span><span aria-hidden="true">→</span></button></div>
+    </div>
+    <div class="teaching-note"><span id="focus-prompt"></span><span>한 번 누르면 한 단계만 보여 준 뒤 멈춰요.</span></div>
+   </section>
+  </section>
+  <section id="memory-view" class="memory-view" hidden aria-labelledby="memory-title"></section>
+  <section id="summary-view" class="summary-view" hidden aria-labelledby="summary-title"></section>
+ </main>
+</div>
+<dialog id="info-dialog" aria-labelledby="dialog-title"><div class="dialog-top"><p class="eyebrow">한 입의 모험 · 소화 탐험실</p><button id="close-dialog" class="icon-button" aria-label="수업 안내 닫기">×</button></div><div id="dialog-content"></div></dialog>
+<div id="toast" class="toast" role="status" hidden></div>
+<script type="module" src="./app.mjs"></script>
+</body>
+</html>
