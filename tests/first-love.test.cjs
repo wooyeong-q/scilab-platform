@@ -12,7 +12,7 @@ before(async()=>{
 });
 after(async()=>pg.close());
 function solution(stage,lesson=SAMPLE){
- if(stage===9){const d=lesson.devices;return {turns:d.turns,start:d.start,moves:d.route,drawer:c.finalAnswer(d).drawer};}
+ if(stage===9)return {sequence:c.finalAnswer(lesson.devices).sequence};
  const p=lesson.puzzles[stage];
  if(['order','select-order'].includes(p.type))return {order:p.items.filter(i=>i.answer!=='제외').sort((a,b)=>Number(a.answer)-Number(b.answer)).map(i=>i.id)};
  return Object.fromEntries(p.items.map(i=>[i.id,p.type==='route-match'?{via:i.via,to:i.answer}:p.type==='deduce'?{choice:i.answer,reason:[1,2,3,4].find(n=>!i.passes.includes(n))||0}:i.answer]));
@@ -42,9 +42,55 @@ test('P8 needs each of four conditions; P10 requires distinct prior clues and on
  const d=SAMPLE.devices,a=c.finalAnswer(d);assert.equal(a.drawer,'H');
  const allTurns=[0,1,2,3].map(t=>c.walk(c.rotated(d.grid,t),d.start,d.route));assert.equal(new Set(allTurns.filter(Boolean).map(w=>w.symbol)).size,4);
  const allStarts=d.grid.map(s=>c.walk(c.rotated(d.grid,d.turns),s,d.route)).filter(Boolean);assert.ok(allStarts.length>1);assert.ok(new Set(allStarts.map(w=>w.symbol)).size>1);
- const alt=solution(9);alt.moves=['up','right','down','left','down','right'];assert.ok(e.complete(9,null,alt,d));assert.equal(e.correct(9,null,alt,d),false);
- assert.equal(e.correct(9,null,{...solution(9),drawer:'I'},d),false);
+ assert.deepEqual(a.sequence,['I','A','F','C','H','D','H']);
+ const wrong=solution(9);wrong.sequence[2]='A';assert.ok(e.complete(9,null,wrong,d));assert.equal(e.correct(9,null,wrong,d),false);
+ assert.equal(e.complete(9,null,{sequence:['H']},d),false);
+ assert.equal(e.complete(9,null,{drawer:'H'},d),false);
+ assert.equal(e.correct(9,null,{turns:0,...solution(9)},d),true,'mentally rotating the map is valid');
+ const legacy={turns:d.turns,start:d.start,moves:d.route,drawer:a.drawer};
+ assert.ok(e.complete(9,null,legacy,d));assert.ok(e.correct(9,null,legacy,d));
+ const alt={...legacy,moves:['up','right','down','left','down','right']};assert.ok(e.complete(9,null,alt,d));assert.equal(e.correct(9,null,alt,d),false);
+ assert.equal(e.correct(9,null,{...legacy,drawer:'I'},d),false);
  assert.equal(e.correct(9,null,solution(9),d),true);
+});
+
+test('P10 marks need discovery; complete sequence grades once, with no partial feedback',()=>{
+ const lesson=SAMPLE,d=lesson.devices;
+ for(let n=4;n<=12;n++){
+  const route=Array.from({length:n},(_,i)=>['up','right','down','left'][i%4]);
+  assert.deepEqual(c.cabinetMarks(route).slice().reverse().flat(),route,'bottom-up rows preserve every move');
+ }
+ let state=e.previewState(9);delete state.cabinetSeen;
+ assert.deepEqual(e.playerContent(lesson,[2],state).cabinet,{found:false,marks:[]});
+ const delivery=e.playerContent(lesson,[2],state).evidence.find(x=>x.id==='delivery');
+ assert.doesNotMatch(delivery.text,/[↑→↓←]/);assert.match(delivery.text,/아래 줄/);
+ assert.throws(()=>e.transition(e.previewState(8),{type:'inspect-cabinet',stage:8},lesson));
+ state=e.transition(state,{type:'inspect-cabinet',stage:9},lesson,[3]).state;
+ assert.equal(state.wrong,0);assert.equal(state.draftVersion,0);
+ assert.deepEqual(e.playerContent(lesson,[1],state).cabinet.marks,[['down','left','right'],['up','right','down']]);
+ const put=draft=>state=e.transition(state,{type:'draft',stage:9,draftVersion:state.draftVersion,draft},lesson).state;
+ const check=()=>{const result=e.transition(state,{type:'submit',stage:9,draftVersion:state.draftVersion,attemptId:randomUUID()},lesson);state=result.state;return result;};
+ put({sequence:['I','A','F']});assert.equal(check().outcome,'incomplete');assert.equal(state.wrong,0);
+ for(const sequence of [['I','A','F','C','H','D','X'],['I','A','F','C','H','D',null],['I','A','F','C','H','D','H','H']]){
+  put({sequence});assert.equal(check().outcome,'incomplete');assert.equal(state.wrong,0);
+ }
+ const bad=['A','B','C','D','E','F','H'];put({sequence:bad});assert.equal(check().outcome,'wrong');assert.equal(state.wrong,1);
+ put({turns:2,sequence:bad});assert.equal(check().duplicate,true);assert.equal(state.wrong,1);
+ const before=structuredClone(state);state=e.transition(state,{type:'inspect-cabinet',stage:9},lesson).state;assert.deepEqual(state,before);
+ put({turns:0,sequence:c.finalAnswer(d).sequence});assert.equal(check().outcome,'correct');assert.equal(state.stage,10);assert.equal(state.wrong,1);
+});
+
+test('P10 UI shows physical marks only after inspection, ordered drawer slots and private notes',async()=>{
+ const {puzzleHTML,finalNotesHTML,finalSequenceHTML,progress}=await import('../public/labs/first-love/puzzle-ui.mjs');
+ let state=e.previewState(9),content=e.playerContent(SAMPLE,[2],state),html=puzzleHTML(null,{},'',content);
+ assert.match(html,/data-action="inspect-cabinet"/);assert.doesNotMatch(html,/data-action="(?:step|start)"/);assert.doesNotMatch(html,/etched-row/);
+ assert.equal((html.match(/data-action="drawer"/g)||[]).length,9);
+ const notes=finalNotesHTML(content);assert.match(notes,/맨 아래 줄부터/);assert.doesNotMatch(notes,/시작 표식:|시계 방향으로 90|○ → F/);
+ state=e.transition(state,{type:'inspect-cabinet',stage:9},SAMPLE).state;content=e.playerContent(SAMPLE,[2],state);
+ assert.equal((puzzleHTML(null,{},'',content).match(/class="etched-row"/g)||[]).length,2);
+ const sequence={sequence:['H','H']};assert.deepEqual(progress(null,sequence,content),{count:2,total:7,label:'수납함 입력'});
+ const slots=finalSequenceHTML(sequence,content);assert.equal((slots.match(/<li /g)||[]).length,7);assert.equal((slots.match(/<b>H<\/b>/g)||[]).length,2);assert.match(slots,/마지막 취소/);
+ const full=puzzleHTML(null,solution(9),'',content);assert.equal((full.match(/누르기" disabled/g)||[]).length,9);
 });
 
 test('P8 accepts any nonempty set of valid exclusion reasons, including legacy drafts',()=>{
@@ -88,7 +134,22 @@ test('one to four players can finish all ten stages; private clues, frozen endin
    assert.deepEqual(v.allowedRoles,[1,...[2,3,4].filter(r=>r>count)]);
    if(v.content.puzzle){assert.ok(v.content.puzzle.clues.every(x=>v.allowedRoles.includes(x.role)));for(const i of v.content.puzzle.items){assert.equal(i.answer,undefined);assert.equal(i.passes,undefined);assert.equal(i.original,undefined);if(i.owner&&!v.allowedRoles.includes(i.owner)){assert.equal(i.text,undefined);assert.equal(i.hidden,true);}}}
    if(stage===8){for(const [n,id]of ['desk','cubby','file'].entries())await service.event(room.code,room.keys[n]||room.keys[0],{type:'photo',stage:8,id});}
-   else{await draft(room,solution(stage));assert.equal((await submit(room)).outcome,'correct');}
+   else{
+    if(stage===9){
+     const owner=room.keys[1]||room.keys[0];
+     assert.deepEqual(v.content.cabinet,{found:false,marks:[]});
+     const found=await service.event(room.code,owner,{type:'inspect-cabinet',stage:9,contentKey:v.contentKey});
+     assert.equal(found.outcome,'discovered');assert.equal(found.state.draftVersion,v.state.draftVersion);
+     assert.equal(found.content.cabinet.found,true);assert.notEqual(found.contentKey,v.contentKey);
+     const other=await service.state(room.code,room.keys[0],v.group.revision,v.contentKey);
+     assert.equal(other.content.cabinet.found,true);assert.deepEqual(other.content.cabinet.marks,c.cabinetMarks(SAMPLE.devices.route));
+     for(let i=0;i<count;i++){
+      const view=await service.state(room.code,room.keys[i]);
+      assert.ok(view.content.evidence.every(note=>view.allowedRoles.includes(['bookmark','delivery','direction','drawers'].indexOf(note.id)+1)));
+      assert.equal(view.content.sequence,undefined);assert.equal(view.content.devices,undefined);
+     }
+    }
+    await draft(room,solution(stage));assert.equal((await submit(room)).outcome,'correct');}
   }
   const final=await service.event(room.code,room.keys[0],{type:'confess',stage:10});assert.equal(final.state.ending,'smile');assert.equal(final.state.finished,true);
   assert.equal((await stats(room)).wrong,0);assert.equal((await service.state(room.code,room.keys[0])).state.ending,'smile');

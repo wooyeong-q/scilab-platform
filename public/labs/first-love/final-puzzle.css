@@ -1,0 +1,91 @@
+/* The final lock keeps its input and submit button visible while clues scroll. */
+dialog.final-dialog{height:min(850px,94dvh);max-height:94dvh}
+dialog.final-dialog[open]{display:flex;flex-direction:column}
+.final-dialog .modal-header{padding:14px 22px;flex:none}
+.final-dialog .modal-header h2{font-size:20px}
+.final-puzzle-layout{display:grid;grid-template-columns:250px minmax(0,1fr);flex:1;min-height:0;overflow:hidden}
+.final-notes{overflow-y:auto;padding:15px;background:#eee7da;border-right:1px solid var(--line)}
+.final-record{padding:11px 12px;margin-bottom:9px;background:#fffaf0;border:1px solid #dbccb4;border-radius:3px}
+.final-record small{font-size:10px;color:#9b6650}
+.final-record h3{font-size:13px;margin:3px 0 7px}
+.final-record p{font-size:12px;line-height:1.7;margin:0;word-break:keep-all}
+.missing-record{background:#eeeae2;border-style:dashed}
+.drawer-key{display:grid;grid-template-columns:repeat(3,1fr);gap:5px;font-size:13px;white-space:nowrap}
+.drawer-key span{background:#f0e6d4;padding:4px;text-align:center;border-radius:3px}
+.final-dialog .puzzle-main{padding:18px 24px;min-width:0;overflow:auto}
+.final-task{border-bottom:1px solid var(--line);padding-bottom:12px;margin-bottom:15px}
+.final-task small{font-size:11px;color:var(--rose)}
+.final-task p{font-size:20px;line-height:1.5;margin:5px 0}
+.final-task p br{display:none}
+.final-task span{font-size:12px;color:var(--muted)}
+.final-workbench{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.35fr);gap:28px;align-items:start}
+.final-workbench h3{font-size:14px;margin:0 0 10px}
+.location-paper{padding:14px;background:#fffaf0;border:1px solid #d7c9b5;border-radius:3px;box-shadow:0 4px 10px #6151390b}
+.location-paper .grid-tools{gap:5px;flex-wrap:wrap;margin-bottom:10px}
+.location-paper .grid-tools button{font-size:12px;min-height:42px;padding:7px 10px}
+.location-paper .grid-tools small{font-size:11px}
+.final-symbol-grid{display:grid;grid-template-columns:repeat(3,1fr);border-top:1px solid #c6baa7;border-left:1px solid #c6baa7}
+.final-symbol-grid span{display:grid;place-items:center;min-height:54px;background:#fffdf6;border-right:1px solid #c6baa7;border-bottom:1px solid #c6baa7;font-size:25px;line-height:1}
+.location-paper>p{font-size:11px;line-height:1.7;color:var(--muted);margin:10px 0 0}
+.cabinet-instruction{font-size:12px;line-height:1.6;margin:0 0 12px;word-break:keep-all}
+.physical-cabinet{display:grid;grid-template-columns:minmax(0,1fr) 62px;align-items:stretch;filter:drop-shadow(0 7px 6px #49301d24)}
+.cabinet-drawers{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:4px;padding:8px;background:#694d37;border:1px solid #503c2c;border-radius:4px 0 0 4px}
+.cabinet-drawers button{flex-direction:column;gap:7px;min-height:65px;min-width:0;padding:8px 2px;border-radius:3px;border:1px solid #ad8b63;background:linear-gradient(8deg,#aa8058,#bb956c 50%,#ac855d);color:#fff6e5;box-shadow:inset 0 -4px 0 #704b3240,0 1px 2px #32231470}
+.cabinet-drawers button:hover{background:#c39b6b}
+.cabinet-drawers button b{font-size:20px;line-height:1;font-family:Georgia,serif;text-shadow:0 1px 1px #52331f}
+.drawer-handle{width:24px;height:5px;border:1px solid #534c42;border-radius:2px;background:#ad9d7e;box-shadow:0 2px 0 #554334}
+.cabinet-drawers button:disabled{opacity:1;filter:saturate(.6);cursor:default}
+.physical-cabinet .cabinet-side{display:flex;flex-direction:column;gap:25px;padding:10px 3px;min-width:0;background:repeating-linear-gradient(91deg,#795638 0 8px,#7e5b3e 9px 13px);color:#fff3da;border:1px solid #503c2c;border-left:0;border-radius:0 7px 7px 0;font-size:11px;line-height:1.7}
+.physical-cabinet .cabinet-side:hover{background:#936f4c}
+.cabinet-scratches{color:#dbc19a;letter-spacing:1px;text-shadow:1px 1px #4d351e;font-size:13px}
+.cabinet-discovery-hint{font-size:11px;color:#815d40;margin:11px 0 0}
+.found-marks{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-top:13px;border:1px dashed #baa486;padding:7px 12px;background:#f1e7d6}
+.found-marks>small{font-size:10px;max-width:105px;line-height:1.6}
+.etched-marks{display:grid;gap:3px}
+.etched-row{display:flex;gap:14px;min-height:27px;font-family:Arial,sans-serif;font-size:24px;line-height:1.1;letter-spacing:0;white-space:nowrap}
+.sequence-panel{flex:none;padding:10px 22px;background:#f9f3e8;border-top:1px solid var(--line)}
+.sequence-heading{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:7px}
+.sequence-heading strong{font-size:12px}
+.sequence-heading strong span{font-size:11px;color:#85715a;margin-left:8px}
+.sequence-heading>div{display:flex;gap:6px}
+.sequence-heading button{font-size:11px;padding:5px 10px;min-height:32px}
+.drawer-sequence{display:flex;flex-wrap:wrap;gap:6px;list-style:none;padding:0;margin:0}
+.drawer-sequence li{display:flex;flex-direction:column;align-items:center;gap:3px;width:54px;padding:4px 2px;background:#eee7da;border:1px dashed #c7b9a3;border-radius:4px}
+.drawer-sequence small{font-size:9px;color:#82745f}
+.drawer-sequence b{font-family:Georgia,serif;font-size:19px;line-height:1.1;min-height:21px}
+.drawer-sequence .entered{background:#fffaf1;border-style:solid;border-color:#9b7953}
+.drawer-sequence .next-slot{border:2px solid #996347;padding:3px 1px;background:#fff9eb}
+.sequence-panel>p{font-size:11px;line-height:1.5;color:var(--muted);margin:6px 0 0}
+.final-dialog .puzzle-footer{flex:none;padding:10px 22px}
+.final-dialog .submission-feedback{flex:none;margin:0;padding:9px 22px;font-size:12px}
+.final-dialog .puzzle-footer button{min-height:44px}
+.cabinet-dialog{width:min(650px,96vw)}
+.cabinet-dialog .modal-header h2{font-size:19px}
+.cabinet-dialog .modal-header button{font-size:12px}
+.cabinet-inspection{padding:24px;text-align:center;max-height:70dvh;overflow:auto}
+.cabinet-inspection p{font-size:14px;line-height:1.8}
+.cabinet-wood{display:flex;justify-content:center;padding:35px 20px;margin:20px auto;max-width:300px;border:8px solid #64472e;border-radius:6px;background:repeating-linear-gradient(92deg,#9c7850 0 14px,#987349 15px 18px,#a17c52 19px 32px);box-shadow:inset 0 0 16px #48301966}
+.cabinet-wood .etched-marks{gap:20px;color:#f0dbb2;text-shadow:2px 2px #644628}
+.cabinet-wood .etched-row{font-size:39px;gap:27px}
+@media(max-width:800px){
+ .final-puzzle-layout{grid-template-columns:205px minmax(0,1fr)}
+ .final-notes{padding:10px}.final-record{padding:9px}.final-record p{font-size:11px}.drawer-key{font-size:11px;gap:3px}
+ .final-dialog .puzzle-main{padding:14px}.final-workbench{gap:14px}.location-paper{padding:10px}
+ .physical-cabinet{grid-template-columns:minmax(0,1fr) 50px}.cabinet-drawers{padding:5px;gap:3px}
+ .final-symbol-grid span{min-height:50px}.cabinet-drawers button{min-height:60px}
+}
+@media(max-width:600px){
+ dialog.final-dialog{height:96dvh;max-height:96dvh;width:98vw;border-radius:9px}
+ .final-dialog .modal-header{padding:10px 12px;gap:8px}.final-dialog .modal-header h2{font-size:17px}.final-dialog .modal-header button{padding:7px 9px;font-size:11px;min-height:40px}
+ .final-puzzle-layout{display:block;overflow-y:auto}
+ .final-notes{display:grid;grid-template-columns:1fr 1fr;gap:7px;overflow:visible;border-right:0;border-bottom:1px solid var(--line);padding:10px}
+ .final-notes>.clue-title{grid-column:1/-1;margin:0;font-size:11px}.final-record{margin:0;padding:8px}.final-record h3{font-size:12px}.final-record small{font-size:9px}.final-record p{font-size:11px;line-height:1.6}
+ .final-dialog .puzzle-main{overflow:visible;padding:13px 10px}.final-task{margin-bottom:12px;padding-bottom:10px}.final-task p{font-size:18px}.final-task p br{display:initial}.final-task span{font-size:11px}
+ .final-workbench{gap:10px;grid-template-columns:minmax(0,1fr) minmax(0,1.35fr)}.location-paper{padding:8px}.final-workbench h3{font-size:13px}.location-paper .grid-tools small{font-size:10px}.location-paper .grid-tools button{min-height:44px;padding:5px 7px;font-size:11px}
+ .final-symbol-grid span{min-height:46px;font-size:22px}.location-paper>p{font-size:10px}.cabinet-instruction{font-size:11px;margin-bottom:8px}
+ .physical-cabinet{grid-template-columns:minmax(0,1fr) 44px}.cabinet-drawers{padding:4px;gap:2px}.cabinet-drawers button{min-height:57px}.cabinet-drawers button b{font-size:18px}.drawer-handle{width:20px}.physical-cabinet .cabinet-side{font-size:10px;padding:7px 1px}.cabinet-scratches{font-size:10px}
+ .found-marks{padding:6px;gap:5px}.found-marks>small{font-size:9px;max-width:65px}.found-marks .etched-row{gap:8px;font-size:21px}.cabinet-discovery-hint{font-size:10px}
+ .sequence-panel{padding:8px 10px}.sequence-heading{margin-bottom:6px}.sequence-heading button{min-height:38px;font-size:10px;padding:5px 9px}.drawer-sequence{gap:4px}.drawer-sequence li{width:calc((100% - 24px)/7);max-width:54px;min-width:33px}.drawer-sequence small{font-size:8px}.drawer-sequence b{font-size:18px}.sequence-panel>p{font-size:10px}
+ .final-dialog .puzzle-footer{padding:8px 10px;gap:8px}.final-dialog .puzzle-footer button{font-size:12px;padding:8px 12px}.final-dialog .submission-feedback{padding:8px 10px;font-size:11px}
+ .cabinet-dialog .modal-header{padding:12px;gap:8px}.cabinet-dialog .modal-header h2{font-size:16px}.cabinet-dialog .modal-header button{font-size:11px;padding:8px}.cabinet-inspection{padding:18px}
+}

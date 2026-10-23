@@ -30,7 +30,10 @@ const num=(v,label,min,max)=>{const n=Number(v);if(!Number.isInteger(n)||n<min||
 export function rotated(grid,turns){let g=[...grid];for(let n=0;n<turns;n++)g=[g[6],g[3],g[0],g[7],g[4],g[1],g[8],g[5],g[2]];return g;}
 export const DIRS={up:[-1,0],right:[0,1],down:[1,0],left:[0,-1]};
 export function walk(grid,start,steps){let i=grid.indexOf(start);if(i<0)return null;const trace=[i];for(const dir of steps){const d=DIRS[dir];if(!d)return null;const y=Math.floor(i/3)+d[0],x=i%3+d[1];if(y<0||y>2||x<0||x>2)return null;i=y*3+x;trace.push(i);}return {cell:i,symbol:grid[i],trace};}
-export function finalAnswer(d){const w=walk(rotated(d.grid,d.turns),d.start,d.route);if(!w)fail('장치: 이동 경로가 위치표 밖으로 나갑니다.');return {turns:d.turns,start:d.start,trace:w.trace,drawer:d.drawers[w.symbol]};}
+export function finalAnswer(d){const grid=rotated(d.grid,d.turns),w=walk(grid,d.start,d.route);if(!w)fail('장치: 이동 경로가 위치표 밖으로 나갑니다.');return {turns:d.turns,start:d.start,trace:w.trace,drawer:d.drawers[w.symbol],sequence:w.trace.map(cell=>d.drawers[grid[cell]])};}
+// The delivery note explains how to read these physical marks: bottom row first,
+// left to right within each row. Their position is not the route itself.
+export function cabinetMarks(route){const rows=[];for(let i=0;i<route.length;i+=3)rows.push(route.slice(i,i+3));return rows.reverse();}
 export function validateLesson(input){
  if(!input||input.schema!==SCHEMA)fail('설정!양식버전: 오늘, 너에게 전용 TODAY-TO-YOU-1 양식을 사용하세요.');
  const meta=Object.fromEntries(['title','subject','unit','grade'].map(k=>[k,str(input.meta?.[k],'설정 '+k,100)]));
