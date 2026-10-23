@@ -1,9 +1,9 @@
-/* V5 relationship board. All classes are scoped to the assoc- prefix. */
+/* Relationship board: place, enzyme, substrate and this step's products. */
 .assoc-board {
-  --assoc-place-width: 216px;
-  --assoc-path-columns: 28px minmax(0, 1.45fr) 28px minmax(125px, .75fr) 98px;
+  --assoc-place-width: 176px;
+  --assoc-path-columns: 22px minmax(0, 1.25fr) 22px minmax(0, .84fr) 22px minmax(0, 1.5fr) 90px;
   width: 100%;
-  max-width: 1150px;
+  max-width: 1280px;
   margin: 0 auto;
   color: #253f3b;
 }
@@ -14,13 +14,14 @@
   min-height: 40px;
   padding: 0 1px 8px;
 }
-.assoc-column-heading { display: flex; align-items: baseline; gap: 8px; min-width: 0; }
-.assoc-column-heading strong { font-size: 17px; font-weight: 850; letter-spacing: -.5px; }
+.assoc-column-heading { display: flex; align-items: baseline; gap: 7px; min-width: 0; }
+.assoc-column-heading strong { font-size: 17px; font-weight: 850; letter-spacing: -.5px; white-space: nowrap; }
 .assoc-column-heading span { font-size: 10px; color: #7c8274; white-space: nowrap; }
-.assoc-place-heading { padding-left: 17px; }
-.assoc-path-heading { display: grid; grid-template-columns: var(--assoc-path-columns); padding-right: 12px; }
+.assoc-place-heading { padding-left: 12px; }
+.assoc-path-heading { display: grid; grid-template-columns: var(--assoc-path-columns); padding-right: 10px; }
 .assoc-enzyme-heading { grid-column: 2; }
-.assoc-target-heading { grid-column: 4 / span 2; }
+.assoc-target-heading { grid-column: 4; }
+.assoc-result-heading { grid-column: 6 / span 2; padding-left: 11px; }
 .assoc-groups { display: grid; gap: 9px; }
 .assoc-group {
   display: grid;
@@ -35,17 +36,17 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 13px;
-  padding: 7px 12px;
+  gap: 10px;
+  padding: 7px 10px;
   background: #f8e9de;
   border-right: 1px solid #e9ddd1;
   min-width: 0;
 }
-.assoc-organ { display: block; width: 99px; height: 60px; object-fit: cover; border-radius: 12px; }
+.assoc-organ { display: block; width: 88px; height: 60px; object-fit: cover; border-radius: 12px; }
 .assoc-place h2 { margin: 0; font-size: 29px; font-weight: 900; letter-spacing: -1px; line-height: 1.15; white-space: nowrap; }
 .assoc-place h2 span { display: block; margin-top: 4px; font-size: 12px; font-weight: 600; letter-spacing: 0; color: #987967; }
 .assoc-group-multiple .assoc-place { flex-direction: column; gap: 11px; background: #f1eee0; }
-.assoc-group-multiple .assoc-organ { width: 155px; height: 104px; }
+.assoc-group-multiple .assoc-organ { width: 135px; height: 94px; }
 .assoc-group-multiple .assoc-place h2 span { display: inline; margin-left: 6px; }
 .assoc-relations { list-style: none; padding: 0; margin: 0; min-width: 0; }
 .assoc-row {
@@ -57,39 +58,42 @@
   align-items: center;
   min-width: 0;
   min-height: 76px;
-  padding: 5px 12px 5px 0;
+  padding: 5px 10px 5px 0;
 }
 .assoc-row + .assoc-row { border-top: 1px solid #eee9df; }
 .assoc-row[data-team="protein"] { --assoc-team-background: #e7eff8; --assoc-team-ink: #456c91; --assoc-team-color: #75a4cb; }
 .assoc-row[data-team="fat"] { --assoc-team-background: #fce8d7; --assoc-team-ink: #98602e; --assoc-team-color: #e7a16d; }
 .assoc-arrow { display: block; text-align: center; font-size: 20px; color: #b5ac96; font-weight: 500; }
-.assoc-enzyme { display: flex; align-items: center; gap: 12px; min-width: 0; }
+.assoc-arrow-result { color: #7d9978; font-size: 22px; }
+.assoc-enzyme { display: flex; align-items: center; gap: 10px; min-width: 0; }
 .assoc-portrait { width: 63px; height: 63px; flex: 0 0 63px; border-radius: 17px; background: var(--assoc-team-background); display: grid; place-items: center; }
 .assoc-portrait img { display: block; width: 63px; height: 63px; object-fit: contain; }
 .assoc-enzyme-copy { min-width: 0; }
 .assoc-enzyme-name { display: block; font-size: 25px; font-weight: 900; letter-spacing: -.8px; line-height: 1.22; color: #284e42; }
 .assoc-board[data-name-mode="hidden"] .assoc-enzyme-name { font-size: 23px; color: #486c5b; }
 .assoc-board[data-name-mode="hint"] .assoc-enzyme-name { letter-spacing: 1px; }
-.assoc-sentence { margin: 3px 0 1px; color: #69786a; font-size: 10px; line-height: 1.4; word-break: keep-all; }
-.assoc-source { display: block; color: #928675; font-size: 10px; line-height: 1.4; }
-.assoc-target { display: flex; align-items: center; gap: 12px; min-width: 0; padding: 0 7px; }
+.assoc-source { display: block; margin-top: 5px; color: #827767; font-size: 11px; line-height: 1.4; }
+.assoc-target { display: flex; align-items: center; gap: 8px; min-width: 0; padding: 0 4px; }
 .assoc-target-copy { min-width: 0; }
-.assoc-target-copy strong { display: block; font-size: 27px; font-weight: 900; line-height: 1.18; letter-spacing: -.8px; white-space: nowrap; color: var(--assoc-team-ink); }
+.assoc-target-copy strong { display: block; font-size: 24px; font-weight: 900; line-height: 1.2; letter-spacing: -.8px; word-break: keep-all; color: var(--assoc-team-ink); }
 .assoc-target-copy small { display: block; font-size: 10px; line-height: 1.4; margin-top: 4px; color: #8d8779; }
-.assoc-nutrient-model { display: flex; width: 42px; align-items: center; flex: 0 0 42px; }
-.assoc-nutrient-model i { width: 17px; height: 18px; display: block; flex: 0 0 17px; margin-left: -5px; background: var(--assoc-team-color); clip-path: polygon(25% 0,75% 0,100% 50%,75% 100%,25% 100%,0 50%); }
+.assoc-nutrient-model { display: flex; width: 29px; align-items: center; flex: 0 0 29px; }
+.assoc-nutrient-model i { width: 13px; height: 14px; display: block; flex: 0 0 13px; margin-left: -5px; background: var(--assoc-team-color); clip-path: polygon(25% 0,75% 0,100% 50%,75% 100%,25% 100%,0 50%); }
 .assoc-nutrient-model i:first-child { margin-left: 0; }
-.assoc-row[data-team="protein"] .assoc-nutrient-model i { height: 15px; clip-path: none; border-radius: 3px; border: 1px solid #fffef9; }
-.assoc-row[data-team="fat"] .assoc-nutrient-model i { height: 19px; width: 19px; flex-basis: 19px; clip-path: none; border-radius: 50%; border: 1px solid #fffef9; margin-left: -7px; }
+.assoc-row[data-team="protein"] .assoc-nutrient-model i { height: 13px; clip-path: none; border-radius: 3px; border: 1px solid #fffef9; }
+.assoc-row[data-team="fat"] .assoc-nutrient-model i { height: 15px; width: 15px; flex-basis: 15px; clip-path: none; border-radius: 50%; border: 1px solid #fffef9; margin-left: -7px; }
 .assoc-row[data-team="fat"] .assoc-nutrient-model i:first-child { margin-left: 0; }
+.assoc-result { min-width: 0; padding: 7px 11px; margin-right: 10px; border-radius: 11px; background: var(--assoc-team-background); }
+.assoc-result > strong { display: block; font-size: 23px; font-weight: 850; line-height: 1.24; letter-spacing: -.65px; color: var(--assoc-team-ink); word-break: keep-all; }
+.assoc-result > small { display: block; margin-top: 4px; color: #6f786a; font-size: 10px; line-height: 1.45; word-break: keep-all; }
 .assoc-visit {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 8px;
+  gap: 7px;
   width: 100%;
   min-height: 36px;
-  padding: 8px 10px;
+  padding: 8px 9px;
   border: 1px solid #dce3d3;
   border-radius: 11px;
   background: #f1f4e9;
@@ -107,31 +111,32 @@
 .assoc-note strong { color: #64745d; font-weight: 700; }
 .assoc-mobile-label { display: none; }
 
-@media (max-width: 1100px) and (min-width: 681px) {
-  .assoc-board { --assoc-place-width: 180px; --assoc-path-columns: 24px minmax(0, 1.5fr) 22px minmax(104px, .65fr) 84px; }
-  .assoc-column-heading { gap: 6px; }
+@media (max-width: 1150px) and (min-width: 901px) {
+  .assoc-board { --assoc-place-width: 150px; --assoc-path-columns: 18px minmax(0, 1.2fr) 18px minmax(0, .85fr) 20px minmax(0, 1.6fr) 77px; }
+  .assoc-column-heading { gap: 4px; }
   .assoc-column-heading strong { font-size: 15px; }
   .assoc-column-heading span { font-size: 9px; }
-  .assoc-place { gap: 9px; padding: 7px 9px; }
-  .assoc-organ { width: 88px; height: 59px; }
-  .assoc-group-multiple .assoc-organ { width: 137px; height: 94px; }
-  .assoc-place h2 { font-size: 27px; }
-  .assoc-enzyme { gap: 8px; }
-  .assoc-portrait, .assoc-portrait img { width: 57px; height: 61px; }
-  .assoc-portrait { flex-basis: 57px; }
-  .assoc-enzyme-name { font-size: 23px; }
-  .assoc-board[data-name-mode="hidden"] .assoc-enzyme-name { font-size: 21px; }
-  .assoc-target { gap: 7px; padding: 0 4px; }
-  .assoc-target-copy strong { font-size: 24px; }
-  .assoc-nutrient-model { width: 28px; flex-basis: 28px; }
-  .assoc-nutrient-model i { width: 13px; height: 14px; flex-basis: 13px; margin-left: -5px; }
-  .assoc-row[data-team="protein"] .assoc-nutrient-model i { height: 13px; }
-  .assoc-row[data-team="fat"] .assoc-nutrient-model i { width: 15px; height: 15px; flex-basis: 15px; }
-  .assoc-visit { padding: 8px; gap: 5px; font-size: 10px; }
+  .assoc-place { gap: 8px; padding: 7px 8px; }
+  .assoc-organ { width: 73px; height: 56px; }
+  .assoc-group-multiple .assoc-organ { width: 122px; height: 84px; }
+  .assoc-place h2 { font-size: 26px; }
+  .assoc-enzyme { gap: 7px; }
+  .assoc-portrait, .assoc-portrait img { width: 54px; height: 59px; }
+  .assoc-portrait { flex-basis: 54px; }
+  .assoc-enzyme-name { font-size: 22px; }
+  .assoc-board[data-name-mode="hidden"] .assoc-enzyme-name { font-size: 20px; }
+  .assoc-source { font-size: 10px; }
+  .assoc-target { padding: 0 3px; }
+  .assoc-target-copy strong { font-size: 21px; }
+  .assoc-nutrient-model { display: none; }
+  .assoc-result { padding: 7px 9px; margin-right: 8px; }
+  .assoc-result > strong { font-size: 20px; }
+  .assoc-result > small { font-size: 9px; }
+  .assoc-visit { padding: 8px 7px; gap: 4px; font-size: 10px; }
 }
 
-@media (max-width: 680px) {
-  .assoc-board { max-width: 520px; }
+@media (max-width: 900px) {
+  .assoc-board { max-width: 640px; }
   .assoc-head { display: none; }
   .assoc-groups { gap: 13px; }
   .assoc-group { display: block; border-radius: 17px; }
@@ -139,25 +144,38 @@
   .assoc-organ, .assoc-group-multiple .assoc-organ { width: 79px; height: 51px; }
   .assoc-place h2 { font-size: 25px; line-height: 1.2; }
   .assoc-place h2 span, .assoc-group-multiple .assoc-place h2 span { display: inline; margin: 0 0 0 5px; font-size: 11px; }
-  .assoc-mobile-label { display: block; margin: 0 0 3px; font-size: 9px; font-weight: 600; color: #8a887a; line-height: 1.3; }
-  .assoc-row { grid-template-columns: minmax(0, 1fr) 23px 92px; column-gap: 0; row-gap: 7px; padding: 12px; min-height: 119px; }
-  .assoc-arrow-place { display: none; }
-  .assoc-enzyme { grid-column: 1; grid-row: 1 / span 2; align-self: start; align-items: flex-start; gap: 8px; }
-  .assoc-portrait, .assoc-portrait img { width: 49px; height: 59px; }
-  .assoc-portrait { flex-basis: 49px; margin-top: 15px; border-radius: 14px; }
-  .assoc-enzyme-copy { padding-top: 1px; }
-  .assoc-enzyme-name { font-size: 21px; line-height: 1.25; letter-spacing: -.8px; }
-  .assoc-board[data-name-mode="hidden"] .assoc-enzyme-name { font-size: 20px; }
-  .assoc-sentence { font-size: 10px; line-height: 1.55; margin: 5px 0 2px; }
-  .assoc-source { font-size: 9px; line-height: 1.5; }
-  .assoc-arrow-target { grid-column: 2; grid-row: 1; font-size: 18px; }
-  .assoc-target { grid-column: 3; grid-row: 1; padding: 0; gap: 0; align-items: flex-start; }
-  .assoc-target-copy strong { font-size: 24px; line-height: 1.2; }
-  .assoc-target-copy small { font-size: 9px; margin-top: 3px; }
+  .assoc-mobile-label { display: block; margin: 0 0 3px; font-size: 10px; font-weight: 600; color: #8a887a; line-height: 1.3; }
+  .assoc-row { grid-template-columns: minmax(0, 1fr) 24px minmax(0, 1.45fr); column-gap: 0; row-gap: 11px; padding: 13px; min-height: 0; }
+  .assoc-arrow-place, .assoc-arrow-target { display: none; }
+  .assoc-enzyme { grid-column: 1 / -1; grid-row: 1; min-height: 62px; padding-right: 94px; gap: 10px; }
+  .assoc-portrait, .assoc-portrait img { width: 56px; height: 62px; }
+  .assoc-portrait { flex-basis: 56px; border-radius: 14px; }
+  .assoc-enzyme-name { font-size: 23px; line-height: 1.25; letter-spacing: -.8px; }
+  .assoc-board[data-name-mode="hidden"] .assoc-enzyme-name { font-size: 21px; }
+  .assoc-source { font-size: 10px; line-height: 1.5; margin-top: 4px; }
+  .assoc-target { grid-column: 1; grid-row: 2; padding: 4px 0 4px 3px; gap: 0; align-self: start; }
+  .assoc-target-copy strong { font-size: 23px; line-height: 1.25; }
+  .assoc-target-copy small { font-size: 10px; margin-top: 4px; }
   .assoc-nutrient-model { display: none; }
-  .assoc-visit { grid-column: 3; grid-row: 2; min-height: 32px; padding: 7px 8px; font-size: 10px; }
+  .assoc-arrow-result { grid-column: 2; grid-row: 2; font-size: 21px; align-self: center; }
+  .assoc-result { grid-column: 3; grid-row: 2; align-self: start; margin: 0; padding: 8px 10px; }
+  .assoc-result > strong { font-size: 21px; line-height: 1.3; letter-spacing: -.7px; }
+  .assoc-result > small { font-size: 10px; line-height: 1.6; margin-top: 6px; }
+  .assoc-visit { grid-column: 3; grid-row: 1; width: 84px; justify-self: end; min-height: 34px; padding: 8px; font-size: 10px; }
   .assoc-note { display: block; margin: 11px 4px 0; font-size: 10px; line-height: 1.8; }
   .assoc-note strong, .assoc-note span { display: block; }
+}
+
+@media (max-width: 380px) {
+  .assoc-row { padding: 11px; grid-template-columns: minmax(0, 1fr) 20px minmax(0, 1.5fr); }
+  .assoc-enzyme { gap: 8px; padding-right: 84px; }
+  .assoc-portrait, .assoc-portrait img { width: 48px; height: 57px; }
+  .assoc-portrait { flex-basis: 48px; }
+  .assoc-enzyme-name { font-size: 21px; }
+  .assoc-target-copy strong { font-size: 21px; }
+  .assoc-result { padding: 7px 8px; }
+  .assoc-result > strong { font-size: 19px; }
+  .assoc-visit { width: 78px; padding: 8px 6px; }
 }
 
 @media (prefers-reduced-motion: reduce) {
