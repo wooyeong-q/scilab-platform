@@ -19,7 +19,7 @@ export function renderSummaryCards() {
       ${absorption('아미노산 <span>→</span> 모세 혈관')}
     </ol></article>
     <article class="summary-card" data-team="fat"><div class="summary-card-heading"><div><span class="small">에너지를 저장하는 영양소</span><h2>지방</h2></div><div class="summary-portraits">${portrait('lipase')}</div></div><ol class="summary-process-list" aria-label="지방의 소화와 흡수">
-      ${step('소장', '간에서 생성 · 쓸개에 저장', '쓸개즙 <small class="summary-not-enzyme">효소 아님</small>', '큰 지방 방울 <span>→</span> 작은 방울', '유화: 지방 분자는 그대로예요.')}
+      ${step('소장', '쓸개에서', '쓸개즙 <small class="summary-not-enzyme">효소 아님</small>', '큰 지방 방울 <span>→</span> 작은 방울', '유화: 지방 분자는 그대로예요.')}
       ${step('소장', '이자액', '라이페이스', '<b>지방</b> <span>→</span> 지방산 + 모노글리세리드')}
       ${step('소장 벽 세포', '흡수된 성분으로', '지방 재합성', '분해된 성분 <span>→</span> 지방으로 다시 결합')}
       ${absorption('재합성된 지방 <span>→</span> 주로 암죽관')}
