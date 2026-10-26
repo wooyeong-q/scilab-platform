@@ -105,3 +105,53 @@
 @media(max-width:600px){.mode-tab{padding:8px 6px;font-size:11px;letter-spacing:-.3px}.abs-heading{flex-direction:column;gap:11px}.abs-heading h1{font-size:25px}.abs-heading .eyebrow{font-size:10px}.abs-chapters{gap:5px}.abs-chapters button{flex-direction:column;gap:4px;font-size:11px;line-height:1.5;padding:9px 3px}.abs-chapters button>span{font-size:10px}.abs-stage-heading{padding:13px}.abs-stage-heading h2{font-size:18px}.abs-stage-heading>span{font-size:11px;padding:5px 9px}.abs-stage{padding:17px 13px}.abs-zoom-origin{gap:9px}.abs-zoom-origin strong{font-size:12px}.abs-zoom-origin span{font-size:10px}.abs-zoom-origin>img{width:68px;height:47px}.abs-copy>h3{font-size:25px}.abs-copy>p:not(.eyebrow):not(.abs-model-note){font-size:14px}.abs-nutrient-choices{gap:6px}.abs-nutrient-choices button{font-size:12px;padding:10px}.abs-route-answer>h3{font-size:23px}.abs-route-answer .abs-destination{font-size:25px}.abs-two-routes span{font-size:11px}.abs-transport-map{min-height:0}.abs-transport-map .abs-map-label{font-size:28px}.abs-transport-map .abs-map-small{font-size:21px}.abs-transport-intro{font-size:14px}.abs-cell-uses{grid-template-columns:1fr}.abs-cell-uses p{display:flex;justify-content:center;gap:10px;padding:11px;flex-wrap:wrap}.abs-cell-uses strong{font-size:15px}.abs-cell-uses small{font-size:11px}.abs-footer{align-items:flex-start;flex-direction:column;gap:10px}.abs-footer>div{align-self:stretch;justify-content:space-between}.abs-footer button{font-size:12px;padding:10px 12px}.abs-colon-kicker{font-size:12px}.abs-colon-forks{gap:7px}.abs-colon-forks p{padding:10px}.abs-colon-forks strong{font-size:12px}.abs-colon-facts strong{font-size:16px}.summary-foot-actions{gap:7px}}
 @media print{.absorption-view,.absorption-link{display:none!important}}
 @media(max-width:600px){.abs-transport-map{display:none}.abs-mobile-routes{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin:20px 0;color:#526f55}.abs-mobile-routes>div{border-top:3px solid #c37a82;padding-top:8px}.abs-mobile-routes>div:nth-child(2){border-color:#8eb07c}.abs-mobile-routes p{font-size:16px;line-height:1.7;margin:0}.abs-mobile-routes strong,.abs-mobile-routes p>span{display:block}.abs-mobile-routes p>span{font-size:11px;color:#7e8c71}.abs-mobile-routes .abs-mobile-merge,.abs-mobile-routes .abs-mobile-heart{grid-column:1/-1;font-size:20px;font-weight:800}.abs-mobile-routes .abs-mobile-merge>span,.abs-mobile-routes .abs-mobile-heart>span{font-size:23px;color:#82a079}.abs-villus .abs-svg-label{font-size:25px}.abs-villus .abs-svg-small{font-size:19px}}
+
+/* Generated raster art supplies every tissue, organ and cell illustration. */
+.abs-villus-art{position:relative;isolation:isolate;height:326px;width:100%;margin:0;background:radial-gradient(ellipse at 49% 51%,#fff2e34d,transparent 66%)}
+.abs-villus-image{display:block;width:100%;height:100%;object-fit:contain;filter:drop-shadow(0 8px 10px #82503914)}
+.abs-villus-art>figcaption{position:absolute;bottom:-3px;left:10%;right:10%;text-align:center;font-size:11px;color:#7c876e;line-height:1.6;background:#fffef9dd;border-radius:10px;padding:3px 7px;z-index:3}
+.abs-tissue-place{position:absolute;left:4%;top:1%;font-size:16px;font-weight:800;color:#637b5d}
+.abs-villus-callout{position:absolute;left:65%;z-index:3;padding:7px 10px;background:#fffef9f2;border:1px solid #dfdfd1;border-radius:11px;line-height:1.5;box-shadow:0 2px 10px #69452e0a;white-space:nowrap}
+.abs-villus-callout:before{content:'';position:absolute;right:100%;top:50%;width:67px;border-top:2px solid currentColor}
+.abs-villus-callout strong{display:block;font-size:18px;font-weight:850}
+.abs-villus-callout small{display:block;font-size:10px;color:#84907c}
+.abs-villus-blood{top:24%;color:#ad4058;border-color:#d4a1a9}
+.abs-villus-lymph{top:50%;color:#3f7a4c;border-color:#9cba8b}
+.abs-villus-callout[data-active=false]{opacity:.4;box-shadow:none}
+.abs-villus-art[data-route=blood] .abs-villus-blood,.abs-villus-art[data-route=lymph] .abs-villus-lymph{box-shadow:0 0 0 2px currentColor;background:#fffdf5}
+.abs-villus-wall{position:absolute;left:4%;top:71%;font-size:12px;color:#8d7a66;writing-mode:horizontal-tb;background:#fffef9cf;padding:4px 7px;border-radius:7px}
+.abs-route-overlay{position:absolute;inset:0;width:100%;height:100%;z-index:2;pointer-events:none;overflow:visible}
+.abs-entering-nutrient{position:absolute;left:3%;top:34%;max-width:150px;background:#fffdf4;padding:6px 10px;border:1px solid #dfd6bd;border-radius:10px;z-index:3;font-size:12px;line-height:1.5;font-weight:800;color:#7c6847;word-break:keep-all}
+.abs-fat-assembly{position:absolute;left:66%;top:74%;z-index:3;color:#7d775f;font-size:11px;line-height:1.6;background:#fffef9d9;padding:4px 7px;border-radius:8px}
+.abs-surface-art{display:block;width:100%;height:185px;object-fit:contain}
+.abs-surface-result{background:radial-gradient(ellipse at center,#fff1e4,#fbf8ef 75%)}
+.abs-transport-art{display:grid;grid-template-columns:minmax(0,.75fr) minmax(0,1.45fr) minmax(0,1fr) minmax(0,1fr);gap:42px;align-items:center;min-height:275px;margin:3px auto 12px;max-width:1170px}
+.abs-transport-art figure{position:relative;margin:0;min-width:0}
+.abs-transport-art figure>img{display:block;object-fit:contain;width:100%;height:200px;filter:drop-shadow(0 6px 9px #74513b14)}
+.abs-transport-art figcaption{font-size:20px;font-weight:850;color:#3d604b;line-height:1.6;word-break:keep-all}
+.abs-transport-branches{min-width:0;text-align:left;position:relative}
+.abs-transport-blood,.abs-transport-lymph{position:relative;display:grid;grid-template-columns:minmax(0,1fr) 20px 102px;align-items:center;gap:8px;min-height:94px}
+.abs-transport-blood{border-bottom:1px solid #ece5d8;padding-bottom:9px}
+.abs-transport-lymph{min-height:77px;padding-top:8px}
+.abs-transport-blood:before,.abs-transport-lymph:before{content:'→';position:absolute;left:-35px;top:31%;font-size:26px;font-weight:700;color:#9eaf88}
+.abs-transport-branches p{margin:0;line-height:1.6;word-break:keep-all}
+.abs-transport-branches p>strong{display:block;font-size:18px;color:#a44d5b;font-weight:850}
+.abs-transport-branches p>span{display:block;font-size:11px;color:#8a8d77}
+.abs-transport-lymph p>strong{color:#4d7f4a}
+.abs-branch-arrow{color:#8aa37d;font-size:21px}
+.abs-transport-branches figure>img{height:74px}
+.abs-transport-branches figcaption{font-size:17px;text-align:center}
+.abs-lymph-name{font-size:18px;color:#4e7f4c;text-align:center}
+.abs-transport-branches .abs-flow-merge{font-size:11px;color:#8a927a;margin:10px 0 0;text-align:center}
+.abs-flow-merge strong{display:inline!important;font-size:12px!important;color:#4b7659!important}
+.abs-transport-heart:before,.abs-transport-cells:before{content:'→';position:absolute;left:-35px;top:37%;font-size:31px;font-weight:800;color:#819d77}
+.abs-colon-token{width:27px;height:25px;object-fit:contain;vertical-align:middle;margin-right:3px}
+@media(min-width:851px) and (max-height:800px){.abs-villus-art{height:268px}.abs-surface-art{height:100px}.abs-villus-callout{padding:5px 8px}.abs-villus-callout strong{font-size:16px}.abs-villus-callout small{font-size:9px}.abs-villus-art>figcaption{font-size:10px}.abs-tissue-place{font-size:14px}.abs-transport-art{min-height:211px;margin-bottom:5px;gap:35px}.abs-transport-art figure>img{height:157px}.abs-transport-art figcaption{font-size:18px}.abs-transport-branches figure>img{height:55px}.abs-transport-blood{min-height:77px}.abs-transport-lymph{min-height:60px}.abs-transport-branches p>strong{font-size:16px}.abs-transport-branches p>span{font-size:10px}.abs-transport-branches figcaption{font-size:15px}.abs-transport-branches .abs-flow-merge{font-size:10px}.abs-entering-nutrient{font-size:11px;max-width:128px}.abs-villus-wall,.abs-fat-assembly{font-size:10px}}
+@media(max-width:850px){.abs-villus-art{height:330px}.abs-villus-callout:before{width:55px}.abs-surface-art{height:195px}.abs-transport-art{gap:22px;grid-template-columns:minmax(0,.65fr) minmax(0,1.4fr) minmax(0,1fr) minmax(0,1fr)}.abs-transport-art figure>img{height:140px}.abs-transport-art figcaption{font-size:16px}.abs-transport-blood,.abs-transport-lymph{grid-template-columns:minmax(0,1fr) 12px 58px;gap:4px}.abs-transport-branches p>strong{font-size:14px}.abs-transport-branches p>span{font-size:10px}.abs-transport-branches figure>img{height:52px}.abs-transport-branches figcaption,.abs-lymph-name{font-size:14px}.abs-transport-blood:before,.abs-transport-lymph:before{left:-23px;font-size:22px}.abs-transport-heart:before,.abs-transport-cells:before{left:-23px;font-size:25px}.abs-transport-branches .abs-flow-merge{font-size:10px}}
+@media(max-width:600px){.abs-villus-art{height:300px}.abs-villus-callout{left:64%;padding:5px 7px}.abs-villus-callout:before{width:39px}.abs-villus-callout strong{font-size:15px}.abs-villus-callout small{font-size:8px}.abs-tissue-place{font-size:13px}.abs-villus-wall{left:0;font-size:10px}.abs-villus-art>figcaption{font-size:10px;left:0;right:0}.abs-entering-nutrient{font-size:10px;left:0;max-width:100px;padding:5px 7px}.abs-fat-assembly{font-size:9px;padding:3px 5px;left:66%}.abs-surface-art{height:175px}.abs-transport-art{grid-template-columns:minmax(0,1fr) minmax(0,1.2fr);gap:30px 22px;margin-top:18px;min-height:0}.abs-transport-start{grid-column:1}.abs-transport-start>img{height:158px!important}.abs-transport-branches{grid-column:2}.abs-transport-heart{grid-column:1}.abs-transport-cells{grid-column:2}.abs-transport-art figure>img{height:145px}.abs-transport-heart:before{content:'혈액을 타고 ↓';left:0;right:0;top:-22px;text-align:center;font-size:11px}.abs-transport-cells:before{left:-20px;top:35%}.abs-transport-branches .abs-flow-merge{line-height:1.7}.abs-transport-art figcaption{font-size:17px}.abs-transport-blood,.abs-transport-lymph{grid-template-columns:minmax(0,1fr) 10px 53px;gap:3px}.abs-transport-branches p>strong{font-size:13px}.abs-transport-branches p>span{font-size:9px}.abs-transport-branches figcaption{font-size:14px}.abs-transport-branches figure>img{height:47px}}
+
+.abs-villus-art{--villus-size:326px;height:var(--villus-size)}
+.abs-route-overlay{inset:auto;left:50%;top:0;width:var(--villus-size);height:var(--villus-size);transform:translateX(-50%)}
+@media(min-width:851px) and (max-height:800px){.abs-villus-art{--villus-size:268px}}
+@media(max-width:850px){.abs-villus-art{--villus-size:330px}}
+@media(max-width:600px){.abs-villus-art{--villus-size:300px}}
