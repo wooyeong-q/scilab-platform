@@ -205,21 +205,20 @@ dialog{border:1px solid #d5dec9;border-radius:23px;padding:24px 29px;max-width:6
  .enzyme-spotlight{display:flex;flex-direction:column;align-items:stretch;gap:8px;padding:0 12px 11px;min-height:0}.spotlight-link{grid-template-columns:42px 12px minmax(0,1fr) 12px 58px;gap:5px}.spotlight-enzyme{gap:5px}.spotlight-enzyme img{width:48px;height:55px;border-radius:14px}.spotlight-enzyme h3{font-size:21px;letter-spacing:-.8px}.enzyme-spotlight[data-name-state=hidden] .spotlight-enzyme h3{font-size:19px}.spotlight-link strong{font-size:24px}.spotlight-link span:not(.spotlight-arrow){font-size:9px}.spotlight-main .spotlight-kicker{font-size:9px}.spotlight-main>.spotlight-role{font-size:11px}.spotlight-arrow{font-size:18px}.spotlight-controls{display:flex;justify-content:center;gap:6px}.spotlight-controls button{font-size:10px;min-height:29px;padding:6px 12px}.enzyme-spotlight[data-team=observation]{min-height:91px}.spotlight-observation{gap:11px}.spotlight-observation>img{width:60px;height:67px}.spotlight-observation h3{font-size:21px}.spotlight-observation .spotlight-role{font-size:11px}.spotlight-observation .enzyme-detail{font-size:11px}.memory-view{padding-top:22px}.memory-heading h1{font-size:26px;letter-spacing:-1px}.memory-heading .eyebrow{font-size:9px}.memory-switch button{padding:8px 13px;font-size:11px}.memory-toolbar .memory-status{font-size:11px}.memory-footer{gap:12px}.memory-footer p{font-size:10px}
 }
 
-/* The first intestinal observation connects the source, fluid and destination. */
+/* First observe enzyme delivery; bile and digestion have their own steps. */
 #spotlight-pancreas{min-width:0}
-.enzyme-spotlight[data-team=pancreas]{min-height:122px}
-.pancreatic-source{display:grid;grid-template-columns:67px 12px minmax(0,1fr) 12px 73px;align-items:center;gap:6px;min-width:0}
-.pancreatic-organ{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;text-align:center;min-width:0}
-.pancreatic-organ img{width:67px;height:43px;object-fit:contain;border-radius:9px}
-.pancreatic-organ strong{font-size:16px;font-weight:900;color:#285f52;white-space:nowrap;line-height:1.25}
-.pancreatic-organ>span{font-size:9px;line-height:1.4;color:#60745f;word-break:keep-all}
-.pancreatic-arrow{font-size:23px;color:#6e9c83;text-align:center}
-.pancreatic-fluid{padding:7px 5px;background:#e8f1e4;border:1px solid #cadfc9;border-radius:13px;min-width:0}
-.pancreatic-fluid h3{font-size:13px;font-weight:800;line-height:1.3;color:#356449;text-align:center;margin:0 0 3px}
-.pancreatic-team{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:3px}
-.pancreatic-team>div{display:flex;flex-direction:column;align-items:center;min-width:0;gap:2px}
-.pancreatic-team img{width:44px;height:42px;object-fit:contain}
-.pancreatic-team strong{font-size:14px;line-height:1.25;font-weight:900;white-space:nowrap;color:#274b40;letter-spacing:-.3px}
-.pancreatic-team span{font-size:10px;color:#5e735a;line-height:1.3;white-space:nowrap}
-@media(min-width:1500px){.pancreatic-source{grid-template-columns:79px 18px minmax(0,1fr) 18px 85px;gap:10px}.pancreatic-organ img{width:78px;height:49px}.pancreatic-organ strong{font-size:20px}.pancreatic-fluid h3{font-size:15px}.pancreatic-team strong{font-size:17px}.pancreatic-team img{width:50px;height:47px}}
-@media(max-width:580px){.pancreatic-source{grid-template-columns:53px 10px minmax(0,1fr) 10px 56px;gap:3px}.pancreatic-organ img{width:52px;height:39px}.pancreatic-organ strong{font-size:13px}.pancreatic-organ>span{font-size:8px}.pancreatic-fluid{padding:6px 2px}.pancreatic-fluid h3{font-size:11px}.pancreatic-team img{width:37px;height:37px}.pancreatic-team strong{font-size:11px;letter-spacing:-.5px}.pancreatic-team span{font-size:8px}.pancreatic-arrow{font-size:17px}}
+.enzyme-spotlight[data-team=pancreas]{display:flex;align-items:center;justify-content:space-between;min-height:67px;gap:12px;padding:0 20px 11px}
+.pancreatic-source p{font-size:11px;color:#7b8d76;margin:0 0 4px;line-height:1.4}
+.pancreatic-source>strong{display:block;font-size:21px;color:#285f52;font-weight:850;line-height:1.4;word-break:keep-all}
+.pancreatic-source>strong>span{font-size:17px;color:#9caf97;margin:0 5px}
+.enzyme-spotlight[data-team=pancreas] .spotlight-controls{display:flex;gap:5px;flex:none}
+.enzyme-spotlight[data-team=pancreas] .spotlight-controls button{font-size:10px;min-height:30px;padding:7px 9px}
+#tour-view[data-stage="3"][data-beat="0"] .scene-legend,
+#tour-view[data-stage="3"][data-beat="0"] #secretion-label,
+#tour-view[data-stage="3"][data-beat="1"] .scene-legend{display:none}
+#tour-view[data-stage="3"][data-beat="1"] .enzyme-spotlight{min-height:73px}
+#tour-view[data-stage="3"][data-beat="1"] .spotlight-observation>img{display:none}
+#tour-view[data-stage="3"][data-beat="1"] .spotlight-observation .spotlight-role{display:none}
+@media(min-width:1500px){.pancreatic-source>strong{font-size:24px}.enzyme-spotlight[data-team=pancreas] .spotlight-controls button{font-size:12px}}
+@media(max-width:1100px){.pancreatic-source>strong{font-size:18px}.enzyme-spotlight[data-team=pancreas]{flex-wrap:wrap;gap:8px;padding:0 14px 10px}.enzyme-spotlight[data-team=pancreas] .spotlight-controls button{font-size:9px;padding:6px 7px}}
+@media(max-width:580px){.enzyme-spotlight[data-team=pancreas]{align-items:flex-start;gap:9px;padding:0 12px 12px}.pancreatic-source>strong{font-size:21px}.enzyme-spotlight[data-team=pancreas] .spotlight-controls{align-self:stretch;justify-content:flex-end}.enzyme-spotlight[data-team=pancreas] .spotlight-controls button{font-size:10px;padding:7px 11px}}

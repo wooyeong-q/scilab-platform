@@ -528,31 +528,41 @@ function smallIntestine(frame) {
   path(g, 'M50 184 Q400 153 750 184 M50 364 Q400 386 750 364', {
     stroke: frame.tissue, 'stroke-width': 27,
   });
-  const sources = el('g', {}, g);
-  artwork(sources, 'liver-gallbladder-v5.png', 83, 69, 188, 125, '간과 그 아래의 쓸개');
-  artwork(sources, 'pancreas-v5.png', 552, 60, 195, 98, '이자');
-  label(sources, '간', 42, 106, { size: 24, outline: true });
-  line(sources, 61, 101, 112, 101, { stroke: '#9d7966', 'stroke-width': 2 });
-  label(sources, '쓸개', 46, 171, { size: 23, outline: true });
-  line(sources, 77, 164, 132, 159, { stroke: '#7b8737', 'stroke-width': 2 });
-  label(sources, '이자', 650, 76, { size: 24, outline: true });
-  line(sources, 650, 84, 650, 94, { stroke: '#b58e56', 'stroke-width': 2 });
-  // Raster organ art stops at the outlet; these paths define where each fluid goes.
-  path(sources, 'M166 142 L207 142 Q239 142 260 176 L300 192', { stroke: '#b7bc76', 'stroke-width': 11 });
-  path(sources, 'M166 142 L207 142 Q239 142 260 176 L300 192', { stroke: '#e4e8bd', 'stroke-width': 5 });
-  path(sources, 'M622 126 L580 142 Q550 155 526 178 L500 192', { stroke: '#ddb77a', 'stroke-width': 11 });
-  path(sources, 'M622 126 L580 142 Q550 155 526 178 L500 192', { stroke: '#ffedd1', 'stroke-width': 5 });
+  // Show one source and one process at a time: delivery, then bile, then reactions.
+  const bileSource = el('g', { 'data-intestine-layer':'bile-source' }, g);
+  artwork(bileSource, 'liver-gallbladder-v5.png', 83, 69, 188, 125, '간과 그 아래의 쓸개');
+  label(bileSource, '간', 42, 106, { size: 24, outline: true });
+  line(bileSource, 61, 101, 112, 101, { stroke: '#9d7966', 'stroke-width': 2 });
+  label(bileSource, '쓸개', 46, 171, { size: 23, outline: true });
+  line(bileSource, 77, 164, 132, 159, { stroke: '#7b8737', 'stroke-width': 2 });
+  path(bileSource, 'M166 142 L207 142 Q239 142 260 176 L300 192', { stroke: '#b7bc76', 'stroke-width': 11 });
+  path(bileSource, 'M166 142 L207 142 Q239 142 260 176 L300 192', { stroke: '#e4e8bd', 'stroke-width': 5 });
+  const bileFlow = flowDots(bileSource, 6, C.bile, .43);
+
+  const pancreaticSource = el('g', { 'data-intestine-layer':'pancreatic-source' }, g);
+  artwork(pancreaticSource, 'pancreas-v5.png', 552, 60, 195, 98, '소화 효소가 들어 있는 이자액을 만드는 이자');
+  label(pancreaticSource, '이자', 650, 76, { size: 24, outline: true });
+  line(pancreaticSource, 650, 84, 650, 94, { stroke: '#b58e56', 'stroke-width': 2 });
+  path(pancreaticSource, 'M622 126 L580 142 Q550 155 526 178 L500 192', { stroke: '#ddb77a', 'stroke-width': 11 });
+  path(pancreaticSource, 'M622 126 L580 142 Q550 155 526 178 L500 192', { stroke: '#ffedd1', 'stroke-width': 5 });
+  label(pancreaticSource, '이자액', 595, 181, { size: 21, fill: C.enzyme, outline: true });
+  const pancreaticFlow = flowDots(pancreaticSource, 4, C.enzyme, .43);
   label(g, '작은창자 안', 400, 183, { size: 22, fill: C.soft, outline: true });
-  const bileFlow = flowDots(g, 6, C.bile, .43);
-  const pancreaticFlow = flowDots(g, 6, C.enzyme, .43);
-  label(sources, '이자액', 595, 181, { size: 19, fill: C.enzyme, outline: true });
+  const delivery = el('g', { 'data-intestine-layer':'enzyme-delivery' }, g);
+  const arrivals = pancreaticEnzymePositions(4.8);
+  const cargoLabels = el('g', {}, delivery);
+  PANCREATIC_ENZYMES.forEach((id,index) => {
+    const e=ENZYMES[id], x=arrivals[index].x;
+    label(cargoLabels, e.name, x, 322, {size:27,weight:850});
+    label(cargoLabels, e.target+' 담당', x, 344, {size:18,fill:C.soft});
+  });
   const pancreaticCargo = PANCREATIC_ENZYMES.map(id => {
-    const cargo = el('g', { 'data-pancreatic-enzyme': id }, g);
-    artwork(cargo, ENZYMES[id].asset, -22, -22, 44, 44, ENZYMES[id].name+' 캐릭터가 이자액에 들어 작은창자로 이동');
+    const cargo = el('g', { 'data-pancreatic-enzyme': id }, delivery);
+    artwork(cargo, ENZYMES[id].asset, -48, -48, 96, 96, ENZYMES[id].name+' 캐릭터가 이자액에 들어 작은창자로 이동');
     return cargo;
   });
 
-  const bileScene = el('g', {}, g);
+  const bileScene = el('g', { 'data-intestine-layer':'bile-dispersion' }, g);
   const bigDrop = artwork(bileScene, 'oil-drop-v5.png', 320, 193, 160, 160, '큰 지방 방울');
   const drops = [245, 400, 555].map(x => artwork(bileScene, 'oil-drop-v5.png', x - 48, 225, 96, 96, '작은 지방 방울'));
   const fats = Array.from({ length: 3 }, () => triglyceride(bileScene));
@@ -561,7 +571,7 @@ function smallIntestine(frame) {
     artwork(dot, 'bile-drop-v5.png', -10, -12, 20, 24, '지방 방울을 흩어 놓는 쓸개즙');
     return dot;
   });
-  const bileLabel = label(bileScene, '큰 지방 방울', 400, 361, { size: 25 });
+  const bileLabel = label(bileScene, '큰 지방 방울', 400, 346, { size: 25 });
 
   const starchScene = el('g', {}, g);
   const starch = chain(starchScene, 4, 'starch', 26);
@@ -581,17 +591,23 @@ function smallIntestine(frame) {
   const monoLabel = label(lipidScene, '모노글리세리드', 251, 357, { size: 23 });
   const acidsLabel = label(lipidScene, '지방산 2개', 559, 357, { size: 23 });
   const resultBadge = pill(lipidScene, '효소는 다시 작용해요', 438, 209, 242, C.enzymeLight, C.enzyme);
-  pancreaticCargo.forEach(cargo => g.appendChild(cargo));
+  g.appendChild(delivery);
   return t => {
     const current = t < 12 ? 0 : t < 20 ? 1 : t < 27 ? 2 : 3;
-    opacity(bileScene, current === 0 ? 1 : 0);
+    const arriving=t<5, emulsifying=t>=5&&t<12;
+    pancreaticSource.setAttribute('visibility',arriving?'visible':'hidden');
+    delivery.setAttribute('visibility',arriving?'visible':'hidden');
+    bileSource.setAttribute('visibility',emulsifying?'visible':'hidden');
+    bileScene.setAttribute('visibility',emulsifying?'visible':'hidden');
+    opacity(cargoLabels,progress(t,3.9,4.6));
+    opacity(bileScene, emulsifying ? 1 : 0);
     opacity(starchScene, current === 1 ? 1 : 0);
     opacity(proteinScene, current === 2 ? 1 : 0);
     opacity(lipidScene, current === 3 ? 1 : 0);
-    flowAlong(bileFlow, t, 0, 7.5, [[166, 142], [208, 143], [260, 177], [318, 218]], .43);
+    flowAlong(bileFlow, t, 5, 8.5, [[166, 142], [208, 143], [260, 177], [318, 218]], .43);
     flowAlong(pancreaticFlow, t, 0, 5.6, [[622, 126], [580, 143], [529, 178], [493, 218]], .43);
     pancreaticEnzymePositions(t).forEach((cargo,index) => {
-      position(pancreaticCargo[index], cargo.x, cargo.y);
+      position(pancreaticCargo[index], cargo.x, cargo.y, cargo.scale);
       opacity(pancreaticCargo[index], cargo.opacity);
     });
     const dispersion = tween(t, 6, 11);
@@ -613,7 +629,7 @@ function smallIntestine(frame) {
       const radius = mix(102, 73, tween(t, 3, 7));
       position(dot, 400 + Math.cos(angle) * radius + Math.cos(angle) * dispersion * 74,
         273 + Math.sin(angle) * radius * .65);
-      opacity(dot, gate(t, 2, 11.8, 1));
+      opacity(dot, gate(t, 5, 11.8, 1));
     });
     setText(bileLabel, t < 8 ? '큰 지방 방울' : '작은 지방 방울 · 분자는 그대로');
 
@@ -649,8 +665,8 @@ function smallIntestine(frame) {
     opacity(acidsLabel, progress(t, 32, 33.5));
     opacity(resultBadge, progress(t, 34, 35));
     if (t < 5) {
-      setText(heading, '쓸개즙과 이자액이 관을 따라 작은창자로 와요');
-      setText(caption, '간에서 만든 쓸개즙은 쓸개에 저장되었다가 나와요.');
+      setText(heading, '이자액 속 세 효소가 작은창자로 들어와요');
+      setText(caption, '이자에서 만든 이자액에 세 소화 효소가 들어 있어요.');
     } else if (t < 12) {
       setText(heading, '쓸개즙이 지방 방울을 잘게 흩어 놓아요');
       setText(caption, '쓸개즙은 효소가 아니에요. 지방 분자의 연결은 그대로예요.');
