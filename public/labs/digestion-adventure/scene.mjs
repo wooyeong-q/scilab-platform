@@ -1,5 +1,6 @@
 /* Deterministic, seekable digestion scenes. The host owns the playback clock. */
 import { ENZYMES, maskEnzymeNames } from './memory.mjs';
+import { PANCREATIC_ENZYMES, pancreaticEnzymePositions } from './pancreas.mjs';
 
 const SVG_NS = 'http://www.w3.org/2000/svg';
 const C = {
@@ -236,7 +237,7 @@ function createFrame(container, stageIndex) {
     viewBox: '0 0 800 440', preserveAspectRatio: 'xMidYMid meet',
     width: '100%', height: '100%', role: 'img',
     'aria-label': ['입 속 음식과 아밀레이스', '식도의 연동 운동', '위의 펩신과 단백질',
-      '소장의 쓸개즙과 소화 효소', '소장벽에서의 소화와 흡수', '대장에서의 물 흡수와 배출'][stageIndex],
+      '작은창자의 쓸개즙과 소화 효소', '작은창자 벽에서의 소화와 흡수', '큰창자에서의 물 흡수와 배출'][stageIndex],
     style: 'display:block;overflow:hidden;font-family:Pretendard,"Noto Sans KR","Apple SD Gothic Neo",sans-serif;',
   }, container);
   el('title', {}, svg, '음식이 우리 몸을 지나는 과정 — 시간에 따라 움직이는 물질 모형');
@@ -514,7 +515,7 @@ function stomach(frame) {
       setText(caption, '길게 연결된 단백질이 더 작은 단백질 조각으로 나뉘어요.');
     } else {
       setText(heading, '단백질이 더 작은 조각으로 바뀌었어요');
-      setText(caption, '단백질 조각은 소장에서 더 분해돼요.');
+      setText(caption, '단백질 조각은 작은창자에서 더 분해돼요.');
     }
   };
 }
@@ -541,9 +542,15 @@ function smallIntestine(frame) {
   path(sources, 'M166 142 L207 142 Q239 142 260 176 L300 192', { stroke: '#e4e8bd', 'stroke-width': 5 });
   path(sources, 'M622 126 L580 142 Q550 155 526 178 L500 192', { stroke: '#ddb77a', 'stroke-width': 11 });
   path(sources, 'M622 126 L580 142 Q550 155 526 178 L500 192', { stroke: '#ffedd1', 'stroke-width': 5 });
-  label(g, '소장 안', 400, 183, { size: 22, fill: C.soft, outline: true });
+  label(g, '작은창자 안', 400, 183, { size: 22, fill: C.soft, outline: true });
   const bileFlow = flowDots(g, 6, C.bile, .43);
   const pancreaticFlow = flowDots(g, 6, C.enzyme, .43);
+  label(sources, '이자액', 595, 181, { size: 19, fill: C.enzyme, outline: true });
+  const pancreaticCargo = PANCREATIC_ENZYMES.map(id => {
+    const cargo = el('g', { 'data-pancreatic-enzyme': id }, g);
+    artwork(cargo, ENZYMES[id].asset, -22, -22, 44, 44, ENZYMES[id].name+' 캐릭터가 이자액에 들어 작은창자로 이동');
+    return cargo;
+  });
 
   const bileScene = el('g', {}, g);
   const bigDrop = artwork(bileScene, 'oil-drop-v5.png', 320, 193, 160, 160, '큰 지방 방울');
@@ -574,6 +581,7 @@ function smallIntestine(frame) {
   const monoLabel = label(lipidScene, '모노글리세리드', 251, 357, { size: 23 });
   const acidsLabel = label(lipidScene, '지방산 2개', 559, 357, { size: 23 });
   const resultBadge = pill(lipidScene, '효소는 다시 작용해요', 438, 209, 242, C.enzymeLight, C.enzyme);
+  pancreaticCargo.forEach(cargo => g.appendChild(cargo));
   return t => {
     const current = t < 12 ? 0 : t < 20 ? 1 : t < 27 ? 2 : 3;
     opacity(bileScene, current === 0 ? 1 : 0);
@@ -582,6 +590,10 @@ function smallIntestine(frame) {
     opacity(lipidScene, current === 3 ? 1 : 0);
     flowAlong(bileFlow, t, 0, 7.5, [[166, 142], [208, 143], [260, 177], [318, 218]], .43);
     flowAlong(pancreaticFlow, t, 0, 5.6, [[622, 126], [580, 143], [529, 178], [493, 218]], .43);
+    pancreaticEnzymePositions(t).forEach((cargo,index) => {
+      position(pancreaticCargo[index], cargo.x, cargo.y);
+      opacity(pancreaticCargo[index], cargo.opacity);
+    });
     const dispersion = tween(t, 6, 11);
     opacity(bigDrop, 1 - progress(t, 6.6, 9.8));
     drops.forEach((drop, i) => {
@@ -637,7 +649,7 @@ function smallIntestine(frame) {
     opacity(acidsLabel, progress(t, 32, 33.5));
     opacity(resultBadge, progress(t, 34, 35));
     if (t < 5) {
-      setText(heading, '쓸개즙과 이자액이 관을 따라 소장으로 와요');
+      setText(heading, '쓸개즙과 이자액이 관을 따라 작은창자로 와요');
       setText(caption, '간에서 만든 쓸개즙은 쓸개에 저장되었다가 나와요.');
     } else if (t < 12) {
       setText(heading, '쓸개즙이 지방 방울을 잘게 흩어 놓아요');
@@ -647,13 +659,13 @@ function smallIntestine(frame) {
       setText(caption, '아밀레이스가 녹말에 작용하여 엿당을 만들어요.');
     } else if (t < 27) {
       setText(heading, '이자액의 트립신이 단백질 조각을 분해해요');
-      setText(caption, '단백질의 연결이 더 끊어지고, 소장벽에서 소화가 마무리돼요.');
+      setText(caption, '단백질의 연결이 더 끊어지고, 작은창자 벽에서 소화가 마무리돼요.');
     } else if (t < 34) {
       setText(heading, '이자액의 라이페이스가 지방 분자를 분해해요');
       setText(caption, '지방은 주로 지방산과 모노글리세리드로 나뉘어요.');
     } else {
       setText(heading, '지방 분자가 흡수되기 좋은 크기로 나뉘었어요');
-      setText(caption, '작아진 소화 산물은 다음 장면에서 소장벽을 통과해요.');
+      setText(caption, '작아진 소화 산물은 다음 장면에서 작은창자 벽을 통과해요.');
     }
   };
 }
@@ -672,7 +684,7 @@ function absorption(frame) {
   label(inset, '융털', 103, 233, { size: 22 });
   el('rect', { x: 93, y: 86, width: 34, height: 49, rx: 8, fill: 'none', stroke: C.enzyme, 'stroke-width': 2.5, 'stroke-dasharray': '5 5' }, inset);
   path(g, 'M167 129 L194 177', { stroke: C.enzyme, 'stroke-width': 2, 'stroke-dasharray': '5 5' });
-  label(g, '소장 안', 683, 89, { size: 22, fill: C.soft });
+  label(g, '작은창자 안', 683, 89, { size: 22, fill: C.soft });
   const wallGroup = el('g', {}, g);
   const cells = [];
   for (let i = 0; i < 10; i++) {
@@ -682,7 +694,7 @@ function absorption(frame) {
     cells.push(cell);
     for (let k = 0; k < 4; k++) line(wallGroup, 199 + i * 56 + k * 12, 208, 199 + i * 56 + k * 12, 198, { stroke: C.wallDeep, 'stroke-width': 4 });
   }
-  label(g, '소장벽', 102, 270, { size: 24 });
+  label(g, '작은창자 벽', 102, 270, { size: 24 });
   // Parallel destinations: the lipid route does not pass through a blood vessel.
   path(g, 'M190 341 H450', { stroke: '#edb0b5', 'stroke-width': 31 });
   path(g, 'M190 341 H450', { stroke: C.blood, 'stroke-width': 22 });
@@ -765,18 +777,18 @@ function absorption(frame) {
     cells.forEach((cell, i) => cell.setAttribute('fill', t >= 26 && t < 29.5 && i === 7 ? '#f8d39a' : frame.tissue));
     if (t < 4) {
       setText(heading, '융털의 표면을 크게 들여다볼까요?');
-      setText(caption, '소장 안쪽의 융털은 영양소를 흡수하는 표면을 넓혀요.');
+      setText(caption, '작은창자 안쪽의 융털은 영양소를 흡수하는 표면을 넓혀요.');
     } else if (t < 10) {
-      setText(heading, '소장벽의 효소가 엿당을 포도당으로 나눠요');
-      setText(caption, '이 소화 효소는 소장벽에 붙어 작용해요.');
+      setText(heading, '작은창자 벽의 효소가 엿당을 포도당으로 나눠요');
+      setText(caption, '이 소화 효소는 작은창자 벽에 붙어 작용해요.');
     } else if (t < 16) {
-      setText(heading, '소장벽의 효소가 단백질 조각을 더 분해해요');
+      setText(heading, '작은창자 벽의 효소가 단백질 조각을 더 분해해요');
       setText(caption, '단백질 조각의 소화가 마무리되며 아미노산이 생겨요.');
     } else if (t < 24) {
-      setText(heading, '포도당과 아미노산이 소장벽을 통과해요');
+      setText(heading, '포도당과 아미노산이 작은창자 벽을 통과해요');
       setText(caption, '작은 소화 산물이 모세 혈관으로 흡수되어 운반돼요.');
     } else if (t < 29.3) {
-      setText(heading, '지방 소화 산물도 소장벽 세포로 들어와요');
+      setText(heading, '지방 소화 산물도 작은창자 벽 세포로 들어와요');
       setText(caption, '지방산과 모노글리세리드는 세포 안에서 다시 지방이 돼요.');
     } else {
       setText(heading, '다시 만들어진 지방은 주로 암죽관으로 가요');
@@ -849,11 +861,11 @@ function largeIntestine(frame) {
     opacity(stoolLabel, progress(t, 12.5, 14));
     opacity(exitArrow, gate(t, 17, 20, .5));
     if (t < 4) {
-      setText(heading, '남은 찌꺼기와 물이 대장으로 들어와요');
-      setText(caption, '소장에서 소화·흡수되지 않은 물질이 대장으로 이동해요.');
+      setText(heading, '남은 찌꺼기와 물이 큰창자로 들어와요');
+      setText(caption, '작은창자에서 소화·흡수되지 않은 물질이 큰창자로 이동해요.');
     } else if (t < 11) {
-      setText(heading, '대장에서 남은 물의 일부가 흡수돼요');
-      setText(caption, '물은 소장에서도 흡수돼요. 대장에서도 일부를 흡수해요.');
+      setText(heading, '큰창자에서 남은 물의 일부가 흡수돼요');
+      setText(caption, '물은 작은창자에서도 흡수돼요. 큰창자에서도 일부를 흡수해요.');
     } else if (t < 17) {
       setText(heading, '찌꺼기가 대변이 되어 항문 쪽으로 이동해요');
       setText(caption, '물이 줄어들면서 찌꺼기가 더 단단해져요.');

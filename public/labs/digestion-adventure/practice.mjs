@@ -29,9 +29,9 @@ function feedback(state, mode) {
     const extra = mission.enzymeKey === 'trypsin'
       ? '위에서 시작한 단백질 소화를 이어받아요. 두 곰은 서로 다른 효소예요.'
       : mission.enzymeKey === 'pepsin'
-      ? '위에서는 단백질 소화를 시작해요. 소장의 곰과 작용하는 장소가 달라요.'
+      ? '위에서는 단백질 소화를 시작해요. 작은창자의 곰과 작용하는 장소가 달라요.'
       : mission.enzymeKey === 'amylase'
-      ? '같은 종류의 효소가 입과 소장 두 곳에서 작용해요.'
+      ? '같은 종류의 효소가 입과 작은창자 두 곳에서 작용해요.'
       : '쓸개즙은 방울을 흩어 놓고, 이 효소가 지방 분자를 분해해요.';
     return `${maskEnzymeNames(mission.sentence, mode)} ${mission.source}에 들어 있어요. ${extra}`;
   }
@@ -40,7 +40,7 @@ function feedback(state, mode) {
 }
 
 export function renderPractice(state, mode = 'visible') {
-  if (state.finished) return `<section class="dispatch dispatch-complete" aria-labelledby="dispatch-title"><p class="eyebrow">다섯 상황 · 역할 연결 완료</p><h2 id="dispatch-title" tabindex="-1">이제 그림을 보고 설명할 수 있나요?</h2><p>“어디에서, 어떤 효소가, 무엇을 무엇으로 분해한다.”<br>친구와 번갈아 한 문장씩 말해 보세요.</p><div class="dispatch-takeaways"><p><strong>입과 소장의 토끼</strong><span>같은 종류의 효소 · 서로 다른 소화액</span></p><p><strong>위와 소장의 근육 곰</strong><span>서로 다른 효소 · 같은 단백질 담당</span></p><p><strong>소장의 통통 햄스터</strong><span>쓸개즙의 도움 뒤 지방 분해</span></p></div><div class="dispatch-complete-actions"><button data-practice-action="restart">다시 연결하기</button><button data-practice-action="connections">연결표로 확인하기 →</button></div></section>`;
+  if (state.finished) return `<section class="dispatch dispatch-complete" aria-labelledby="dispatch-title"><p class="eyebrow">다섯 상황 · 역할 연결 완료</p><h2 id="dispatch-title" tabindex="-1">이제 그림을 보고 설명할 수 있나요?</h2><p>“어디에서, 어떤 효소가, 무엇을 무엇으로 분해한다.”<br>친구와 번갈아 한 문장씩 말해 보세요.</p><div class="dispatch-takeaways"><p><strong>입과 작은창자의 토끼</strong><span>같은 종류의 효소 · 서로 다른 소화액</span></p><p><strong>위와 작은창자의 근육 곰</strong><span>서로 다른 효소 · 같은 단백질 담당</span></p><p><strong>작은창자의 통통 햄스터</strong><span>쓸개즙의 도움 뒤 지방 분해</span></p></div><div class="dispatch-complete-actions"><button data-practice-action="restart">다시 연결하기</button><button data-practice-action="connections">연결표로 확인하기 →</button></div></section>`;
   const mission = currentMission(state);
   const enzyme = ENZYMES[mission.enzymeKey];
   return `<section class="dispatch" aria-labelledby="dispatch-title"><div class="dispatch-heading"><div><p class="eyebrow">효소 친구 출동!</p><h2 id="dispatch-title" tabindex="-1">누가 이곳에서 일할까요?</h2></div><span class="dispatch-progress">${state.index + 1} / ${ORDER.length}</span></div>

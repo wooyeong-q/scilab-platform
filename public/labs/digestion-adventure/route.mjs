@@ -6,7 +6,7 @@
  */
 
 const DURATIONS = [28, 18, 25, 36, 32, 22];
-const STAGE_NAMES = ['입', '식도', '위', '소장 · 소화', '소장 · 흡수', '대장 · 배출'];
+const STAGE_NAMES = ['입', '식도', '위', '작은창자 · 소화', '작은창자 · 흡수', '큰창자 · 배출'];
 const FULL_BOX = [0, 0, 500, 740];
 const FOCUS_BOXES = [
   [70, 50, 360, 270],
@@ -52,7 +52,7 @@ export function mountRoute(container) {
 
   svg.innerHTML = `
     <title id="${id}-title">입에서 항문까지, 음식의 현재 위치</title>
-    <desc id="${id}-description">입, 식도, 위, 소장, 대장, 항문으로 이어지는 소화관의 모식도입니다. 간, 쓸개, 이자는 소화액을 보내는 보조 기관이며 음식이 지나지 않습니다. 음식 아이콘은 소화 후에도 현재 내용물의 위치를 나타냅니다.</desc>
+    <desc id="${id}-description">입, 식도, 위, 작은창자, 큰창자, 항문으로 이어지는 소화관의 모식도입니다. 간, 쓸개, 이자는 소화액을 보내는 보조 기관이며 음식이 지나지 않습니다. 음식 아이콘은 소화 후에도 현재 내용물의 위치를 나타냅니다.</desc>
     <defs>
       <marker id="${id}-arrow" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="5" markerHeight="5" orient="auto-start-reverse"><path d="M1 1L9 5L1 9" fill="none" stroke="#176e65" stroke-width="2" stroke-linejoin="round"/></marker>
       <marker id="${id}-duct-arrow" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="4" markerHeight="4" orient="auto"><path d="M1 1L9 5L1 9" fill="none" stroke="#67895c" stroke-width="2" stroke-linejoin="round"/></marker>
@@ -129,8 +129,8 @@ export function mountRoute(container) {
       ${name(0, 155, 120, '입', 28)}
       ${name(1, 331, 227, '식도', 26)}
       ${name(2, 414, 348, '위', 30)}
-      ${name(3, 379, 574, '소장', 26)}
-      ${name(5, 250, 422, '대장', 26, 'middle')}
+      ${name(3, 379, 574, '작은창자', 26)}
+      ${name(5, 250, 422, '큰창자', 26, 'middle')}
       ${name(5, 291, 708, '항문', 21)}
 
       <g data-wave opacity="0" fill="none" stroke="#d77d68" stroke-width="5.5" stroke-linecap="round">

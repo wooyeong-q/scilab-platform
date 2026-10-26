@@ -5,9 +5,9 @@ import { ENZYMES, maskEnzymeNames } from './memory.mjs';
 export const ASSOCIATIONS = Object.freeze([
   Object.freeze({ id: 'mouth-amylase', place: '입', organAsset: 'mouth-organ-v3.png', enzymeKey: 'amylase', target: '녹말', source: '침', stage: 0, beat: 3, after: '입에서는 녹말의 일부만 분해돼요.', sentence: '입에서 아밀레이스가 녹말의 일부를 엿당 등으로 분해해요.' }),
   Object.freeze({ id: 'stomach-pepsin', place: '위', organAsset: 'stomach-organ-v3.png', enzymeKey: 'pepsin', target: '단백질', source: '위액', stage: 2, beat: 2, sentence: '위에서 펩신이 단백질을 짧은 단백질 조각으로 분해해요.' }),
-  Object.freeze({ id: 'intestine-amylase', place: '소장', organAsset: 'intestine-organ-v3.png', enzymeKey: 'amylase', target: '녹말', substrate: '남은 녹말', source: '이자액', stage: 3, beat: 2, sentence: '소장에서 아밀레이스가 남은 녹말을 엿당 등으로 분해해요.' }),
-  Object.freeze({ id: 'intestine-trypsin', place: '소장', organAsset: 'intestine-organ-v3.png', enzymeKey: 'trypsin', target: '단백질', source: '이자액', stage: 3, beat: 3, sentence: '소장에서 트립신이 단백질 조각을 더 작은 단백질 조각으로 분해해요.' }),
-  Object.freeze({ id: 'intestine-lipase', place: '소장', organAsset: 'intestine-organ-v3.png', enzymeKey: 'lipase', target: '지방', source: '이자액', stage: 3, beat: 4, sentence: '소장에서 라이페이스가 지방을 지방산과 모노글리세리드로 분해해요.' })
+  Object.freeze({ id: 'intestine-amylase', place: '작은창자', organAsset: 'intestine-organ-v3.png', enzymeKey: 'amylase', target: '녹말', substrate: '남은 녹말', source: '이자액', stage: 3, beat: 2, sentence: '작은창자에서 아밀레이스가 남은 녹말을 엿당 등으로 분해해요.' }),
+  Object.freeze({ id: 'intestine-trypsin', place: '작은창자', organAsset: 'intestine-organ-v3.png', enzymeKey: 'trypsin', target: '단백질', source: '이자액', stage: 3, beat: 3, sentence: '작은창자에서 트립신이 단백질 조각을 더 작은 단백질 조각으로 분해해요.' }),
+  Object.freeze({ id: 'intestine-lipase', place: '작은창자', organAsset: 'intestine-organ-v3.png', enzymeKey: 'lipase', target: '지방', source: '이자액', stage: 3, beat: 4, sentence: '작은창자에서 라이페이스가 지방을 지방산과 모노글리세리드로 분해해요.' })
 ]);
 
 const escapeHTML = value => String(value).replace(/[&<>"']/g, char => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[char]);
@@ -29,7 +29,7 @@ function renderRelationship(association, mode) {
       <div class="assoc-enzyme-copy">
         <span class="assoc-mobile-label" aria-hidden="true">어떤 효소가?</span>
         <strong class="assoc-enzyme-name" aria-label="${escapeHTML(nameLabel)}">${escapeHTML(name)}</strong>
-        <span class="assoc-source">${escapeHTML(association.source)}에 들어 있어요</span>
+        <span class="assoc-source">${association.source === '이자액' ? '이자 → 이자액 → 작은창자' : escapeHTML(association.source)+'에 들어 있어요'}</span>
       </div>
     </div>
     <span class="assoc-arrow assoc-arrow-target" aria-hidden="true">→</span>
@@ -72,6 +72,6 @@ export function renderAssociations(nameMode = 'visible') {
       <div class="assoc-path-heading"><div class="assoc-column-heading assoc-enzyme-heading"><strong>어떤 효소가?</strong><span>소화 효소</span></div><div class="assoc-column-heading assoc-target-heading"><strong>무엇을?</strong><span>분해 대상</span></div><div class="assoc-column-heading assoc-result-heading"><strong>무엇으로?</strong><span>이 단계의 결과</span></div></div>
     </div>
     <div class="assoc-groups">${groups.map(group => renderPlaceGroup(group, mode)).join('')}</div>
-    <p class="assoc-note"><strong>장소는 효소가 작용하는 곳이에요.</strong><span>표에 나온 소장 효소들은 이자에서 나온 이자액에 들어 있어요.</span></p>
+    <p class="assoc-note"><strong>장소는 효소가 작용하는 곳이에요.</strong><span>표에 나온 작은창자 효소들은 이자에서 나온 이자액에 들어 있어요.</span></p>
   </div>`;
 }
