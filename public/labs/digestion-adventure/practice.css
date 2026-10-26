@@ -10,3 +10,18 @@
 .dispatch-feedback .dispatch-result{display:flex;align-items:center;flex-wrap:wrap;gap:4px 10px;font-size:19px;font-weight:700;line-height:1.4;margin:6px 0;color:#3d6951}.dispatch-result i{font-style:normal;color:#8ca381}.dispatch-result b{font-size:22px;font-weight:900;color:#236449}
 @media(max-width:600px){.dispatch-feedback .dispatch-result{font-size:16px}.dispatch-result b{font-size:19px}}
 @media(prefers-reduced-motion:reduce){.dispatch-choice{transition:none}}
+.dispatch-choice{position:relative}
+.dispatch-choice>.dispatch-choice-verdict{position:absolute;top:10px;left:10px;display:flex;align-items:center;gap:4px;padding:5px 10px;border-radius:20px;background:#176448;color:#fff;font-size:15px;font-weight:900;line-height:1.3;box-shadow:0 2px 5px #174f3426}
+.dispatch-choice-verdict>span{font-size:18px;line-height:1}
+.dispatch-choice[data-result=correct]{border-color:#176448;background:#e4f2e8;box-shadow:0 0 0 2px #176448,inset 0 0 0 1px #176448}
+.dispatch-choices[data-solved=true] .dispatch-choice:not([data-result=correct]){background:#f4f3ee;border-color:#e3e5dc}
+.dispatch-choices[data-solved=true] .dispatch-choice:not([data-result=correct]) img{opacity:.45;filter:grayscale(.35)}
+.dispatch-choices[data-solved=true] .dispatch-choice:not([data-result=correct]) strong{color:#7c887f}
+.dispatch-response[data-solved=true]{border:2px solid #32835c;padding:10px 14px}
+.dispatch-verdict{display:flex;align-items:center;flex-wrap:wrap;gap:6px 16px}
+.dispatch-success{display:inline-flex;align-items:center;gap:6px;white-space:nowrap;font-size:19px;font-weight:900;color:#175f43}
+.dispatch-success>span{display:grid;place-items:center;width:25px;height:25px;background:#176448;border-radius:50%;color:#fff;font-size:18px}
+.dispatch-answer{display:flex;align-items:center;flex-wrap:wrap;gap:4px 9px;font-size:20px;line-height:1.4;word-break:keep-all}
+.dispatch-answer i{font-style:normal;color:#699078}
+.dispatch-answer b{color:#175f43;font-size:23px;font-weight:900;text-decoration:underline;text-decoration-color:#89b89a;text-underline-offset:4px}
+@media(max-width:600px){.dispatch-choice>.dispatch-choice-verdict{top:6px;left:6px;padding:4px 7px;font-size:13px}.dispatch-choice-verdict>span{font-size:15px}.dispatch-success{font-size:17px}.dispatch-answer{font-size:16px}.dispatch-answer b{font-size:20px}}
