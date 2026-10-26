@@ -48,11 +48,13 @@ test('solver detects ambiguity instead of authorizing an unsound shared maze',as
  assert.ok(ambiguous,'a genuinely ambiguous board was constructed');
  assert.equal(solveMaze(ambiguous).count,2);assert.throws(()=>decodeMaze(encodeMaze(ambiguous)));
 });
-test('wrong sequence and diagonal steps are rejected; backtracking remains available',async()=>{
- const {generateMaze,checkStep,neighbors}=await model;
+test('wrong words can be selected freely; explicit evaluation finds errors and backtracking works',async()=>{
+ const {generateMaze,checkStep,neighbors,assessPath}=await model;
  const {board,path}=generateMaze('rv',seeded(11));
  assert.equal(checkStep(board,[0],7).reason,'adjacent');
  const wrong=neighbors(0).find(i=>board.cells[i]!=='pa');
- if(wrong!==undefined)assert.equal(checkStep(board,[0],wrong).reason,'order');
+ if(wrong!==undefined){const r=checkStep(board,[0],wrong);assert.equal(r.ok,true);assert.equal(assessPath(board,r.path).errors.length,1);assert.equal(assessPath(board,r.path).complete,false);}
+ assert.equal(assessPath(board,path).complete,true);
+ assert.equal(assessPath(board,[0]).complete,false);
  assert.deepEqual(checkStep(board,path.slice(0,5),path[1]).path,path.slice(0,2));
 });

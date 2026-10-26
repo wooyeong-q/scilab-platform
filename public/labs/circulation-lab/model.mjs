@@ -97,6 +97,13 @@ export function checkStep(board,path,index){
   if(!validateBoard(board)||!Array.isArray(path)||!path.length||!Number.isInteger(index)||index<0||index>35)return {ok:false,reason:'invalid'};
   const at=path.indexOf(index);if(at!==-1)return {ok:true,path:path.slice(0,at+1),back:true};
   if(!neighbors(path.at(-1)).includes(index))return {ok:false,reason:'adjacent'};
-  if(board.cells[index]!==nextPart(board.cells[path.at(-1)]))return {ok:false,reason:'order'};
   return {ok:true,path:[...path,index],complete:index===35};
+}
+
+// Evaluation is explicit: selecting cells never reveals whether a word is correct.
+export function assessPath(board,path){
+  if(!validateBoard(board)||!Array.isArray(path)||path[0]!==0||new Set(path).size!==path.length||path.some((v,i)=>!Number.isInteger(v)||v<0||v>35||(i&&!neighbors(path[i-1]).includes(v))))return {valid:false,complete:false,errors:[]};
+  const errors=[];
+  for(let i=1;i<path.length;i++)if(board.cells[path[i]]!==nextPart(board.cells[path[i-1]]))errors.push({step:i,cell:path[i],from:board.cells[path[i-1]],to:board.cells[path[i]],expected:nextPart(board.cells[path[i-1]])});
+  return {valid:true,complete:path.at(-1)===35&&errors.length===0,errors};
 }

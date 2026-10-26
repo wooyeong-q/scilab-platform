@@ -19,3 +19,7 @@ dialog{border:1px solid #e4dfd4;border-radius:25px;padding:33px;width:min(510px,
 @media(max-width:800px){.vessel-photo{padding:0 12px 11px;gap:9px}.vessel-controls{gap:6px;padding:0 2px}.vessel-pick{padding:9px 3px}.vessel-pick strong{font-size:15px}.vessel-pick span{font-size:9px}.vessel-photo .art-note{font-size:8px}.heart-diagram .svg-small{font-size:21px}.observation-art.heart{height:clamp(320px,82vw,550px)}.observation-art.vessels{height:clamp(360px,88vw,560px)}.info-card .tiny-note{font-size:12px}.info-card .role-text{font-size:18px}.term-bank .pill{font-size:12px}.maze-cell{font-size:clamp(13px,3.5vw,20px)}.color-legend{font-size:10px}.color-caveat{font-size:9px}}
 
 .flow-label{font-size:26px}.heart-diagram text[font-size="28"]{font-size:32px}
+
+.maze-cell.error-cell{box-shadow:inset 0 0 0 3px #c45a49;background:#f6d6cb;color:#773f34}
+
+.maze-info:not(.maze-complete) .partner-task{display:none}
