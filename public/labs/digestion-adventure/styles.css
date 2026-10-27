@@ -222,3 +222,12 @@ dialog{border:1px solid #d5dec9;border-radius:23px;padding:24px 29px;max-width:6
 @media(min-width:1500px){.pancreatic-source>strong{font-size:24px}.enzyme-spotlight[data-team=pancreas] .spotlight-controls button{font-size:12px}}
 @media(max-width:1100px){.pancreatic-source>strong{font-size:18px}.enzyme-spotlight[data-team=pancreas]{flex-wrap:wrap;gap:8px;padding:0 14px 10px}.enzyme-spotlight[data-team=pancreas] .spotlight-controls button{font-size:9px;padding:6px 7px}}
 @media(max-width:580px){.enzyme-spotlight[data-team=pancreas]{align-items:flex-start;gap:9px;padding:0 12px 12px}.pancreatic-source>strong{font-size:21px}.enzyme-spotlight[data-team=pancreas] .spotlight-controls{align-self:stretch;justify-content:flex-end}.enzyme-spotlight[data-team=pancreas] .spotlight-controls button{font-size:10px;padding:7px 11px}}
+
+/* A short action stays visible; fuller explanations open only when requested. */
+.scene-panel .caption{min-height:64px;padding:11px 20px;gap:10px}
+.caption>div{min-width:0;flex:1}
+.caption h3{margin-bottom:0}
+.caption-explanation>summary{width:max-content;cursor:pointer;font-size:11px;color:#71836b;line-height:1.4;margin-top:4px}
+.caption-explanation>summary:hover{color:#216c56}
+.caption-explanation[open]>p{margin:7px 0 0;font-size:12px;line-height:1.7}
+@media(max-width:580px){.scene-panel .caption{padding:12px 14px;min-height:66px}.caption-explanation>summary{font-size:12px}}

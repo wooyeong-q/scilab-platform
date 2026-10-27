@@ -294,7 +294,7 @@ function mouth(frame) {
   path(source, 'M139 97 H204 Q243 97 243 134 V174', { stroke: C.enzymeLight, 'stroke-width': 9 });
   artwork(source, 'salivary-gland-v5.png', 14, 45, 145, 121, '침샘');
   label(source, '침샘', 85, 186, { size: 24, outline: true });
-  label(source, '침이 나오는 관', 274, 85, { size: 22, anchor: 'start' });
+  label(source, '침', 274, 94, { size: 28, anchor: 'start', fill: C.enzyme, outline: true });
   const saliva = flowDots(g, 5, C.enzyme, .42);
   const molecular = el('g', {}, g);
   const starch = chain(molecular, 8, 'starch', 22);
@@ -451,10 +451,11 @@ function stomach(frame) {
     });
   });
   label(g, '위벽의 샘', 130, 168, { size: 22, outline: true });
-  label(g, '위액', 235, 124, { size: 23, fill: C.enzyme });
+  label(g, '위액', 264, 105, { size: 28, fill: C.enzyme, outline: true });
   path(g, 'M175 125 Q203 147 232 174', { stroke: C.wallDeep, 'stroke-width': 8, opacity: .6 });
   const juice = flowDots(g, 5, C.enzyme, .46);
-  const acid = pill(g, '산성 환경', 626, 117, 144, '#f7e3de', '#99554d');
+  const acid = pill(g, '염산 → 산성 환경', 592, 117, 228, '#f7e3de', '#99554d');
+  const acidNote = label(g, '(효소 아님)', 592, 154, { size: 18, fill: '#99554d' });
   const acidity = Array.from({ length: 4 }, (_, i) => {
     const group = el('g', {}, g);
     el('circle', { r: 16, fill: '#f5d7d0', stroke: '#d79c91', 'stroke-width': 1.5 }, group);
@@ -490,6 +491,7 @@ function stomach(frame) {
     opacity(initialLabel, 1 - progress(t, 16, 18));
     opacity(outputLabels, progress(t, 18, 20));
     opacity(acid, progress(t, 6.5, 8));
+    opacity(acidNote, progress(t, 6.5, 8));
     flowAlong(juice, t, 5, 10.6, [[145, 119], [184, 135], [219, 169], [259, 194]], .46);
     acidity.forEach((acid, i) => {
       const u = tween(t, 5.5 + i * .6, 9.4 + i * .4);
@@ -508,7 +510,7 @@ function stomach(frame) {
       setText(heading, '위가 음식물을 주무르며 섞어요');
       setText(caption, '위의 근육 운동으로 음식이 위액과 골고루 섞여요.');
     } else if (t < 10) {
-      setText(heading, '위벽에서 펩신이 포함된 위액이 나와요');
+      setText(heading, '위벽에서 펩신과 염산이 든 위액이 나와요');
       setText(caption, '위액의 염산은 위 속을 산성으로 만들어요.');
     } else if (t < 20) {
       setText(heading, '펩신이 단백질에 닿아 연결을 끊어요');

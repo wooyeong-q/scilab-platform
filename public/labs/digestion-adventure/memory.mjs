@@ -7,9 +7,9 @@ export const ENZYMES = {
 };
 export function maskEnzymeNames(text,mode='visible'){
  if(mode==='visible')return String(text);
- return String(text).replace(/(아밀레이스|펩신|트립신|라이페이스)(은|이|을)?/g,(match,name,particle='')=>{
+ return String(text).replace(/(아밀레이스|펩신|트립신|라이페이스)(은|이|을|과|와)?/g,(match,name,particle='')=>{
   if(mode==='hint')return name.slice(0,1)+'…'+particle;
-  const adjusted=/신$/.test(name)?({은:'는',이:'가',을:'를'}[particle]||particle):particle;
+  const adjusted=/신$/.test(name)?({은:'는',이:'가',을:'를',과:'와'}[particle]||particle):particle;
   return '이 효소'+adjusted;
  });
 }
