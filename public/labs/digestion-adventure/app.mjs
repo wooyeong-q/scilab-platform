@@ -7,9 +7,11 @@ import {createPractice, chooseEnzyme, nextMission, renderPractice} from './pract
 import {renderSummaryCards} from './summary.mjs';
 import {renderPancreaticSource} from './pancreas.mjs';
 import {mountAbsorption} from './absorption.mjs';
+import {mountPointerEmphasis} from './pointer.mjs';
 
 const $ = selector => document.querySelector(selector);
 const $$ = selector => [...document.querySelectorAll(selector)];
+mountPointerEmphasis($('#pointer-btn'));
 const reducedMotion = matchMedia('(prefers-reduced-motion: reduce)').matches;
 const state = {stage:0,beat:0,time:0,animating:false,camera:'focus',mode:'tour',memoryMode:'connections',nameMode:'visible',summaryTeam:'starch',summaryLayout:'single',locationKey:'',completed:new Set()};
 let practice = createPractice();
