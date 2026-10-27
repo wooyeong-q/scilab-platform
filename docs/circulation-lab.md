@@ -78,3 +78,12 @@ Both `assets/valve-open.webp` and `assets/valve-closed.webp` were made with the 
 - `tissue-capillaries.webp`: upper tissue cells with lavender nuclei; bottom horizontal thin capillary with RBCs; clear middle gap for animated labels.
 - `valve-open.webp` / `valve-closed.webp`: smooth ivory tricuspid leaflets in coral ring, visibly open passage / sealed central meeting of leaflets.
 - `pulse-wrist.webp`: two hands, palm-up forearm and index/middle fingers touching radial pulse on thumb side of wrist; no device.
+
+## 2026-10-27 전체 글씨·오른쪽 설명 가독성 재설계
+
+- Noto Sans KR 가변 WOFF2를 함께 제공해 본문과 SVG 이름표에 적용했다. 글꼴 라이선스는 assets/fonts/OFL.txt에 포함한다.
+- 오른쪽 본문22px, 핵심 역할24px, 항목 값24px, 주요 조작20px. 흰 배경과 짙은 남색 글자에 역할 표시만 녹색 띠로 구분한다.
+- 오른쪽을390px로 넓혔다. 보충 설명은 ‘원리 더 보기’로 펼쳐 읽도록 바꾸고 핵심 설명과 조작을 먼저 보여준다.
+- 심장 이름표44 SVG단위, 순환 이름표42단위로 확대했다. 순환 그림에서는 ‘폐’·‘온몸’으로 짧게 쓰고 오른쪽에는 정확한 이름과 설명을 유지한다.
+- 미로 안내를 짧게 다듬고 ‘새 미로·정답 보기’로 보조 조작을 모았다. 오답 선택, 경로 편집, QR 공유 동작은 유지했다.
+- 1280×720에서 심장·혈관·순환·미로를 육안 확인했다. 기존12개 테스트를 통과했다.
