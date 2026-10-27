@@ -92,6 +92,14 @@ test('tissue exchange distinguishes all four materials and their opposite direct
 test('pulse comparison uses actual inputs and leaves unmeasured results empty',async()=>{
  const {pulseComparison,labAction,labChange,labView}=await import('../public/labs/circulation-lab/experiments.mjs');
  assert.equal(pulseComparison('',''),null);assert.equal(pulseComparison(80,120),40);assert.equal(pulseComparison(100,90),-10);
- labAction('lab-mode-pulse');labChange({id:'pulse-rest',value:'80'});labChange({id:'pulse-active',value:'120'});assert.match(labView(),/40회\/분 늘었어요/);
+ labAction('lab-mode-pulse');labAction('lab-pulse-manual');labChange({id:'pulse-rest',value:'80'});labChange({id:'pulse-active',value:'120'});assert.match(labView(),/40회\/분 늘었어요/);
  labChange({id:'pulse-rest',value:'-5'});assert.match(labView(),/두 값을 입력/);
+});
+
+test('15-second wrist counts convert to per-minute values without a sensor',async()=>{
+ const {labAction,labChange,labView}=await import('../public/labs/circulation-lab/experiments.mjs');
+ labAction('lab-mode-pulse');labAction('lab-pulse-manual');
+ labChange({id:'pulse-count-rest',value:'18'});labChange({id:'pulse-count-active',value:'30'});
+ assert.match(labView(),/72회 \/ 분/);assert.match(labView(),/120회 \/ 분/);assert.match(labView(),/48회\/분 늘었어요/);
+ labAction('lab-pulse-demo');assert.match(labView(),/모의 값/);assert.doesNotMatch(labView(),/측정 취소/);
 });

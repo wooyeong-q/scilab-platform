@@ -18,7 +18,7 @@ export function renderSummaryCards({ layout = 'single', activeTeam = 'starch' } 
       ${absorption('포도당 <span>→</span> 모세 혈관')}
     </ol></article>
     <article id="summary-path-protein" class="summary-card" data-team="protein"${hiddenFor('protein')}><div class="summary-card-heading"><div><span class="small">몸을 구성하는 영양소</span><h2>단백질</h2></div><div class="summary-portraits summary-portraits-pair">${portrait('pepsin')}${portrait('trypsin')}</div></div><ol class="summary-process-list" aria-label="단백질의 소화와 흡수">
-      ${step(1, '위', '위액', '펩신', '<b>단백질</b> <span>→</span> 짧은 조각')}
+      ${step(1, '위', '위액', '펩신', '<b>단백질</b> <span>→</span> 짧은 조각', '염산: 산성 환경 · 효소 아님')}
       ${step(2, '작은창자', '이자액', '트립신', '단백질 조각 <span>→</span> 더 작은 조각')}
       ${step(3, '작은창자 벽', '벽의 소화 효소', '소화 효소 <small class="enzyme-detail">(펩티데이스)</small>', '작은 조각 <span>→</span> <b>아미노산</b>')}
       ${absorption('아미노산 <span>→</span> 모세 혈관')}

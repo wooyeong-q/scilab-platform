@@ -142,7 +142,7 @@ document.addEventListener('click',e=>{
   else if(el.dataset.destination){if(journey.answered)return;const target=ROUTES[journey.route].ids[journey.step+1];journey.answered=el.dataset.destination===target;journey.feedback=journey.answered?'맞아요! 다음 단계로 이동해 보세요.':`${BY_ID[ROUTES[journey.route].ids[journey.step]].name}에서 어디로 연결되는지 화살표를 따라 살펴보세요.`;}
   else if(el.dataset.cell!==undefined){selectCell(Number(el.dataset.cell));return;}
   else if(el.dataset.term)maker.term=el.dataset.term;
-  else if(el.dataset.action){if(!labAction(el.dataset.action,render))actions[el.dataset.action]?.();}
+  else if(el.dataset.action){const handled=labAction(el.dataset.action,render);if(handled==='live')return;if(!handled)actions[el.dataset.action]?.();}
   else return;
   render();
 });

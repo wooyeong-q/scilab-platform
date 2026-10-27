@@ -7,9 +7,9 @@ export const ENZYMES = {
 };
 export function maskEnzymeNames(text,mode='visible'){
  if(mode==='visible')return String(text);
- return String(text).replace(/(아밀레이스|펩신|트립신|라이페이스)(은|이|을)?/g,(match,name,particle='')=>{
+ return String(text).replace(/(아밀레이스|펩신|트립신|라이페이스)(은|이|을|과|와)?/g,(match,name,particle='')=>{
   if(mode==='hint')return name.slice(0,1)+'…'+particle;
-  const adjusted=/신$/.test(name)?({은:'는',이:'가',을:'를'}[particle]||particle):particle;
+  const adjusted=/신$/.test(name)?({은:'는',이:'가',을:'를',과:'와'}[particle]||particle):particle;
   return '이 효소'+adjusted;
  });
 }
@@ -18,7 +18,7 @@ export function getEnzymeContext(stage,beat){
  if(stage===2)return {id:'pepsin',label:beat===0?'이곳에서 만날 효소':'지금 만나는 효소',place:'위',role:ENZYMES.pepsin.role};
  if(stage===3 && beat>=2){const id=beat===2?'amylase':beat===3?'trypsin':'lipase';return {id,label:beat===5?'방금 만난 효소':'지금 만나는 효소',place:'작은창자',role:ENZYMES[id].role};}
  if(stage===1)return {symbol:'→',label:'음식의 이동',title:'식도의 연동 운동',role:'근육이 차례로 오므라들며 음식물을 위로 보내요.'};
- if(stage===3 && beat===0)return {symbol:'＋',label:'소화액이 모이는 곳',title:'쓸개즙과 이자액',role:'관을 통해 작은창자로 들어오는 모습을 살펴봐요.'};
+ if(stage===3 && beat===1)return {symbol:'＋',label:'소화 효소가 들어오는 길',title:'이자액',role:'관을 통해 작은창자로 들어오는 모습을 살펴봐요.'};
  if(stage===3)return {symbol:'●',label:'지방 소화를 돕는 물질',title:'쓸개즙 · 효소 아님',role:'큰 지방 방울을 흩어 놓아요. 지방 분자는 그대로예요.'};
  if(stage===4 && (beat===1 || beat===2))return {symbol:'효소',label:'작은창자 벽에서 소화 마무리',title:'소화 효소',reference:beat===1?'(말테이스)':'(펩티데이스)',substrate:beat===1?'엿당':'작은 단백질 조각',result:beat===1?'포도당':'아미노산',role:beat===1?'엿당을 포도당으로 나눠요.':'작은 단백질 조각을 아미노산으로 나눠요.'};
  if(stage===4)return {symbol:'↗',label:'작은 영양소가 몸속으로',title:'작은창자 융털의 흡수',role:'영양소가 작은창자 벽을 건너는 모습을 관찰해요.'};

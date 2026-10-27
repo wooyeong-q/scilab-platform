@@ -54,3 +54,27 @@ Reviewed the user-provided 동물과 에너지 textbook, printed pages 202–207
 | 205: blood classification | Plasma as liquid vs erythrocytes/leukocytes/platelets as blood cell components; hemoglobin explains red appearance and oxygen transport. |
 
 Both `assets/valve-open.webp` and `assets/valve-closed.webp` were made with the built-in imagegen tool. Final briefs: a nongory realistic classroom closeup of a tricuspid atrioventricular valve in a coral muscle ring, ivory leaflets folded outward leaving a visible passage (open), versus all three leaflets meeting and sealing the passage (closed), ivory background, no text/arrows/diagram geometry. They illustrate valve opening rather than exact anatomy or a quantitative cardiac model. Browser QA at 1280×720 confirmed the experimental panel fits, four-direction material labels appear stepwise, flow markers travel different distances and actual input values update the pulse comparison immediately. Unit coverage includes valve state transitions, material directions and measured-value comparison.
+
+## 2026-10-27 시각 탐구·가독성 개편
+
+- 거친 실물 조직 질감을 모두 교과서 삽화풍의 매끈한 래스터 이미지로 교체했다. 장기를 CSS/SVG 도형으로 대체하지 않았다.
+- 혈관 비교: 세 트랙에서 혈액 표식이 지속적으로 동시에 흐른다. 동맥/정맥보다 모세혈관이 느리며 실제 속도 비율을 의미하지 않는다. 일시정지는 현재 위치를 유지한다.
+- 온몸 물질 교환: 산소·영양소 표식은 혈액에서 세포로, 이산화 탄소·노폐물 표식은 세포에서 혈액으로 혈관 벽을 건넌다. 단계 선택과 일시정지를 제공한다.
+- 맥박: 기본 활동은 모의 심장 두 개의 박동 간격 비교다. 72·120회/분은 설명용 값임을 명시한다. 직접 측정은 선택이며 손목 그림, 15초 타이머, 횟수×4 자동 환산을 제공한다. 기기/센서 없이 진행한다.
+- 읽기: 본문 18px, 활동 버튼 16–17px, 보조 안내 13–14px. 짙은 글자색을 사용하고 좁은 화면에서는 줄바꿈을 허용한다. 우측 설명이 넘칠 때 스크롤을 허용하여 글자를 줄이지 않는다.
+- QA: 1280×720과 390px 화면 육안 검토. 18회/15초→72회/분, 30회/15초→120회/분, 증가량48 자동 반영 확인. 기존 미로·공유 등 12개 테스트 통과.
+
+### 이미지 제작 기록 (built-in image_gen)
+
+프로젝트 저장 위치: `public/labs/circulation-lab/assets/`. 아래 파일은 모두 새 이미지로 교체했다.
+
+공통 프롬프트: “Use case: scientific-educational. Asset for Korean middle school circulation interactive. Style: approachable hand-painted textbook illustration, clean matte surface, gentle pastel shading, crisp clear silhouettes on plain warm ivory background. Anatomically recognizable but NOT photorealistic, no gore, no wet shine, no exposed muscle fibers, no tiny organic textures, no creepy realism, no geometric diagram substitutes, no text, no watermark. Large centered composition.”
+
+개별 대상:
+- `heart-cutaway.webp`: four chambers, thick left ventricular wall on viewer right, red and blue major vessels, school anatomy cutaway.
+- `blood-observation.webp`: soft red biconcave discs, pale lavender leukocyte with lobed purple nucleus upper right, tiny violet platelets lower right, pale yellow plasma.
+- `vessels-observation.webp`: upright thick-walled artery left, thin single-cell-wall capillary middle, thin-walled wide-lumen vein with inward valve leaflets right.
+- `lungs.webp`: pale pink paired lungs, trachea and branching bronchi.
+- `tissue-capillaries.webp`: upper tissue cells with lavender nuclei; bottom horizontal thin capillary with RBCs; clear middle gap for animated labels.
+- `valve-open.webp` / `valve-closed.webp`: smooth ivory tricuspid leaflets in coral ring, visibly open passage / sealed central meeting of leaflets.
+- `pulse-wrist.webp`: two hands, palm-up forearm and index/middle fingers touching radial pulse on thumb side of wrist; no device.

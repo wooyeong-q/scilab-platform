@@ -205,7 +205,7 @@ dialog{border:1px solid #d5dec9;border-radius:23px;padding:24px 29px;max-width:6
  .enzyme-spotlight{display:flex;flex-direction:column;align-items:stretch;gap:8px;padding:0 12px 11px;min-height:0}.spotlight-link{grid-template-columns:42px 12px minmax(0,1fr) 12px 58px;gap:5px}.spotlight-enzyme{gap:5px}.spotlight-enzyme img{width:48px;height:55px;border-radius:14px}.spotlight-enzyme h3{font-size:21px;letter-spacing:-.8px}.enzyme-spotlight[data-name-state=hidden] .spotlight-enzyme h3{font-size:19px}.spotlight-link strong{font-size:24px}.spotlight-link span:not(.spotlight-arrow){font-size:9px}.spotlight-main .spotlight-kicker{font-size:9px}.spotlight-main>.spotlight-role{font-size:11px}.spotlight-arrow{font-size:18px}.spotlight-controls{display:flex;justify-content:center;gap:6px}.spotlight-controls button{font-size:10px;min-height:29px;padding:6px 12px}.enzyme-spotlight[data-team=observation]{min-height:91px}.spotlight-observation{gap:11px}.spotlight-observation>img{width:60px;height:67px}.spotlight-observation h3{font-size:21px}.spotlight-observation .spotlight-role{font-size:11px}.spotlight-observation .enzyme-detail{font-size:11px}.memory-view{padding-top:22px}.memory-heading h1{font-size:26px;letter-spacing:-1px}.memory-heading .eyebrow{font-size:9px}.memory-switch button{padding:8px 13px;font-size:11px}.memory-toolbar .memory-status{font-size:11px}.memory-footer{gap:12px}.memory-footer p{font-size:10px}
 }
 
-/* First observe enzyme delivery; bile and digestion have their own steps. */
+/* Observe bile first, then enzyme delivery, then digestion. */
 #spotlight-pancreas{min-width:0}
 .enzyme-spotlight[data-team=pancreas]{display:flex;align-items:center;justify-content:space-between;min-height:67px;gap:12px;padding:0 20px 11px}
 .pancreatic-source p{font-size:11px;color:#7b8d76;margin:0 0 4px;line-height:1.4}
@@ -213,12 +213,21 @@ dialog{border:1px solid #d5dec9;border-radius:23px;padding:24px 29px;max-width:6
 .pancreatic-source>strong>span{font-size:17px;color:#9caf97;margin:0 5px}
 .enzyme-spotlight[data-team=pancreas] .spotlight-controls{display:flex;gap:5px;flex:none}
 .enzyme-spotlight[data-team=pancreas] .spotlight-controls button{font-size:10px;min-height:30px;padding:7px 9px}
-#tour-view[data-stage="3"][data-beat="0"] .scene-legend,
-#tour-view[data-stage="3"][data-beat="0"] #secretion-label,
-#tour-view[data-stage="3"][data-beat="1"] .scene-legend{display:none}
-#tour-view[data-stage="3"][data-beat="1"] .enzyme-spotlight{min-height:73px}
-#tour-view[data-stage="3"][data-beat="1"] .spotlight-observation>img{display:none}
-#tour-view[data-stage="3"][data-beat="1"] .spotlight-observation .spotlight-role{display:none}
+#tour-view[data-stage="3"][data-beat="1"] .scene-legend,
+#tour-view[data-stage="3"][data-beat="1"] #secretion-label,
+#tour-view[data-stage="3"][data-beat="0"] .scene-legend{display:none}
+#tour-view[data-stage="3"][data-beat="0"] .enzyme-spotlight{min-height:73px}
+#tour-view[data-stage="3"][data-beat="0"] .spotlight-observation>img{display:none}
+#tour-view[data-stage="3"][data-beat="0"] .spotlight-observation .spotlight-role{display:none}
 @media(min-width:1500px){.pancreatic-source>strong{font-size:24px}.enzyme-spotlight[data-team=pancreas] .spotlight-controls button{font-size:12px}}
 @media(max-width:1100px){.pancreatic-source>strong{font-size:18px}.enzyme-spotlight[data-team=pancreas]{flex-wrap:wrap;gap:8px;padding:0 14px 10px}.enzyme-spotlight[data-team=pancreas] .spotlight-controls button{font-size:9px;padding:6px 7px}}
 @media(max-width:580px){.enzyme-spotlight[data-team=pancreas]{align-items:flex-start;gap:9px;padding:0 12px 12px}.pancreatic-source>strong{font-size:21px}.enzyme-spotlight[data-team=pancreas] .spotlight-controls{align-self:stretch;justify-content:flex-end}.enzyme-spotlight[data-team=pancreas] .spotlight-controls button{font-size:10px;padding:7px 11px}}
+
+/* A short action stays visible; fuller explanations open only when requested. */
+.scene-panel .caption{min-height:64px;padding:11px 20px;gap:10px}
+.caption>div{min-width:0;flex:1}
+.caption h3{margin-bottom:0}
+.caption-explanation>summary{width:max-content;cursor:pointer;font-size:11px;color:#71836b;line-height:1.4;margin-top:4px}
+.caption-explanation>summary:hover{color:#216c56}
+.caption-explanation[open]>p{margin:7px 0 0;font-size:12px;line-height:1.7}
+@media(max-width:580px){.scene-panel .caption{padding:12px 14px;min-height:66px}.caption-explanation>summary{font-size:12px}}
