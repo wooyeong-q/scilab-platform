@@ -62,7 +62,7 @@ export function createPath(rng=Math.random,length=21){
   return length===11?[0,1,2,3,4,5,11,17,23,29,35]:length===31?[0,1,2,3,4,5,11,10,9,8,7,6,12,18,24,30,31,25,19,13,14,15,16,17,23,22,21,27,28,29,35]:[0,1,2,3,4,5,11,10,9,8,7,6,12,18,19,20,21,22,23,29,35];
 }
 export function fillPath(path,start='rv',rng=Math.random){
-  if(!CYCLE.includes(start)||!Array.isArray(path)||path[0]!==0||path.at(-1)!==35||![11,21,31].includes(path.length)||new Set(path).size!==path.length||path.some((p,i)=>!Number.isInteger(p)||p<0||p>35||(i&&!neighbors(path[i-1]).includes(p))))throw Error('시작에서 끝까지 11·21·31칸을 상하좌우로 연결해 주세요.');
+  if(!CYCLE.includes(start)||!Array.isArray(path)||path[0]!==0||path.at(-1)!==35||path.length<11||new Set(path).size!==path.length||path.some((p,i)=>!Number.isInteger(p)||p<0||p>35||(i&&!neighbors(path[i-1]).includes(p))))throw Error('시작에서 끝까지 상하좌우로 연결해 주세요.');
   const cells=Array.from({length:36},()=>CYCLE[Math.floor(rng()*10)]);
   const offset=CYCLE.indexOf(start);path.forEach((p,i)=>{cells[p]=CYCLE[(offset+i)%10];});
   return {v:1,n:6,start,cells};

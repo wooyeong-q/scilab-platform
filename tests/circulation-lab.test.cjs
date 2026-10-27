@@ -58,3 +58,20 @@ test('wrong words can be selected freely; explicit evaluation finds errors and b
  assert.equal(assessPath(board,[0]).complete,false);
  assert.deepEqual(checkStep(board,path.slice(0,5),path[1]).path,path.slice(0,2));
 });
+
+test('editor supports a custom 13-cell path with a different finishing word',async()=>{
+ const {fillPath,generateMaze,solveMaze,decodeMaze,encodeMaze}=await model;
+ const path=[0,6,7,1,2,3,4,5,11,17,23,29,35];
+ const {board}=generateMaze('rv',seeded(37),path);
+ assert.equal(fillPath(path).cells[35],'lung');
+ assert.deepEqual(solveMaze(board).path,path);
+ assert.deepEqual(decodeMaze(encodeMaze(board)),board);
+});
+test('QR renderer encodes the complete shared URL with a four-module quiet zone',async()=>{
+ const {qrMatrix,qrSvg}=await import('../public/labs/circulation-lab/qr.mjs');
+ const {generateMaze,encodeMaze}=await model;
+ const url='https://example.com/labs/circulation-lab/index.html#maze='+encodeMaze(generateMaze('rv',seeded(12)).board);
+ const m=qrMatrix(url);assert.ok(m.length>21);assert.ok(m.every(row=>row.length===m.length));
+ assert.match(qrSvg(url),new RegExp(`viewBox="0 0 ${m.length+8} ${m.length+8}"`));
+ assert.throws(()=>qrMatrix('javascript:alert(1)'));
+});
