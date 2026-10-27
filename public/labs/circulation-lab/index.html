@@ -7,13 +7,15 @@
   <meta name="description" content="심장과 혈관을 관찰하고 혈액의 이동을 선택하며, 나만의 혈액 순환 단어 미로를 만들어 짝과 바꾸어 풀어 보세요.">
   <link rel="preload" href="./assets/fonts/noto-sans-kr.woff2" as="font" type="font/woff2" crossorigin>
   <link rel="stylesheet" href="./styles.css"><link rel="stylesheet" href="./experiments.css"><link rel="stylesheet" href="./readability.css">
+  <link rel="stylesheet" href="./pointer.css">
+  <script type="module" src="./pointer.mjs"></script>
   <script type="module" src="./app.mjs"></script>
 </head>
 <body>
   <header class="app-header">
     <a class="brand" href="/" aria-label="SciLab 홈"><span class="brand-mark">S<span>•</span></span><span>SciLab <small>생명과학 실험실</small></span></a>
     <div class="chapter">중2 과학 <span>동물과 에너지</span></div>
-    <button class="icon-button" id="help-open" aria-label="사용 방법">사용 방법 <span>?</span></button>
+    <div class="header-actions"><button id="pointer-toggle" aria-pressed="true">✓ 포인터 강조</button><button class="icon-button" id="help-open" aria-label="사용 방법">사용 방법 <span>?</span></button></div>
   </header>
   <div class="title-row"><div><p class="eyebrow">THE CIRCULATION LAB</p><h1>혈액 순환 탐험실<span class="title-dot">.</span></h1></div><p class="tagline">심장에서 출발한 혈액,<br><strong>어디로 돌아올까요?</strong></p></div>
   <nav class="main-tabs" aria-label="학습 활동">
