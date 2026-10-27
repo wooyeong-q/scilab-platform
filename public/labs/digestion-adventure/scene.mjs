@@ -594,7 +594,9 @@ function smallIntestine(frame) {
   const acidsLabel = label(lipidScene, '지방산 2개', 559, 357, { size: 23 });
   const resultBadge = pill(lipidScene, '효소는 다시 작용해요', 438, 209, 242, C.enzymeLight, C.enzyme);
   g.appendChild(delivery);
-  return t => {
+  return lessonTime => {
+    // Present bile first and enzyme delivery second; reaction clocks stay unchanged.
+    const t=lessonTime<7?lessonTime+5:lessonTime<12?lessonTime-7:lessonTime;
     const current = t < 12 ? 0 : t < 20 ? 1 : t < 27 ? 2 : 3;
     const arriving=t<5, emulsifying=t>=5&&t<12;
     pancreaticSource.setAttribute('visibility',arriving?'visible':'hidden');
