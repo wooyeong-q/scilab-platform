@@ -75,3 +75,23 @@ test('QR renderer encodes the complete shared URL with a four-module quiet zone'
  assert.match(qrSvg(url),new RegExp(`viewBox="0 0 ${m.length+8} ${m.length+8}"`));
  assert.throws(()=>qrMatrix('javascript:alert(1)'));
 });
+
+test('visual heart cycle changes receiving/ejection and both valve states',async()=>{
+ const {labAction,labView}=await import('../public/labs/circulation-lab/experiments.mjs');
+ labAction('lab-mode-heart');labAction('lab-receive');
+ assert.match(labView(),/심실 이완 · 받기/);assert.match(labView(),/심방 ↔ 심실 판막<\/span><strong class="open">열림/);
+ labAction('lab-pump');assert.match(labView(),/심실 수축 · 내보내기/);assert.match(labView(),/심실 ↔ 동맥 판막<\/span><strong class="open">열림/);
+ labAction('lab-backflow');assert.match(labView(),/닫힌 판막이 거꾸로 흐르려는 혈액을 막았어요/);
+});
+test('tissue exchange distinguishes all four materials and their opposite directions',async()=>{
+ const {exchangeSteps,labAction,labView}=await import('../public/labs/circulation-lab/experiments.mjs');
+ assert.deepEqual(exchangeSteps[1].out,['산소','영양소']);assert.deepEqual(exchangeSteps[2].into,['이산화 탄소','노폐물']);
+ labAction('lab-mode-exchange');labAction('lab-exchange-0');assert.doesNotMatch(labView(),/산소 <b>→ 세포/);
+ labAction('lab-exchange-2');assert.match(labView(),/산소 <b>→ 세포/);assert.match(labView(),/노폐물 <b>→ 혈액/);
+});
+test('pulse comparison uses actual inputs and leaves unmeasured results empty',async()=>{
+ const {pulseComparison,labAction,labChange,labView}=await import('../public/labs/circulation-lab/experiments.mjs');
+ assert.equal(pulseComparison('',''),null);assert.equal(pulseComparison(80,120),40);assert.equal(pulseComparison(100,90),-10);
+ labAction('lab-mode-pulse');labChange({id:'pulse-rest',value:'80'});labChange({id:'pulse-active',value:'120'});assert.match(labView(),/40회\/분 늘었어요/);
+ labChange({id:'pulse-rest',value:'-5'});assert.match(labView(),/두 값을 입력/);
+});

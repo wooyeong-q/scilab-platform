@@ -1,4 +1,5 @@
 import {PARTS,BY_ID,CYCLE,ROUTES,nextPart,neighbors,generateMaze,fillPath,solveMaze,encodeMaze,decodeMaze,validateBoard,checkStep,assessPath} from './model.mjs';
+import {labView,labAction,labChange,labInput,stopPulse} from './experiments.mjs';
 import {qrSvg} from './qr.mjs';
 import {heartDiagram,vesselDiagram,flowDiagram} from './diagrams.mjs';
 
@@ -19,7 +20,7 @@ function cardHead(kicker,title,right=''){return `<div class="card-heading"><div>
 const COLOR_NOTE='<span class="legend-dot blue"></span> 산소가 적은 혈액 <span class="legend-dot red"></span> 산소가 많은 혈액 <span class="color-caveat">모형의 색 · 실제 혈액은 모두 붉은색</span>';
 
 const BLOOD={
-  red:{name:'적혈구',role:'산소 운반',text:'붉은색의 오목한 원반 모양이에요. 헤모글로빈이 산소와 결합하여 온몸으로 산소를 운반합니다.',badge:'산소를 싣는 운반원',n:1},
+  red:{name:'적혈구',role:'산소 운반',text:'붉은색의 오목한 원반 모양이에요. 헤모글로빈 때문에 붉게 보이며, 산소와 결합해 온몸으로 운반합니다.',badge:'산소를 싣는 운반원',n:1},
   white:{name:'백혈구',role:'몸의 방어',text:'몸속에 들어온 세균 등 병원체를 없애는 역할을 합니다. 그림에서는 보라색 핵이 보이는 큰 세포예요.',badge:'몸을 지키는 방어대',n:2},
   platelet:{name:'혈소판',role:'혈액 응고',text:'혈관에 상처가 나면 혈액이 굳는 과정에 관여하여 피가 계속 흐르지 않도록 돕습니다.',badge:'상처를 막는 수리공',n:3},
   plasma:{name:'혈장',role:'물질 운반',text:'혈액의 액체 성분이에요. 대부분 물로 이루어져 있으며 영양소, 노폐물 등 여러 물질을 운반합니다.',badge:'물질이 이동하는 액체',n:4},
@@ -40,7 +41,7 @@ function observeView(){
     side=`<span class="number-tag">VESSELS / 혈관</span><h3>${p.name}</h3><p class="role-text">${p.role}</p><p class="explain">${p.text}</p><div class="insight"><span>이렇게 구분해요</span><p>${p.tip}</p></div><div class="quick-check"><strong>폐동맥이 동맥인 까닭은?</strong>${button('산소가 많아서','quick-oxygen','choice')}${button('심장에서 나가서','quick-away','choice')}</div>`;
   }else{
     const p=BLOOD[selectedBlood];
-    diagram=`<div class="blood-art"><img src="./assets/blood-observation.webp" alt="혈장 속에 붉고 오목한 적혈구, 보라색 핵이 보이는 백혈구, 작은 혈소판이 떠 있는 관찰 그림" width="1536" height="1024"><button class="blood-pin red-pin ${selectedBlood==='red'?'selected':''}" data-blood="red" aria-label="1 적혈구">1</button><button class="blood-pin white-pin ${selectedBlood==='white'?'selected':''}" data-blood="white" aria-label="2 백혈구">2</button><button class="blood-pin platelet-pin ${selectedBlood==='platelet'?'selected':''}" data-blood="platelet" aria-label="3 혈소판">3</button><button class="blood-pin plasma-pin ${selectedBlood==='plasma'?'selected':''}" data-blood="plasma" aria-label="4 혈장">4</button></div><div class="blood-bank">${Object.entries(BLOOD).map(([id,b])=>pill(`${b.n} ${b.name}`,`data-blood="${id}"`,id===selectedBlood)).join('')}</div><p class="art-note">관찰을 돕기 위한 그림 · 성분의 크기와 개수는 실제 비율과 다릅니다.</p>`;
+    diagram=`<div class="blood-art"><img src="./assets/blood-observation.webp" alt="혈장 속에 붉고 오목한 적혈구, 보라색 핵이 보이는 백혈구, 작은 혈소판이 떠 있는 관찰 그림" width="1536" height="1024"><button class="blood-pin red-pin ${selectedBlood==='red'?'selected':''}" data-blood="red" aria-label="1 적혈구">1</button><button class="blood-pin white-pin ${selectedBlood==='white'?'selected':''}" data-blood="white" aria-label="2 백혈구">2</button><button class="blood-pin platelet-pin ${selectedBlood==='platelet'?'selected':''}" data-blood="platelet" aria-label="3 혈소판">3</button><button class="blood-pin plasma-pin ${selectedBlood==='plasma'?'selected':''}" data-blood="plasma" aria-label="4 혈장">4</button></div><div class="blood-classification"><strong>혈장: 액체 성분</strong><span>혈구: 적혈구 · 백혈구 · 혈소판</span></div><div class="blood-bank">${Object.entries(BLOOD).map(([id,b])=>pill(`${b.n} ${b.name}`,`data-blood="${id}"`,id===selectedBlood)).join('')}</div><p class="art-note">관찰을 돕기 위한 그림 · 성분의 크기와 개수는 실제 비율과 다릅니다.</p>`;
     side=`<span class="number-tag">BLOOD / 혈액</span><h3>${p.name}</h3><p class="role-text">${p.role}</p><p class="explain">${p.text}</p><div class="insight"><span>역할로 기억해요</span><p>${p.badge}</p></div><div class="quick-check"><strong>영양소·노폐물을 운반하는 액체 성분은?</strong><div class="button-row">${button('적혈구','quick-red','choice')}${button('혈장','quick-plasma','choice')}</div></div>`;
   }
   return `<section class="workspace"><article class="canvas-card">${cardHead(...headings[observe],'<span class="subtle-label">그림을 눌러 탐색해요 ↗</span>')}<div class="sub-tabs">${pill('심장의 네 방','data-observe="heart"',observe==='heart')}${pill('혈관 세 종류','data-observe="vessels"',observe==='vessels')}${pill('혈액의 구성','data-observe="blood"',observe==='blood')}</div><div class="observation-art ${observe}">${diagram}</div>${observe==='heart'?'<p class="art-note observation-note">네 방의 이름을 눌러 위치와 역할을 함께 살펴보세요.</p>':''}</article><aside class="info-card">${side}${quickMessage?status(quickMessage,quickMessage.startsWith('맞')?'success':'try'):''}<button class="next-link" data-tab="journey">혈액의 이동을 따라가 볼까요? <span>→</span></button></aside></section>`;
@@ -74,11 +75,11 @@ function builderView(){
 }
 function render(){
   const focused=document.activeElement;const key=focused?.dataset?.cell;
-  app.innerHTML=tab==='observe'?observeView():tab==='journey'?journeyView():tab==='maze'?mazeView():builderView();
+  app.innerHTML=tab==='lab'?labView():tab==='observe'?observeView():tab==='journey'?journeyView():tab==='maze'?mazeView():builderView();
   document.querySelectorAll('.main-tabs button').forEach(b=>{b.classList.toggle('active',b.dataset.tab===tab);if(b.dataset.tab===tab)b.setAttribute('aria-current','page');else b.removeAttribute('aria-current');});
   if(key!==undefined)app.querySelector(`[data-cell="${key}"]`)?.focus({preventScroll:true});
 }
-function setTab(next){if(!['observe','journey','maze','builder'].includes(next))return;tab=next;quickMessage='';render();}
+function setTab(next){if(!['observe','journey','maze','builder','lab'].includes(next))return;if(tab==='lab'&&next!=='lab')stopPulse();tab=next;quickMessage='';render();}
 function resetJourney(route=journey.route){journey={...journey,route,step:0,answered:false,feedback:'',exchange:false};}
 function resetMaze(board=maze.board,shared=maze.shared){maze={board,path:[0],hint:-1,reveal:false,message:DEFAULT_MESSAGE,kind:'ready',shared};}
 function selectCell(i){
@@ -141,7 +142,7 @@ document.addEventListener('click',e=>{
   else if(el.dataset.destination){if(journey.answered)return;const target=ROUTES[journey.route].ids[journey.step+1];journey.answered=el.dataset.destination===target;journey.feedback=journey.answered?'맞아요! 다음 단계로 이동해 보세요.':`${BY_ID[ROUTES[journey.route].ids[journey.step]].name}에서 어디로 연결되는지 화살표를 따라 살펴보세요.`;}
   else if(el.dataset.cell!==undefined){selectCell(Number(el.dataset.cell));return;}
   else if(el.dataset.term)maker.term=el.dataset.term;
-  else if(el.dataset.action)actions[el.dataset.action]?.();
+  else if(el.dataset.action){if(!labAction(el.dataset.action,render))actions[el.dataset.action]?.();}
   else return;
   render();
 });
@@ -150,7 +151,8 @@ document.addEventListener('keydown',e=>{
   const cell=e.target.closest('[data-cell]');if(!cell||!['ArrowUp','ArrowDown','ArrowLeft','ArrowRight'].includes(e.key))return;
   e.preventDefault();const i=Number(cell.dataset.cell),j=i+{ArrowUp:-6,ArrowDown:6,ArrowLeft:-1,ArrowRight:1}[e.key];if(neighbors(i).includes(j))app.querySelector(`[data-cell="${j}"]`)?.focus();
 });
-document.addEventListener('change',e=>{if(e.target.id==='start-part'&&['rv','ao'].includes(e.target.value)){maker.start=e.target.value;maker.path=[0];maker.checked=false;render();}});
+document.addEventListener('input',e=>labInput(e.target));
+document.addEventListener('change',e=>{if(labChange(e.target)){render();return;}if(e.target.id==='start-part'&&['rv','ao'].includes(e.target.value)){maker.start=e.target.value;maker.path=[0];maker.checked=false;render();}});
 $('#help-open').addEventListener('click',()=>$('#help-dialog').showModal());
 $('#copy-link').addEventListener('click',async()=>{try{await navigator.clipboard.writeText($('#share-url').value);toast('미로 링크를 복사했어요. 짝에게 전달해 주세요.');}catch{$('#share-url').focus();$('#share-url').select();toast('링크를 선택했어요. Ctrl+C 또는 복사 메뉴로 복사해 주세요.');}});
 $('#try-shared').addEventListener('click',()=>{resetMaze(structuredClone(maker.board),true);$('#share-dialog').close();setTab('maze');});

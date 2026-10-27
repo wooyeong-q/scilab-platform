@@ -39,3 +39,18 @@ Run `node --test tests/circulation-lab.test.cjs`. Coverage includes 100 seeded u
 Browser QA covers chamber selection, observation assets, correct prediction and manual advancement, lung gas exchange, editing/checking, URL exchange and completing the exchanged puzzle. Responsive QA uses 1280×720 and 390px wide embedded viewports. Normal program deployment follows the existing Git/Vercel workflow, with an exact main-head lease.
 
 QR vendor: Project Nayuki QR-Code-generator (MIT), TypeScript compiled with Node stripTypeScriptTypes; license retained in vendor/qrcodegen.mjs. Independent ZXing decoder recovered the exact shared URL from the generated QR modules.
+
+
+## Textbook visual supplement (2026-10-27)
+
+Reviewed the user-provided 동물과 에너지 textbook, printed pages 202–207 (PDF pages 15–20). The added 눈으로 확인 tab covers the identified conceptual gaps as short, manually controlled observations:
+
+| Textbook | Supplement |
+| --- | --- |
+| 202: pulse measurement | Real 60-second tap counter plus editable resting/activity readings, immediate comparison and bars; no example readings represented as student measurements. |
+| 203: pumping and valves | Receiving vs ejection stages, opposite inlet/outlet valve states, backflow explanation and realistic open/closed atrioventricular valve closeups. Motion and anatomical enlargement are explicitly models. |
+| 204: vessel structure, pressure and slow capillary flow | Side-by-side illustrations and simultaneous qualitative flow comparison; no claim that arbitrary marker distances are physical speed ratios. |
+| 204, 206: tissue exchange | Successive arrival, oxygen/nutrient delivery, carbon-dioxide/waste return stages, alongside the actual tissue illustration. |
+| 205: blood classification | Plasma as liquid vs erythrocytes/leukocytes/platelets as blood cell components; hemoglobin explains red appearance and oxygen transport. |
+
+Both `assets/valve-open.webp` and `assets/valve-closed.webp` were made with the built-in imagegen tool. Final briefs: a nongory realistic classroom closeup of a tricuspid atrioventricular valve in a coral muscle ring, ivory leaflets folded outward leaving a visible passage (open), versus all three leaflets meeting and sealing the passage (closed), ivory background, no text/arrows/diagram geometry. They illustrate valve opening rather than exact anatomy or a quantitative cardiac model. Browser QA at 1280×720 confirmed the experimental panel fits, four-direction material labels appear stepwise, flow markers travel different distances and actual input values update the pulse comparison immediately. Unit coverage includes valve state transitions, material directions and measured-value comparison.

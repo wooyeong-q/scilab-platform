@@ -5,7 +5,7 @@
   <meta name="theme-color" content="#faf7f1">
   <title>혈액 순환 탐험실 · SciLab</title>
   <meta name="description" content="심장과 혈관을 관찰하고 혈액의 이동을 선택하며, 나만의 혈액 순환 단어 미로를 만들어 짝과 바꾸어 풀어 보세요.">
-  <link rel="stylesheet" href="./styles.css">
+  <link rel="stylesheet" href="./styles.css"><link rel="stylesheet" href="./experiments.css">
   <script type="module" src="./app.mjs"></script>
 </head>
 <body>
@@ -16,6 +16,7 @@
   </header>
   <div class="title-row"><div><p class="eyebrow">THE CIRCULATION LAB</p><h1>혈액 순환 탐험실<span class="title-dot">.</span></h1></div><p class="tagline">심장에서 출발한 혈액,<br><strong>어디로 돌아올까요?</strong></p></div>
   <nav class="main-tabs" aria-label="학습 활동">
+    <button data-tab="lab"><span>체험</span>눈으로 확인</button>
     <button data-tab="observe" class="active" aria-current="page"><span>01</span>순환계 관찰</button>
     <button data-tab="journey"><span>02</span>혈액 한 바퀴</button>
     <button data-tab="maze"><span>03</span>단어 미로 풀기</button>
@@ -23,7 +24,7 @@
   </nav>
   <main id="app" tabindex="-1"></main>
   <div id="toast" role="status" aria-live="polite"></div>
-  <dialog id="help-dialog"><button class="dialog-close" data-close="help-dialog" aria-label="닫기">×</button><p class="eyebrow">HOW TO EXPLORE</p><h2>보고, 선택하고, 설명해요.</h2><ol class="help-steps"><li><strong>순환계 관찰</strong><p>심장의 네 방과 혈관, 혈액의 구성 성분을 눌러 역할을 살펴보세요.</p></li><li><strong>혈액 한 바퀴</strong><p>다음 장소를 고르고 한 단계씩 이동하세요. 허파순환과 온몸순환을 따로 볼 수도 있어요.</p></li><li><strong>단어 미로 풀기</strong><p>시작부터 끝까지 순환 순서에 맞는 칸을 상하좌우로 이어요. 지나온 칸을 누르면 되돌아가요.</p></li><li><strong>미로 만들기</strong><p>경로를 그리고 남은 칸을 채워요. 정답길이 하나인지 검사한 뒤 짝에게 링크를 보내세요.</p></li></ol><p class="muted">내용 확인: <a href="https://www.nhlbi.nih.gov/health/heart/blood-flow" target="_blank" rel="noopener noreferrer">미국 국립심장·폐·혈액연구소(NHLBI)</a></p><p class="muted">활동은 이 브라우저에서 진행돼요. 미로 공유 링크에는 문제판만 담겨요.</p><button class="primary" data-close="help-dialog">탐험 시작하기</button></dialog>
+  <dialog id="help-dialog"><button class="dialog-close" data-close="help-dialog" aria-label="닫기">×</button><p class="eyebrow">HOW TO EXPLORE</p><h2>보고, 선택하고, 설명해요.</h2><ol class="help-steps"><li><strong>눈으로 확인</strong><p>심장의 수축·이완과 판막, 혈관 속도, 세포와 물질 교환을 눌러 비교하고 맥박 측정값을 입력해 보세요.</p></li><li><strong>순환계 관찰</strong><p>심장의 네 방과 혈관, 혈액의 구성 성분을 눌러 역할을 살펴보세요.</p></li><li><strong>혈액 한 바퀴</strong><p>다음 장소를 고르고 한 단계씩 이동하세요. 허파순환과 온몸순환을 따로 볼 수도 있어요.</p></li><li><strong>단어 미로 풀기</strong><p>시작부터 끝까지 순환 순서에 맞는 칸을 상하좌우로 이어요. 지나온 칸을 누르면 되돌아가요.</p></li><li><strong>미로 만들기</strong><p>경로를 그리고 남은 칸을 채워요. 정답길이 하나인지 검사한 뒤 짝에게 링크를 보내세요.</p></li></ol><p class="muted">내용 확인: <a href="https://www.nhlbi.nih.gov/health/heart/blood-flow" target="_blank" rel="noopener noreferrer">미국 국립심장·폐·혈액연구소(NHLBI)</a></p><p class="muted">활동은 이 브라우저에서 진행돼요. 미로 공유 링크에는 문제판만 담겨요.</p><button class="primary" data-close="help-dialog">탐험 시작하기</button></dialog>
   <dialog id="share-dialog"><button class="dialog-close" data-close="share-dialog" aria-label="닫기">×</button><p class="eyebrow">SWAP WITH A PARTNER</p><h2>내 미로를 짝에게!</h2><p>옆 친구가 카메라로 QR코드를 비추면<br>내가 만든 미로가 바로 열려요.</p><div id="share-qr" role="img" aria-label="완성한 미로를 여는 QR코드"></div><details class="share-link-details"><summary>링크로 전달하기</summary><label for="share-url">미로 링크</label><textarea id="share-url" rows="3" readonly></textarea><div class="button-row"><button class="primary" id="copy-link">링크 복사</button><button class="secondary" id="try-shared">직접 풀어 보기</button></div></details><p class="muted">짝에게 링크를 전달하거나 같은 기기에서 자리를 바꾸어 풀어 보세요.</p></dialog>
   <noscript>이 활동은 자바스크립트를 켠 브라우저에서 사용할 수 있습니다.</noscript>
 </body>
