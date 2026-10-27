@@ -103,3 +103,17 @@ test('15-second wrist counts convert to per-minute values without a sensor',asyn
  assert.match(labView(),/72회 \/ 분/);assert.match(labView(),/120회 \/ 분/);assert.match(labView(),/48회\/분 늘었어요/);
  labAction('lab-pulse-demo');assert.match(labView(),/모의 값/);assert.doesNotMatch(labView(),/측정 취소/);
 });
+
+test('continuous playback follows every circuit edge with matching timing points',async()=>{
+ const {flowPlayback,flowDiagram}=await import('../public/labs/circulation-lab/diagrams.mjs');
+ const {ROUTES}=await model;
+ for(const scope of ['all','pulmonary','systemic']){
+ const motion=flowPlayback(scope);assert.deepEqual(motion.ids,ROUTES[scope].ids);
+ const points=motion.keyPoints.split(';').map(Number),times=motion.keyTimes.split(';').map(Number);
+ assert.equal(points.length,motion.ids.length);assert.equal(points[0],0);assert.equal(points.at(-1),1);assert.equal(times.at(-1),1);
+ assert.ok(points.every((v,i)=>i===0||v>points[i-1]));assert.equal(motion.duration,(motion.ids.length-1)*2.4);
+ assert.equal((motion.d.match(/M/g)||[]).length,1,'the full circuit is one unbroken path');
+ assert.match(flowDiagram(motion.ids[0],scope,[],true),/class="continuous-blood"/);
+ }
+ assert.doesNotMatch(flowDiagram('rv','all',[],false),/class="continuous-blood"/);
+});

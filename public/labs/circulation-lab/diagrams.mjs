@@ -17,14 +17,30 @@ export function vesselDiagram(active='artery'){
 const POS={rv:[297,424],pa:[113,173],lung:[400,87],pv:[686,173],la:[505,310],lv:[505,424],ao:[680,500],body:[400,575],vc:[117,500],ra:[297,310]};
 const PATHS=[
   ['rv','pa','M240 424 H111 V204'],['pa','lung','M111 146 V87 H294'],['lung','pv','M506 87 H687 V145'],['pv','la','M687 202 V310 H564'],['la','lv','M505 338 V393'],['lv','ao','M564 424 H680 V469'],['ao','body','M680 532 V575 H507'],['body','vc','M293 575 H117 V532'],['vc','ra','M117 470 H195 V310 H238'],['ra','rv','M297 338 V393']];
-export function flowDiagram(active='rv',scope='all',visited=[]){
+export function flowPlayback(scope='all'){
+  const ids=scope==='pulmonary'?['rv','pa','lung','pv','la']:scope==='systemic'?['lv','ao','body','vc','ra']:['rv','pa','lung','pv','la','lv','ao','body','vc','ra','rv'];
+  let d=`M${POS[ids[0]].join(' ')}`,length=0;
+  const distances=[0];
+  for(let i=0;i<ids.length-1;i++){
+    const edge=PATHS.find(([a,b])=>a===ids[i]&&b===ids[i+1]);
+    const commands=[...edge[2].matchAll(/([MHV])([0-9 .,-]+)/g)];
+    let [x,y]=POS[ids[i]];
+    for(const [,kind,values] of commands){const nums=values.trim().split(/[ ,]+/).map(Number);const nx=kind==='V'?x:nums[0],ny=kind==='H'?y:kind==='V'?nums[0]:nums[1];length+=Math.hypot(nx-x,ny-y);x=nx;y=ny;d+=` L${x} ${y}`;}
+    const [nx,ny]=POS[ids[i+1]];length+=Math.hypot(nx-x,ny-y);d+=` L${nx} ${ny}`;distances.push(length);
+  }
+  return {ids,d,duration:(ids.length-1)*2.4,keyTimes:distances.map((_,i)=>i/(ids.length-1)).join(';'),keyPoints:distances.map(v=>v/length).join(';')};
+}
+export function flowDiagram(active='rv',scope='all',visited=[],playback=false){
+  const motion=playback?flowPlayback(scope):null;
   const inScope=scope==='pulmonary'?['rv','pa','lung','pv','la']:scope==='systemic'?['lv','ao','body','vc','ra']:Object.keys(POS);
   return `<svg viewBox="0 0 800 642" class="flow-diagram" role="img" aria-label="혈액 순환 경로. 우심실, 폐동맥, 폐의 모세혈관, 폐정맥, 좌심방, 좌심실, 대동맥, 온몸의 모세혈관, 대정맥, 우심방 순서로 연결됩니다."><defs><marker id="flow-blue" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="3" markerHeight="3" orient="auto"><path d="M0 0 10 5 0 10" fill="#357fae"/></marker><marker id="flow-red" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="3" markerHeight="3" orient="auto"><path d="M0 0 10 5 0 10" fill="#c95350"/></marker></defs>
   <image href="./assets/lungs.webp" x="285" y="0" width="230" height="193" preserveAspectRatio="xMidYMid meet" opacity="${scope==='systemic'?.35:1}"/>
   <image href="./assets/heart-cutaway.webp" x="244" y="193" width="330" height="345" preserveAspectRatio="xMidYMid meet"/>
   <image href="./assets/tissue-capillaries.webp" x="279" y="514" width="242" height="112" preserveAspectRatio="xMidYMid meet" opacity="${scope==='pulmonary'?.35:1}"/>
-  ${PATHS.map(([from,to,d])=>{const red=['lung','pv','la','lv','ao'].includes(from);const enabled=inScope.includes(from)&&inScope.includes(to);const traced=visited.includes(from)&&visited.includes(to);return `<path d="${d}" fill="none" stroke="#fffdf9" stroke-width="23" stroke-linejoin="round"/><path d="${d}" fill="none" stroke="${red?'#c95350':'#357fae'}" stroke-width="${from===active?12:7}" stroke-linejoin="round" opacity="${enabled?(traced||from===active?1:.5):.12}" marker-end="url(#flow-${red?'red':'blue'})"/>`;}).join('')}
-  ${Object.entries(POS).map(([id,[x,y]])=>{const p=BY_ID[id],wide=id==='lung'||id==='body',on=id===active,enabled=inScope.includes(id);return `<g class="flow-node ${on?'current':''}" opacity="${enabled?1:.32}"><rect x="${x-(wide?106:70)}" y="${y-28}" width="${wide?212:140}" height="56" rx="15" fill="${on?'#253d4a':'#fffdfa'}" stroke="${on?'#253d4a':p.color==='blue'?'#afc9dd':p.color==='red'?'#dfb4ae':'#d8cbbd'}" stroke-width="${on?3:1.5}"/><text x="${x}" y="${y+9}" class="flow-label" fill="${on?'#fff':'#334957'}">${wide?p.short:p.name}</text></g>`;}).join('')}
-  ${PATHS.filter(([from,to])=>from===active&&inScope.includes(to)).map(([,to,d])=>`<path class="active-flow-guide" d="${d}" fill="none" stroke="#fff" stroke-width="3" stroke-dasharray="3 12" stroke-linecap="round"/><circle class="flow-traveler" r="10" fill="#ffd15a" stroke="#4e3c0e" stroke-width="2.5"><animateMotion dur="2.4s" repeatCount="indefinite" path="${d}"/></circle>`).join('')}
+  ${PATHS.map(([from,to,d])=>{const red=['lung','pv','la','lv','ao'].includes(from);const enabled=inScope.includes(from)&&inScope.includes(to);const traced=visited.includes(from)&&visited.includes(to);return `<path d="${d}" fill="none" stroke="#fffdf9" stroke-width="23" stroke-linejoin="round"/><path data-flow-from="${from}" data-flow-to="${to}" d="${d}" fill="none" stroke="${red?'#c95350':'#357fae'}" stroke-width="${from===active?12:7}" stroke-linejoin="round" opacity="${enabled?(traced||from===active?1:.5):.12}" marker-end="url(#flow-${red?'red':'blue'})"/>`;}).join('')}
+  ${motion?`<circle class="continuous-blood" r="11" fill="#ffd15a" stroke="#4e3c0e" stroke-width="2.5"><animateMotion dur="${motion.duration}s" repeatCount="${scope==='all'?'indefinite':1}" fill="freeze" calcMode="linear" keyTimes="${motion.keyTimes}" keyPoints="${motion.keyPoints}" path="${motion.d}"/></circle>`:''}
+  ${Object.entries(POS).map(([id,[x,y]])=>{const p=BY_ID[id],wide=id==='lung'||id==='body',on=id===active,enabled=inScope.includes(id);return `<g data-node="${id}" class="flow-node ${on?'current':''}" opacity="${enabled?1:.32}"><rect x="${x-(wide?106:70)}" y="${y-28}" width="${wide?212:140}" height="56" rx="15" fill="${on?'#253d4a':'#fffdfa'}" stroke="${on?'#253d4a':p.color==='blue'?'#afc9dd':p.color==='red'?'#dfb4ae':'#d8cbbd'}" stroke-width="${on?3:1.5}"/><text x="${x}" y="${y+9}" class="flow-label" fill="${on?'#fff':'#334957'}">${wide?p.short:p.name}</text></g>`;}).join('')}
+  ${(playback?[]:PATHS.filter(([from,to])=>from===active&&inScope.includes(to))).map(([,to,d])=>`<path class="active-flow-guide" d="${d}" fill="none" stroke="#fff" stroke-width="3" stroke-dasharray="3 12" stroke-linecap="round"/><circle class="flow-traveler" r="10" fill="#ffd15a" stroke="#4e3c0e" stroke-width="2.5"><animateMotion dur="2.4s" repeatCount="indefinite" path="${d}"/></circle>`).join('')}
+
   <text x="400" y="637" class="svg-small">혈액 흐름을 단순화한 모형 · 교차하는 혈관은 서로 연결되지 않아요.</text></svg>`;
 }

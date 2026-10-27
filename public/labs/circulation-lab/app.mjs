@@ -1,11 +1,12 @@
 import {PARTS,BY_ID,CYCLE,ROUTES,nextPart,neighbors,generateMaze,fillPath,solveMaze,encodeMaze,decodeMaze,validateBoard,checkStep,assessPath} from './model.mjs';
 import {labView,labAction,labChange,labInput,stopPulse} from './experiments.mjs';
 import {qrSvg} from './qr.mjs';
-import {heartDiagram,vesselDiagram,flowDiagram} from './diagrams.mjs';
+import {heartDiagram,vesselDiagram,flowDiagram,flowPlayback} from './diagrams.mjs';
 
 const $=s=>document.querySelector(s), app=$('#app');
 const DEFAULT_MESSAGE='길을 이은 뒤 ‘경로 확인’을 눌러요.';
 let tab='observe', observe='heart',selectedPart='rv',selectedVessel='artery',selectedBlood='red',quickMessage='';
+let flowTimer=null,flowStarted=0,flowElapsed=0,flowHasRun=false,flowPlaying=false;
 let journey={route:'all',step:0,quiz:false,answered:false,feedback:'',exchange:false};
 let initial=generateMaze(),maze={board:initial.board,path:[0],hint:-1,reveal:false,message:DEFAULT_MESSAGE,kind:'ready',shared:false};
 let maker={board:structuredClone(initial.board),path:[0],phase:'path',start:'rv',term:'pa',checked:false,showPath:true,message:'상하좌우로 끝 칸까지 경로를 그려요.',kind:'ready'};
@@ -47,13 +48,42 @@ function observeView(){
   }
   return `<section class="workspace"><article class="canvas-card">${cardHead(...headings[observe],'<span class="subtle-label">그림을 눌러 탐색해요 ↗</span>')}<div class="sub-tabs">${pill('심장의 네 방','data-observe="heart"',observe==='heart')}${pill('혈관 세 종류','data-observe="vessels"',observe==='vessels')}${pill('혈액의 구성','data-observe="blood"',observe==='blood')}</div><div class="observation-art ${observe}">${diagram}</div>${observe==='heart'?'<p class="art-note observation-note">네 방의 이름을 눌러 위치와 역할을 함께 살펴보세요.</p>':''}</article><aside class="info-card">${side}${quickMessage?status(quickMessage,quickMessage.startsWith('맞')?'success':'try'):''}<button class="next-link" data-tab="journey">혈액의 이동을 따라가 볼까요? <span>→</span></button></aside></section>`;
 }
+function pauseFlow(){
+ if(flowPlaying){flowElapsed+=performance.now()-flowStarted;flowPlaying=false;}
+ clearInterval(flowTimer);flowTimer=null;
+ app.querySelector('.flow-diagram')?.pauseAnimations?.();
+ const b=app.querySelector('[data-action="flow-toggle"]');if(b){b.textContent='▶ 이어서 재생';b.setAttribute('aria-pressed','false');}
+}
+function stopFlow(){pauseFlow();flowHasRun=false;flowElapsed=0;}
+function updateFlowFrame(){
+ if(!flowPlaying||tab!=='journey')return;
+ const ids=ROUTES[journey.route].ids,edges=ids.length-1,elapsed=flowElapsed+performance.now()-flowStarted;
+ let step=Math.floor(elapsed/2400);
+ if(journey.route==='all')step%=edges;
+ else if(step>=edges){step=edges;pauseFlow();}
+ if(step===journey.step)return;
+ journey.step=step;journey.exchange=ids[step]==='lung'||ids[step]==='body';
+ const view=document.createElement('div');view.innerHTML=journeyView();
+ const newSide=view.querySelector('.journey-info');app.querySelector('.journey-info').innerHTML=newSide.innerHTML;
+ app.querySelector('.route-trail').innerHTML=view.querySelector('.route-trail').innerHTML;
+ app.querySelector('.page-count').innerHTML=view.querySelector('.page-count').innerHTML;
+ for(const node of app.querySelectorAll('[data-node]')){const on=node.dataset.node===ids[step],p=BY_ID[node.dataset.node];node.classList.toggle('current',on);const rect=node.querySelector('rect');rect.setAttribute('fill',on?'#253d4a':'#fffdfa');rect.setAttribute('stroke',on?'#253d4a':p.color==='blue'?'#afc9dd':p.color==='red'?'#dfb4ae':'#d8cbbd');node.querySelector('text').setAttribute('fill',on?'#fff':'#334957');}
+ for(const path of app.querySelectorAll('[data-flow-from]')){const from=path.dataset.flowFrom,to=path.dataset.flowTo,index=ids.indexOf(from),enabled=ids.includes(from)&&ids.includes(to);path.setAttribute('stroke-width',from===ids[step]?12:7);path.setAttribute('opacity',enabled?(index<=step?1:.5):.12);}
+}
+function toggleFlow(){
+ if(flowPlaying){pauseFlow();return;}
+ if(!flowHasRun||journey.step===ROUTES[journey.route].ids.length-1){stopFlow();journey.step=0;journey.quiz=false;journey.exchange=false;journey.answered=false;flowHasRun=true;flowPlaying=true;render();app.querySelector('.flow-diagram')?.setCurrentTime?.(0);}
+ else {flowPlaying=true;app.querySelector('.flow-diagram')?.unpauseAnimations?.();}
+ flowStarted=performance.now();const b=app.querySelector('[data-action="flow-toggle"]');if(b){b.textContent='Ⅱ 일시정지';b.setAttribute('aria-pressed','true');}
+ flowTimer=setInterval(updateFlowFrame,80);
+}
 function journeyView(){
   const r=ROUTES[journey.route],ids=r.ids,id=ids[journey.step],p=BY_ID[id],done=journey.step===ids.length-1;
   const next=ids[journey.step+1];
   const options=next?PARTS.filter(x=>[next,...CYCLE.filter(x=>x!==id&&x!==next).filter((_,i)=>i%3===0).slice(0,2)].includes(x.id)):[];
   const exchange=id==='lung'||id==='body';
   const gas=exchange?`<div class="gas-box ${journey.exchange?'exchanged':''}"><strong>${id==='lung'?'폐의 모세혈관':'온몸의 모세혈관'}에서</strong><div><span>${id==='lung'?'폐':'세포'}</span><span class="gas-arrow">${journey.exchange?(id==='lung'?'산소 →':'← 산소'):'···'}</span><span>혈액</span></div><div><span>${id==='lung'?'폐':'세포'}</span><span class="gas-arrow">${journey.exchange?(id==='lung'?'← 이산화 탄소':'이산화 탄소 →'):'···'}</span><span>혈액</span></div>${journey.exchange?`<p>${id==='lung'?'혈액 속 산소가 많아져요.':'세포에 산소를 주어 혈액 속 산소가 적어져요.'}</p>`:button('기체 교환 확인하기','exchange','secondary')}</div>`:`<div class="oxygen-indicator ${p.color}"><span class="legend-dot ${p.color}"></span>산소가 ${p.color==='red'?'많은':'적은'} 혈액</div>`;
-  return `<section class="workspace journey-workspace"><article class="canvas-card">${cardHead('FOLLOW THE BLOOD','혈액의 다음 목적지는?',`<span class="page-count">${journey.step+1}<small> / ${ids.length}</small></span>`)}<div class="journey-toolbar"><div class="sub-tabs">${Object.entries(ROUTES).map(([key,v])=>pill(v.name,`data-route="${key}"`,journey.route===key)).join('')}</div><button class="text-toggle" data-action="toggle-quiz" aria-pressed="${journey.quiz}">${journey.quiz?'✓ 다음 장소 맞히기':'한 단계씩 관찰'} <span>⇄</span></button></div><div class="flow-art">${flowDiagram(id,journey.route,ids.slice(0,journey.step+1))}</div><div class="route-trail" aria-label="지나온 순환 경로">${ids.map((v,i)=>`${i?'<span class="trail-arrow">→</span>':''}<span class="trail-word ${i===journey.step?'current':''} ${i>journey.step?'future':''}">${i<=journey.step||!journey.quiz?BY_ID[v].short:'?'}</span>`).join('')}</div><div class="color-legend">${COLOR_NOTE}</div></article><aside class="info-card journey-info"><span class="number-tag">${done?'도착!':'지금 혈액이 있는 곳'}</span><h3>${p.name}</h3><p class="role-text">${p.role}</p>${more(`<p>${p.text}</p>`)}${gas}${done?`<div class="insight"><span>${r.name} 정리</span><p>${journey.route==='all'?'다시 우심실에 도착했어요. 혈액은 폐와 온몸을 거치며 계속 순환합니다.':journey.route==='pulmonary'?'우심실에서 출발해 폐를 거쳐 좌심방으로 돌아왔어요.':'좌심실에서 출발해 온몸을 거쳐 우심방으로 돌아왔어요.'}</p></div>${button(journey.route==='all'?'미로에서 길 찾아보기 →':journey.route==='pulmonary'?'온몸순환 이어 보기 →':'전체 순환 이어 보기 →','journey-finish','primary')}`:journey.quiz?`<div class="destination"><strong>다음에는 어디로 이동할까요?</strong><div class="destination-options">${options.map(o=>`<button class="choice ${journey.answered&&o.id===next?'correct':''}" data-destination="${o.id}" ${journey.answered?'disabled':''}>${o.name}<span>→</span></button>`).join('')}</div>${journey.feedback?status(journey.feedback,journey.answered?'success':'try'):''}</div>`:`<div class="insight next-place"><span>다음 목적지</span><p>${BY_ID[next].name} <b>→</b></p></div>`}<div class="journey-buttons">${button('← 이전','journey-prev','secondary',journey.step===0?'disabled':'')}${button(done?'다시 출발':'다음 단계 →',done?'journey-reset':'journey-next','primary',!done&&journey.quiz&&!journey.answered?'disabled':'')}</div><p class="tiny-note">${journey.quiz?'정답을 고른 뒤 다음 단계로 이동해요.':'한 단계씩 멈추며 볼 수 있어요. 위의 ⇄ 버튼으로 맞히기 모드로 바꿔 보세요.'}</p></aside></section>`;
+  return `<section class="workspace journey-workspace"><article class="canvas-card">${cardHead('FOLLOW THE BLOOD','혈액의 다음 목적지는?',`<div class="flow-play-controls"><button class="primary" data-action="flow-toggle" aria-pressed="${flowPlaying}">${flowPlaying?'Ⅱ 일시정지':flowHasRun?'▶ 이어서 재생':'▶ 흐름 재생'}</button><button class="secondary" data-action="flow-restart" aria-label="혈액 흐름 처음부터 재생">↺</button><span class="page-count">${journey.step+1}<small> / ${ids.length}</small></span></div>`)}<div class="journey-toolbar"><div class="sub-tabs">${Object.entries(ROUTES).map(([key,v])=>pill(v.name,`data-route="${key}"`,journey.route===key)).join('')}</div><button class="text-toggle" data-action="toggle-quiz" aria-pressed="${journey.quiz}">${journey.quiz?'✓ 다음 장소 맞히기':'한 단계씩 관찰'} <span>⇄</span></button></div><div class="flow-art">${flowDiagram(id,journey.route,ids.slice(0,journey.step+1),flowHasRun)}</div><div class="route-trail" aria-label="지나온 순환 경로">${ids.map((v,i)=>`${i?'<span class="trail-arrow">→</span>':''}<span class="trail-word ${i===journey.step?'current':''} ${i>journey.step?'future':''}">${i<=journey.step||!journey.quiz?BY_ID[v].short:'?'}</span>`).join('')}</div><div class="color-legend">${COLOR_NOTE}</div></article><aside class="info-card journey-info"><span class="number-tag">${done?'도착!':'지금 혈액이 있는 곳'}</span><h3>${p.name}</h3><p class="role-text">${p.role}</p>${more(`<p>${p.text}</p>`)}${gas}${done?`<div class="insight"><span>${r.name} 정리</span><p>${journey.route==='all'?'다시 우심실에 도착했어요. 혈액은 폐와 온몸을 거치며 계속 순환합니다.':journey.route==='pulmonary'?'우심실에서 출발해 폐를 거쳐 좌심방으로 돌아왔어요.':'좌심실에서 출발해 온몸을 거쳐 우심방으로 돌아왔어요.'}</p></div>${button(journey.route==='all'?'미로에서 길 찾아보기 →':journey.route==='pulmonary'?'온몸순환 이어 보기 →':'전체 순환 이어 보기 →','journey-finish','primary')}`:journey.quiz?`<div class="destination"><strong>다음에는 어디로 이동할까요?</strong><div class="destination-options">${options.map(o=>`<button class="choice ${journey.answered&&o.id===next?'correct':''}" data-destination="${o.id}" ${journey.answered?'disabled':''}>${o.name}<span>→</span></button>`).join('')}</div>${journey.feedback?status(journey.feedback,journey.answered?'success':'try'):''}</div>`:`<div class="insight next-place"><span>다음 목적지</span><p>${BY_ID[next].name} <b>→</b></p></div>`}<div class="journey-buttons">${button('← 이전','journey-prev','secondary',journey.step===0?'disabled':'')}${button(done?'다시 출발':'다음 단계 →',done?'journey-reset':'journey-next','primary',!done&&journey.quiz&&!journey.answered?'disabled':'')}</div><p class="tiny-note">${journey.quiz?'정답을 고른 뒤 다음 단계로 이동해요.':'흐름 재생으로 한 바퀴를 보거나, 다음 단계로 직접 이동하세요.'}</p></aside></section>`;
 }
 function grid(board,path,{editor=false,showPath=false,reveal=false,hint=-1,drawing=false}={}){
   const displayPath=reveal?solveMaze(board).path:path;
@@ -80,8 +110,8 @@ function render(){
   document.querySelectorAll('.main-tabs button').forEach(b=>{b.classList.toggle('active',b.dataset.tab===tab);if(b.dataset.tab===tab)b.setAttribute('aria-current','page');else b.removeAttribute('aria-current');});
   if(key!==undefined)app.querySelector(`[data-cell="${key}"]`)?.focus({preventScroll:true});
 }
-function setTab(next){if(!['observe','journey','maze','builder','lab'].includes(next))return;if(tab==='lab'&&next!=='lab')stopPulse();tab=next;quickMessage='';render();}
-function resetJourney(route=journey.route){journey={...journey,route,step:0,answered:false,feedback:'',exchange:false};}
+function setTab(next){if(!['observe','journey','maze','builder','lab'].includes(next))return;if(tab==='lab'&&next!=='lab')stopPulse();if(tab==='journey')stopFlow();tab=next;quickMessage='';render();}
+function resetJourney(route=journey.route){stopFlow();journey={...journey,route,step:0,answered:false,feedback:'',exchange:false};}
 function resetMaze(board=maze.board,shared=maze.shared){maze={board,path:[0],hint:-1,reveal:false,message:DEFAULT_MESSAGE,kind:'ready',shared};}
 function selectCell(i){
   if(tab==='builder'){
@@ -143,7 +173,7 @@ document.addEventListener('click',e=>{
   else if(el.dataset.destination){if(journey.answered)return;const target=ROUTES[journey.route].ids[journey.step+1];journey.answered=el.dataset.destination===target;journey.feedback=journey.answered?'맞아요! 다음 단계로 이동해 보세요.':`${BY_ID[ROUTES[journey.route].ids[journey.step]].name}에서 어디로 연결되는지 화살표를 따라 살펴보세요.`;}
   else if(el.dataset.cell!==undefined){selectCell(Number(el.dataset.cell));return;}
   else if(el.dataset.term)maker.term=el.dataset.term;
-  else if(el.dataset.action){const handled=labAction(el.dataset.action,render);if(handled==='live')return;if(!handled)actions[el.dataset.action]?.();}
+  else if(el.dataset.action){if(el.dataset.action==='flow-toggle'){toggleFlow();return;}if(el.dataset.action==='flow-restart'){stopFlow();toggleFlow();return;}if(tab==='journey')stopFlow();const handled=labAction(el.dataset.action,render);if(handled==='live')return;if(!handled)actions[el.dataset.action]?.();}
   else return;
   render();
 });
@@ -159,3 +189,5 @@ $('#copy-link').addEventListener('click',async()=>{try{await navigator.clipboard
 $('#try-shared').addEventListener('click',()=>{resetMaze(structuredClone(maker.board),true);$('#share-dialog').close();setTab('maze');});
 window.addEventListener('hashchange',()=>{if(location.hash.startsWith('#maze='))try{resetMaze(decodeMaze(location.hash.slice(6)),true);setTab('maze');}catch(e){toast(e.message);}});
 render();
+
+document.addEventListener('visibilitychange',()=>{if(document.hidden&&flowPlaying)pauseFlow();});
