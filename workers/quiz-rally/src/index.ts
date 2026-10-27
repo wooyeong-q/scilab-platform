@@ -12,6 +12,9 @@ interface Env {
 type Attachment = {who?:QuizIdentity;createdAt:number;playerDeltas?:boolean};
 type PlayerSave = {revision:number;savedAt:number;player:RoomRecord['state']['players'][string]};
 type EffectSave = {revision:number;savedAt:number;effects:RoomRecord['state']['arenaEffects'];arenaRevision:number};
+type CheckpointSync = {revision:number;attempts:number;nextAt:number};
+const CHECKPOINT_INTERVAL_MS=60000;
+const IDLE_SYNC_ATTEMPTS=4;
 const json=(value:unknown,status=200)=>new Response(JSON.stringify(value),{status,headers:{'Content-Type':'application/json','Cache-Control':'no-store'}});
 function secret(request:Request, env:Env) {
   const actual=Buffer.from(request.headers.get('authorization')||''), expected=Buffer.from('Bearer '+env.QUIZ_REALTIME_SECRET);
@@ -27,7 +30,7 @@ async function body(request:Request) {
 export default {
   async fetch(request:Request,env:Env):Promise<Response> {
     const url=new URL(request.url);
-    if(url.pathname==='/health')return json({ok:true,protocol:1,tickMs:ROOM_TICK_MS,storage:'sqlite',performanceVersion:2,courseVersion:4});
+    if(url.pathname==='/health')return json({ok:true,protocol:1,tickMs:ROOM_TICK_MS,storage:'sqlite',performanceVersion:2,courseVersion:4,idleVersion:1});
     const match=/^\/rooms\/([A-HJ-NP-Z2-9]{6})\/([a-f0-9-]{36})\/(socket|init|rpc)$/.exec(url.pathname);
     if(!match)return json({error:'경기 주소를 확인해 주세요.'},404);
     if(match[3]==='socket') {
@@ -47,6 +50,7 @@ export class QuizRoom {
   private syncedRevision=-1;
   private syncing=false;
   private nextSync=0;
+  private syncAttempts=0;
   private previous=new Map<string,Runner>();
   private serial:Promise<unknown>=Promise.resolve();
   private tickQueued=false;
@@ -55,12 +59,18 @@ export class QuizRoom {
   private legacySnapshotAt=0;
   private alarmAt=0;
   private rates=new Map<WebSocket,{at:number;tokens:number}>();
+  private authenticationTimers=new Map<WebSocket,ReturnType<typeof setTimeout>>();
 
   constructor(private ctx:DurableObjectState,private env:Env) {
     ctx.setWebSocketAutoResponse(new WebSocketRequestResponsePair('{"type":"ping"}','{"type":"pong"}'));
     ctx.blockConcurrencyWhile(async()=>{
       const saved=await this.readChunks<RoomRecord>('room');
       if(saved){
+        const sync=await ctx.storage.get<CheckpointSync>('checkpoint-sync');
+        this.syncedRevision=sync?.revision??-1;
+        this.syncAttempts=sync?.attempts??0;
+        this.nextSync=sync?.nextAt??0;
+        this.alarmAt=await ctx.storage.getAlarm()??0;
         saved.question_bank=(await this.readChunks<RoomRecord['question_bank']>('questions'))??null;
         const baseRevision=saved.revision;
         const patches=await Promise.all(Object.keys(saved.state.players).map(id=>this.readChunks<PlayerSave>('player:'+id)));
@@ -113,7 +123,8 @@ export class QuizRoom {
     if(who.role==='student'&&this.game!.room.status==='running'&&action!=='join'&&action!=='customize')await this.savePlayer(who,action);
     else{await this.save();this.broadcastSnapshots();await this.armAlarm();}
   }
-  private members(){return this.ctx.getWebSockets().filter(ws=>!!(ws.deserializeAttachment() as Attachment)?.who);}
+  private members(){return this.ctx.getWebSockets().filter(ws=>ws.readyState===WebSocket.OPEN&&!!(ws.deserializeAttachment() as Attachment)?.who);}
+  private clearAuthenticationTimer(ws:WebSocket){clearTimeout(this.authenticationTimers.get(ws));this.authenticationTimers.delete(ws);}
   private send(ws:WebSocket,value:unknown){try{ws.send(JSON.stringify(value));}catch{try{ws.close(1011,'Reconnect');}catch{}}}
   private snapshot(who:QuizIdentity){return this.game!.snapshot(who,this.websocketUrl);}
   private broadcastSnapshots(legacyOnly=false){
@@ -142,8 +153,11 @@ export class QuizRoom {
       if(this.tickQueued)return;this.tickQueued=true;
       void this.enqueue(async()=>{
         if(!this.game)return;
+        // A stale/closed socket must never leave the simulation interval alive.
+        if(!this.members().length){await this.sleepWhenEmpty();return;}
+        if(this.game.room.status!=='running'){this.run();return;}
         const changed=this.game.tick(),now=Date.now();
-        if(changed){await this.save();this.broadcastSnapshots();this.run();}
+        if(changed){await this.save();this.broadcastSnapshots();this.run();this.queueCheckpoint(this.game.room.endsAt!==null&&this.game.room.endsAt<=now);await this.armAlarm();}
         if(now-this.frameAt>=ROOM_FRAME_MS){this.frameAt=now;this.frames();}
         if(this.legacyDirty&&now-this.legacySnapshotAt>=1000)this.broadcastSnapshots(true);
         if(now-this.saveAt>=5000)await this.save();
@@ -154,26 +168,58 @@ export class QuizRoom {
       }).finally(()=>{this.tickQueued=false;});
     },ROOM_TICK_MS);
   }
+  private async persistSync(){
+    await this.ctx.storage.put('checkpoint-sync',{revision:this.syncedRevision,attempts:this.syncAttempts,nextAt:this.nextSync} satisfies CheckpointSync);
+  }
   private queueCheckpoint(force=false){
     if(!this.game||this.syncing||!force&&Date.now()<this.nextSync||this.syncedRevision>=this.game.record.revision)return;
-    this.nextSync=Date.now()+60000;this.syncing=true;
+    this.syncAttempts++;
+    this.nextSync=Date.now()+CHECKPOINT_INTERVAL_MS*Math.min(15,5**(this.syncAttempts-1));
+    this.syncing=true;
     const saved=this.game.checkpoint();
     this.ctx.waitUntil((async()=>{
+      let acknowledged=false;
       try{
+        // Retry budgets and acknowledgements must survive hibernation, too.
+        await this.persistSync();
         const response=await fetch(this.env.APP_ORIGIN+'/api/labs/quiz-rally/realtime/checkpoint',{
           method:'POST',headers:{'Content-Type':'application/json',Authorization:'Bearer '+this.env.QUIZ_REALTIME_SECRET},
           body:JSON.stringify({code:saved.code,generation:saved.state.realtime!.generation,revision:saved.revision,state:saved.state}),
           signal:AbortSignal.timeout(8000)
         });
-        if(response.ok)this.syncedRevision=saved.revision;
-      }catch{}finally{this.syncing=false;}
+        acknowledged=response.ok;
+      }catch{}
+      await this.enqueue(async()=>{
+        if(acknowledged){this.syncedRevision=Math.max(this.syncedRevision,saved.revision);this.syncAttempts=0;}
+        this.syncing=false;
+        await this.persistSync();
+        await this.armAlarm();
+      });
     })());
   }
   private async armAlarm(){
     if(!this.game)return;
-    const at=Math.min(Date.parse(this.game.record.expires_at),Date.now()+60000);
-    if(this.alarmAt>Date.now()+30000)return;
+    let at=Date.parse(this.game.record.expires_at);
+    if(this.game.room.status==='running'&&this.members().length&&this.game.room.endsAt!==null)at=Math.min(at,this.game.room.endsAt);
+    // Synced idle rooms have only one expiry alarm. Failed saves get a bounded
+    // 1/5/15-minute backoff; durable local records remain available on reconnect.
+    if(this.syncedRevision<this.game.record.revision&&this.syncAttempts<IDLE_SYNC_ATTEMPTS){
+      at=Math.min(at,Math.max(Date.now()+1000,this.nextSync||Date.now()+CHECKPOINT_INTERVAL_MS));
+    }
+    if(this.alarmAt===at)return;
     await this.ctx.storage.setAlarm(at);this.alarmAt=at;
+  }
+  private async sleepWhenEmpty(){
+    if(!this.game||this.members().length)return;
+    if(this.game.room.status==='running'){
+      this.game.tick();
+      this.game.record.savedAt=Date.now();
+      this.game.recover();
+    }
+    this.run();
+    await this.save();
+    this.queueCheckpoint(true);
+    await this.armAlarm();
   }
   async fetch(request:Request):Promise<Response>{
     return this.enqueue(async()=>{
@@ -186,7 +232,9 @@ export class QuizRoom {
             this.game=new QuizArenaRoom(record);
             this.websocketUrl=url.origin.replace(/^http/,'ws')+url.pathname.replace(/init$/,'socket');
             await this.writeChunks('questions',record.question_bank);
-            await this.ctx.storage.put('url',this.websocketUrl);await this.save();await this.armAlarm();
+            await this.ctx.storage.put('url',this.websocketUrl);await this.save();
+            // Vercel has committed this initial record before calling init.
+            this.syncedRevision=record.revision;await this.persistSync();await this.armAlarm();
           }
           return json({ok:true});
         }
@@ -196,7 +244,7 @@ export class QuizRoom {
           const pair=new WebSocketPair(),[client,server]=Object.values(pair);
           server.serializeAttachment({createdAt:Date.now()} satisfies Attachment);
           this.ctx.acceptWebSocket(server);
-          setTimeout(()=>{if(!(server.deserializeAttachment() as Attachment)?.who)try{server.close(1008,'Authentication required');}catch{}},10000);
+          this.authenticationTimers.set(server,setTimeout(()=>{this.authenticationTimers.delete(server);if(!(server.deserializeAttachment() as Attachment)?.who)try{server.close(1008,'Authentication required');}catch{}},10000));
           return new Response(null,{status:101,webSocket:client});
         }
         if(action!=='rpc'||!secret(request,this.env))throw new QuizError('접근 정보를 확인해 주세요.',403);
@@ -206,9 +254,10 @@ export class QuizRoom {
         if(data.body?.action==='join')this.game.join(who,data.body);
         else if(data.body)this.game.act(who,data.body);
         const result=this.snapshot(who);
-        if(data.body&&data.body.action!=='arena-input'){await this.persistAction(who,data.body.action);this.queueCheckpoint(this.game.room.status==='ended');}
+        if(data.body&&data.body.action!=='arena-input'){await this.persistAction(who,data.body.action);this.queueCheckpoint(this.game.room.status==='ended'||data.body.action==='pause');}
         else if(data.body){if(Date.now()-this.saveAt>=5000)await this.save();this.queueCheckpoint();}
-        this.run();return json(result);
+        else this.queueCheckpoint();
+        this.run();await this.armAlarm();return json(result);
       }catch(error){const e=failure(error);return json({error:e.error},e.status);}
     });
   }
@@ -234,8 +283,9 @@ export class QuizRoom {
             if(other!==ws&&prior.role===who.role&&prior.playerId===who.playerId)other.close(4001,'Connected elsewhere');
           }
           ws.serializeAttachment({...attachment,who,playerDeltas:data.playerDeltas===1});
+          this.clearAuthenticationTimer(ws);
           this.send(ws,{type:'ready',motion:true,world:true});
-          this.send(ws,{type:'snapshot',data:this.snapshot(who)});this.run();return;
+          this.send(ws,{type:'snapshot',data:this.snapshot(who)});this.run();this.queueCheckpoint();await this.armAlarm();return;
         }
         const who=attachment.who;this.game!.authorize(who);
         const changed=this.game!.tick();
@@ -247,7 +297,7 @@ export class QuizRoom {
         if(data.type==='request'){
           if(data.body)this.game!.act(who,data.body);
           const result=this.snapshot(who);
-          if(data.body&&data.body.action!=='arena-input'){await this.persistAction(who,data.body.action);if(this.game!.room.status==='ended')this.queueCheckpoint(true);}
+          if(data.body&&data.body.action!=='arena-input'){await this.persistAction(who,data.body.action);if(this.game!.room.status==='ended'||data.body.action==='pause')this.queueCheckpoint(true);}
           else if(data.body&&Date.now()-this.saveAt>=5000)await this.save();
           this.send(ws,{type:'response',id,data:result});this.run();return;
         }
@@ -259,26 +309,27 @@ export class QuizRoom {
   async webSocketClose(ws:WebSocket){
     return this.enqueue(async()=>{
       this.rates.delete(ws);
+      this.clearAuthenticationTimer(ws);
       const who=(ws.deserializeAttachment() as Attachment)?.who;
       const peers=this.members().filter(other=>other!==ws);
-      if(who?.role==='student'&&!peers.some(other=>(other.deserializeAttachment() as Attachment).who?.playerId===who.playerId))this.game?.stopInputs(who.playerId);
-      if(!peers.length){if(this.timer)clearInterval(this.timer);this.timer=undefined;await this.save();this.queueCheckpoint();}
+      if(who?.role==='student'&&this.game?.room.status==='running'&&!peers.some(other=>(other.deserializeAttachment() as Attachment).who?.playerId===who.playerId))this.game.stopInputs(who.playerId);
+      if(!peers.length)await this.sleepWhenEmpty();
     });
   }
   webSocketError(ws:WebSocket){try{ws.close(1011,'Reconnect');}catch{}return this.webSocketClose(ws);}
   async alarm(){
     return this.enqueue(async()=>{
       if(!this.game)return;
+      this.alarmAt=0;
       if(Date.parse(this.game.record.expires_at)<=Date.now()){
         if(this.timer)clearInterval(this.timer);this.timer=undefined;
+        for(const timer of this.authenticationTimers.values())clearTimeout(timer);this.authenticationTimers.clear();
         for(const ws of this.ctx.getWebSockets())ws.close(1000,'Room expired');
         await this.ctx.storage.deleteAll();this.game=undefined;return;
       }
       if(this.game.tick()){await this.save();this.broadcastSnapshots();this.run();}
-      this.queueCheckpoint();
-      // Ended rooms sleep until expiry once Neon has acknowledged the result.
-      const delay=this.game.room.status==='ended'&&this.syncedRevision>=this.game.record.revision?Date.parse(this.game.record.expires_at):Date.now()+60000;
-      await this.ctx.storage.setAlarm(Math.min(delay,Date.parse(this.game.record.expires_at)));
+      if(this.syncAttempts<IDLE_SYNC_ATTEMPTS)this.queueCheckpoint();
+      await this.armAlarm();
     });
   }
 }
