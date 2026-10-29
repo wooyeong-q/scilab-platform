@@ -26,7 +26,7 @@ function dress(p,n){
  p.task=tasks[n];
  const old=p.type==='choose'?'기록':p.type==='order'?'봉투':'메모';
  const rename=t=>t.replaceAll(old,names[n]);
- p.items=p.items.map((i,j)=>({...i,label:`${names[n]} ${'가나다라마바'[j]}`}));
+ p.items=p.items.map((i,j)=>({...i,label:`${names[n]} ${'가나다라마바'[j]}`,text:p.type==='classify'?'':i.text}));
  p.clues=p.clues.map(c=>({...c,title:rename(c.title),text:rename(c.text)}));
  p.explanation=rename(p.explanation);p.reference=rename(p.reference);
  p.hints=[`장치의 쪽지와 덮개를 눌러 각자 기록을 찾아보세요.`,p.type==='choose'?'네 관찰에 모두 맞는 물건인지 비교하세요.':p.type==='order'?'앞뒤 관계와 이웃한 자리를 함께 확인하세요.':'기록에 나온 정보를 분류 기준과 대조하세요.',p.type==='choose'?'물건을 선택한 뒤 아래 손잡이 버튼을 누르세요.':`${names[n]}를 누르고 놓을 곳을 누른 뒤 장치를 작동하세요.`];

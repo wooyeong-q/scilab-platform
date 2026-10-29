@@ -26,8 +26,8 @@ export function discoveryNotes(p,view){
 function propHTML(p,i,n,d,selected,m,tight){
  const choice=p.type==='choose',active=choice?d.picked===i.id:selected===i.id;
  const placed=p.type==='order'?d.order?.includes(i.id):p.type==='classify'?!!d[i.id]:false;
- const detailed=tight||!!i.image||i.text.length>36;
- return `<article class="physical-prop prop-${m.prop} ${active?'held':''} ${placed?'inserted':''}" style="--prop:${n}" data-piece="${esc(i.id)}">${button(`<span class="prop-mark">${index(n)}</span><strong>${esc(short(i.label))}</strong>${!detailed&&i.text?`<span class="prop-text">${lines(i.text)}</span>`:''}<span class="prop-grip" aria-hidden="true"></span>${placed?'<small>배치됨</small>':''}`,choice?'pick':'select',i.id,`aria-label="${esc(i.label)} ${choice?'선택':'집기'}" aria-pressed="${!!active}"`)}${detailed?button('펼쳐 보기','detail',i.id,`class="prop-detail" aria-label="${esc(i.label)} 펼쳐 보기"`):''}</article>`;
+ const detailed=(tight&&i.text.length>0)||!!i.image||i.text.length>36;
+ return `<article class="physical-prop prop-${m.prop} ${active?'held':''} ${placed?'inserted':''}" style="--prop:${n}" data-piece="${esc(i.id)}">${button(`<span class="prop-heading"><span class="prop-mark">${index(n)}</span><strong>${esc(short(i.label))}</strong></span>${!detailed&&i.text?`<span class="prop-text">${lines(i.text)}</span>`:''}<span class="prop-grip" aria-hidden="true"></span>${placed?'<small>배치됨</small>':''}`,choice?'pick':'select',i.id,`aria-label="${esc(i.label)} ${choice?'선택':'집기'}" aria-pressed="${!!active}"`)}${detailed?button('펼쳐 보기','detail',i.id,`class="prop-detail" aria-label="${esc(i.label)} 펼쳐 보기"`):''}</article>`;
 }
 export function physicalBoardHTML(p,d,selected,m,view){
  const order=p.type==='order',choice=p.type==='choose';
