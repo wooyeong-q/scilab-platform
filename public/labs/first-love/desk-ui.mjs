@@ -1,4 +1,4 @@
-import {esc,lines,progress} from './puzzle-ui.mjs?v=18';
+import {esc,lines,progress} from './puzzle-ui.mjs?v=19';
 const btn=(label,action,value='',extra='')=>`<button data-action="${action}" data-value="${esc(value)}" ${extra}>${label}</button>`;
 // Legacy paragraphs remain fully reachable via explicit pages, never ellipsis
 // or tiny type. The new authoring limits fit one card without paging.
