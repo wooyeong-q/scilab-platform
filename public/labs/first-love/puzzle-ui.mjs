@@ -1,5 +1,5 @@
-import {rotated} from './content.mjs?v=16';
-import {chosenReasons} from './engine.mjs?v=16';
+import {rotated} from './content.mjs?v=18';
+import {chosenReasons} from './engine.mjs?v=18';
 export const esc=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 export const lines=v=>esc(v).replace(/\n/g,'<br>');
 const button=(label,action,value='',extra='')=>`<button data-action="${action}" data-value="${esc(value)}" ${extra}>${label}</button>`;

@@ -1,6 +1,9 @@
 import {ContentError} from '../common-escape/content.mjs';
 export {ContentError};
 export const SCHEMA='TODAY-TO-YOU-1';
+import {COOP_SCHEMA,validateCooperativePuzzle} from './cooperative.mjs';
+export {COOP_SCHEMA};
+export const headersFor=schema=>schema===COOP_SCHEMA?{...HEADERS,모둠단서:[...HEADERS.모둠단서,'검증조건']}:HEADERS;
 export const STAGES=[
  ['P1','classroom','order','오늘은 미루지 않기로 했다','책상 위 파일'],
  ['P2','library','match','같이 보던 책','반납대'],
@@ -35,13 +38,13 @@ export function finalAnswer(d){const grid=rotated(d.grid,d.turns),w=walk(grid,d.
 // left to right within each row. Their position is not the route itself.
 export function cabinetMarks(route){const rows=[];for(let i=0;i<route.length;i+=3)rows.push(route.slice(i,i+3));return rows.reverse();}
 export function validateLesson(input){
- if(!input||input.schema!==SCHEMA)fail('설정!양식버전: 오늘, 너에게 전용 TODAY-TO-YOU-1 양식을 사용하세요.');
+ if(!input||![SCHEMA,COOP_SCHEMA].includes(input.schema))fail('설정!양식버전: 오늘, 너에게 전용 TODAY-TO-YOU-1 양식을 사용하세요.');
  const meta=Object.fromEntries(['title','subject','unit','grade'].map(k=>[k,str(input.meta?.[k],'설정 '+k,100)]));
  const endings={positiveMax:num(input.endings?.positiveMax,'설정 미소_최대오답',0,99),neutralMax:num(input.endings?.neutralMax,'설정 당황_최대오답',1,199)};
  if(endings.neutralMax<=endings.positiveMax)fail('설정: 당황 최대 오답은 미소 최대 오답보다 커야 합니다.');
  const raw=arr(input.puzzles,'퍼즐',8);if(raw.length!==8)fail('퍼즐: P1~P8을 한 번씩 입력하세요. P9~P10은 고정 관찰·통합 단계입니다.');unique(raw.map(p=>p.id),'퍼즐ID');
  const puzzles=STAGES.slice(0,8).map(stage=>{
-  const src=raw.find(p=>p.id===stage.id),label='퍼즐 '+stage.id;if(!src||src.type!==stage.type||(src.room!==stage.room&&!(['P5','P8'].includes(stage.id)&&src.room==='club')))fail(label+': 장소·형식 고정값을 유지하세요.');
+  const src=raw.find(p=>p.id===stage.id),label='퍼즐 '+stage.id;if(input.schema===COOP_SCHEMA)return validateCooperativePuzzle(src,stage);if(!src||src.type!==stage.type||(src.room!==stage.room&&!(['P5','P8'].includes(stage.id)&&src.room==='club')))fail(label+': 장소·형식 고정값을 유지하세요.');
   const p={...stage,task:str(src.task,label+' 공동과제'),reference:str(src.reference,label+' 공통자료',2000,true),explanation:str(src.explanation,label+' 해설',2000),hints:arr(src.hints,label+' 힌트',3).map((v,i)=>str(v,label+' 힌트'+(i+1)))};
   if(p.hints.length!==3)fail(label+': 힌트 3개가 필요합니다.');
   p.items=arr(src.items,label+' 자료',8).map((i,n)=>{
@@ -87,15 +90,15 @@ export function validateLesson(input){
  const devices={grid,start:str(d.start,'장치 시작표식',4),turns:num(d.turns,'장치 회전',0,3),route:arr(d.route,'장치 이동경로',12).map(String),drawers:Object.fromEntries(grid.map(s=>[s,str(d.drawers?.[s],'장치 자료함 대응',1)]))};
  if(!grid.includes(devices.start)||devices.route.length<4||devices.route.some(s=>!DIRS[s]))fail('장치: 시작표식과 4~12칸 경로를 확인하세요.');
  if(Object.values(devices.drawers).sort().join()!=='A,B,C,D,E,F,G,H,I')fail('장치: 자료함 A~I를 한 번씩 연결하세요.');finalAnswer(devices);
- const lesson={schema:SCHEMA,meta,endings,puzzles,devices};if(JSON.stringify(lesson).length>2500000)fail('그림을 줄여 전체 자료를 2.5MB 이하로 저장하세요.');return lesson;
+ const lesson={schema:input.schema,meta,endings,puzzles,devices};if(JSON.stringify(lesson).length>2500000)fail('그림을 줄여 전체 자료를 2.5MB 이하로 저장하세요.');return lesson;
 }
-export function toSheets(l){const s=Object.fromEntries(Object.entries(HEADERS).map(([k,v])=>[k,[[...v]]]));
- s.설정.push(['양식버전',SCHEMA,'고정'],...Object.entries({title:'수업명',subject:'과목',unit:'단원',grade:'대상'}).map(([k,n])=>[n,l.meta[k],'교사 입력']),['미소_최대오답',l.endings.positiveMax,'시작한 수업에는 고정'],['당황_최대오답',l.endings.neutralMax,'그보다 많으면 부정 표정']);
- for(const p of l.puzzles){s.퍼즐.push([p.id,p.room,p.type,p.title,p.task,p.reference,p.explanation,...p.hints]);s.자료.push(...p.items.map(i=>[p.id,i.id,i.label,i.text,i.owner,i.answer,i.via,i.original,i.passes.join('|'),i.image,i.alt]));s.대상.push(...p.targets.map(t=>[p.id,t.id,t.kind,t.label]));s.모둠단서.push(...p.clues.map(c=>[p.id,c.role,c.title,c.text]));}
+export function toSheets(l){const s=Object.fromEntries(Object.entries(headersFor(l.schema)).map(([k,v])=>[k,[[...v]]]));
+ s.설정.push(['양식버전',l.schema,'고정'],...Object.entries({title:'수업명',subject:'과목',unit:'단원',grade:'대상'}).map(([k,n])=>[n,l.meta[k],'교사 입력']),['미소_최대오답',l.endings.positiveMax,'시작한 수업에는 고정'],['당황_최대오답',l.endings.neutralMax,'그보다 많으면 부정 표정']);
+ for(const p of l.puzzles){s.퍼즐.push([p.id,p.room,p.type,p.title,p.task,p.reference,p.explanation,...p.hints]);s.자료.push(...p.items.map(i=>[p.id,i.id,i.label,i.text,i.owner,i.answer,i.via,i.original,i.passes.join('|'),i.image,i.alt]));s.대상.push(...p.targets.map(t=>[p.id,t.id,t.kind,t.label]));s.모둠단서.push(...p.clues.map(c=>[p.id,c.role,c.title,c.text,...(l.schema===COOP_SCHEMA?[c.rule]:[])]));}
  const d=l.devices;s.장치.push(['배치표',d.grid.join('|'),'왼쪽 위부터 9칸 / 표식 중복 금지'],['시작표식',d.start,'P2 책갈피'],['시계방향회전',d.turns,'P8 방향 표시 / 0~3'],['이동경로',d.route.join('|'),'P5 전달 기록 / 화면 기준 up right down left'],['자료함대응',d.grid.map(s=>d.drawers[s]).join('|'),'P9 관찰 / 배치표 표식 순서대로 A~I']);return s;}
-export function fromSheets(sheets){const version=sheets.설정?.find(r=>r?.[0]==='양식버전')?.[1];if(version&&version!==SCHEMA)fail('설정!양식버전: 오늘, 너에게 전용 TODAY-TO-YOU-1 양식을 사용하세요.');const rows={};for(const [name,heads]of Object.entries(HEADERS)){const s=sheets[name];if(!Array.isArray(s))fail(name+': 시트가 없습니다.');const header=s.findIndex(r=>r?.[0]===heads[0]&&heads.every(h=>r.includes(h)));if(header<0)fail(name+': 열 이름을 유지하세요.');const h=s[header];if(h.filter(v=>v!=null&&v!=='').length!==heads.length)fail(name+': 알 수 없는 열이 있습니다.');rows[name]=s.slice(header+1).map((r,n)=>({r,n:header+n+2})).filter(({r})=>r?.some(v=>v!=null&&String(v).trim())).map(({r,n})=>({...Object.fromEntries(heads.map(k=>[k,r[h.indexOf(k)]??''])),_row:n}));}
+export function fromSheets(sheets){const version=sheets.설정?.find(r=>r?.[0]==='양식버전')?.[1];if(version&&![SCHEMA,COOP_SCHEMA].includes(version))fail('설정!양식버전: 오늘, 너에게 전용 TODAY-TO-YOU-1 양식을 사용하세요.');const rows={};for(const [name,heads]of Object.entries(headersFor(version))){const s=sheets[name];if(!Array.isArray(s))fail(name+': 시트가 없습니다.');const header=s.findIndex(r=>r?.[0]===heads[0]&&heads.every(h=>r.includes(h)));if(header<0)fail(name+': 열 이름을 유지하세요.');const h=s[header];if(h.filter(v=>v!=null&&v!=='').length!==heads.length)fail(name+': 알 수 없는 열이 있습니다.');rows[name]=s.slice(header+1).map((r,n)=>({r,n:header+n+2})).filter(({r})=>r?.some(v=>v!=null&&String(v).trim())).map(({r,n})=>({...Object.fromEntries(heads.map(k=>[k,r[h.indexOf(k)]??''])),_row:n}));}
  const parseSettings=name=>{unique(rows[name].map(r=>r.항목),name+' 항목');return Object.fromEntries(rows[name].map(r=>[r.항목,r.값]));},settings=parseSettings('설정'),d=parseSettings('장치');
  for(const name of ['퍼즐','자료','대상','모둠단서'])for(const r of rows[name])if(!STAGES.slice(0,8).some(s=>s.id===r.퍼즐ID))fail(`${name}!A${r._row}: P1~P8만 입력하세요. P9~P10은 공통 장면입니다.`);
  const split=v=>String(v??'').split('|').map(x=>x.trim()).filter(Boolean),grid=split(d.배치표),drawers=split(d.자료함대응);
- return validateLesson({schema:settings.양식버전,meta:{title:settings.수업명,subject:settings.과목,unit:settings.단원,grade:settings.대상},endings:{positiveMax:settings.미소_최대오답,neutralMax:settings.당황_최대오답},puzzles:rows.퍼즐.map(r=>({id:r.퍼즐ID,room:r.장소,type:r.형식,task:r.공동과제,reference:r.공통자료,explanation:r.해설,hints:[r.힌트1,r.힌트2,r.힌트3],items:rows.자료.filter(i=>i.퍼즐ID===r.퍼즐ID).map(i=>({id:i.자료ID,label:i.표시이름,text:i.내용,owner:i.담당,answer:i.정답,via:i.중간정답,original:i.기준자료,passes:split(i.조건통과),image:i.그림주소,alt:i.그림설명})),targets:rows.대상.filter(t=>t.퍼즐ID===r.퍼즐ID).map(t=>({id:t.대상ID,kind:t.종류,label:t.표시이름})),clues:rows.모둠단서.filter(c=>c.퍼즐ID===r.퍼즐ID).map(c=>({role:c.자리,title:c.제목,text:c.내용}))})),devices:{grid,start:d.시작표식,turns:d.시계방향회전,route:split(d.이동경로),drawers:Object.fromEntries(grid.map((s,i)=>[s,drawers[i]]))}});
+ return validateLesson({schema:settings.양식버전,meta:{title:settings.수업명,subject:settings.과목,unit:settings.단원,grade:settings.대상},endings:{positiveMax:settings.미소_최대오답,neutralMax:settings.당황_최대오답},puzzles:rows.퍼즐.map(r=>({id:r.퍼즐ID,room:r.장소,type:r.형식,task:r.공동과제,reference:r.공통자료,explanation:r.해설,hints:[r.힌트1,r.힌트2,r.힌트3],items:rows.자료.filter(i=>i.퍼즐ID===r.퍼즐ID).map(i=>({id:i.자료ID,label:i.표시이름,text:i.내용,owner:i.담당,answer:i.정답,via:i.중간정답,original:i.기준자료,passes:split(i.조건통과),image:i.그림주소,alt:i.그림설명})),targets:rows.대상.filter(t=>t.퍼즐ID===r.퍼즐ID).map(t=>({id:t.대상ID,kind:t.종류,label:t.표시이름})),clues:rows.모둠단서.filter(c=>c.퍼즐ID===r.퍼즐ID).map(c=>({role:c.자리,title:c.제목,text:c.내용,rule:c.검증조건}))})),devices:{grid,start:d.시작표식,turns:d.시계방향회전,route:split(d.이동경로),drawers:Object.fromEntries(grid.map((s,i)=>[s,drawers[i]]))}});
 }
