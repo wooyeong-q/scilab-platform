@@ -1,5 +1,5 @@
 // Coordinates belong to the full 16:9 painting, shared by markers and photo crops.
-export const PHOTO_SPOTS=[{id:'desk',name:'붉은 끈 파일',x:17.5,y:79.5,role:1},{id:'cubby',name:'아홉 칸 자료함',x:88.7,y:42.8,role:2},{id:'file',name:'파란 파일',x:43.4,y:58.6,role:3}];
+export const PHOTO_SPOTS=[{id:'desk',name:'붉은 끈 파일',x:17.5,y:79.5,role:1},{id:'cubby',name:'아홉 칸 자료함',x:88.7,y:42.8,role:2},{id:'file',name:'파란 파일',x:43.4,y:58.6,role:3},{id:'clock',name:'벽시계',x:67.5,y:19.7,role:4}];
 const o=(id,name,x,y,text,memory)=>({id,name,x,y,text,memory});
 export const EXPLORE={
  classroom:[o('desk','붉은 끈 파일',17.5,79.5,'붉은 끈으로 묶어 둔 파일. 반납 메모와 자료를 안쪽에 끼워 뒀다.'),o('file','파란 파일',43.4,58.6,'파일 모서리에 작은 꽃잎이 끼어 있다. 창문을 열어 둔 모양이다.'),o('cubby','아홉 칸 자료함',88.7,42.8,'세 줄, 세 칸의 자료함. 빈틈 없이 정리한 건 시우답다.'),o('clock','벽시계',67.5,19.7,'시계 소리가 유난히 크게 들린다. 메시지를 보내고 나니 분침이 자꾸 눈에 들어온다.'),o('plant','창가 화분',4.9,46.5,'서아는 물을 줄 때마다 화분을 조금 돌려놓곤 했다. 햇빛을 골고루 받으라고.'),o('shelf','작은 책장',46.6,39.7,'서아에게 빌린 책을 두곤 했던 자리. 책을 돌려주는 일만 자꾸 미뤘었다. 다시 말을 걸 이유가 생기니까.',0)],
