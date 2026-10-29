@@ -39,3 +39,13 @@ New solo progress has its own storage key. The old solo key and its original sam
 - `tests/fixtures/first-love-viewport.html` is a manual browser fixture. Preview deployments temporarily serve a copy beside the app; production does not expose the fixture under public/.
 
 The sample demonstrates the mechanism using words, numbers and observations. It is not a finished eight-question lesson for every subject, nor a redesign of the playable character roster.
+
+## Physical puzzle interaction (2026-10-29)
+
+V2 uses story-specific file, bookshelf, drawer, ledger, return-box, patch-panel, locker and inbox surfaces. Each supports choose/order/classify without changing the workbook schema or grading. V1 keeps its existing board and long-text paging. Public objects remain visible after placing them; targets show their letter marks and allow removal.
+
+Private clues are discovered from named flaps/notes on the device. Only the role-filtered player payload is rendered; undiscovered text is absent from the DOM. Discovery is a local presentation state, never an artificial submission prerequisite. It persists in the existing story UI storage. Formal clue necessity remains enforced by the importer.
+
+Correct submission still advances the authoritative stage exactly once. A resumable discovery panel then reveals the story's object before the after-dialogue. Collect or Escape continues; it does not submit again. Rewards needed by P10 remain in the existing server evidence state, independent of this animation. Reduced-motion users receive the same content without animation.
+
+Authoring guidance now requires a physical action and a curriculum interpretation in the task. Sample content is still a demonstration, not a finished curriculum lesson. Character selection, cast assets and scene exploration are unchanged.
