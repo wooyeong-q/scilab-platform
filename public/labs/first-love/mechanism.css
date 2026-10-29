@@ -32,3 +32,5 @@ dialog.find-dialog{width:min(620px,96vw);max-width:calc(100vw - 8px);max-height:
  .rack-book .prop-text{font-size:14px;padding:10px 5px;background:#f8efd9;color:#3f453e;border-radius:2px;border:1px solid #b9a98a}
  .rack-book .prop-heading{gap:18px}.rack-book strong{font-size:18px}.rack-book .prop-detail{color:inherit}
 }
+@media(max-width:600px){.socket-empty{font-size:17px;line-height:1.3}.mini-prop{min-width:14px}.socket-content{max-width:100%}.undiscovered-note{height:34px;min-height:0;padding:4px 7px}.undiscovered-note>span{font-size:18px;line-height:1}}
+@media(max-width:359px){.mechanism-inspections .fold-mark{display:none}.mechanism-inspections button{padding:4px 2px;min-height:34px}.mechanism-inspections button>span:last-child{max-width:none}}
