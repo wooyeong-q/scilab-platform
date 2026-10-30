@@ -1,5 +1,5 @@
 const {test}=require('node:test'),assert=require('node:assert/strict');
-test('every selected lead keeps all four boys and the heroine in the story',async()=>{
+test('every selected player role keeps Yunjae as the fixed lead and all four boys in the story',async()=>{
  const {HEROES,castForHero,normalizeHero,characterText,characterDialogue}=await import('../public/labs/first-love/characters.mjs');
  const {OPENING,BEFORE,AFTER,WALK_TO_YOU,CONFESSION}=await import('../public/labs/first-love/story.mjs');
  const {dialogueFrame}=await import('../public/labs/first-love/narrative.mjs');
@@ -8,7 +8,7 @@ test('every selected lead keeps all four boys and the heroine in the story',asyn
  assert.equal(HEROES.length,4);assert.equal(normalizeHero('seoa'),'yunjae');
  for(const hero of HEROES){
   const cast=castForHero(hero.id);
-  assert.equal(cast.length,5);assert.equal(cast[0].id,hero.id);assert.equal(cast[1].short,'서아');
+  assert.equal(cast.length,5);assert.equal(cast[0].id,'yunjae');assert.equal(cast[1].short,'서아');
   assert.equal(new Set(cast.map(c=>c.name)).size,5);
   assert.deepEqual(cast.filter((c,i)=>i!==1).map(c=>c.id).sort(),expectedIds);
   assert.equal(cast.filter(c=>c.id===hero.id).length,1);
