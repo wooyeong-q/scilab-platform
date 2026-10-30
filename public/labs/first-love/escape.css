@@ -61,7 +61,7 @@ html,body{height:100%;overflow:hidden}#app{height:100dvh;overflow:hidden}
 }
 @media(max-height:500px) and (min-width:701px){.escape-final .final-puzzle-layout{grid-template-columns:31% minmax(0,1fr)}.escape-final .escape-note-text{font-size:15px;line-height:1.4}.escape-final .escape-notes{padding:7px;gap:4px}.escape-final .note-meta{display:none}.escape-final .note-bottom{gap:4px}.escape-final .note-bottom button{padding:3px 7px;font-size:10px;min-height:26px}}
 
-@media(max-width:400px){.escape-device.riddle{padding:4px}}
+@media(max-width:400px){.escape-device.riddle{padding:4px}.riddle-room{gap:3px}}
 
 .team-pager{display:flex;align-items:center;justify-content:space-between;flex:none;gap:8px}.team-pager button{min-height:32px;padding:5px 10px;font-size:12px}.author-page .team-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;margin:0;min-height:0;flex:1;overflow:hidden;align-content:start}.author-page .team-grid article{padding:12px}.author-page .team-grid article h2{font-size:17px;margin:3px 0}.author-page .team-grid article p{font-size:12px;margin:5px 0;line-height:1.5}.author-page .team-grid article button{padding:2px 6px;min-height:25px;font-size:11px}.author-page .team-grid article progress{margin:8px 0}.class-bar{margin:0!important;flex:none;gap:8px!important}.class-bar button{padding:6px 10px;min-height:34px;font-size:12px}.class-bar .class-code{font-size:24px}.class-bar span{font-size:12px}
 @media(max-width:700px){.author-page .team-grid{grid-template-columns:1fr}.class-bar{flex-wrap:wrap}.class-bar .class-code{font-size:22px}.class-code small{font-size:9px}.author-page .team-grid article{padding:15px}.author-page .team-grid article p{font-size:14px;margin:7px 0}}
