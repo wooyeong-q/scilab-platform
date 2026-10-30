@@ -58,7 +58,7 @@ dialog:has(.object-story){width:min(620px,92vw)}
 .story-note>small{color:#96776e;font-size:12px}
 .story-note p{font-family:'Batang',serif;font-size:23px;line-height:2;white-space:pre-line;margin:26px 0;min-height:90px}
 .story-note .next-line{display:flex;margin-left:auto}
-.ending-thumb.disgust{background-image:url('./assets/ending-disgust-v7.webp')}
+.ending-thumb.disgust{background-image:url('./assets/ending-disgust-v23.webp')}
 /* Keep the same stage bounds while dialogue gives way to exploration. */
 @media(min-width:701px){
  .game.in-dialogue{grid-template-rows:58px minmax(0,1fr) 52px}
@@ -86,3 +86,6 @@ dialog:has(.object-story){width:min(620px,92vw)}
  .story-note{padding:18px 28px 10px}.story-note p{font-size:18px;line-height:1.8;margin:14px 0;min-height:60px}.story-note .next-line{font-size:11px;min-height:28px;padding:5px 9px}
  .scene-caption{top:10px;font-size:10px;padding:6px 10px}.school-map button{min-height:55px;padding:8px 12px}.school-map{padding:15px;gap:8px}
 }
+
+/* Keep the complete rejection gesture visible. */
+.ending-screen.disgust .ending-face{width:min(93dvh,96vw);height:auto;max-height:93dvh;left:50%;top:2%;object-fit:contain}.ending-screen.disgust .ending-title{left:3%;bottom:15%;width:34%}.ending-thumb.disgust{background-position:65% 25%}
