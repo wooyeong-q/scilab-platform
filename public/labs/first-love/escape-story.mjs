@@ -631,4 +631,23 @@ export const CONFESSION=[
  ]
 ];
 export const GOALS=ESCAPE_STAGES.map((s,n)=>n===8?'점검 열쇠로 덮개를 열고 사진 속 사물을 찾자.':n===9?'모은 기록으로 수납함을 열고 파란 봉투를 되찾자.':s.object+'에서 다음 장치의 실마리를 찾자.');
+
+// A teacher may replace any of P1–P8 with a subject device. Dialogue should
+// describe the recovered story item without claiming an unused manipulation.
+export function adaptDevices(stages){
+ const before=structuredClone(BEFORE),after=structuredClone(AFTER);
+ for(let n=0;n<8;n++)if(stages[n]?.type!==ESCAPE_STAGES[n].type){
+  before[n]=[];
+  if(n===1)after[n]=[[3,'배치도 찾았어.'],[0,'이 표식, 책갈피에도 있어.'],[2,'도서관 쪽이네. 내가 앞장설게.']];
+  if(n===4)after[n]=[[3,'안에 봉투가 있어.'],[4,'편지는 아니고, 필름 두 장.']];
+  if(n===5)after[n]=[[4,'복도 전시판이라고 적혀 있어.'],[2,'아까 지나온 데네.']];
+ }
+ if(stages[3]?.type!=='circuit')after[2]=[[0,'옆 장치도 열렸어.'],[3,'찾은 기록부터 모아 보자.']];
+ if(stages[5]?.type!=='film')after[4]=[[3,'다음 장치가 켜졌어.'],[4,'작업대 쪽을 보자.']];
+ if(stages[6]?.type!=='frames')after[5]=[[0,'복도로 가자.'],[2,'정리한 장치가 그쪽에도 있어.']];
+ if(stages[7]?.type!=='key')after[6]=[[3,'옆 장치도 열렸어.'],[0,'이제 교실로 돌아갈 수 있겠네.']];
+ // Subject matching does not require turning the board upside down.
+ before[6]=(before[6]||[]).map(line=>line[1]==='사진엔 이 판이 거꾸로야.'?[4,'기록 번호랑 빈칸 번호가 같아.',line[2]||{}]:line);
+ return {BEFORE:before,AFTER:after};
+}
 export const MEMORIES=[{stage:0,title:'보내 버린 문자',place:'교실',text:'서아야, 정리 끝나면 뒤뜰 벤치에서 잠깐 볼래?'},{stage:5,title:'조금 과했던 응원',place:'동아리실',text:'확성기도 현수막도 접었다. 친구들은 아직 옆에 있다.'},{stage:10,title:'되찾은 봉투',place:'교실',text:'모서리만 조금 구겨졌다. 이제 내가 말할 차례다.'}];
