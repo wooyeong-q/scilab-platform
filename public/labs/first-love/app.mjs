@@ -5,13 +5,13 @@ import {deskHTML,notesHTML,textPages,overlayHTML,clueDeck} from './desk-ui.mjs?v
 import {mechanismHTML,discoveryHTML,discoveryNotes,discoveryKey,isPhysical} from './mechanism-ui.mjs?v=21';
 import {STAGES} from './content.mjs?v=19';
 import {fresh,transition,previewState,playerContent,hintsFor,normalizeDraft,chosenReasons} from './engine.mjs?v=21';
-import {ROOMS,GOALS,OPENING,BEFORE,AFTER,CONFESSION,WALK_TO_YOU,MEMORIES,STORY_VERSION} from './story.mjs?v=19';
+import {ROOMS,GOALS,OPENING,BEFORE,AFTER,CONFESSION,WALK_TO_YOU,MEMORIES,STORY_VERSION} from './story.mjs?v=22';
 import {esc,lines,puzzleHTML,interactionGuide,finalNotesHTML,finalSequenceHTML,cabinetMarksHTML} from './puzzle-ui.mjs?v=19';
 import {Session,secret} from './client.mjs';
 import {Author} from './author.mjs?v=21';
 import {PHOTO_SPOTS,EXPLORE,MAIN_SPOTS} from './exploration.mjs?v=19';
 import {Sound} from './sound.mjs';
-import {HEROES,normalizeHero,castForHero,characterText,characterDialogue} from './characters.mjs?v=20';
+import {HEROES,normalizeHero,castForHero,characterText,characterDialogue} from './characters.mjs?v=22';
 import {dialogueFrame,restoreStoryUI} from './narrative.mjs?v=10';
 import {fitRoomFrame,spreadScenePoints} from './scene-points.mjs?v=10';
 const root=document.querySelector('#app'),modal=document.querySelector('#modal'),toastNode=document.querySelector('#toast'),sound=new Sound();

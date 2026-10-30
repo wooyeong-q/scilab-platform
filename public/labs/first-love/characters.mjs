@@ -1,4 +1,4 @@
-import {CAST as ORIGINAL_CAST} from './story.mjs?v=19';
+import {CAST as ORIGINAL_CAST} from './story.mjs?v=22';
 
 const moods=['neutral','nervous','surprised','smile','excited','panicked','sincere','sheepish','amused','concerned','warm'];
 const frames={neutral:0,nervous:1,surprised:2,smile:3,excited:3,panicked:2,sincere:0,sheepish:1,amused:3,concerned:2,warm:3};
@@ -15,7 +15,7 @@ export const normalizeHero=id=>HEROES.some(h=>h.id===id)?id:'yunjae';
 // from appearing twice; the heroine and all cooperative permissions stay fixed.
 export function castForHero(id){
  const hero=HEROES.find(h=>h.id===normalizeHero(id));
- const cast=[HEROES[0],ORIGINAL_CAST[1],HEROES[1],HEROES[2]];
+ const cast=[HEROES[0],ORIGINAL_CAST[1],HEROES[1],HEROES[2],HEROES[3]];
  const slot=cast.findIndex(c=>c.id===hero.id);
  if(slot>0)cast[slot]=HEROES[0];
  cast[0]=hero;
@@ -24,7 +24,7 @@ export function castForHero(id){
 export function characterText(text,id){
  const cast=castForHero(id),names=new Map();
  ORIGINAL_CAST.forEach((c,i)=>{names.set(c.name,cast[i].name);names.set(c.short,cast[i].short);});
- return String(text).replace(/서윤재|한서아|강도하|차시우|윤재|서아|도하|시우/g,name=>names.get(name));
+ return String(text).replace(/서윤재|한서아|강도하|차시우|정민우|윤재|서아|도하|시우|민우/g,name=>names.get(name));
 }
 export function characterDialogue(list,id){
  return list.map(([who,text,options])=>[who,characterText(text,id),options?{...options,label:options.label?characterText(options.label,id):options.label}:undefined]);
