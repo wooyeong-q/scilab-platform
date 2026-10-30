@@ -1,5 +1,5 @@
 import {ContentError,COOP_SCHEMA,STAGES,finalAnswer,cabinetMarks,rotated,walk} from './content.mjs';
-export const fresh=()=>({version:1,stage:0,solved:[],photos:[],cabinetSeen:false,hints:{},draft:{},draftVersion:0,wrong:0,receipts:[],lastSubmission:null,ending:null,finished:false});
+export const fresh=()=>({version:1,stage:0,solved:[],photos:[],discoveries:[],cabinetSeen:false,hints:{},draft:{},draftVersion:0,wrong:0,receipts:[],lastSubmission:null,ending:null,finished:false});
 export const branch=(wrong,limits)=>wrong<=limits.positiveMax?'smile':wrong<=limits.neutralMax?'surprise':'disgust';
 const fail=(s,status=400)=>{throw new ContentError(s,status);};
 export const canonical=v=>JSON.stringify(Array.isArray(v)?v.map(x=>JSON.parse(canonical(x))):v&&typeof v==='object'?Object.fromEntries(Object.keys(v).sort().map(k=>[k,JSON.parse(canonical(v[k]))])):v??null);
@@ -37,6 +37,12 @@ export function transition(state,e,lesson,roles=[1,2,3,4]){
  if(e.type==='confess'){if(s.stage!==10)fail('먼저 편지 봉투를 찾아 주세요.',409);if(!s.ending)s.ending=branch(s.wrong,lesson.endings);s.finished=true;return {state:s,outcome:'ending'};}
  if(s.stage>=10)fail('퍼즐 구간이 끝났습니다.',409);
  if(e.stage!==s.stage)fail('모둠이 다음 단계로 이동했습니다. 화면을 확인하세요.',409);
+ if(e.type==='discover-clue'){
+  if(lesson.schema!==COOP_SCHEMA||s.stage>=8||!p?.clues.some(c=>c.role===e.role))fail('이 장소에서 찾을 수 있는 단서가 아닙니다.');
+  if(!roles.includes(e.role))fail('담당 모둠원이 찾는 단서입니다.',403);
+  s.discoveries=[...new Set([...(s.discoveries||[]),`prop:${p.id}:${e.role}`])];
+  return {state:s,outcome:'discovered'};
+ }
  if(e.type==='inspect-cabinet'){
   if(s.stage!==9)fail('마지막 자료함에서 옆판을 살펴보세요.');
   s.cabinetSeen=true;return {state:s,outcome:'discovered'};
@@ -73,6 +79,7 @@ export function playerContent(lesson,roles,s){
  if(s.stage===8){for(const role of roles)clues.push({role,title:`${role}번의 사진`,text:['책상 위 붉은 끈으로 묶인 파일.','오른쪽 벽의 아홉 칸 자료함.','중앙 왼쪽 책상 위의 파란 파일.',lesson.schema===COOP_SCHEMA?'교실 위쪽 벽에 걸린 둥근 시계.':'세 사진은 같은 교실이다. 자료함의 글자와 표식은 서로 다르니 위치를 확인하자.'][role-1]});}
  if(s.stage===9)for(const role of roles)clues.push({role,title:`${role}번의 연결 기록`,text:['책갈피의 시작 표식도 첫 입력에 포함하자.','수납장 옆판의 표시를 전달 메모의 순서대로 읽자.','위치표 방향을 맞춘 뒤 시작한다.','시작 칸과 지나간 칸을 각각 실제 자료함 글자로 바꾸자.'][role-1]});
  const puzzle=p?{id:p.id,cooperative:!!p.cooperative,type:p.type,room:p.room,title:p.title,task:p.task,reference:p.reference,targets:p.targets,items:p.items.map(({answer,via,original,passes,...i})=>i.owner&&!roles.includes(i.owner)?{id:i.id,label:i.label,owner:i.owner,hidden:true}:{...i,hidden:false}),clues:p.clues.filter(c=>roles.includes(c.role)).map(({role,title,text})=>({role,title,text}))}:null;
- return {schema:lesson.schema,meta:lesson.meta,puzzle,clues,evidence,grid:s.stage>=9?d.grid:[],moveCount:d.route.length,cabinet:{found:s.stage>=9&&!!s.cabinetSeen,marks:s.stage>=9&&s.cabinetSeen?cabinetMarks(d.route):[]}};
+ const archive=lesson.schema===COOP_SCHEMA?lesson.puzzles.slice(0,Math.min(s.stage,8)).map(p=>({id:p.id,type:p.type,clues:p.clues.filter(c=>roles.includes(c.role)).map(({role,title,text})=>({role,title,text}))})):[];
+ return {archive,schema:lesson.schema,meta:lesson.meta,puzzle,clues,evidence,grid:s.stage>=9?d.grid:[],moveCount:d.route.length,cabinet:{found:s.stage>=9&&!!s.cabinetSeen,marks:s.stage>=9&&s.cabinetSeen?cabinetMarks(d.route):[]}};
 }
 export function hintsFor(lesson,s){const id=STAGES[s.stage]?.id;const finalHints=['수납장 오른쪽 옆판을 눌러 작은 표시를 살펴보세요.','2번 친구의 전달 메모로 표시를 읽는 순서를 정하고, 책갈피의 시작 표식과 위치표 회전을 함께 확인하세요.',`시작 칸도 포함해 ${lesson.devices.route.length+1}개의 표식을 실제 자료함 글자로 바꿔 순서대로 누르세요. 같은 칸을 다시 지나면 같은 수납함을 한 번 더 눌러요.`];return (lesson.puzzles[s.stage]?.hints||(s.stage===9?finalHints:['사진 속 큰 사물과 교실의 같은 사물을 비교하세요.','파일의 끈, 자료함 배치, 파일 색을 살펴보세요.','담당 사진과 같은 사물을 누르고 기록하세요. 빈자리의 사진은 함께 볼 수 있어요.'])).slice(0,s.hints[id]||0);}

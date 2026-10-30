@@ -55,6 +55,11 @@ test('one to four players complete v2 over the service; missing-role clues, stal
   await service.teacherAction(room.code,room.teacherKey,{action:'start'});
   for(let n=0;n<8;n++){
    const state=await service.state(room.code,keys[0]);assert.equal(state.content.puzzle.clues.length,5-count);assert.doesNotMatch(JSON.stringify(state.content),/"rule":/);
+   if(count===4)await assert.rejects(service.event(room.code,keys[0],{type:'discover-clue',stage:n,role:2}),/담당 모둠원/);
+   await Promise.all([1,2,3,4].map(role=>service.event(room.code,keys[role-1]||keys[0],{type:'discover-clue',stage:n,role})));
+   const found=await service.state(room.code,keys[0]);assert.equal(found.state.discoveries.length,(n+1)*4);assert.equal(found.state.draftVersion,state.state.draftVersion);
+   await service.event(room.code,keys[0],{type:'discover-clue',stage:n,role:1});
+   const resumed=await service.state(room.code,keys[0]);assert.deepEqual(resumed.state.discoveries,found.state.discoveries);
    const saved=await service.event(room.code,keys[0],{type:'draft',stage:n,draftVersion:state.state.draftVersion,draft:answer(sample.puzzles[n])});
    await assert.rejects(service.event(room.code,keys[0],{type:'draft',stage:n,draftVersion:state.state.draftVersion,draft:{}}),/새 답안/);
    const result=await service.event(room.code,keys[0],{type:'submit',stage:n,draftVersion:saved.state.draftVersion,attemptId:randomUUID()});assert.equal(result.outcome,'correct');

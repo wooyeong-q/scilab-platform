@@ -1,13 +1,14 @@
+import {clueSource,clueRecords,clueRecordHTML} from './scene-clues.mjs?v=21';
 import {SAMPLE as LEGACY_SAMPLE} from './sample.mjs?v=12';
 import {COOPERATIVE_SAMPLE as SAMPLE} from './cooperative-sample.mjs?v=19';
 import {deskHTML,notesHTML,textPages,overlayHTML,clueDeck} from './desk-ui.mjs?v=19';
-import {mechanismHTML,discoveryHTML,discoveryNotes,discoveryKey,isPhysical} from './mechanism-ui.mjs?v=19';
+import {mechanismHTML,discoveryHTML,discoveryNotes,discoveryKey,isPhysical} from './mechanism-ui.mjs?v=21';
 import {STAGES} from './content.mjs?v=19';
-import {fresh,transition,previewState,playerContent,hintsFor,normalizeDraft,chosenReasons} from './engine.mjs?v=19';
+import {fresh,transition,previewState,playerContent,hintsFor,normalizeDraft,chosenReasons} from './engine.mjs?v=21';
 import {ROOMS,GOALS,OPENING,BEFORE,AFTER,CONFESSION,WALK_TO_YOU,MEMORIES,STORY_VERSION} from './story.mjs?v=19';
 import {esc,lines,puzzleHTML,interactionGuide,finalNotesHTML,finalSequenceHTML,cabinetMarksHTML} from './puzzle-ui.mjs?v=19';
 import {Session,secret} from './client.mjs';
-import {Author} from './author.mjs?v=19';
+import {Author} from './author.mjs?v=21';
 import {PHOTO_SPOTS,EXPLORE,MAIN_SPOTS} from './exploration.mjs?v=19';
 import {Sound} from './sound.mjs';
 import {HEROES,normalizeHero,castForHero,characterText,characterDialogue} from './characters.mjs?v=20';
@@ -74,9 +75,14 @@ function remoteUpdate(data){
  if(!dirty)draft=structuredClone(s.draft);
  else if(s.draftVersion!==oldVersion&&!syncPromise){clearTimeout(saveTimer);dirty=false;draft=structuredClone(s.draft);toast('모둠원이 새 답안을 저장했어요. 반영된 답안을 확인해 주세요.');}
  if(s.stage!==old){dirty=false;draft=structuredClone(s.draft);closeModal();selected='';if(s.stage>old&&s.stage<=10)afterStage(old);}
- else if(s.finished&&!dialogue)ending();else if(!dialogue){renderScene();if(panel==='puzzle')renderPuzzle();}
+ else if(s.finished&&!dialogue)ending();else if(!dialogue){renderScene();if(panel==='puzzle')renderPuzzle();else if(panel==='clue')showClueRecord();}
  if(s.stage===0&&data.group.status==='playing'&&!ui.seen.includes('opening')&&!dialogue)play('opening',OPENING,()=>renderScene());
 }
+let clueRecordIndex=0,clueTextPage=0;
+const foundClues=()=>[...new Set([...(s.discoveries||[]),...(ui.discoveredProps||[])])];
+const records=()=>clueRecords(content,s,foundClues());
+function showClueRecord(){openModal(clueRecordHTML(records(),clueRecordIndex,clueTextPage),'clue');}
+function exploreGoal(){const p=content.puzzle,found=foundClues(),n=p.clues.filter(c=>found.includes(discoveryKey(p.id,c.role))).length,total=[1,2,3,4].filter(r=>found.includes(discoveryKey(p.id,r))).length;return `내 단서 ${n}/${p.clues.length} · 모둠 ${total}/4 발견. 사물 조사 → 단서함에서 확인 → ${STAGES[s.stage].object}에 사용` ;}
 function toolbar(){return `<div class="sound-controls"><button data-action="mute" aria-label="음소거 전환">${sound.muted?'소리 끔':'소리 켬'}</button><input aria-label="볼륨" id="volume" type="range" min="0" max=".5" step=".01" value="${sound.volume}"></div>`;}
 function renderScene(){
  if(s.finished&&!dialogue)return ending();
@@ -85,10 +91,10 @@ function renderScene(){
 
  root.innerHTML=`<section class="game ${dialogue?'in-dialogue':''}"><header class="game-header"><button class="wordmark" data-action="home">오늘, 너에게</button><span>${mode==='preview'?'교사 미리보기':mode==='group'?esc(session.data.group.name):'혼자 체험 · 시연 자료'}</span><div class="game-tools">${toolbar()}${mode==='preview'?'<button data-action="back-preview">목록으로</button>':'<button data-action="menu">메뉴</button>'}</div></header>
  <div class="scene-area ${dialogue?'narrating':''} ${s.stage===10?'final-walk':''}">
- ${!dialogue?`<div class="scene-briefing"><div><small>${String(Math.min(s.stage+1,10)).padStart(2,'0')} / 10 · ${r.name} <span>${s.stage<4?'늦은 오후':s.stage<8?'노을이 번지는 시간':'분홍빛 저녁'}</span></small><h2>${st?.title||'한 걸음, 너에게'}</h2></div><p>${waiting?'선생님이 수업을 시작하면 함께 진행해요.':s.stage<10?(room===st.room?storyText(GOALS[s.stage]):`${r.caption}. 지금 찾는 기록은 ${ROOMS[st.room].name}에 있다.`):'편지를 챙겼다. 이제, 기다리는 사람에게 가자.'}</p></div>`:''}
+ ${!dialogue?`<div class="scene-briefing"><div><small>${String(Math.min(s.stage+1,10)).padStart(2,'0')} / 10 · ${r.name} <span>${s.stage<4?'늦은 오후':s.stage<8?'노을이 번지는 시간':'분홍빛 저녁'}</span></small><h2>${st?.title||'한 걸음, 너에게'}</h2></div><p>${waiting?'선생님이 수업을 시작하면 함께 진행해요.':s.stage<10?(room===st.room?(isPhysical(content?.puzzle)?exploreGoal():storyText(GOALS[s.stage])):`${r.caption}. 지금 찾는 기록은 ${ROOMS[st.room].name}에 있다.`):'편지를 챙겼다. 이제, 기다리는 사람에게 가자.'}</p></div>`:''}
  <div class="scene-viewport" style="--scene:url('./assets/room-${r.art}-v3.webp')"><div class="scene-soft-backdrop"></div><div class="world ${s.stage>=8?'late':''}"><div class="room-art"></div><div class="light-overlay"></div>${!dialogue?hotspots(st,waiting):''}</div><div id="dialogue-layer"></div>${s.stage===10&&!dialogue?'<button class="to-bench primary" data-action="confession">벚꽃나무 아래로 걸어간다 →</button>':''}</div>
  </div>
- <footer class="game-footer"><span class="place-caption">${r.name}</span>${!dialogue&&s.stage<10?`<div class="scene-controls"><button data-action="map">장소 이동</button>${s.stage===8?'<button class="clue-button" data-action="photos">사진 보기</button>':''}${content?.evidence?.length||s.stage===8?'<button class="clue-button" data-action="clues">단서함</button>':''}</div>`:''}<span id="connection">${mode==='group'?status:''}</span></footer></section>`;
+ <footer class="game-footer"><span class="place-caption">${r.name}</span>${!dialogue&&s.stage<10?`<div class="scene-controls"><button data-action="map">장소 이동</button>${s.stage===8?'<button class="clue-button" data-action="photos">사진 보기</button>':''}${isPhysical(content?.puzzle)||content?.evidence?.length||s.stage===8?'<button class="clue-button" data-action="clues">단서함</button>':''}</div>`:''}<span id="connection">${mode==='group'?status:''}</span></footer></section>`;
  pointObserver.disconnect();pointWorld=root.querySelector('.world');pointViewport=root.querySelector('.scene-viewport');if(pointViewport){arrangeScenePoints();pointObserver.observe(pointViewport);}
  root.querySelector('#volume')?.addEventListener('input',e=>{sound.volume=Number(e.target.value);sound.settings();});if(dialogue)renderDialogue();
 }
@@ -104,7 +110,7 @@ function hotspots(st,waiting){
  const main=room===st.room&&!photo;
  const [x,y]=s.stage===9?[88.7,42.8]:(MAIN_SPOTS[room]||[50,50]);
  const ambient=(EXPLORE[room]||[]).filter(a=>!(photo&&spots().some(p=>p.id===a.id))&&!(main&&Math.hypot(a.x-x,a.y-y)<8));
- return ambient.map(a=>scenePoint({...a,action:'inspect',value:a.id})).join('')+(photo?spots().map(a=>scenePoint({...a,action:'inspect-photo',value:a.id,found:s.photos.includes(a.id),disabled:waiting})).join(''):main?scenePoint({x,y,name:st.object,action:'object',disabled:waiting}):'');
+ return ambient.map(a=>{const c=room===st.room&&isPhysical(content?.puzzle)?content.puzzle.clues.find(c=>clueSource(st.id,c.role)?.id===a.id):null;return scenePoint({...a,name:c?`${a.name} · ${c.role}번 단서`:a.name,action:c?'scene-discover':'inspect',value:c?c.role:a.id,found:!!c&&foundClues().includes(discoveryKey(st.id,c.role)),disabled:!!c&&waiting});}).join('')+(photo?spots().map(a=>scenePoint({...a,action:'inspect-photo',value:a.id,found:s.photos.includes(a.id),disabled:waiting})).join(''):main?scenePoint({x,y,name:st.object,action:'object',disabled:waiting}):'');
 }
 
 function play(key,list,done){list=characterDialogue(list,ui.hero||chosenHero);if(ui.seen.includes(key)){done?.();return;}dialogue={key,list,index:ui.dialogue?.key===key?Math.min(Math.max(ui.dialogue.index||0,0),list.length-1):0,done,full:false};closeModal();renderScene();saveUI();}
@@ -133,7 +139,7 @@ function showFind(old){openModal(storyText(discoveryHTML(old)),'find');modal.que
 function restoreFind(){const old=ui.revealStage;if(Number.isInteger(old)&&old>=0&&old<8&&old<s.stage&&content?.schema==='TODAY-TO-YOU-2'){showFind(old);return true;}return false;}
 function collectFind(){const old=ui.revealStage;if(!Number.isInteger(old))return;ui.revealStage=null;if(!ui.seen.includes('found:'+old))ui.seen.push('found:'+old);closeModal();saveUI();play('after:'+old,AFTER[old]||[],()=>arrive());}
 function afterStage(old){sound.effect('success');sound.set(s.stage>=7?'evening':s.stage>=4?'comic':'spring');selected='';feedback=null;if(old<8&&content?.schema==='TODAY-TO-YOU-2'&&!ui.seen.includes('found:'+old)){ui.revealStage=old;saveUI();showFind(old);return;}play('after:'+old,AFTER[old]||[],()=>arrive());}
-function openModal(html,kind='info'){panel=kind;modal.classList.toggle('hero-dialog',kind==='hero');modal.classList.toggle('find-dialog',kind==='find');modal.classList.toggle('desk-dialog',s.stage<8&&kind==='puzzle');modal.classList.toggle('photo-dialog',kind==='photos');modal.classList.toggle('final-dialog',s.stage===9&&kind==='puzzle');modal.classList.toggle('cabinet-dialog',kind==='cabinet');modal.innerHTML=html;if(!modal.open)modal.showModal();}
+function openModal(html,kind='info'){panel=kind;modal.classList.toggle('clue-dialog',kind==='clue');modal.classList.toggle('hero-dialog',kind==='hero');modal.classList.toggle('find-dialog',kind==='find');modal.classList.toggle('desk-dialog',s.stage<8&&kind==='puzzle');modal.classList.toggle('photo-dialog',kind==='photos');modal.classList.toggle('final-dialog',s.stage===9&&kind==='puzzle');modal.classList.toggle('cabinet-dialog',kind==='cabinet');modal.innerHTML=html;if(!modal.open)modal.showModal();}
 function closeModal(){if(modal.open)modal.close();panel='';}
 function evidenceHTML(){return content?.evidence?.length?content.evidence.map(e=>`<article class="evidence"><small>획득한 기록</small><h3>${esc(e.title)}</h3><p>${lines(e.text)}</p></article>`).join(''):'<p class="help">찾아낸 책갈피와 전달 기록이 여기에 모입니다. 모둠에서는 담당 자리의 기록만 보입니다.</p>';}
 function clueHTML(){const list=content?.puzzle?.clues||content?.clues||[];return list.map(c=>`<article class="clue"><small>${c.role}번 자리${mode==='group'&&c.role!==session.data.me.role?' · 빈자리 공동 열람':''}</small><h3>${esc(c.title)}</h3><p>${lines(c.text)}</p></article>`).join('');}
@@ -141,7 +147,7 @@ function openPuzzle(){if(s.stage>=10||s.stage===8)return;refreshContent();render
 function currentHints(){return mode==='group'?session.data.hints:hintsFor(lesson,s);}
 function renderPuzzle(){
  if(deskStage!==s.stage){deskView={note:0,page:0,overlay:null};deskStage=s.stage;}
- deskView.discovered=ui.discoveredProps||[];deskView.compact=window.innerWidth<=600;deskView.tight=window.innerWidth<360||window.innerHeight<460;
+ deskView.discovered=foundClues();deskView.compact=window.innerWidth<=600;deskView.tight=window.innerWidth<360||window.innerHeight<460;
  const active=modal.contains(document.activeElement)?document.activeElement:null,focus=active?.dataset.action?{action:active.dataset.action,value:active.dataset.value}:null;
  if(s.stage===9)renderFinalPuzzle();else{
  const p=content.puzzle,st=STAGES[s.stage];if(!p||!st)return;
@@ -198,12 +204,23 @@ async function action(a,v){try{
  if(a==='collect-find')return collectFind();
  if(a==='close'){if(panel==='find')return collectFind();if(deskView.overlay&&panel==='puzzle'){deskView.overlay=null;return renderPuzzle();}await flushDraft();if(panel==='cabinet')return openPuzzle();return closeModal();}if(a==='mute'){sound.muted=!sound.muted;sound.settings();return renderScene();}if(a==='next-line')return nextLine();
  if(a==='move'){if(dialogue||!ROOMS[v]||s.stage<ROOMS[v].unlock)return;closeModal();room=v;saveUI();sound.effect('paper');return renderScene();}if(a==='object'){if(dialogue||room!==STAGES[s.stage]?.room)return;return openPuzzle();}if(a==='map')return schoolMap();
- if(a==='clues')return openModal(`<header class="modal-header"><h2 id="modal-title">우리의 단서함</h2><button data-action="close">닫기 ✕</button></header><div class="evidence-list">${evidenceHTML()}${s.stage===8?clueHTML():''}</div>`);
+ if(a==='archive'){clueRecordIndex=0;clueTextPage=0;return showClueRecord();}
+ if(a==='clues'&&isPhysical(content.puzzle)){clueRecordIndex=Math.max(0,records().findIndex(c=>c.id===content.puzzle.id));clueTextPage=0;return showClueRecord();}
+ if(a==='clues')return openModal(`<header class="modal-header"><h2 id="modal-title">우리의 단서함</h2><button data-action="close">닫기 ✕</button></header><div class="evidence-list">${content.archive?.length?'<button data-action="archive">사용한 단서 기록 보기</button>':''}${evidenceHTML()}${s.stage===8?clueHTML():''}</div>`);
  if(a==='inspect')return inspectObject(v);if(a==='memories')return memories();if(a==='memory')return memory(Number(v));
  if(a==='history')return openModal(`<header class="modal-header"><h2 id="modal-title">지난 대화</h2><button data-action="close">닫기 ✕</button></header><div class="history">${ui.history.map(([who,t,o={}])=>`<p><b>${who<0?CAST[0].short+'의 시선':CAST[who].name}${o.channel==='phone'?' · 문자':o.channel==='note'?' · 책갈피':''}</b>${lines(t)}</p>`).join('')||'<p>아직 나눈 대화가 없어요.</p>'}</div>`);
  if(a==='menu')return openModal(`<header class="modal-header"><h2 id="modal-title">잠깐 쉬어 가기</h2><button data-action="close">닫기</button></header><div class="menu-panel"><button data-action="history">지난 대화</button><button data-action="memories">마음노트</button><p>자리와 진행은 ${mode==='group'?'서버':'이 기기'}에 저장되어 있어요.</p><button data-action="home">처음 화면으로</button>${mode==='group'?'<button data-action="leave">모둠에서 나가기</button>':''}<a href="./guide.html" target="_blank" rel="noopener">사용법</a></div>`);
  if(a==='leave'){if(!confirm('자리를 비우고 모둠에서 나갈까요? 빈자리 자료는 친구들이 볼 수 있게 됩니다.'))return;await session.leave();return home();}
- if(a==='discover'&&isPhysical(content.puzzle)){const role=Number(v),p=content.puzzle;if(!p.clues.some(c=>c.role===role))return;const key=discoveryKey(p.id,role);ui.discoveredProps=[...new Set([...(ui.discoveredProps||[]),key])];deskView.discovered=ui.discoveredProps;const notes=discoveryNotes(p,deskView);deskView.note=notes.findIndex(c=>c.role===role);deskView.page=0;saveUI();sound.effect('paper');return action('note-open');}
+ if(a==='scene-discover'&&isPhysical(content.puzzle)){
+  if(busy||dialogue||room!==STAGES[s.stage].room)return;
+  const role=Number(v),p=content.puzzle;if(!p.clues.some(c=>c.role===role))return;
+  const stage=s.stage;busy=true;
+  try{await flushDraft();if(s.stage!==stage)return;await event({type:'discover-clue',stage,role});if(s.stage!==stage)return;clueRecordIndex=records().findIndex(c=>c.id===p.id&&c.role===role);clueTextPage=0;sound.effect('paper');showClueRecord();}finally{busy=false;}return;
+ }
+ if(a==='clue-record'){clueRecordIndex=Number(v);clueTextPage=0;return showClueRecord();}
+ if(a==='clue-text-page'){clueTextPage=Number(v);return showClueRecord();}
+ if(a==='search-clues'){await flushDraft();closeModal();room=STAGES[s.stage].room;saveUI();return renderScene();}
+ if(a==='use-clue'){const c=records()[clueRecordIndex];if(!c||c.id!==content.puzzle?.id)return;openPuzzle();const notes=discoveryNotes(content.puzzle,deskView);deskView.note=Math.max(0,notes.findIndex(n=>n.role===c.role));deskView.page=0;return renderPuzzle();}
  if(a==='note-open'){const list=s.stage===9?content.evidence.map(e=>({title:e.title,text:e.text})):(isPhysical(content.puzzle)?discoveryNotes(content.puzzle,deskView):clueDeck(content.puzzle)).map(c=>({title:c.title,text:c.pages.join('')}));const note=list[Math.min(deskView.note||0,list.length-1)];if(note){deskView.overlay={kind:'note',...note};deskView.overlayPage=0;renderPuzzle();modal.querySelector('.desk-overlay button')?.focus();}return;}
  if(a==='target-detail'){deskView.overlay={kind:'target',id:v};deskView.overlayPage=0;return renderPuzzle();}
  if(a==='note'){deskView.note=Number(v);deskView.page=0;return renderPuzzle();}
