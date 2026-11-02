@@ -41,7 +41,7 @@ test('30 catalog callers share cached data; admin login/edit invalidates catalog
   const result = await Promise.all(Array.from({ length: 30 }, () => catalog.getPrograms()));
   assert.equal(result.length, 30); assert.equal(h.queries.length, 1);
   assert.equal((await catalog.getProgram('existing')).title, 'Original title');
-  assert.ok([...h.cache.values()].every(item => item.options.revalidate === 60));
+  assert.ok([...h.cache.values()].every(item => item.options.revalidate === 3600));
   const route = h.load('app/api/admin/programs/[id]/route.ts');
   const edit = { title: 'Teacher edit', url: '/edited', summary: 'New summary', category: 'Space', grade: 'Grade 8', worksheetUrl: 'https://example.com/new-worksheet' };
   assert.equal((await route.PATCH(request(edit, 'PATCH'), params('existing'))).status, 401);

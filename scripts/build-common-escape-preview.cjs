@@ -29,6 +29,8 @@ async function main(){
  });
  const js=(await fs.readFile(path.join(temp,'game.js'),'utf8')).replace(/<\/script/gi,'<\\/script');
  let html=await read('index.html');html=html.replace('<title>마지막 방송 — 학교 괴담</title>','<title>마지막 방송 · 개인 체험</title>');
+ // The standalone preview has no classroom connection or external script dependency.
+ html=html.replace(/<script src="\/labs\/classroom-connection\.js(?:\?[^"]*)?"><\/script>\s*/, '');
  const css=await read('style.css');
  html=html.replace(/<link rel="stylesheet" href="\.\/style\.css\?v=\d+">/,()=>'<style>'+css+'</style>');
  html=html.replace(/<script type="module" src="\.\/app\.mjs\?v=\d+"><\/script>/,()=>'<script>'+js+'</script>');

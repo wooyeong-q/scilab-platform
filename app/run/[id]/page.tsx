@@ -2,7 +2,7 @@ import { notFound } from 'next/navigation';
 import { ResponsiveProgramRunner } from '@/components/ResponsiveProgramRunner';
 import { getProgram, getPrograms } from '@/lib/program-cache';
 
-export const revalidate = 60;
+export const revalidate = 3600;
 
 export async function generateStaticParams() {
   return (await getPrograms()).map(({ id }) => ({ id }));

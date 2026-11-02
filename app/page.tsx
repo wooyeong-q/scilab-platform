@@ -4,7 +4,7 @@ import { Header } from '@/components/Header';
 import { ProgramExplorer } from '@/components/ProgramExplorer';
 import { getPrograms } from '@/lib/program-cache';
 
-export const revalidate = 60;
+export const revalidate = 3600;
 
 export default async function Home() {
   const programs = await getPrograms();

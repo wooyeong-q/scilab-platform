@@ -51,9 +51,9 @@
   // Wait for a response before starting the next polling delay. Each device
   // receives fresh jitter, including after Wi-Fi or tab visibility recovers.
   function createPoller(load, options) {
-    var timer = 0, stopped = true, inFlight = false;
+    var timer = 0, stopped = true, inFlight = false, unsubscribe;
     function active() {
-      return !stopped && !document.hidden && available() && (!options.enabled || options.enabled());
+      return !stopped && !document.hidden && available() && window.SciLabClassroom?.canPoll() !== false && (!options.enabled || options.enabled());
     }
     function pause() { clearTimeout(timer); timer = 0; }
     function schedule(delay) {
@@ -74,8 +74,8 @@
       }
     }
     return {
-      start:function () { stopped = false; schedule(0); },
-      stop:function () { stopped = true; pause(); },
+      start:function () { stopped = false; if (!unsubscribe) unsubscribe = window.SciLabClassroom?.onResume(function () { schedule(300 + Math.random() * 1200); }); schedule(0); },
+      stop:function () { stopped = true; pause(); if (unsubscribe) unsubscribe(); unsubscribe = undefined; },
       pause:pause,
       resume:function () { schedule(300 + Math.random() * 1200); }
     };

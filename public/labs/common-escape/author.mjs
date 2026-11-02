@@ -4,10 +4,10 @@ import {esc,lines} from './puzzle-ui.mjs';
 const KEY='scilab-common-escape-teacher-v2';
 const PROMPT_URL='./authoring-prompt.txt?v=20261021-review';
 export class Author{
- constructor(root,{preview,home}){this.root=root;this.preview=preview;this.home=home;this.lesson=SAMPLE;this.active=false;this.timer=null;this.polling=false;this.error='';this.warnings=[];this.view=null;this.selectedTeam=null;this.busy=false;try{this.identity=JSON.parse(localStorage.getItem(KEY));}catch{this.identity=null;}}
+ constructor(root,{preview,home}){this.root=root;this.preview=preview;this.home=home;this.lesson=SAMPLE;this.active=false;this.timer=null;this.polling=false;this.error='';this.warnings=[];this.view=null;this.selectedTeam=null;this.busy=false;try{this.identity=JSON.parse(localStorage.getItem(KEY));}catch{this.identity=null;}globalThis.SciLabClassroom?.onResume(()=>this.poll());}
  pause(){this.active=false;clearTimeout(this.timer);}
- async api(method='GET',data,compact=false){const headers={'x-teacher-key':this.identity.teacherKey};if(data)headers['content-type']='application/json';const r=await fetch('/api/labs/common-escape/sessions/'+this.identity.code+(compact?'?compact=1':''),{method,headers,body:data?JSON.stringify(data):undefined,cache:'no-store',signal:AbortSignal.timeout(12000)});const v=await r.json();if(!r.ok)throw new Error(v.error||'수업 연결을 확인해 주세요.');return v;}
- show(){this.active=true;this.view=null;this.render();}
+ async api(method='GET',data,compact=false){const headers={'x-teacher-key':this.identity.teacherKey};if(data)headers['content-type']='application/json';const r=await fetch('/api/labs/common-escape/sessions/'+this.identity.code+(compact?'?compact=1':''),{method,headers,body:data?JSON.stringify(data):undefined,cache:'no-store',signal:AbortSignal.timeout(12000)});const v=await r.json();if(!r.ok){const error=new Error(v.error||'수업 연결을 확인해 주세요.');error.status=r.status;throw error;}return v;}
+ show(){this.active=true;this.connectionStopped=false;this.view=null;this.render();}
  render(){
    if(!this.active)return;
    if(this.view)return this.renderClass();
@@ -31,10 +31,10 @@ export class Author{
     if(action==='preview'||action==='stage'){this.pause();return this.preview(this.lesson,action==='stage'?id:null);}
     if(action==='sample'){this.lesson=SAMPLE;this.error='정수 연습 자료를 선택했어요.';return this.render();}
     if(action==='copy-prompt'){const t=window.__commonEscapePrompt||await (await fetch(PROMPT_URL,{cache:'no-store'})).text();await navigator.clipboard.writeText(t);this.error='AI 작성 프롬프트를 복사했어요.';return this.render();}
-    if(action==='create'){
+    if(action==='create'){this.connectionStopped=false;
       this.busy=true;const r=await fetch('/api/labs/common-escape/sessions',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({lesson:validateLesson(this.lesson)}),signal:AbortSignal.timeout(20000)});const v=await r.json();if(!r.ok)throw new Error(v.error);this.identity=v;localStorage.setItem(KEY,JSON.stringify(v));this.view=await this.api();this.poll();
     }
-    if(action==='resume'){this.view=await this.api();this.poll();}
+    if(action==='resume'){this.connectionStopped=false;this.view=await this.api();this.poll();}
     if(action==='back'){this.view=null;clearTimeout(this.timer);}
     if(action==='copy'){await navigator.clipboard.writeText(this.identity.code);return;}
     if(['start','end','remove'].includes(action)){
@@ -45,5 +45,15 @@ export class Author{
    }catch(e){this.error=e.message;}finally{this.busy=false;this.render();}
  }
  renderClass(){const v=this.view;this.root.innerHTML=`<main class="author-page"><header><div><span class="eyebrow">수업 진행</span><h1>${esc(v.title)}</h1><p>${v.status==='waiting'?'학생들이 들어오면 수업을 시작하세요.':v.status==='ended'?'종료된 수업입니다.':'각 모둠은 자유롭게 이동하며 같은 퍼즐을 해결합니다.'}</p></div><nav class="author-nav" aria-label="수업 안내"><a class="guide-link" href="${window.__commonEscapeOffline?'https://scilab-platform.vercel.app/labs/common-escape/guide.html':'./guide.html'}" target="_blank" rel="noopener">자세한 사용법 ↗</a><button class="ghost-button" data-author="home">처음 화면</button></nav></header><section class="class-controls"><button class="group-code" data-author="copy">${esc(v.code)}<small>학생에게 안내할 수업 코드</small></button>${v.status==='waiting'?'<button class="primary" data-author="start">모든 모둠 시작</button>':''}${v.status!=='ended'?'<button class="ghost-button" data-author="end">수업 종료</button>':'<button class="ghost-button" data-author="back">새 수업 준비</button>'}<p class="file-status" role="status">${esc(this.error)}</p></section><div class="teacher-teams">${v.teams.length?v.teams.map(t=>`<section class="teacher-team"><h2>${t.number}모둠 <small>${t.members.length}/4명</small></h2><p><b>${t.progress.solved.length}/${t.progress.total} 해결${t.state.finished?' · 탈출 완료':''}</b></p><progress value="${t.progress.solved.length}" max="${t.progress.total}" aria-label="퍼즐 진행"></progress><p>${esc(t.goal.text)}</p><p class="subtle">마지막 진행: ${t.progress.lastProgressAt?esc(new Date(t.progress.lastProgressAt).toLocaleTimeString('ko-KR')):'아직 기록 없음'}</p><button data-author="detail" data-id="${t.number}" aria-expanded="${this.selectedTeam===t.number}">${this.selectedTeam===t.number?'상세 닫기':'모둠 상세 보기'}</button>${this.selectedTeam===t.number?`<div class="team-detail"><h3>퍼즐별 진행</h3><ol>${PLAY_ORDER.map(id=>`<li>${esc(v.lesson.puzzles.find(p=>p.id===id).title)} · ${t.progress.solved.includes(id)?'완료':t.progress.current===id?'현재 단계':'대기'}</li>`).join('')}</ol><p>오류로 진행할 수 없을 때 현재 퍼즐만 통과시킵니다. 탐색에 필요한 기록도 함께 복구됩니다.</p><button class="ghost-button" data-author="force" data-id="${t.number}" ${v.status!=='playing'||!t.progress.current||this.busy?'disabled':''}>현재 퍼즐 강제 통과</button>${t.state.journal.filter(j=>j.id.startsWith('teacher-force:')).map(j=>`<p class="subtle">${esc(j.title)} · ${esc(j.text)}</p>`).join('')}</div>`:''}<div class="team-members">${[1,2,3,4].map(role=>{const m=t.members.find(m=>m.role===role);return `<div><b>${role}번</b><span>${m?esc(m.name):'빈자리 · 모두 열람 가능'}</span>${m?`<button data-author="remove" data-id="${m.id}">내보내기</button>`:''}</div>`;}).join('')}</div></section>`).join(''):'<p>아직 입장한 모둠이 없어요.</p>'}</div></main>`;this.bind();}
- poll(){clearTimeout(this.timer);if(!this.active||!this.view)return;this.timer=setTimeout(async()=>{if(this.polling||this.busy){this.poll();return;}this.polling=true;const previous=this.view;try{const v=await this.api('GET',undefined,true);if(this.active&&this.view===previous&&!this.busy){this.view={...this.view,...v};this.error='';this.render();}}catch(e){this.error=e.message;if(this.active)this.render();}finally{this.polling=false;if(this.active&&this.view)this.poll();}},5000);}
+ poll(){
+  clearTimeout(this.timer);if(!this.active||!this.view||this.view.status==='ended'||this.connectionStopped)return;
+  this.timer=setTimeout(async()=>{
+   if(!this.active||!this.view||this.view.status==='ended'||this.connectionStopped)return;
+   if(document.hidden||globalThis.SciLabClassroom?.canPoll()===false||this.polling||this.busy){this.poll();return;}
+   this.polling=true;const previous=this.view;
+   try{const v=await this.api('GET',undefined,true);if(this.active&&this.view===previous&&!this.busy){this.view={...this.view,...v};this.error='';this.render();}}
+   catch(e){if(this.active&&this.view===previous){if([401,403,404,410].includes(e.status))this.connectionStopped=true;this.error=e.message;this.render();}}
+   finally{this.polling=false;this.poll();}
+  },5000);
+ }
 }

@@ -1,7 +1,7 @@
 # Catalog caching and database maintenance
 
-Public catalog pages (`/`, `/programs/[id]`, `/run/[id]`) use 60-second ISR and a
-60-second tagged Data Cache. Published program IDs are prerendered at build time;
+Public catalog pages (`/`, `/programs/[id]`, `/run/[id]`) use one-hour ISR and a
+one-hour tagged Data Cache. Published program IDs are prerendered at build time;
 new IDs are generated on demand. The components, URLs and iframe runner are unchanged.
 
 Admin edits, deletions and submission approvals expire the `programs` tag and the
@@ -73,3 +73,32 @@ Direct entrypoints without the exact --register argument are harmless no-ops.
 Both registrars preserve deleted_at markers and administrator edits.
 The retired atom-explorer entrypoint is always a no-op.
 Never regenerate production catalog rows from development defaults or lab folders.
+
+## Idle classroom connections (2026-11-02)
+
+The public catalog now revalidates hourly instead of every minute. Existing
+administrator writes still expire the tag and page patterns immediately. Live
+interaction counters and classroom state are unchanged.
+
+`public/labs/classroom-connection.js` gates automatic requests in galaxy-voyage,
+earthquake-volcano, star-escape, common-escape and first-love. Hidden/offline
+windows do not poll. After 20 minutes without pointer, keyboard, touch or wheel
+input, automatic requests pause; a visible notice explains how to resume. User
+input resumes the same identity and saved progress. Poll responses and visibility
+events do not renew this user-input lease. Quiz Rally retains its existing
+authoritative realtime transport and idle protections.
+
+Both student and teacher clients in common-escape and first-love stop polling
+ended sessions. Expired/removed sessions stop retrying. Teacher requests are
+single-flight and ignore responses for a view that was left or replaced.
+Galaxy students fetch the final ranking and drain notifications before stopping;
+teachers stop at the final snapshot. The galaxy teacher loop only runs while
+the teacher panel or entry screen is shown, and old credentials cannot drive
+endless successful or terminal-error requests. Map sessions stop at their
+known expiry or a terminal response. No records or catalog entries are deleted.
+
+No repository cron/keepalive job was found. These code paths explain avoidable
+activity, but the invoice alone does not attribute past compute hours to them.
+Provider-side scale-to-zero, minimum/maximum compute and other Neon branches
+still require inspection with provider access. This change does not claim that
+the bill reaches zero or that scale-to-zero was enabled.

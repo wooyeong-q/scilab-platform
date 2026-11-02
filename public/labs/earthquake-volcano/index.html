@@ -1172,7 +1172,8 @@
     </main>
   </div>
 
-  <script>
+  <script src="/labs/classroom-connection.js?v=20261102"></script>
+<script>
     // 수업용 분포 데이터: 각 모둠의 지진·화산 지점이 특정 지역에 몰리지 않도록
     // 태평양·대서양·인도양·북극해·남극해·지중해·동아프리카 열곡 등으로 고르게 재배치했습니다.
     // '대표 지진' 표기는 개별 역사 지진명이 아니라 판 경계 분포 관찰을 위한 대표 좌표입니다.
@@ -1244,7 +1245,7 @@
     let showAllTargets = false;
     let activeSession = null;
     let createdSession = null;
-    let pointPollTimer = null;
+    let pointPollTimer = null, pointPollingStopped = false;
     let view = { x: 0, y: 0, w: W, h: H };
     let pointerState = null;
 
@@ -1283,7 +1284,7 @@
           headers: { 'Content-Type': 'application/json', ...(options.headers || {}) }
         });
         const payload = await response.json().catch(() => ({}));
-        if (!response.ok) throw new Error(payload.error || '네트워크 요청에 실패했습니다.');
+        if (!response.ok) { const error = new Error(payload.error || '네트워크 요청에 실패했습니다.'); error.status = response.status; throw error; }
         return payload;
       } finally {
         clearTimeout(timeout);
@@ -1321,6 +1322,7 @@
       }
 
       activeSession = payload.session;
+      pointPollingStopped = false;
       localStorage.setItem('scilab_ev_last_class', activeSession.code);
       const url = new URL(location.href);
       url.searchParams.set('class', activeSession.code);
@@ -1331,7 +1333,10 @@
 
       if (!pointPollTimer) {
         pointPollTimer = setInterval(() => {
-          if (!document.hidden && !isSaving) loadPoints(true);
+          if (!pointPollingStopped && !document.hidden && window.SciLabClassroom?.canPoll() !== false && !isSaving) {
+            if (Date.now() >= Date.parse(activeSession.expiresAt)) { pointPollingStopped = true; clearInterval(pointPollTimer); pointPollTimer = null; return; }
+            loadPoints(true);
+          }
         }, 3000);
       }
     }
@@ -2267,6 +2272,7 @@ function coalesceRefresh(load){
         if (activeSession?.code !== code) return;
         renderPoints(payload.points || []);
       } catch (error) {
+        if ([401,403,404,410].includes(error.status)) { pointPollingStopped = true; clearInterval(pointPollTimer); pointPollTimer = null; }
         statusEl.textContent = '자료를 불러오지 못했습니다: ' + (error.message || error);
       }
     });
@@ -2370,8 +2376,9 @@ function coalesceRefresh(load){
       });
     }
 
+    window.SciLabClassroom?.onResume(() => { if (activeSession && !pointPollingStopped && !isSaving) void loadPoints(true); });
     document.addEventListener('visibilitychange', () => {
-      if (!document.hidden) loadPoints();
+      if (!pointPollingStopped && !document.hidden && window.SciLabClassroom?.canPoll() !== false) loadPoints(true);
     });
   </script>
 </body>

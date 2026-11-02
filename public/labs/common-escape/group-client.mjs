@@ -3,7 +3,7 @@ export const RECORD_ROLES={desk1:1,desk2:2,board:3,notebook:4},PHOTO_ROLES={chai
 const KEY='scilab-common-escape-student-v2',API='/api/labs/common-escape/sessions';
 const secret=()=>Array.from(crypto.getRandomValues(new Uint8Array(32)),n=>n.toString(16).padStart(2,'0')).join('');
 export class GroupSession{
- constructor(onChange,onStatus){this.onChange=onChange;this.onStatus=onStatus;this.timer=null;this.epoch=0;this.failures=0;this.busy=false;this.active=false;this.data=null;try{this.meta=JSON.parse(localStorage.getItem(KEY))||{};}catch{this.meta={};}}
+ constructor(onChange,onStatus){this.onChange=onChange;this.onStatus=onStatus;this.timer=null;this.epoch=0;this.failures=0;this.busy=false;this.active=false;this.data=null;try{this.meta=JSON.parse(localStorage.getItem(KEY))||{};}catch{this.meta={};}globalThis.SciLabClassroom?.onResume(()=>this.schedule(0));}
  get available(){return !!(this.meta.token&&this.meta.code);}
  setData(d){if(this.data&&d.group.revision<this.data.group.revision)return false;this.data=d;return true;}
  async request(action,body){
@@ -31,12 +31,12 @@ export class GroupSession{
  }
  async send(action,body={}){const next=await this.request(action,body);if(next?.group)this.setData(next);return next;}
  pause(){this.active=false;this.epoch++;clearTimeout(this.timer);}
- schedule(delay=1500){clearTimeout(this.timer);if(!this.active)return;const epoch=this.epoch;this.timer=setTimeout(()=>this.poll(epoch),delay);}
+ schedule(delay=1500){clearTimeout(this.timer);if(!this.active||this.data?.group.status==='ended')return;const epoch=this.epoch;this.timer=setTimeout(()=>this.poll(epoch),delay);}
  async poll(epoch){
-   if(!this.active||epoch!==this.epoch)return;if(this.busy){this.schedule(1500);return;}this.busy=true;
+   if(!this.active||epoch!==this.epoch||this.data?.group.status==='ended')return;if(document.hidden||globalThis.SciLabClassroom?.canPoll()===false||this.busy){this.schedule(1500);return;}this.busy=true;
    try{const next=await this.request('state',{revision:this.data?.group.revision});if(!this.active||epoch!==this.epoch)return;this.failures=0;this.onStatus('connected');if(next&&this.setData(next))this.onChange(next);}
-   catch(e){if(!this.active||epoch!==this.epoch)return;if([401,403,410].includes(e.status)){this.forget();this.onChange({left:true,message:e.message});return;}this.failures++;this.onStatus('offline');}
-   finally{this.busy=false;if(this.active&&epoch===this.epoch)this.schedule(Math.min(12000,1500*2**this.failures)*(document.hidden?3:1));}
+   catch(e){if(!this.active||epoch!==this.epoch)return;if([401,403,404,410].includes(e.status)){this.forget();this.onChange({left:true,message:e.message});return;}this.failures++;this.onStatus('offline');}
+   finally{this.busy=false;if(this.active&&epoch===this.epoch)this.schedule(Math.min(12000,1500*2**this.failures));}
  }
  saveLocal(s){if(!this.available)return;const local={room:s.room,gridTurns:s.gridTurns,seen:s.seen,journal:s.journal,sound:s.sound,soft:s.soft,drafts:s.drafts||{}};try{localStorage.setItem(KEY+':'+this.meta.token,JSON.stringify(local));}catch{/* Progress remains on the server. */}}
  loadLocal(){try{return JSON.parse(localStorage.getItem(KEY+':'+this.meta.token))||{};}catch{return {};}}
