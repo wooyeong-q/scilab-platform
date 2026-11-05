@@ -35,6 +35,8 @@ export function escapeAction(s,e,roles,p){
  if(n===0&&p.type==='riddle'&&e.target==='eraser'){
   if(!roles.includes(1))fail('윤재 역할이 수수께끼의 물건을 확인해 주세요.',403);
   add(s,'item:map-piece');
+  // Lifting the answer object is Yunjae's discovery, not a fifth hidden task.
+  add(s,clueKey('P1',1));
  }else if(n===3&&e.target==='socket')add(s,'item:connector');
  else if(n===4&&p.type==='tools'&&e.target==='gap'){
   if(e.tool==='mirror')add(s,'item:gap-seen');
@@ -46,7 +48,7 @@ export function escapeAction(s,e,roles,p){
  return escapeExplorationAdvance(s,p);
 }
 export function escapeExplorationAdvance(s,p){
- const advance=s.stage===0&&p.type==='riddle'&&escapeFlag(s,'map-piece')&&[1,2,3,4].every(r=>s.discoveries.includes(clueKey('P1',r)))||s.stage===4&&p.type==='tools'&&escapeFlag(s,'films');
+ const advance=s.stage===0&&p.type==='riddle'&&escapeFlag(s,'map-piece')&&[2,3,4].every(r=>s.discoveries.includes(clueKey('P1',r)))||s.stage===4&&p.type==='tools'&&escapeFlag(s,'films');
  if(advance){s.solved.push('P'+(s.stage+1));s.stage++;s.draft={};s.draftVersion++;return {state:s,outcome:'correct'};}
  return {state:s,outcome:'discovered'};
 }
