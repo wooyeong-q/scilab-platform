@@ -184,7 +184,7 @@ test('P1 needs exactly four discoveries: answer object plus three classmates, wi
  }
 });
 test('P1 guidance follows the current action and each role, without revealing the answer before discovery',async()=>{
- const {riddleProgress,escapePuzzleHTML}=await import('../public/labs/first-love/escape-ui.mjs');
+ const {riddleProgress,escapePuzzleHTML,escapeInventory}=await import('../public/labs/first-love/escape-ui.mjs');
  let s=e.fresh();
  const render=(roles)=>escapePuzzleHTML(e.playerContent(l,roles,s).puzzle,{}, {},{s,roles,busy:false,feedback:null,hints:[]});
  assert.match(riddleProgress(s).goal,/칠판 아래 수수께끼/);
@@ -198,6 +198,8 @@ test('P1 guidance follows the current action and each role, without revealing th
  assert.match(riddleProgress(s).next,/작은 책장 · 창가 화분 · 벽시계/);
  s=e.transition(s,{type:'discover-clue',stage:0,role:2},l).state;
  assert.match(riddleProgress(s,[2]).next,/내 조각은 찾았어요/);
+ const inventory=escapeInventory(e.playerContent(l,[2],s),s).html;
+ assert.match(inventory,/조각 4개를 모아 다음 퍼즐 열기/);
  assert.ok(!riddleProgress(s).next.includes('작은 책장'));
 });
 
