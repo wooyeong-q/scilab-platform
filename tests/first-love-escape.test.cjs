@@ -161,3 +161,53 @@ test('custom devices and titles survive service creation, all stages and reconne
  }
  const v=await service.state(room.code,keys[2]);assert.equal(v.state.stage,8);assert.equal(v.content.stages[8].object,'수납함 점검 덮개');assert.ok(v.content.archive.every(p=>p.clues.every(c=>c.role===3&&c.found)));
 });
+
+test('P1 needs exactly four discoveries: answer object plus three classmates, without a hidden fifth action',async()=>{
+ const {riddleProgress}=await import('../public/labs/first-love/escape-ui.mjs');
+ for(let count=1;count<=4;count++){
+  const room=await service.create({lesson:l}),keys=Array.from({length:count},()=>randomBytes(32).toString('hex'));
+  for(let i=0;i<count;i++)await service.join(room.code,keys[i],{name:'첫퍼즐'+i,team:1,role:i+1});
+  await service.teacherAction(room.code,room.teacherKey,{action:'start'});
+  if(count>1)await assert.rejects(service.event(room.code,keys[1],{type:'escape-act',stage:0,target:'eraser'}),err=>err.status===403);
+  const wrong=await service.event(room.code,keys[0],{type:'escape-act',stage:0,target:'pencil'});
+  assert.equal(riddleProgress(wrong.state).count,0);
+  const first=await service.event(room.code,keys[0],{type:'escape-act',stage:0,target:'eraser'});
+  assert.equal(first.state.stage,0);assert.equal(riddleProgress(first.state).count,1);
+  assert.ok(first.state.discoveries.includes('prop:P1:1'));
+  assert.equal(first.content.puzzle.clues.find(c=>c.role===1).found,true);
+  for(let role=2;role<=4;role++){
+   const result=await service.event(room.code,keys[role-1]||keys[0],{type:'discover-clue',stage:0,role});
+   assert.equal(result.state.stage,role===4?1:0);
+   if(role<4)assert.equal(riddleProgress(result.state).count,role);
+  }
+  assert.equal((await service.getTeacher(room.code,room.teacherKey)).teams[0].wrong,0);
+ }
+});
+test('P1 guidance follows the current action and each role, without revealing the answer before discovery',async()=>{
+ const {riddleProgress,escapePuzzleHTML}=await import('../public/labs/first-love/escape-ui.mjs');
+ let s=e.fresh();
+ const render=(roles)=>escapePuzzleHTML(e.playerContent(l,roles,s).puzzle,{}, {},{s,roles,busy:false,feedback:null,hints:[]});
+ assert.match(riddleProgress(s).goal,/칠판 아래 수수께끼/);
+ assert.match(render([1]),/답인 물건을 누르세요/);assert.ok(!render([1]).includes('class="riddle-success"'));
+ assert.match(riddleProgress(s,[2]).next,/작은 책장/);assert.ok(!riddleProgress(s,[2]).next.includes('창가 화분'));
+ const science=structuredClone(l);science.puzzles[0]={...structuredClone(l.puzzles[2]),id:'P1',room:'classroom'};
+ const custom=escapePuzzleHTML(e.playerContent(science,[1],s).puzzle,{}, {},{s,roles:[1],busy:false,feedback:null,hints:[]});
+ assert.ok(!custom.includes('riddle-instruction'));assert.match(custom,/암호 번호표/);
+ s=e.transition(s,{type:'escape-act',stage:0,target:'eraser'},l).state;
+ assert.match(render([1,2,3,4]),/조각 1\/4/);assert.match(render([1,2,3,4]),/교실에서 조각 찾기/);
+ assert.match(riddleProgress(s).next,/작은 책장 · 창가 화분 · 벽시계/);
+ s=e.transition(s,{type:'discover-clue',stage:0,role:2},l).state;
+ assert.match(riddleProgress(s,[2]).next,/내 조각은 찾았어요/);
+ assert.ok(!riddleProgress(s).next.includes('작은 책장'));
+});
+
+test('existing P1 saves with a lifted eraser never require the old redundant Yunjae clue',async()=>{
+ const {escapePuzzleHTML}=await import('../public/labs/first-love/escape-ui.mjs');
+ let s={...e.fresh(),discoveries:['item:map-piece','prop:P1:2','prop:P1:3']};
+ const done=e.transition(s,{type:'discover-clue',stage:0,role:4},l,[4]);
+ assert.equal(done.state.stage,1);assert.equal(done.outcome,'correct');
+ s.discoveries.push('prop:P1:4');
+ const html=escapePuzzleHTML(e.playerContent(l,[2],s).puzzle,{}, {},{s,roles:[2],busy:false,feedback:null,hints:[]});
+ assert.match(html,/모은 조각 확인하고 계속하기/);
+ assert.equal(e.transition(s,{type:'discover-clue',stage:0,role:2},l,[2]).state.stage,1);
+});

@@ -4,13 +4,13 @@ import {SAMPLE as LEGACY_SAMPLE} from './sample.mjs?v=12';
 import {ESCAPE_SAMPLE as PREVIOUS_SAMPLE} from './escape-legacy-sample.mjs';
 import {ESCAPE_SAMPLE as SAMPLE} from './escape-sample.mjs?v=25';
 import {ESCAPE_SCHEMA,ESCAPE_STAGES,lessonStages,lessonRewards,ROLE_NAMES,REWARDS,escapeSource} from './escape-content.mjs?v=25';
-import {escapePuzzleHTML,escapeNotes,escapeInventory,applyEscapeInput} from './escape-ui.mjs?v=25';
-import {escapeFlag} from './escape-engine.mjs?v=25';
+import {escapePuzzleHTML,escapeNotes,escapeInventory,applyEscapeInput,riddleProgress} from './escape-ui.mjs?v=26';
+import {escapeFlag} from './escape-engine.mjs?v=26';
 import * as escapeStory from './escape-story.mjs?v=25';
 import {deskHTML,notesHTML,textPages,overlayHTML,clueDeck} from './desk-ui.mjs?v=19';
 import {mechanismHTML,discoveryHTML,discoveryNotes,discoveryKey,isPhysical} from './mechanism-ui.mjs?v=21';
 import {STAGES as LEGACY_STAGES} from './content.mjs?v=25';
-import {fresh,transition,previewState,playerContent,hintsFor,normalizeDraft,chosenReasons} from './engine.mjs?v=25';
+import {fresh,transition,previewState,playerContent,hintsFor,normalizeDraft,chosenReasons} from './engine.mjs?v=26';
 import * as legacyStory from './story.mjs?v=22';
 let {ROOMS,GOALS,OPENING,BEFORE,AFTER,CONFESSION,WALK_TO_YOU,MEMORIES,STORY_VERSION}=escapeStory,STAGES=ESCAPE_STAGES;
 function useStory(schema,plan){const next=schema===ESCAPE_SCHEMA?escapeStory:legacyStory;({ROOMS,GOALS,OPENING,BEFORE,AFTER,CONFESSION,WALK_TO_YOU,MEMORIES,STORY_VERSION}=next);STAGES=schema===ESCAPE_SCHEMA?(plan?.length?lessonStages({puzzles:plan}):ESCAPE_STAGES):LEGACY_STAGES;if(schema===ESCAPE_SCHEMA){const adapted=escapeStory.adaptDevices(STAGES);BEFORE=adapted.BEFORE;AFTER=adapted.AFTER;}}
@@ -98,6 +98,7 @@ const foundClues=()=>[...new Set([...(s.discoveries||[]),...(ui.discoveredProps|
 const records=()=>clueRecords(content,s,foundClues());
 function showClueRecord(){openModal(clueRecordHTML(records(),clueRecordIndex,clueTextPage),'clue');}
 function exploreGoal(){const p=content.puzzle,found=foundClues(),n=p.clues.filter(c=>found.includes(discoveryKey(p.id,c.role))).length,total=[1,2,3,4].filter(r=>found.includes(discoveryKey(p.id,r))).length;return `내 단서 ${n}/${p.clues.length} · 모둠 ${total}/4 발견. 사물 조사 → 단서함에서 확인 → ${STAGES[s.stage].object}에 사용` ;}
+function escapeGoal(){return s.stage===0&&content.puzzle?.type==='riddle'?riddleProgress(s,playerRoles()).goal:content.puzzle?.task||GOALS[s.stage];}
 function toolbar(){return `<div class="sound-controls"><button data-action="mute" aria-label="음소거 전환">${sound.muted?'소리 끔':'소리 켬'}</button><input aria-label="볼륨" id="volume" type="range" min="0" max=".5" step=".01" value="${sound.volume}"></div>`;}
 function renderScene(){
  if(s.finished&&!dialogue)return ending();
@@ -106,7 +107,7 @@ function renderScene(){
 
  root.innerHTML=`<section class="game ${dialogue?'in-dialogue':''}"><header class="game-header"><button class="wordmark" data-action="home">오늘, 너에게</button><span>${mode==='preview'?'교사 미리보기':mode==='group'?esc(session.data.group.name):'혼자 체험 · '+esc(lesson.meta.subject)}</span><div class="game-tools">${toolbar()}${mode==='preview'?(dialogue?'<button data-action="skip-dialogue">대화 건너뛰기</button>':'')+'<button data-action="back-preview">목록으로</button>':'<button data-action="menu">메뉴</button>'}</div></header>
  <div class="scene-area ${dialogue?'narrating':''} ${s.stage===10?'final-walk':''}">
- ${!dialogue?`<div class="scene-briefing"><div><small>${String(Math.min(s.stage+1,10)).padStart(2,'0')} / 10 · ${r.name} <span>${s.stage<4?'늦은 오후':s.stage<8?'노을이 번지는 시간':'분홍빛 저녁'}</span></small><h2>${esc(st?.title||'한 걸음, 너에게')}</h2></div><p>${waiting?'선생님이 수업을 시작하면 함께 진행해요.':s.stage<10?(room===st.room?(escapeMode()?esc(content.puzzle?.task||GOALS[s.stage]):isPhysical(content?.puzzle)?exploreGoal():storyText(GOALS[s.stage])):`${r.caption}. 지금 찾는 기록은 ${ROOMS[st.room].name}에 있다.`):'편지를 챙겼다. 이제, 기다리는 사람에게 가자.'}</p></div>`:''}
+ ${!dialogue?`<div class="scene-briefing"><div><small>${String(Math.min(s.stage+1,10)).padStart(2,'0')} / 10 · ${r.name} <span>${s.stage<4?'늦은 오후':s.stage<8?'노을이 번지는 시간':'분홍빛 저녁'}</span></small><h2>${esc(st?.title||'한 걸음, 너에게')}</h2></div><p>${waiting?'선생님이 수업을 시작하면 함께 진행해요.':s.stage<10?(room===st.room?(escapeMode()?esc(escapeGoal()):isPhysical(content?.puzzle)?exploreGoal():storyText(GOALS[s.stage])):`${r.caption}. 지금 찾는 기록은 ${ROOMS[st.room].name}에 있다.`):'편지를 챙겼다. 이제, 기다리는 사람에게 가자.'}</p></div>`:''}
  <div class="scene-viewport" style="--scene:url('./assets/room-${r.art}-v3.webp')"><div class="scene-soft-backdrop"></div><div class="world ${s.stage>=8?'late':''}"><div class="room-art"></div><div class="light-overlay"></div>${!dialogue?hotspots(st,waiting):''}</div><div id="dialogue-layer"></div>${s.stage===10&&!dialogue?'<button class="to-bench primary" data-action="confession">벚꽃나무 아래로 걸어간다 →</button>':''}</div>
  </div>
  ${escapeMode()&&s.stage<10?`<div class="party-strip" aria-label="함께 있는 네 친구">${HEROES.map((h,i)=>`<div class="party-member ${h.id===chosenHero?'mine':''}">${portrait(i,'',null,HEROES)}<span>${h.short}${h.id===chosenHero?' · 나':''}</span></div>`).join('')}</div>`:''}<footer class="game-footer"><span class="place-caption">${r.name}</span>${s.stage<10?`<div class="scene-controls">${escapeMode()?`<button class="clue-button persistent-clues" data-action="clues">${HEROES.find(h=>h.id===chosenHero).short} · 단서함 ${escapeInventory(content,s).count}</button>`:''}${!dialogue?`<button data-action="map">장소 이동</button>${s.stage===8?'<button class="clue-button" data-action="photos">사진 보기</button>':''}${!escapeMode()&&(isPhysical(content?.puzzle)||content?.evidence?.length||s.stage===8)?'<button class="clue-button" data-action="clues">단서함</button>':''}`:''}</div>`:''}<span id="connection">${mode==='group'?status:''}</span></footer></section>`;
@@ -115,17 +116,18 @@ function renderScene(){
 }
 
 
-function scenePoint({x,y,name,action,value='',found=false,disabled=false}){
+function scenePoint({x,y,name,action,value='',found=false,disabled=false,guided=false}){
  const icon=found?'<path d="m5 12 4 4L19 6"/>':'<circle cx="10.5" cy="10.5" r="5.5"/><path d="m15 15 4.5 4.5"/>';
- return `<button class="scene-point${found?' found':''}" style="left:${x}%;top:${y}%" data-x="${x}" data-y="${y}" data-action="${action}" data-value="${esc(value)}" data-edge="${x<18?'left':x>82?'right':'center'}" aria-label="${esc(name)} 살펴보기${found?' · 확인한 사물':''}" ${disabled?'disabled':''}><span class="point-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">${icon}</svg></span><b class="point-label" aria-hidden="true">${esc(name)}</b></button>`;
+ return `<button class="scene-point${found?' found':''}${guided?' next-step':''}" style="left:${x}%;top:${y}%" data-x="${x}" data-y="${y}" data-action="${action}" data-value="${esc(value)}" data-edge="${x<18?'left':x>82?'right':'center'}" aria-label="${esc(name)} 살펴보기${found?' · 확인한 사물':''}" ${disabled?'disabled':''}><span class="point-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">${icon}</svg></span><b class="point-label" aria-hidden="true">${esc(name)}</b></button>`;
 }
 function hotspots(st,waiting){
  if(!st)return '';
+ const opening=escapeMode()&&s.stage===0&&content.puzzle?.type==='riddle'?riddleProgress(s,playerRoles()):null;
  const photo=s.stage===8&&room==='classroom'&&(!escapeMode()||escapeFlag(s,'cover'));
  const main=room===st.room&&!photo;
  const [x,y]=s.stage>=8?[88.7,42.8]:(MAIN_SPOTS[room]||[50,50]);
  const ambient=(EXPLORE[room]||[]).filter(a=>!(photo&&spots().some(p=>p.id===a.id))&&!(main&&Math.hypot(a.x-x,a.y-y)<8));
- return ambient.map(a=>{const c=room===st.room&&content?.puzzle&&(escapeMode()||isPhysical(content?.puzzle))?content.puzzle.clues.find(c=>(escapeMode()?escapeSource(s.stage,c.role):clueSource(st.id,c.role)?.id)===a.id):null;return scenePoint({...a,name:c?`${a.name} · ${ROLE_NAMES[c.role-1]}`:a.name,action:c?'scene-discover':'inspect',value:c?c.role:a.id,found:!!c&&foundClues().includes(discoveryKey(st.id,c.role)),disabled:!!c&&waiting});}).join('')+(photo?spots().map(a=>scenePoint({...a,action:'inspect-photo',value:a.id,found:s.photos.includes(a.id),disabled:waiting})).join(''):main?scenePoint({x,y,name:st.object,action:'object',disabled:waiting}):'');
+ return ambient.map(a=>{const c=room===st.room&&content?.puzzle&&(escapeMode()||isPhysical(content?.puzzle))?content.puzzle.clues.find(c=>(escapeMode()?escapeSource(s.stage,c.role):clueSource(st.id,c.role)?.id)===a.id):null;return scenePoint({...a,name:c?`${a.name} · ${ROLE_NAMES[c.role-1]}`:a.name,action:c?'scene-discover':'inspect',value:c?c.role:a.id,found:!!c&&foundClues().includes(discoveryKey(st.id,c.role)),disabled:!!c&&waiting,guided:!!opening&&!!c&&opening.available.some(x=>x.role===c.role)&&(opening.first||!playerRoles().includes(1))});}).join('')+(photo?spots().map(a=>scenePoint({...a,action:'inspect-photo',value:a.id,found:s.photos.includes(a.id),disabled:waiting})).join(''):main?scenePoint({x,y,name:st.object,action:'object',disabled:waiting,guided:!!opening&&!opening.first&&playerRoles().includes(1)}):'');
 }
 
 function play(key,list,done){if(!list?.length){done?.();return;}list=characterDialogue(list,ui.hero||chosenHero);if(ui.seen.includes(key)){done?.();return;}dialogue={key,list,index:ui.dialogue?.key===key?Math.min(Math.max(ui.dialogue.index||0,0),list.length-1):0,done,full:false};closeModal();renderScene();saveUI();}
