@@ -10,7 +10,7 @@ export class Session{
   else{options.method='POST';headers['content-type']='application/json';options.body=JSON.stringify(action==='event'?{action,event:{...payload,contentKey:this.data?.contentKey}}:{action,...payload});}
   const r=await fetch(url,options);if(r.status===204)return null;const v=await r.json();if(!r.ok){const e=new Error(v.error||'연결을 확인해 주세요.');e.status=r.status;throw e;}return v;
  }
- async connect(input){this.pause();this.data=null;if(input){const code=input.code.replace(/[\s-]/g,'').toUpperCase();if(!this.meta.pending||this.meta.code!==code||this.meta.team!==input.team||this.meta.role!==input.role)this.meta={...input,code,token:secret(),pending:true};this.save();}
+ async connect(input){this.pause();this.data=null;if(input){const code=input.code.replace(/[\s-]/g,'').toUpperCase();if(!this.meta.pending||this.meta.code!==code||this.meta.team!==input.team||this.meta.role!==input.role||this.meta.characterId!==input.characterId||this.meta.recipientId!==input.recipientId)this.meta={...input,code,token:secret(),pending:true};this.save();}
   const v=await this.api(this.meta.pending?'join':'state',this.meta);this.meta.pending=false;this.save();this.setData(v);this.active=true;this.schedule();return this.data;
  }
  async send(event){const epoch=this.epoch;if(event.type==='submit'){this.meta.pendingAttempt=event;this.save();}

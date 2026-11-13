@@ -5,9 +5,9 @@ let l,e,c,pg,service;
 before(async()=>{({ESCAPE_SAMPLE:l}=await import('../public/labs/first-love/escape-sample.mjs'));e=await import('../public/labs/first-love/engine.mjs');c=await import('../public/labs/first-love/content.mjs');pg=await PGlite.create();await pg.exec(fs.readFileSync('scripts/schema.sql','utf8'));const {createService}=await import('../lib/first-love/service.mjs');service=createService(async(sql,params)=>(await pg.query(sql,params)).rows);});
 after(async()=>pg.close());
 const solve=p=>p.type==='film'?{x:0,y:0,turns:2}:['dials','circuit'].includes(p.type)?{values:[1,2,3,4].map(n=>p.items.find(i=>i.answer.split('|').includes(String(n))).id)}:{order:[1,2,3,4].map(n=>p.items.find(i=>i.answer===String(n)).id),rotations:Object.fromEntries(p.items.map(i=>[i.id,Number(i.via)]))};
-test('new schema round trips, rejects ambiguous device answers and includes four subject demonstrations',()=>{
+test('new schema round trips, rejects ambiguous device answers and starts at the operational cabinet with five subject demonstrations',()=>{
  assert.deepEqual(c.fromSheets(c.toSheets(l)),l);
- assert.deepEqual(l.puzzles.map(p=>p.type),['riddle','jigsaw','dials','circuit','tools','film','frames','key']);
+ assert.deepEqual(l.puzzles.map(p=>p.type),['dials','jigsaw','dials','circuit','tools','film','frames','key']);
  assert.deepEqual(c.finalAnswer(l.devices).sequence,['H','F','C','D','H','D','C']);
  for(const change of [x=>x.puzzles[2].items[0].answer='1',x=>x.puzzles[3].clues[0].role=2,x=>x.puzzles[6].items[0].via='9',x=>x.puzzles[7].items[0].answer='1']){const x=structuredClone(l);change(x);assert.throws(()=>c.validateLesson(x));}
 });
@@ -35,7 +35,7 @@ test('one through four players complete every device over the real service and r
   for(let stage=0;stage<10;stage++){
    assert.equal((await state()).state.stage,stage);
    if(stage<8)for(let role=1;role<=4;role++)await send({type:'discover-clue',stage,role},keys[role-1]||keys[0]);
-   if(stage===0){assert.equal((await send({type:'escape-act',stage,target:'pencil'})).state.stage,0);await send({type:'escape-act',stage,target:'eraser'});}
+   if(stage===0&&l.puzzles[0].type==='riddle'){assert.equal((await send({type:'escape-act',stage,target:'pencil'})).state.stage,0);await send({type:'escape-act',stage,target:'eraser'});}
    else if(stage===4){
     assert.equal((await send({type:'escape-act',stage,target:'gap',tool:'tongs'})).state.stage,4);
     await send({type:'escape-act',stage,target:'gap',tool:'mirror'});await send({type:'escape-act',stage,target:'gap',tool:'tongs'});
@@ -76,13 +76,13 @@ test('whole combinations grade atomically, exploration is free, and identical su
   assert.equal(e.transition(s,{type:'submit',stage,draftVersion:s.draftVersion,attemptId:randomUUID()},l).state.stage,stage+1);
  }
 });
-test('fixed cast remains present through the final cabinet; only Yunjae confesses',async()=>{
+test('story roles stay present through the final cabinet and only role one confesses',async()=>{
  const story=await import('../public/labs/first-love/escape-story.mjs'),{castForHero,HEROES}=await import('../public/labs/first-love/characters.mjs');
  const present=new Set([0]),seen=new Set();
  const stages=[story.OPENING];for(let n=0;n<10;n++){if(story.BEFORE[n])stages.push(story.BEFORE[n]);stages.push(story.AFTER[n]||[]);}
  for(const list of stages)for(const [who,text,o={}]of list){if(o.arrival!==undefined)for(const id of [o.arrival].flat())present.add(id);if(who>=0&&!o.channel){assert.ok(present.has(who),text);seen.add(who);}assert.equal(o.exit,undefined,'Friends must stay until P10');}
  assert.deepEqual([...present].sort(),[0,2,3,4]);assert.deepEqual([...seen].sort(),[0,2,3,4]);
- for(const h of HEROES){const cast=castForHero(h.id);assert.equal(cast[0].short,'윤재');assert.equal(cast[1].short,'서아');}
+ for(const h of HEROES){const cast=castForHero(h.id);assert.equal(cast[0].short,h.roleNo===1?h.short:'윤재');assert.equal(cast[1].short,'서아');}
  assert.ok(story.WALK_TO_YOU.some(x=>x[2]?.exit?.length===3));
 });
 
@@ -140,7 +140,7 @@ test('all eight slots accept every subject device; exploration cannot bypass rep
  }
 });
 test('changed fixed scenes give an actionable import error and legacy v3 remains playable',async()=>{
- const x=structuredClone(l);x.puzzles[0].task='교과 내용을 바꿨어요';assert.throws(()=>c.validateLesson(x),/형식을 dials, circuit, frames, key/);
+ const x=structuredClone(l);x.puzzles[4].task='교과 내용을 바꿨어요';assert.throws(()=>c.validateLesson(x),/형식을 dials, circuit, frames, key/);
  const y=structuredClone(l);y.puzzles[1].title='바뀐 제목';assert.throws(()=>c.validateLesson(y),/탐색 장면은 고정/);
  const {ESCAPE_SAMPLE:old}=await import('../public/labs/first-love/escape-legacy-sample.mjs');
  assert.deepEqual(c.fromSheets(c.toSheets(old)),old);
