@@ -30,9 +30,16 @@ export async function PUT(request: Request, { params }: Context) {
   const expected = index === total - 1 ? Number(asset.size) - index * CHUNK_SIZE : CHUNK_SIZE;
   if (bytes.length !== expected) return error('파일 크기가 일치하지 않습니다. 다시 선택해 주세요.');
   if (index === 0 && !matchesSignature(bytes,String(asset.mime))) return error('파일 확장자와 실제 형식이 일치하지 않습니다.');
-  await sql!`INSERT INTO program_asset_chunks (asset_id,chunk_index,data,byte_size)
-    SELECT id,${index},${bytes.toString('base64')},${bytes.length} FROM program_assets WHERE id=${assetId} AND ready=FALSE
-    ON CONFLICT (asset_id,chunk_index) DO UPDATE SET data=EXCLUDED.data,byte_size=EXCLUDED.byte_size`;
+  // Serialize with finalization: a late retry must not modify a completed file
+  // after a browser has cached its stable ETag.
+  const written = await sql!`WITH editable AS (
+      SELECT id FROM program_assets WHERE id=${assetId} AND program_id=${id} AND ready=FALSE FOR UPDATE
+    )
+    INSERT INTO program_asset_chunks (asset_id,chunk_index,data,byte_size)
+    SELECT id,${index},${bytes.toString('base64')},${bytes.length} FROM editable
+    ON CONFLICT (asset_id,chunk_index) DO UPDATE SET data=EXCLUDED.data,byte_size=EXCLUDED.byte_size
+    RETURNING chunk_index`;
+  if (!written.length) return error('업로드할 파일을 찾을 수 없습니다.',404);
   return NextResponse.json({ ok: true });
 }
 

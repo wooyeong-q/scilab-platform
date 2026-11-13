@@ -102,3 +102,28 @@ activity, but the invoice alone does not attribute past compute hours to them.
 Provider-side scale-to-zero, minimum/maximum compute and other Neon branches
 still require inspection with provider access. This change does not claim that
 the bill reaches zero or that scale-to-zero was enabled.
+
+## Attachment and edit transfers (2026-11-13)
+
+Completed attachment IDs identify immutable bytes. Downloads now send a stable
+ETag derived from the attachment metadata and creation time, surviving program
+metadata edits and deployments. Browsers keep a private copy and must revalidate
+it: a matching conditional request returns 304 without reading or transferring
+file chunks. Publication, references, readiness and deletion are checked before
+returning even a validator. Shared CDN caching remains disabled so unpublishing
+or removing a file takes effect on the next request, including after admin logout.
+
+HEAD requests return metadata without reading file bytes. Single byte ranges
+return 206 and read only their needed chunks; unsatisfiable ranges return 416.
+If-Range rejects stale or weak validators by sending the complete current file.
+The stream stops after its final needed chunk. Upload chunk writes lock their
+draft row, preventing a late retry from changing a finalized cached file.
+
+The admin editor sends only changed editable fields, plus the required title.
+Unchanged descriptions, attachment lists, preview data and counters are omitted.
+Saving an unchanged form sends no update or data-reload request and does not
+invalidate the public catalog. Existing API clients may still send full metadata.
+
+These changes reduce repeated attachment transfers and redundant edit requests.
+They do not reset already accrued Fast Origin Transfer usage or attribute the
+team's historical usage to a particular endpoint without usage-level evidence.

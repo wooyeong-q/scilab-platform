@@ -73,7 +73,7 @@ test('the program edit API saves a local address, reports invalid links, and per
   }finally{await h.close();}
 });
 
-test('the rendered admin form submits a changed name with its existing local address to the real edit handler',async()=>{
+test('the rendered admin form sends only the changed name and preserves its existing address and metadata',async()=>{
   const h=await harness();const originalFetch=global.fetch;
   try{
     await fixture(h);await login(h);
@@ -87,7 +87,7 @@ test('the rendered admin form submits a changed name with its existing local add
     const source=fs.readFileSync(path.join(root,'components/AdminConsole.tsx'),'utf8');
     const compiled=ts.transpileModule(source,{compilerOptions:{module:ts.ModuleKind.CommonJS,target:ts.ScriptTarget.ES2022,jsx:ts.JsxEmit.ReactJSX,esModuleInterop:true}}).outputText;
     const mod={exports:{}};
-    const requireLocal=id=>id==='react'?hooks:id==='lucide-react'?icons:id==='./ProgramAssetEditor'||id==='./ProgramOrderList'?empty:id==='@/lib/program-links'?h.load('lib/program-links.ts'):require(id);
+    const requireLocal=id=>id==='react'?hooks:id==='lucide-react'?icons:id==='./ProgramAssetEditor'||id==='./ProgramOrderList'?empty:id==='@/lib/program-links'?h.load('lib/program-links.ts'):id==='@/lib/program-edit'?h.load('lib/program-edit.ts'):require(id);
     new Function('require','module','exports',compiled)(requireLocal,mod,mod.exports);
     const tree=mod.exports.AdminConsole();
     const html=require('react-dom/server').renderToStaticMarkup(tree);
@@ -100,10 +100,35 @@ test('the rendered admin form submits a changed name with its existing local add
     };
     const form=findForm(tree);assert.ok(form);
     await form.props.onSubmit({preventDefault(){}});
-    assert.equal(submitted.title,'장애물레이스');assert.equal(submitted.url,program.url);
+    assert.deepEqual(submitted,{title:'장애물레이스'});
     assert.equal((await row(h)).title,'장애물레이스');assert.equal((await row(h)).url,program.url);
     assert.equal((await row(h)).description,program.description);
+    // Reopening and saving the untouched form must not send an update or reload.
+    states[5]=program;stateIndex=0;let unchangedRequests=0;
+    global.fetch=async()=>{unchangedRequests++;throw new Error('An unchanged form must not fetch');};
+    await findForm(mod.exports.AdminConsole()).props.onSubmit({preventDefault(){}});
+    assert.equal(unchangedRequests,0);assert.equal((await row(h)).title,'장애물레이스');
   }finally{global.fetch=originalFetch;await h.close();}
+});
+
+test('metadata updates omit unchanged large fields and counters, while changed links, cleared text and asset order survive the API',async()=>{
+  const h=await harness();
+  try {
+    await fixture(h);await login(h);
+    const original=await h.load('lib/db.ts').getProgram('quiz-rally');
+    const {programEditPatch}=h.load('lib/program-edit.ts');
+    const large={...original,description:'수업 설명'.repeat(50000),thumbnailUrl:'data:image/png;base64,'+'A'.repeat(100000)};
+    assert.equal(programEditPatch(large,{...large}),null);
+    const nameOnly=programEditPatch(large,{...large,title:'새 이름',viewCount:999,likeCount:999});
+    assert.deepEqual(nameOnly,{title:'새 이름'});assert.ok(JSON.stringify(nameOnly).length<50);
+    const patch=programEditPatch(original,{...original,url:'/labs/other/index.html',description:'',usageSteps:['새 사용법'],worksheetUrl:''});
+    assert.deepEqual(Object.keys(patch).sort(),['title','url','description','usageSteps','worksheetUrl'].sort());
+    assert.equal((await h.load('app/api/admin/programs/[id]/route.ts').PATCH(request(patch,'PATCH'),params('quiz-rally'))).status,200);
+    const updated=await row(h);assert.equal(updated.url,'/labs/other/index.html');assert.equal(updated.description,'');
+    assert.equal(updated.worksheet_url,'');assert.deepEqual(updated.usage_steps,['새 사용법']);assert.equal(updated.view_count,12);
+    const assets=[{id:'a',kind:'image'},{id:'b',kind:'image'}];
+    assert.deepEqual(programEditPatch({...original,assets},{...original,assets:[assets[1],assets[0]]}),{title:original.title,assets:[assets[1],assets[0]]});
+  } finally {await h.close();}
 });
 
 test('the requested one-time rename changes only titles of nine existing public programs and is idempotent',async()=>{

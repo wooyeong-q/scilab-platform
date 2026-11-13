@@ -6,6 +6,7 @@ import { ProgramAssetEditor } from './ProgramAssetEditor';
 import { ProgramOrderList } from './ProgramOrderList';
 import type { Program } from '@/lib/programs';
 import { programLinkError } from '@/lib/program-links';
+import { programEditPatch } from '@/lib/program-edit';
 
 type Submission = { id:string; title:string; author:string; url:string; category:string; grade:string; summary:string; tags:string[]; status:string; createdAt:string };
 
@@ -36,7 +37,9 @@ export function AdminConsole() {
     const linkError=programLinkError(editing);if(linkError){setError(linkError);return;}setSaving(true);
     try{
       const tags=Array.from(new Set(tagInput.split(',').map((tag)=>tag.trim()).filter(Boolean)));
-      const response=await fetch(`/api/admin/programs/${editing.id}`,{method:'PATCH',headers:{'Content-Type':'application/json'},body:JSON.stringify({...editing,tags,usageSteps:usageInput.split('\n').map(step=>step.trim()).filter(Boolean)})});
+      const patch=programEditPatch(programs.find(program=>program.id===editing.id),{...editing,tags,usageSteps:usageInput.split('\n').map(step=>step.trim()).filter(Boolean)});
+      if(!patch){setEditing(null);setTagInput('');setUsageInput('');return;}
+      const response=await fetch(`/api/admin/programs/${editing.id}`,{method:'PATCH',headers:{'Content-Type':'application/json'},body:JSON.stringify(patch)});
       const data=await response.json().catch(()=>({}));
       if(!response.ok)throw new Error(data.error||'저장하지 못했습니다.');
       setEditing(null);setTagInput('');setUsageInput('');await load();
