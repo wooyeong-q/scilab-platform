@@ -61,7 +61,7 @@ export function portraitHTML(actor,extra='',expression=null){
   const aliases={nervous:'nervous',sheepish:'nervous',panicked:'surprised',concerned:'surprised',amused:'smile',warm:'smile',excited:'smile',sincere:'neutral',shy:'smile'};
   const f=actor.atlasFrames[mood]||actor.atlasFrames[aliases[mood]]||actor.atlasFrames.neutral;
   const [x,y,w,h]=f,[aw,ah]=actor.atlasSize;
-  return `<svg class="portrait anime-portrait ${extra}" viewBox="${x} ${y} ${w} ${h}" preserveAspectRatio="xMidYMid slice" role="img" aria-label="${escape(actor.name)} · ${escape(mood)}" data-expression="${escape(mood)}"><image href="./assets/${actor.atlas}.webp" width="${aw}" height="${ah}"/></svg>`;
+  return `<svg class="portrait anime-portrait ${extra}" viewBox="${x} ${y} ${w} ${h}" preserveAspectRatio="xMidYMin slice" role="img" aria-label="${escape(actor.name)} · ${escape(mood)}" data-expression="${escape(mood)}"><image href="./assets/${actor.atlas}.webp" width="${aw}" height="${ah}"/></svg>`;
  }
  if(expression===null&&actor.atlasFrame){const [x,y,w,h]=actor.atlasFrame,[aw,ah]=actor.atlasSize;return `<svg class="portrait anime-portrait ${extra}" viewBox="${x} ${y} ${w} ${h}" preserveAspectRatio="xMidYMid slice" role="img" aria-label="${escape(actor.name)}"><image href="./assets/${actor.atlas}.webp" width="${aw}" height="${ah}"/></svg>`;}
  const frame=moodFrame(mood),x=(frame%2)*512,y=Math.floor(frame/2)*768;
