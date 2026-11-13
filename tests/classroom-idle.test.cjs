@@ -79,6 +79,18 @@ for(const lab of ['common-escape','first-love']){
  });
 }
 
+test('first-love teacher loads the lesson once and polls compact progress without dropping cached lesson data',async()=>{
+ const h=browser(),{Author}=h.load('public/labs/first-love/author.mjs');
+ const a=new Author({},()=>{},()=>{}),requests=[],lesson={puzzles:[{id:'P1',image:'large image data'}]};
+ a.identity={code:'ABCDEFGH',teacherKey:'same-teacher'};a.active=true;a.render=()=>{};
+ h.box.fetch=async(url,opts)=>{requests.push({url,opts});return{ok:true,status:200,json:async()=>({status:'playing',teams:[{number:1,stage:requests.length}],...(!url.includes('compact=1')?{lesson}:{})})};};
+ a.view=await a.api();assert.equal(a.view.lesson,lesson);assert.ok(!requests[0].url.includes('compact'));
+ a.poll();await h.advance(10000);assert.equal(requests.length,3);
+ assert.ok(requests.slice(1).every(r=>r.url.endsWith('?compact=1')&&r.opts.headers['x-teacher-key']==='same-teacher'));
+ assert.equal(a.view.lesson,lesson);assert.equal(a.view.teams[0].stage,3);a.pause();
+ await a.api();assert.ok(!requests.at(-1).url.includes('compact'),'resume still fetches the full lesson');
+});
+
 test('galaxy fetches the final ranking, drains pending notifications, then stops even after visibility changes',async()=>{
  const h=browser(),b=h.box;let reads=0,painted=0;
  Object.assign(b,{studentSyncStopped:false,classroom:{code:'ABC234'},scoreboardLoading:false,scoreboardTimer:0,actionEpoch:0,syncFailures:0,
