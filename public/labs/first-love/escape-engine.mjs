@@ -33,7 +33,7 @@ export function escapeGate(s,p){
 export function escapeAction(s,e,roles,p){
  const n=s.stage;
  if(n===0&&p.type==='riddle'&&e.target==='eraser'){
-  if(!roles.includes(1))fail('윤재 역할이 수수께끼의 물건을 확인해 주세요.',403);
+  if(!roles.includes(1))fail('1번 역할이 수수께끼의 물건을 확인해 주세요.',403);
   add(s,'item:map-piece');
  }else if(n===3&&e.target==='socket')add(s,'item:connector');
  else if(n===4&&p.type==='tools'&&e.target==='gap'){

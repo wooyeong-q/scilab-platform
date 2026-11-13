@@ -22,7 +22,7 @@ for(const [name,rows]of Object.entries(sheets)){
  for(const col of rows.length>1?editable[name]:[])sh.getRangeByIndexes(4,col,rows.length-1,1).format.fill='#FFF2CF';
  if(name==='설정'){sh.getRange('B5').format.fill='#F0F0EC';sh.getRange('C6').values=[['연노랑: 입력 / 회색: 유지']];}
  if(!v3&&name==='퍼즐')sh.getRange('C5:C12').dataValidation={rule:{type:'list',values:['choose','order','classify']}};
- if(v3){for(let r=1;r<rows.length;r++){if(['퍼즐','資料','자료','모둠단서'].includes(name)&&['P1','P2','P5','P6'].includes(rows[r][0]))sh.getRangeByIndexes(r+3,0,1,cols).format.fill='#F0F0EC';if(name==='자료'&&['P7','P8'].includes(rows[r][0]))sh.getRangeByIndexes(r+3,6,1,1).format.fill='#FFF2CF';}}
+ if(v3){for(let r=1;r<rows.length;r++){if(['퍼즐','資料','자료','모둠단서'].includes(name)&&['P2','P5','P6'].includes(rows[r][0]))sh.getRangeByIndexes(r+3,0,1,cols).format.fill='#F0F0EC';if(name==='자료'&&['P7','P8'].includes(rows[r][0]))sh.getRangeByIndexes(r+3,6,1,1).format.fill='#FFF2CF';}}
  if(v3&&name==='퍼즐'){
   for(let r=1;r<rows.length;r++){
    const cell=sh.getRangeByIndexes(r+3,2,1,1);cell.format.fill='#FFF2CF';
