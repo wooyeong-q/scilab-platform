@@ -127,3 +127,10 @@ invalidate the public catalog. Existing API clients may still send full metadata
 These changes reduce repeated attachment transfers and redundant edit requests.
 They do not reset already accrued Fast Origin Transfer usage or attribute the
 team's historical usage to a particular endpoint without usage-level evidence.
+
+First-love teacher polling now requests `?compact=1`, matching the existing
+common-escape pattern. Initial connection and resume still fetch the complete
+lesson; repeated reads send only current teams, progress and session status.
+The client merges updates into its retained lesson. Large embedded lesson images
+are no longer resent every five seconds. Older clients keep the full response,
+and compact reads retain the same teacher authorization and no-store policy.

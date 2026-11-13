@@ -1,4 +1,4 @@
-import {CAST as ORIGINAL_CAST} from './story.mjs?v=22';
+import {CAST as ORIGINAL_CAST} from './story.mjs';
 
 const moods=['neutral','nervous','surprised','smile','excited','panicked','sincere','sheepish','amused','concerned','warm','disgust'];
 const frames={neutral:0,nervous:1,surprised:2,smile:3,excited:3,panicked:2,sincere:0,sheepish:1,amused:3,concerned:2,warm:3,disgust:2};
